@@ -89,104 +89,35 @@
         </div>
       </div>
 
-      <!-- WORKSPACE 1: EDIT MODE (STRUCTURED DIVISION) -->
-      <div v-if="isEditMode" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- WORKSPACE 1: EDIT MODE (INTEGRATED SINGLE-COLUMN SHEET) -->
+      <div v-if="isEditMode" class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 lg:p-10 shadow-sm space-y-6">
         
-        <!-- Left Side: Context & Definition blocks (5 cols) -->
-        <div class="lg:col-span-5 space-y-6">
-          
-          <!-- Context Input Card -->
-          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Compass class="w-4 h-4 text-amber-500" />
-              Contexte de la note
-            </h3>
-            <textarea 
-              v-model="noteContext"
-              placeholder="Historique, contexte historique ou d'apprentissage, cadre théorique..."
-              rows="3"
-              class="w-full p-3 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 resize-y"
-              @input="triggerAutoSave"
-            ></textarea>
-          </div>
-
-          <!-- Definition Input Card -->
-          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <BookOpen class="w-4 h-4 text-emerald-500" />
-              Définitions Clés & Formules
-            </h3>
-            <textarea 
-              v-model="noteDefinition"
-              placeholder="Théorèmes, définitions, formules scientifiques avec $ pour le LaTeX..."
-              rows="5"
-              class="w-full p-3 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 resize-y"
-              @input="triggerAutoSave"
-            ></textarea>
-          </div>
-
-          <!-- Links Input Card (Dynamic selector) -->
-          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-4">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <LinkIcon class="w-4 h-4 text-indigo-500" />
-              Lier à d'autres notes
-            </h3>
-            
-            <div class="flex gap-2">
-              <select 
-                v-model="selectedLinkTarget"
-                class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold"
-              >
-                <option :value="null" disabled>Sélectionner une note...</option>
-                <option 
-                  v-for="item in linkableNotes" 
-                  :key="item.id" 
-                  :value="item.id"
-                >
-                  {{ item.title }}
-                </option>
-              </select>
-              
-              <button 
-                @click="addNoteLink"
-                type="button"
-                class="px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all"
-              >
-                Lier
-              </button>
-            </div>
-
-            <!-- Staged linked notes badges -->
-            <div class="flex flex-wrap gap-1.5">
-              <span 
-                v-for="linkedId in noteLinks" 
-                :key="linkedId"
-                class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs font-bold rounded-lg"
-              >
-                {{ getNoteTitle(linkedId) }}
-                <button 
-                  @click="removeNoteLink(linkedId)" 
-                  type="button" 
-                  class="text-slate-400 hover:text-rose-500 text-[10px]"
-                >
-                  ✕
-                </button>
-              </span>
-            </div>
-          </div>
+        <!-- 1. Context Input Section -->
+        <div class="bg-amber-50/30 border border-amber-100/50 rounded-2xl p-5 dark:bg-amber-950/5 dark:border-amber-900/30 space-y-3">
+          <h3 class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Compass class="w-4 h-4" />
+            Contexte de la note
+          </h3>
+          <textarea 
+            v-model="noteContext"
+            placeholder="Historique, cadre théorique ou d'apprentissage..."
+            rows="2"
+            class="w-full p-3 text-xs bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 resize-y"
+            @input="triggerAutoSave"
+          ></textarea>
         </div>
 
-        <!-- Right Side: Body Section (7 cols) -->
-        <div class="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm flex flex-col min-h-[480px]">
-          <!-- Section Title Header -->
-          <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 flex items-center justify-between">
+        <!-- 2. Main Note Body Section -->
+        <div class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col min-h-[500px]">
+          <!-- Header with Title and Insertion/Toolbar -->
+          <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 flex items-center justify-between">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <FileText class="w-4 h-4 text-indigo-500" />
-              Section Principale (Notes & Développement)
+              Notes de cours
             </h3>
           </div>
 
-          <!-- Markdown & LaTeX Fast insertion bar -->
+          <!-- Markdown, LaTeX & Tooltip Insertion Bar -->
           <div class="flex flex-wrap items-center gap-1.5 p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Format</span>
             <button 
@@ -213,91 +144,140 @@
             >
               {{ btn.label }}
             </button>
+
+            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+            
+            <!-- Smart Space: Definition Tooltip insertion -->
+            <button 
+              type="button" 
+              @click="insertDefinitionTooltip"
+              class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/30 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-950/60 active:scale-95 transition-all"
+              title="Associer une définition en info-bulle au texte sélectionné"
+            >
+              <BookOpen class="w-3.5 h-3.5" />
+              Définition (Info-bulle)
+            </button>
           </div>
 
-          <!-- Raw Markdown Text Area for general note body -->
+          <!-- Raw Markdown Text Area -->
           <textarea 
             ref="textareaRef"
             v-model="noteBody"
-            placeholder="Corps principal de la note..."
-            class="flex-1 p-6 outline-none bg-transparent border-0 focus:ring-0 text-sm font-mono text-slate-700 dark:text-slate-300 min-h-[380px] resize-y leading-relaxed"
+            placeholder="Rédigez vos notes ici en Markdown..."
+            class="flex-1 p-6 outline-none bg-transparent border-0 focus:ring-0 text-sm font-mono text-slate-700 dark:text-slate-300 min-h-[400px] resize-y leading-relaxed"
             @input="triggerAutoSave"
           ></textarea>
         </div>
+
+        <!-- 3. Linked Notes Section -->
+        <div class="bg-indigo-50/20 border border-indigo-100/50 rounded-2xl p-5 dark:bg-indigo-950/5 dark:border-indigo-900/30 space-y-4">
+          <h3 class="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+            <LinkIcon class="w-4 h-4" />
+            Lier à d'autres notes
+          </h3>
+          
+          <div class="flex gap-2">
+            <select 
+              v-model="selectedLinkTarget"
+              class="flex-1 max-w-md px-3 py-2 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold"
+            >
+              <option :value="null" disabled>Sélectionner une note...</option>
+              <option 
+                v-for="item in linkableNotes" 
+                :key="item.id" 
+                :value="item.id"
+              >
+                {{ item.title }}
+              </option>
+            </select>
+            
+            <button 
+              @click="addNoteLink"
+              type="button"
+              class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl active:scale-95 transition-all shadow-sm"
+            >
+              Lier la note
+            </button>
+          </div>
+
+          <!-- Linked notes badges -->
+          <div v-if="noteLinks.length > 0" class="flex flex-wrap gap-1.5 pt-1">
+            <span 
+              v-for="linkedId in noteLinks" 
+              :key="linkedId"
+              class="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg shadow-sm"
+            >
+              {{ getNoteTitle(linkedId) }}
+              <button 
+                @click="removeNoteLink(linkedId)" 
+                type="button" 
+                class="text-slate-400 hover:text-rose-500 transition-colors"
+              >
+                ✕
+              </button>
+            </span>
+          </div>
+        </div>
+
       </div>
 
-      <!-- WORKSPACE 2: PREVIEW / READ MODE (CORNELL / CARD SYSTEM) -->
-      <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8 print:block print:space-y-6">
+      <!-- WORKSPACE 2: PREVIEW / READ MODE (INTEGRATED COHESIVE SHEET) -->
+      <div v-else class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 lg:p-12 shadow-sm space-y-6 print:border-none print:shadow-none print:p-0">
         
-        <!-- Left Side (Context & definitions) (4 cols) -->
-        <div class="lg:col-span-4 space-y-6 print:w-full print:block print:mb-6">
-          
-          <!-- Context Render -->
-          <div 
-            v-if="noteContext"
-            class="bg-amber-50/50 border border-amber-100 rounded-3xl p-5 shadow-sm dark:bg-amber-950/10 dark:border-amber-950/30 print:border-amber-200 print:bg-[#fffbeb]"
-          >
-            <h3 class="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
-              <Compass class="w-4 h-4" />
-              Contexte
-            </h3>
-            <div 
-              v-html="renderMarkup(noteContext)"
-              class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
-            ></div>
-          </div>
-
-          <!-- Definitions Render -->
-          <div 
-            v-if="noteDefinition"
-            class="bg-emerald-50/50 border border-emerald-100 rounded-3xl p-5 shadow-sm dark:bg-emerald-950/10 dark:border-emerald-950/30 print:border-emerald-200 print:bg-[#ecfdf5]"
-          >
-            <h3 class="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
-              <BookOpen class="w-4 h-4" />
-              Définitions clés
-            </h3>
-            <div 
-              v-html="renderMarkup(noteDefinition)"
-              class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
-            ></div>
-          </div>
-
-          <!-- Linked Notes Badges Render -->
-          <div v-if="noteLinks.length > 0" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm no-print">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-3">
-              <LinkIcon class="w-4.5 h-4.5 text-indigo-500" />
-              Notes liées
-            </h3>
-            <div class="flex flex-col gap-2">
-              <button 
-                v-for="linkedId in noteLinks" 
-                :key="linkedId"
-                @click="navigateToNote(linkedId)"
-                class="flex items-center justify-between p-2.5 text-left rounded-xl bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-850/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-800 transition-colors text-xs font-semibold"
-              >
-                <span class="truncate pr-2">{{ getNoteTitle(linkedId) }}</span>
-                <ChevronRight class="w-4 h-4 text-slate-400" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Side: Body Render (8 cols) -->
+        <!-- 1. Context Block (Full width, integrated at the top of the paper) -->
         <div 
-          class="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-10 shadow-sm min-h-[500px] print-container print:w-full print:border-none print:shadow-none print:p-0"
+          v-if="noteContext"
+          class="bg-amber-50/50 border-l-4 border-amber-500 rounded-r-2xl p-5 dark:bg-amber-950/10 dark:border-amber-700/50 print:bg-[#fffbeb] print:border-amber-300"
         >
-          <!-- Section Title Header in Preview -->
-          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-6 border-b border-slate-100 dark:border-slate-800/80 pb-3 no-print">
-            <FileText class="w-4 h-4 text-indigo-500" />
-            Section Principale (Notes & Développement)
+          <h3 class="text-xs font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1.5 uppercase tracking-wider mb-2 no-print">
+            <Compass class="w-4 h-4" />
+            Contexte de la note
           </h3>
-
-          <!-- Compiled Markdown & LaTeX Body Output -->
           <div 
-            v-html="renderMarkup(noteBody)" 
-            class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-slate-300 print:text-black markdown-body"
+            v-html="renderMarkup(noteContext)"
+            class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
           ></div>
         </div>
+
+        <!-- Legacy Definitions Block (for backward compatibility only if loaded) -->
+        <div 
+          v-if="noteDefinition"
+          class="bg-emerald-50/30 border-l-4 border-emerald-500 rounded-r-2xl p-5 dark:bg-emerald-950/10 dark:border-emerald-700/50 print:bg-[#ecfdf5] print:border-emerald-300"
+        >
+          <h3 class="text-xs font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+            <BookOpen class="w-4 h-4" />
+            Définitions clés (Legacy)
+          </h3>
+          <div 
+            v-html="renderMarkup(noteDefinition)"
+            class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
+          ></div>
+        </div>
+
+        <!-- 2. Main Note Content Block -->
+        <div class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-slate-300 print:text-black markdown-body">
+          <div v-html="renderMarkup(noteBody)"></div>
+        </div>
+
+        <!-- 3. Linked Notes Block (Integrated at the bottom of the sheet) -->
+        <div v-if="noteLinks.length > 0" class="border-t border-slate-100 dark:border-slate-800 pt-6 no-print">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-3">
+            <LinkIcon class="w-4.5 h-4.5 text-indigo-500" />
+            Notes liées
+          </h3>
+          <div class="flex flex-wrap gap-2">
+            <button 
+              v-for="linkedId in noteLinks" 
+              :key="linkedId"
+              @click="navigateToNote(linkedId)"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-indigo-50 dark:bg-slate-850/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-800 rounded-xl transition-all text-xs font-semibold"
+            >
+              <span>{{ getNoteTitle(linkedId) }}</span>
+              <ChevronRight class="w-3.5 h-3.5 text-slate-400" />
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -477,7 +457,7 @@ function compileStructuredNote() {
   return raw
 }
 
-// Rendering marked + LaTeX
+// Rendering marked + LaTeX + Definition tooltips
 function renderMarkup(text: string): string {
   const markdownText = text || ''
   const placeholders: string[] = []
@@ -506,13 +486,22 @@ function renderMarkup(text: string): string {
     }
   })
 
-  // 3. Mark down parse
+  // 3. Definition Tooltips [term]{def:definition}
+  temp = temp.replace(/\[([^\]]+)\]\{def:([^\}]+)\}/g, (_match, term, definition) => {
+    const html = `<span class="group relative inline-block underline decoration-emerald-500 decoration-dashed cursor-help bg-emerald-50/30 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded transition-all duration-200">${term}<span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded-xl bg-slate-900 dark:bg-slate-950 p-3 text-xs font-medium text-slate-100 dark:text-slate-200 shadow-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100 leading-normal normal-case text-center">${definition}</span></span>`
+    const key = `DEFPLACEHOLDER${placeholders.length}`
+    placeholders.push(html)
+    return key
+  })
+
+  // 4. Mark down parse
   let html = marked.parse(temp) as string
 
-  // 4. Put LaTeX formulas back
-  placeholders.forEach((latexHtml, idx) => {
-    html = html.replace(`LATEXBLOCKPLACEHOLDER${idx}`, latexHtml)
-    html = html.replace(`LATEXINLINEPLACEHOLDER${idx}`, latexHtml)
+  // 5. Put LaTeX and Definition HTML back
+  placeholders.forEach((placeholderHtml, idx) => {
+    html = html.replace(`LATEXBLOCKPLACEHOLDER${idx}`, placeholderHtml)
+    html = html.replace(`LATEXINLINEPLACEHOLDER${idx}`, placeholderHtml)
+    html = html.replace(`DEFPLACEHOLDER${idx}`, placeholderHtml)
   })
 
   return html
@@ -577,6 +566,39 @@ function insertText(prefix: string, suffix: string) {
   setTimeout(() => {
     textarea.focus()
     const newCursorPos = start + prefix.length + selected.length + suffix.length
+    textarea.setSelectionRange(newCursorPos, newCursorPos)
+    triggerAutoSave()
+  }, 50)
+}
+
+function insertDefinitionTooltip() {
+  const textarea = textareaRef.value
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = textarea.value
+  const selected = text.substring(start, end)
+  
+  if (!selected.trim()) {
+    alert("Veuillez sélectionner un mot ou un terme dans le texte pour lui associer une définition.")
+    return
+  }
+  
+  const definition = prompt(`Entrez la définition pour le terme "${selected}" :`)
+  if (definition === null) return // User cancelled
+  
+  if (!definition.trim()) {
+    alert("La définition ne peut pas être vide.")
+    return
+  }
+  
+  const replacement = `[${selected}]{def:${definition.trim()}}`
+  noteBody.value = text.substring(0, start) + replacement + text.substring(end)
+  
+  setTimeout(() => {
+    textarea.focus()
+    const newCursorPos = start + replacement.length
     textarea.setSelectionRange(newCursorPos, newCursorPos)
     triggerAutoSave()
   }, 50)
