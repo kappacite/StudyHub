@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6 max-w-4xl mx-auto animate-fade-in print:max-w-full print:p-0 print:space-y-0">
+  <div class="space-y-6 max-w-6xl mx-auto animate-fade-in print:max-w-full print:p-0 print:space-y-0">
     
     <!-- Top Bar Actions (Hidden when printing) -->
     <div class="flex items-center justify-between no-print">
@@ -24,7 +24,7 @@
           class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-850 transition-all"
         >
           <component :is="isEditMode ? Eye : Edit3" class="w-4 h-4 text-indigo-500" />
-          {{ isEditMode ? 'Aperçu / Lire' : 'Modifier la note' }}
+          {{ isEditMode ? 'Visualiser la fiche' : 'Modifier la fiche' }}
         </button>
         
         <!-- PDF / Print Trigger -->
@@ -58,7 +58,7 @@
 
     <div v-else class="space-y-6 print:space-y-0">
       
-      <!-- Title & Binder Selection Card (Meta) (Hidden when printing if configured, but keeping clean view) -->
+      <!-- Title & Binder Selection Card (Meta) -->
       <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-4 print:border-none print:shadow-none print:p-0 print:mb-6">
         <input 
           v-if="isEditMode"
@@ -89,68 +89,236 @@
         </div>
       </div>
 
-      <!-- WORKSPACE 1: EDIT MODE -->
-      <div v-if="isEditMode" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-sm flex flex-col min-h-[500px]">
-        <!-- Markdown & LaTeX Fast insertion bar -->
-        <div class="flex flex-wrap items-center gap-1.5 p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
-          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Formatage</span>
-          <button 
-            v-for="btn in formatButtons" 
-            :key="btn.label" 
-            type="button" 
-            @click="insertText(btn.prefix, btn.suffix)"
-            class="p-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
-            :title="btn.label"
-          >
-            {{ btn.label }}
-          </button>
+      <!-- WORKSPACE 1: EDIT MODE (STRUCTURED DIVISION) -->
+      <div v-if="isEditMode" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Left Side: Context & Definition blocks (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
           
-          <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
-          
-          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">LaTeX</span>
-          <button 
-            v-for="btn in latexButtons" 
-            :key="btn.label" 
-            type="button" 
-            @click="insertText(btn.prefix, btn.suffix)"
-            class="p-2 text-xs font-mono font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
-            :title="btn.label"
-          >
-            {{ btn.label }}
-          </button>
+          <!-- Context Input Card -->
+          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Compass class="w-4 h-4 text-amber-500" />
+              Contexte de la note
+            </h3>
+            <textarea 
+              v-model="noteContext"
+              placeholder="Historique, contexte historique ou d'apprentissage, cadre théorique..."
+              rows="3"
+              class="w-full p-3 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 resize-y"
+              @input="triggerAutoSave"
+            ></textarea>
+          </div>
+
+          <!-- Definition Input Card -->
+          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <BookOpen class="w-4 h-4 text-emerald-500" />
+              Définitions Clés & Formules
+            </h3>
+            <textarea 
+              v-model="noteDefinition"
+              placeholder="Théorèmes, définitions, formules scientifiques avec $ pour le LaTeX..."
+              rows="5"
+              class="w-full p-3 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 resize-y"
+              @input="triggerAutoSave"
+            ></textarea>
+          </div>
+
+          <!-- Links Input Card (Dynamic selector) -->
+          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-4">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <LinkIcon class="w-4 h-4 text-indigo-500" />
+              Lier à d'autres notes
+            </h3>
+            
+            <div class="flex gap-2">
+              <select 
+                v-model="selectedLinkTarget"
+                class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold"
+              >
+                <option :value="null" disabled>Sélectionner une note...</option>
+                <option 
+                  v-for="item in linkableNotes" 
+                  :key="item.id" 
+                  :value="item.id"
+                >
+                  {{ item.title }}
+                </option>
+              </select>
+              
+              <button 
+                @click="addNoteLink"
+                type="button"
+                class="px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all"
+              >
+                Lier
+              </button>
+            </div>
+
+            <!-- Staged linked notes badges -->
+            <div class="flex flex-wrap gap-1.5">
+              <span 
+                v-for="linkedId in noteLinks" 
+                :key="linkedId"
+                class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs font-bold rounded-lg"
+              >
+                {{ getNoteTitle(linkedId) }}
+                <button 
+                  @click="removeNoteLink(linkedId)" 
+                  type="button" 
+                  class="text-slate-400 hover:text-rose-500 text-[10px]"
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+          </div>
         </div>
 
-        <!-- Raw Markdown Text Area -->
-        <textarea 
-          ref="textareaRef"
-          v-model="content"
-          placeholder="Rédigez en Markdown et LaTeX. Par exemple : \n\n# Titre\nLe premier principe s'écrit :\n$$\\Delta U = Q + W$$\n\nEt en ligne : $\\Delta U$ est la variation."
-          class="flex-1 p-6 outline-none bg-transparent border-0 focus:ring-0 text-sm font-mono text-slate-700 dark:text-slate-300 min-h-[400px] resize-y leading-relaxed"
-          @input="triggerAutoSave"
-        ></textarea>
+        <!-- Right Side: Body Section (7 cols) -->
+        <div class="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm flex flex-col min-h-[480px]">
+          <!-- Section Title Header -->
+          <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <FileText class="w-4 h-4 text-indigo-500" />
+              Section Principale (Notes & Développement)
+            </h3>
+          </div>
+
+          <!-- Markdown & LaTeX Fast insertion bar -->
+          <div class="flex flex-wrap items-center gap-1.5 p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Format</span>
+            <button 
+              v-for="btn in formatButtons" 
+              :key="btn.label" 
+              type="button" 
+              @click="insertText(btn.prefix, btn.suffix)"
+              class="p-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
+              :title="btn.label"
+            >
+              {{ btn.label }}
+            </button>
+            
+            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+            
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">LaTeX</span>
+            <button 
+              v-for="btn in latexButtons" 
+              :key="btn.label" 
+              type="button" 
+              @click="insertText(btn.prefix, btn.suffix)"
+              class="p-2 text-xs font-mono font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
+              :title="btn.label"
+            >
+              {{ btn.label }}
+            </button>
+          </div>
+
+          <!-- Raw Markdown Text Area for general note body -->
+          <textarea 
+            ref="textareaRef"
+            v-model="noteBody"
+            placeholder="Corps principal de la note..."
+            class="flex-1 p-6 outline-none bg-transparent border-0 focus:ring-0 text-sm font-mono text-slate-700 dark:text-slate-300 min-h-[380px] resize-y leading-relaxed"
+            @input="triggerAutoSave"
+          ></textarea>
+        </div>
       </div>
 
-      <!-- WORKSPACE 2: PREVIEW / READ MODE -->
-      <div 
-        v-else 
-        class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-12 shadow-sm min-h-[500px] print-container print:border-none print:shadow-none print:p-0"
-      >
-        <!-- Compiled Markdown & LaTeX Output -->
+      <!-- WORKSPACE 2: PREVIEW / READ MODE (CORNELL / CARD SYSTEM) -->
+      <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8 print:block print:space-y-6">
+        
+        <!-- Left Side (Context & definitions) (4 cols) -->
+        <div class="lg:col-span-4 space-y-6 print:w-full print:block print:mb-6">
+          
+          <!-- Context Render -->
+          <div 
+            v-if="noteContext"
+            class="bg-amber-50/50 border border-amber-100 rounded-3xl p-5 shadow-sm dark:bg-amber-950/10 dark:border-amber-950/30 print:border-amber-200 print:bg-[#fffbeb]"
+          >
+            <h3 class="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+              <Compass class="w-4 h-4" />
+              Contexte
+            </h3>
+            <div 
+              v-html="renderMarkup(noteContext)"
+              class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
+            ></div>
+          </div>
+
+          <!-- Definitions Render -->
+          <div 
+            v-if="noteDefinition"
+            class="bg-emerald-50/50 border border-emerald-100 rounded-3xl p-5 shadow-sm dark:bg-emerald-950/10 dark:border-emerald-950/30 print:border-emerald-200 print:bg-[#ecfdf5]"
+          >
+            <h3 class="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+              <BookOpen class="w-4 h-4" />
+              Définitions clés
+            </h3>
+            <div 
+              v-html="renderMarkup(noteDefinition)"
+              class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
+            ></div>
+          </div>
+
+          <!-- Linked Notes Badges Render -->
+          <div v-if="noteLinks.length > 0" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm no-print">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-3">
+              <LinkIcon class="w-4.5 h-4.5 text-indigo-500" />
+              Notes liées
+            </h3>
+            <div class="flex flex-col gap-2">
+              <button 
+                v-for="linkedId in noteLinks" 
+                :key="linkedId"
+                @click="navigateToNote(linkedId)"
+                class="flex items-center justify-between p-2.5 text-left rounded-xl bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-850/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-800 transition-colors text-xs font-semibold"
+              >
+                <span class="truncate pr-2">{{ getNoteTitle(linkedId) }}</span>
+                <ChevronRight class="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Body Render (8 cols) -->
         <div 
-          v-html="renderedContent" 
-          class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-slate-300 print:text-black markdown-body"
-        ></div>
+          class="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-10 shadow-sm min-h-[500px] print-container print:w-full print:border-none print:shadow-none print:p-0"
+        >
+          <!-- Section Title Header in Preview -->
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-6 border-b border-slate-100 dark:border-slate-800/80 pb-3 no-print">
+            <FileText class="w-4 h-4 text-indigo-500" />
+            Section Principale (Notes & Développement)
+          </h3>
+
+          <!-- Compiled Markdown & LaTeX Body Output -->
+          <div 
+            v-html="renderMarkup(noteBody)" 
+            class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-slate-300 print:text-black markdown-body"
+          ></div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotesStore } from '../../stores/notes'
 import { useBindersStore } from '../../stores/binders'
-import { ChevronLeft, Eye, Edit3, FileDown } from '@lucide/vue'
+import { 
+  ChevronLeft, 
+  Eye, 
+  Edit3, 
+  FileDown,
+  BookOpen,
+  Compass,
+  Link as LinkIcon,
+  ChevronRight,
+  FileText
+} from '@lucide/vue'
 import { marked } from 'marked'
 import katex from 'katex'
 
@@ -162,16 +330,23 @@ const bindersStore = useBindersStore()
 const route = useRoute()
 const router = useRouter()
 
-const noteId = Number(route.params.id)
+const noteId = ref(Number(route.params.id))
 const loading = ref(true)
 const isSaving = ref(false)
 const saveStatus = ref('Enregistré')
-const isEditMode = ref(false) // Default to read-mode for visualization first, or edit
+const isEditMode = ref(false)
 
 const title = ref('')
 const binderId = ref<number | null>(null)
-const content = ref('')
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
+
+// Structured Notes Divisions
+const noteContext = ref('')
+const noteDefinition = ref('')
+const noteBody = ref('')
+const noteLinks = ref<number[]>([])
+
+const selectedLinkTarget = ref<number | null>(null)
 
 let autoSaveTimer: any = null
 
@@ -179,8 +354,7 @@ const formatButtons = [
   { label: 'Titre H1', prefix: '# ', suffix: '' },
   { label: 'Titre H2', prefix: '## ', suffix: '' },
   { label: 'Gras', prefix: '**', suffix: '**' },
-  { label: 'Italique', prefix: '*', suffix: '*' },
-  { label: 'Liste', prefix: '* ', suffix: '' }
+  { label: 'Italique', prefix: '*', suffix: '*' }
 ]
 
 const latexButtons = [
@@ -188,17 +362,128 @@ const latexButtons = [
   { label: 'En Ligne', prefix: '$', suffix: '$' },
   { label: 'Fraction', prefix: '\\frac{', suffix: '}{}' },
   { label: 'Somme', prefix: '\\sum_{', suffix: '}^{}' },
-  { label: 'Intégrale', prefix: '\\int_{', suffix: '}^{}' },
-  { label: 'Grec (Δ)', prefix: '\\Delta', suffix: '' }
+  { label: 'Intégrale', prefix: '\\int_{', suffix: '}^{}' }
 ]
 
-// Render markdown and LaTeX combined string
-const renderedContent = computed(() => {
-  const text = content.value || ''
+// Reload components when route parameter changes (for linked notes navigation)
+watch(() => route.params.id, async (newVal) => {
+  if (newVal) {
+    noteId.value = Number(newVal)
+    await loadNoteDetails()
+  }
+})
+
+onMounted(async () => {
+  await notesStore.fetchNotes()
+  await bindersStore.fetchBinders()
+  await loadNoteDetails()
+})
+
+onBeforeUnmount(() => {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer)
+})
+
+async function loadNoteDetails() {
+  loading.value = true
+  isSaving.value = false
+  saveStatus.value = 'Enregistré'
+  
+  const note = await notesStore.fetchNoteById(noteId.value)
+  if (note) {
+    title.value = note.title
+    binderId.value = note.binder_id
+    
+    // Parse structured divisions
+    const parsed = parseStructuredNote(note.content)
+    noteContext.value = parsed.context
+    noteDefinition.value = parsed.definition
+    noteBody.value = parsed.body
+    noteLinks.value = parsed.linkedIds
+    
+    if (note.title === 'Note sans titre') {
+      isEditMode.value = true
+    } else {
+      isEditMode.value = false
+    }
+  }
+  loading.value = false
+}
+
+// Structured Divisions Parsers
+function parseStructuredNote(rawContent: string) {
+  let contextVal = ''
+  let definitionVal = ''
+  let bodyVal = rawContent
+  let linkedIdsVal: number[] = []
+
+  // Extraire les liens
+  const linksMatch = rawContent.match(/<!-- LINKED_NOTES: ([\d,\s]*) -->/)
+  if (linksMatch) {
+    linkedIdsVal = linksMatch[1].split(',')
+      .map(id => Number(id.trim()))
+      .filter(id => !isNaN(id) && id > 0)
+  }
+
+  // Extraire le contexte
+  const contextMatch = rawContent.match(/<!-- SECTION_CONTEXT -->([\s\S]*?)<!-- END_SECTION_CONTEXT -->/)
+  if (contextMatch) {
+    contextVal = contextMatch[1].trim()
+  }
+
+  // Extraire la définition
+  const defMatch = rawContent.match(/<!-- SECTION_DEFINITION -->([\s\S]*?)<!-- END_SECTION_DEFINITION -->/)
+  if (defMatch) {
+    definitionVal = defMatch[1].trim()
+  }
+
+  // Extraire le corps
+  const bodyMatch = rawContent.match(/<!-- SECTION_BODY -->([\s\S]*?)<!-- END_SECTION_BODY -->/)
+  if (bodyMatch) {
+    bodyVal = bodyMatch[1].trim()
+  } else {
+    // Nettoyer si ancienne note simple
+    bodyVal = rawContent
+      .replace(/<!-- SECTION_CONTEXT -->[\s\S]*?<!-- END_SECTION_CONTEXT -->/g, '')
+      .replace(/<!-- SECTION_DEFINITION -->[\s\S]*?<!-- END_SECTION_DEFINITION -->/g, '')
+      .replace(/<!-- LINKED_NOTES: [\d,\s]* -->/g, '')
+      .trim()
+  }
+
+  return {
+    context: contextVal,
+    definition: definitionVal,
+    body: bodyVal,
+    linkedIds: linkedIdsVal
+  }
+}
+
+function compileStructuredNote() {
+  let raw = ''
+  
+  if (noteContext.value.trim()) {
+    raw += `<!-- SECTION_CONTEXT -->\n${noteContext.value.trim()}\n<!-- END_SECTION_CONTEXT -->\n\n`
+  }
+  
+  if (noteDefinition.value.trim()) {
+    raw += `<!-- SECTION_DEFINITION -->\n${noteDefinition.value.trim()}\n<!-- END_SECTION_DEFINITION -->\n\n`
+  }
+  
+  raw += `<!-- SECTION_BODY -->\n${noteBody.value.trim()}\n<!-- END_SECTION_BODY -->\n\n`
+  
+  if (noteLinks.value.length > 0) {
+    raw += `<!-- LINKED_NOTES: ${noteLinks.value.join(', ')} -->`
+  }
+  
+  return raw
+}
+
+// Rendering marked + LaTeX
+function renderMarkup(text: string): string {
+  const markdownText = text || ''
   const placeholders: string[] = []
 
   // 1. Double dollars $$ (Display equations block)
-  let temp = text.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => {
+  let temp = markdownText.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => {
     try {
       const html = katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false })
       const key = `LATEXBLOCKPLACEHOLDER${placeholders.length}`
@@ -231,30 +516,7 @@ const renderedContent = computed(() => {
   })
 
   return html
-})
-
-onMounted(async () => {
-  await bindersStore.fetchBinders()
-  const note = await notesStore.fetchNoteById(noteId)
-  
-  if (note) {
-    title.value = note.title
-    binderId.value = note.binder_id
-    content.value = note.content
-    
-    // If the note content starts with HTML tag, keep editMode false, but if it is raw, adapt.
-    // In our new mock, notes are in markdown, so we can display them.
-    // If the note title is empty or "Note sans titre", open directly in edit mode for ease of use.
-    if (note.title === 'Note sans titre') {
-      isEditMode.value = true
-    }
-  }
-  loading.value = false
-})
-
-onBeforeUnmount(() => {
-  if (autoSaveTimer) clearTimeout(autoSaveTimer)
-})
+}
 
 function goBack() {
   saveNote()
@@ -272,7 +534,34 @@ function getBinderName(bId: number | null): string {
   return b ? b.name : 'Général (Aucun)'
 }
 
-// Textarea insertion helpers
+// Linked Notes logic
+const linkableNotes = computed(() => {
+  return notesStore.notes.filter(n => n.id !== noteId.value && !noteLinks.value.includes(n.id))
+})
+
+function addNoteLink() {
+  if (selectedLinkTarget.value !== null) {
+    noteLinks.value.push(selectedLinkTarget.value)
+    selectedLinkTarget.value = null
+    triggerAutoSave()
+  }
+}
+
+function removeNoteLink(id: number) {
+  noteLinks.value = noteLinks.value.filter(linkedId => linkedId !== id)
+  triggerAutoSave()
+}
+
+function getNoteTitle(id: number): string {
+  const n = notesStore.notes.find(x => x.id === id)
+  return n ? n.title : 'Note inconnue'
+}
+
+function navigateToNote(id: number) {
+  router.push(`/notes/${id}`)
+}
+
+// Textarea insertion helpers (inserts inside noteBody)
 function insertText(prefix: string, suffix: string) {
   const textarea = textareaRef.value
   if (!textarea) return
@@ -283,9 +572,8 @@ function insertText(prefix: string, suffix: string) {
   const selected = text.substring(start, end)
   
   const replacement = prefix + selected + suffix
-  content.value = text.substring(0, start) + replacement + text.substring(end)
+  noteBody.value = text.substring(0, start) + replacement + text.substring(end)
   
-  // Refocus and place cursor
   setTimeout(() => {
     textarea.focus()
     const newCursorPos = start + prefix.length + selected.length + suffix.length
@@ -307,9 +595,13 @@ function triggerAutoSave() {
 async function saveNote() {
   isSaving.value = true
   saveStatus.value = 'Sauvegarde...'
+  
+  // Re-build markdown raw note structure
+  const rawContent = compileStructuredNote()
+  
   try {
-    await notesStore.updateNote(noteId, title.value, content.value)
-    const index = notesStore.notes.findIndex(n => n.id === noteId)
+    await notesStore.updateNote(noteId.value, title.value, rawContent)
+    const index = notesStore.notes.findIndex(n => n.id === noteId.value)
     if (index !== -1) {
       notesStore.notes[index].binder_id = binderId.value
     }
@@ -321,67 +613,48 @@ async function saveNote() {
   }
 }
 
-// Print / PDF generation trigger
 function printNote() {
   window.print()
 }
 </script>
 
 <style>
-/* CSS styles for LaTeX and Markdown output integration */
+/* Markdown formatting body styling */
 .markdown-body h1 {
   @apply text-2xl font-extrabold text-slate-900 dark:text-white mt-6 mb-4 border-b border-slate-100 dark:border-slate-800 pb-2;
 }
-
 .markdown-body h2 {
   @apply text-xl font-bold text-slate-800 dark:text-slate-100 mt-5 mb-3;
 }
-
 .markdown-body h3 {
   @apply text-lg font-bold text-slate-800 dark:text-slate-200 mt-4 mb-2;
 }
-
 .markdown-body p {
   @apply text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4;
 }
-
 .markdown-body ul {
   @apply list-disc pl-6 mb-4 space-y-1.5 text-sm;
 }
-
 .markdown-body ol {
   @apply list-decimal pl-6 mb-4 space-y-1.5 text-sm;
 }
-
 .markdown-body blockquote {
   @apply border-l-4 border-indigo-500 pl-4 italic text-slate-500 dark:text-slate-400 my-4;
 }
-
 .markdown-body strong {
   @apply font-bold text-slate-900 dark:text-white;
 }
 
-/* Custom styling for KaTeX print compatibility */
 .katex-display {
-  @apply my-6 p-4 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800/50 overflow-x-auto;
+  @apply my-4 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800/50 overflow-x-auto;
 }
 
-/* Print CSS Configurations */
+/* Print CSS Settings */
 @media print {
-  /* Hide UI components completely */
-  aside, 
-  header, 
-  nav, 
-  button, 
-  select, 
-  .no-print {
+  aside, header, nav, button, select, no-print, .no-print {
     display: none !important;
   }
-
-  /* Reset main layouts wrapper */
-  .min-h-screen, 
-  main, 
-  .max-w-4xl {
+  .min-h-screen, main, .max-w-6xl {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
@@ -389,26 +662,18 @@ function printNote() {
     color: black !important;
     box-shadow: none !important;
   }
-  
   .print-container {
     border: none !important;
     box-shadow: none !important;
     background: transparent !important;
     padding: 0 !important;
   }
-  
-  .markdown-body p, 
-  .markdown-body ul, 
-  .markdown-body ol {
+  .markdown-body p, .markdown-body ul, .markdown-body ol {
     color: #111827 !important;
   }
-  
-  .markdown-body h1, 
-  .markdown-body h2, 
-  .markdown-body h3 {
+  .markdown-body h1, .markdown-body h2, .markdown-body h3 {
     color: black !important;
   }
-
   .katex-display {
     background: #f8fafc !important;
     border: 1px solid #e2e8f0 !important;

@@ -71,7 +71,7 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 #### 🗂️ Modules applicatifs
 * **Classeurs (Binders)** : Explorateur de dossiers interactif affichant récursivement les classeurs et documents associés (Notes et Decks).
 * **Flashcards (Decks)** : Liste des decks de cartes mémoire et interface de révision avec animation flip 3D en pur CSS, avec intégration de l'algorithme d'apprentissage espacé **SM-2** (0 à 5).
-* **Notes** : Liste et éditeur WYSIWYG supportant simultanément le Markdown (`marked.js`) et le LaTeX (`katex.js`). Correction du bug de parsing lié à l'utilisation des tirets bas dans les placeholders temporaires.
+* **Notes** : Liste et éditeur WYSIWYG supportant simultanément le Markdown (`marked.js`) et le LaTeX (`katex.js`). Ajout des **Espaces Intelligents** (séparations de fiches structurées : Définition, Contexte, Liens croisés, et Section principale) avec parsing réversible au format de stockage Markdown brut et gestion des liens interactifs cliquables pour naviguer de note en note. Correction du bug de parsing lié à l'utilisation des tirets bas dans les placeholders temporaires.
 * **Diagrammes** : Éditeur visuel interactif en drag and drop codé en SVG (permettant de créer, nommer, colorer des formes et tracer des liaisons dynamiques à la main), doublé du mode Mermaid.js textuel.
 * **PDFs** : Visualiseur de documents A4 avec simulation d'import, gestion du zoom, de la pagination, et un système d'annotations géoréférencées (X/Y) épinglées sur les pages.
 
