@@ -1,0 +1,77 @@
+from typing import List, Tuple, Optional
+from app.dao.deck_dao import DeckDAO
+from app.dao.binder_dao import BinderDAO
+from app.models.deck import Deck
+from app.schemas.deck_schema import DeckCreate, DeckUpdate, DeckResponse
+from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
+
+class DeckService:
+    def __init__(self, deck_dao: DeckDAO, binder_dao: BinderDAO):
+        self._deck_dao = deck_dao
+        self._binder_dao = binder_dao
+
+    def _get_deck_or_404(self, deck_id: int, user_id: int) -> Deck:
+        deck = self._deck_dao.get_by_id(deck_id)
+        if not deck:
+            raise ResourceNotFoundError("Deck introuvable.")
+        if deck.user_id != user_id:
+            raise ForbiddenError("Accès interdit à ce deck.")
+        return deck
+
+    def create_deck(self, user_id: int, data: DeckCreate) -> DeckResponse:
+        # Si un binder_id est spécifié, vérifier qu'il appartient bien à l'utilisateur
+        if data.binder_id is not None:
+            binder = self._binder_dao.get_by_id(data.binder_id)
+            if not binder or binder.user_id != user_id:
+                raise ForbiddenError("Accès interdit à ce classeur.")
+                
+        deck = Deck(
+            name=data.name,
+            description=data.description,
+            user_id=user_id,
+            binder_id=data.binder_id
+        )
+        created = self._deck_dao.create(deck)
+        return DeckResponse.model_validate(created)
+
+    def get_decks(
+        self, 
+        user_id: int, 
+        binder_id: Optional[int] = None, 
+        search: Optional[str] = None, 
+        page: int = 1, 
+        per_page: int = 20
+    ) -> Tuple[List[DeckResponse], int]:
+        offset = (page - 1) * per_page
+        decks = self._deck_dao.search_decks(user_id, binder_id, search, limit=per_page, offset=offset)
+        total = self._deck_dao.count_decks(user_id, binder_id, search)
+        
+        return [DeckResponse.model_validate(d) for d in decks], total
+
+    def get_deck(self, user_id: int, deck_id: int) -> DeckResponse:
+        deck = self._get_deck_or_404(deck_id, user_id)
+        return DeckResponse.model_validate(deck)
+
+    def update_deck(self, user_id: int, deck_id: int, data: DeckUpdate) -> DeckResponse:
+        deck = self._get_deck_or_404(deck_id, user_id)
+        
+        if data.name is not None:
+            deck.name = data.name
+            
+        if data.description is not None:
+            deck.description = data.description
+            
+        if data.binder_id is not None:
+            binder = self._binder_dao.get_by_id(data.binder_id)
+            if not binder or binder.user_id != user_id:
+                raise ForbiddenError("Accès interdit à ce classeur.")
+            deck.binder_id = data.binder_id
+        elif "binder_id" in data.model_fields_set and data.binder_id is None:
+            deck.binder_id = None
+            
+        updated = self._deck_dao.update(deck)
+        return DeckResponse.model_validate(updated)
+
+    def delete_deck(self, user_id: int, deck_id: int) -> None:
+        deck = self._get_deck_or_404(deck_id, user_id)
+        self._deck_dao.delete(deck)
