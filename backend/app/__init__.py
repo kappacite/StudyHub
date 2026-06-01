@@ -56,4 +56,17 @@ def create_app(config_name=None):
         flask_app.register_blueprint(stats_bp, url_prefix="/api/v1/stats")
         flask_app.register_blueprint(health_bp, url_prefix="/api/v1/health")
         
+        # Auto-create tables in development mode if they don't exist
+        if flask_app.config.get("DEBUG") or flask_app.config.get("TESTING"):
+            # Import models to ensure they are registered
+            import app.models.user
+            import app.models.binder
+            import app.models.deck
+            import app.models.flashcard
+            import app.models.note
+            import app.models.diagram
+            import app.models.pdf_document
+            import app.models.study_session
+            db.create_all()
+            
     return flask_app

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import api from '../services/api'
 
 export interface Note {
   id: number
@@ -10,101 +11,97 @@ export interface Note {
   updated_at: string
 }
 
-export const useNotesStore = defineStore('notes', () => {
-  const notes = ref<Note[]>([
-    {
-      id: 1,
-      binder_id: 1,
-      title: 'Résumé de thermodynamique',
-      content: '# Thermodynamique : Les Principes\n\nLa thermodynamique est la branche de la physique qui étudie les relations entre la chaleur, le travail et les autres formes d\'énergie.\n\n## Premier Principe\nLe premier principe est le principe de conservation de l\'énergie :\n$$\\Delta U = Q + W$$\n\nOù :\n* $\\Delta U$ : Énergie interne du système\n* $Q$ : Chaleur échangée\n* $W$ : Travail mécanique échangé\n\n## Deuxième Principe\nIl introduit la notion d\'entropie $S$ pour caractériser l\'irréversibilité des transformations :\n$$\\Delta S \\ge \\int \\frac{\\delta Q}{T}$$',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-      updated_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
-    },
-    {
-      id: 2,
-      binder_id: 2,
-      title: 'Notes physiologie cardiaque',
-      content: '# Physiologie Cardiaque\n\nLe coeur est une double pompe musculaire auto-excitée.\n\nLe cycle cardiaque comprend deux phases majeures :\n1. **La systole** : phase de contraction et d\'éjection du sang.\n2. **La diastole** : phase de relâchement et de remplissage des cavités.\n\nLa pression artérielle moyenne ($PAM$) peut être estimée par :\n$$PAM \\approx PAD + \\frac{1}{3}(PAS - PAD)$$',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-      updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString()
-    },
-    {
-      id: 3,
-      binder_id: null,
-      title: 'Idées de projet de groupe',
-      content: '# Projet de Web Mobile\n\nIdées pour le projet de fin d\'année :\n* Une application de covoiturage pour étudiants.\n* **StudyHub** : Une plateforme tout-en-un avec flashcards, notes, diagrammes et PDFs (sélectionné !).',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ])
+interface NotesResponse {
+  data: Note[]
+}
 
+export const useNotesStore = defineStore('notes', () => {
+  const notes = ref<Note[]>([])
   const loading = ref(false)
 
   async function fetchNotes() {
     loading.value = true
-    return new Promise<Note[]>((resolve) => {
-      setTimeout(() => {
-        loading.value = false
-        resolve(notes.value)
-      }, 500)
-    })
+    try {
+      const response = await api.get<NotesResponse>('/notes?per_page=1000')
+      notes.value = response.data.data
+      return notes.value
+    } catch (error) {
+      console.error('Erreur lors du chargement des notes', error)
+      throw error
+    } finally {
+      loading.value = false
+    }
   }
 
   async function fetchNoteById(id: number) {
     loading.value = true
-    return new Promise<Note | undefined>((resolve) => {
-      setTimeout(() => {
-        loading.value = false
-        resolve(notes.value.find(n => n.id === id))
-      }, 300)
-    })
+    try {
+      const response = await api.get<Note>(`/notes/${id}`)
+      const index = notes.value.findIndex(n => n.id === id)
+      if (index !== -1) {
+        notes.value[index] = response.data
+      } else {
+        notes.value.push(response.data)
+      }
+      return response.data
+    } catch (error) {
+      console.error(`Erreur de chargement de la note ${id}`, error)
+      // Fallback local search
+      return notes.value.find(n => n.id === id)
+    } finally {
+      loading.value = false
+    }
   }
 
   async function createNote(title: string, content: string = '', binderId: number | null = null) {
     loading.value = true
-    return new Promise<Note>((resolve) => {
-      setTimeout(() => {
-        const newNote: Note = {
-          id: notes.value.length ? Math.max(...notes.value.map(n => n.id)) + 1 : 1,
-          binder_id: binderId,
-          title,
-          content,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        notes.value.push(newNote)
-        loading.value = false
-        resolve(newNote)
-      }, 600)
-    })
+    try {
+      const response = await api.post<Note>('/notes', {
+        title,
+        content,
+        binder_id: binderId
+      })
+      const newNote = response.data
+      notes.value.push(newNote)
+      return newNote
+    } catch (error) {
+      console.error('Erreur de création de la note', error)
+      throw error
+    } finally {
+      loading.value = false
+    }
   }
 
   async function updateNote(id: number, title: string, content: string) {
-    return new Promise<Note>((resolve, reject) => {
-      setTimeout(() => {
-        const index = notes.value.findIndex(n => n.id === id)
-        if (index !== -1) {
-          notes.value[index] = {
-            ...notes.value[index],
-            title,
-            content,
-            updated_at: new Date().toISOString()
-          }
-          resolve(notes.value[index])
-        } else {
-          reject(new Error('Note introuvable'))
-        }
-      }, 400)
-    })
+    try {
+      const note = notes.value.find(n => n.id === id)
+      const binder_id = note ? note.binder_id : null
+      
+      const response = await api.put<Note>(`/notes/${id}`, {
+        title,
+        content,
+        binder_id
+      })
+      const updatedNote = response.data
+      const index = notes.value.findIndex(n => n.id === id)
+      if (index !== -1) {
+        notes.value[index] = updatedNote
+      }
+      return updatedNote
+    } catch (error) {
+      console.error('Erreur de mise à jour de la note', error)
+      throw error
+    }
   }
 
   async function deleteNote(id: number) {
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        notes.value = notes.value.filter(n => n.id !== id)
-        resolve()
-      }, 400)
-    })
+    try {
+      await api.delete(`/notes/${id}`)
+      notes.value = notes.value.filter(n => n.id !== id)
+    } catch (error) {
+      console.error('Erreur de suppression de la note', error)
+      throw error
+    }
   }
 
   return {

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import api from '../services/api'
 
 export interface User {
   id: number
@@ -8,94 +9,104 @@ export interface User {
   created_at: string
 }
 
+interface LoginResponse {
+  access_token: string
+  refresh_token: string
+  user: User
+}
+
+interface RefreshResponse {
+  access_token: string
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const token = ref<string | null>(null)
+  const refreshToken = ref<string | null>(null)
 
   const isAuthenticated = computed(() => !!token.value)
 
-  // Initialisation à partir du localStorage
   function init() {
     const savedUser = localStorage.getItem('sh_user')
     const savedToken = localStorage.getItem('sh_token')
-    if (savedUser && savedToken) {
+    const savedRefreshToken = localStorage.getItem('sh_refresh_token')
+    if (savedUser && savedToken && savedRefreshToken) {
       user.value = JSON.parse(savedUser)
       token.value = savedToken
+      refreshToken.value = savedRefreshToken
     }
   }
 
   async function login(email: string, password: string): Promise<void> {
-    // Simuler un appel réseau
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (email.includes('@') && password.length >= 6) {
-          const mockUser: User = {
-            id: 1,
-            email,
-            username: email.split('@')[0],
-            created_at: new Date().toISOString()
-          }
-          const mockToken = 'mock-jwt-token-xyz-12345'
-          
-          user.value = mockUser
-          token.value = mockToken
-          
-          localStorage.setItem('sh_user', JSON.stringify(mockUser))
-          localStorage.setItem('sh_token', mockToken)
-          resolve()
-        } else {
-          reject(new Error('Email ou mot de passe incorrect (le mot de passe doit comporter au moins 6 caractères)'))
-        }
-      }, 1000)
-    })
+    try {
+      const response = await api.post<LoginResponse>('/auth/login', { email, password })
+      const { access_token, refresh_token, user: loggedUser } = response.data
+      
+      token.value = access_token
+      refreshToken.value = refresh_token
+      user.value = loggedUser
+      
+      localStorage.setItem('sh_user', JSON.stringify(loggedUser))
+      localStorage.setItem('sh_token', access_token)
+      localStorage.setItem('sh_refresh_token', refresh_token)
+    } catch (error: any) {
+      const msg = error.response?.data?.error?.message || 'Identifiants ou mot de passe incorrect.'
+      throw new Error(msg)
+    }
   }
 
   async function register(email: string, username: string, password: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (email.includes('@') && username.length >= 3 && password.length >= 6) {
-          const mockUser: User = {
-            id: 1,
-            email,
-            username,
-            created_at: new Date().toISOString()
-          }
-          const mockToken = 'mock-jwt-token-xyz-12345'
-          
-          user.value = mockUser
-          token.value = mockToken
-          
-          localStorage.setItem('sh_user', JSON.stringify(mockUser))
-          localStorage.setItem('sh_token', mockToken)
-          resolve()
-        } else {
-          reject(new Error('Informations d\'inscription invalides'))
+    try {
+      await api.post('/auth/register', { email, username, password })
+      // Auto login after registration
+      await login(email, password)
+    } catch (error: any) {
+      const msg = error.response?.data?.error?.message || 'Erreur lors de l\'inscription.'
+      throw new Error(msg)
+    }
+  }
+
+  async function logout(): Promise<void> {
+    try {
+      if (token.value) {
+        await api.post('/auth/logout')
+      }
+    } catch (e) {
+      // Ignore network errors on logout
+    } finally {
+      user.value = null
+      token.value = null
+      refreshToken.value = null
+      localStorage.removeItem('sh_user')
+      localStorage.removeItem('sh_token')
+      localStorage.removeItem('sh_refresh_token')
+    }
+  }
+
+  async function refresh(): Promise<void> {
+    try {
+      if (!refreshToken.value) throw new Error('Pas de refresh token')
+      
+      // Call endpoint by sending the refresh token in Authorization header
+      const response = await api.post<RefreshResponse>('/auth/refresh', {}, {
+        headers: {
+          Authorization: `Bearer ${refreshToken.value}`
         }
-      }, 1000)
-    })
-  }
-
-  function logout() {
-    user.value = null
-    token.value = null
-    localStorage.removeItem('sh_user')
-    localStorage.removeItem('sh_token')
-  }
-
-  async function refresh() {
-    // Simuler le rafraîchissement du token
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        token.value = 'mock-jwt-token-refreshed-' + Date.now()
-        localStorage.setItem('sh_token', token.value)
-        resolve()
-      }, 500)
-    })
+      })
+      
+      const { access_token } = response.data
+      token.value = access_token
+      localStorage.setItem('sh_token', access_token)
+    } catch (error) {
+      logout()
+      throw error
+    }
   }
 
   return {
     user,
     token,
+    refreshToken,
     isAuthenticated,
     init,
     login,

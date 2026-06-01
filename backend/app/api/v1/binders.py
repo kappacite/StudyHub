@@ -17,6 +17,14 @@ binder_service = BinderService(binder_dao)
 def get_binders():
     user_id = int(get_jwt_identity())
     
+    # Check if all binders are requested
+    all_binders = request.args.get("all", "false").lower() == "true"
+    if all_binders:
+        binders = binder_service.get_all_binders_flat(user_id)
+        return jsonify({
+            "data": [b.model_dump() for b in binders]
+        }), 200
+
     # Query parameters
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)

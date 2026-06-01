@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import api from '../services/api'
 
 export interface Binder {
   id: number
@@ -8,79 +9,80 @@ export interface Binder {
   created_at: string
 }
 
-export const useBindersStore = defineStore('binders', () => {
-  const binders = ref<Binder[]>([
-    { id: 1, parent_id: null, name: 'Semestre 1', created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString() },
-    { id: 2, parent_id: null, name: 'Sciences Médicales', created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString() },
-    { id: 3, parent_id: 1, name: 'Physique L1', created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25).toISOString() },
-    { id: 4, parent_id: 1, name: 'Mathématiques Algèbre', created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 24).toISOString() },
-    { id: 5, parent_id: 2, name: 'Anatomie Cardiaque', created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString() }
-  ])
+interface BindersResponse {
+  data: Binder[]
+}
 
+export const useBindersStore = defineStore('binders', () => {
+  const binders = ref<Binder[]>([])
   const loading = ref(false)
 
   async function fetchBinders() {
     loading.value = true
-    return new Promise<Binder[]>((resolve) => {
-      setTimeout(() => {
-        loading.value = false
-        resolve(binders.value)
-      }, 400)
-    })
+    try {
+      const response = await api.get<BindersResponse>('/binders?all=true')
+      binders.value = response.data.data
+      return binders.value
+    } catch (error) {
+      console.error('Erreur de chargement des classeurs', error)
+      throw error
+    } finally {
+      loading.value = false
+    }
   }
 
   async function createBinder(name: string, parentId: number | null = null) {
     loading.value = true
-    return new Promise<Binder>((resolve) => {
-      setTimeout(() => {
-        const newBinder: Binder = {
-          id: binders.value.length ? Math.max(...binders.value.map(b => b.id)) + 1 : 1,
-          parent_id: parentId,
-          name,
-          created_at: new Date().toISOString()
-        }
-        binders.value.push(newBinder)
-        loading.value = false
-        resolve(newBinder)
-      }, 500)
-    })
+    try {
+      const response = await api.post<Binder>('/binders', {
+        name,
+        parent_id: parentId
+      })
+      const newBinder = response.data
+      binders.value.push(newBinder)
+      return newBinder
+    } catch (error) {
+      console.error('Erreur de création du classeur', error)
+      throw error
+    } finally {
+      loading.value = false
+    }
   }
 
   async function updateBinder(id: number, name: string) {
-    return new Promise<Binder>((resolve, reject) => {
-      setTimeout(() => {
-        const index = binders.value.findIndex(b => b.id === id)
-        if (index !== -1) {
-          binders.value[index] = { ...binders.value[index], name }
-          resolve(binders.value[index])
-        } else {
-          reject(new Error('Classeur introuvable'))
-        }
-      }, 300)
-    })
+    try {
+      const response = await api.put<Binder>(`/binders/${id}`, { name })
+      const updatedBinder = response.data
+      const index = binders.value.findIndex(b => b.id === id)
+      if (index !== -1) {
+        binders.value[index] = updatedBinder
+      }
+      return updatedBinder
+    } catch (error) {
+      console.error('Erreur de mise à jour du classeur', error)
+      throw error
+    }
   }
 
   async function deleteBinder(id: number) {
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        // Supprimer récursivement ou juste orpheliniser les enfants ?
-        // Dans une logique propre, on supprime le classeur. Les classeurs enfants de premier niveau sont orphelinisés ou supprimés.
-        // Ici, supprimons aussi les sous-dossiers pour rester propre.
-        const idsToDelete = [id]
-        const findChildren = (parentId: number) => {
-          binders.value.forEach(b => {
-            if (b.parent_id === parentId) {
-              idsToDelete.push(b.id)
-              findChildren(b.id)
-            }
-          })
-        }
-        findChildren(id)
-        
-        binders.value = binders.value.filter(b => !idsToDelete.includes(b.id))
-        resolve()
-      }, 400)
-    })
+    try {
+      await api.delete(`/binders/${id}`)
+      // Supprimer localement le classeur et tous ses enfants récursivement
+      const idsToDelete = [id]
+      const findChildren = (parentId: number) => {
+        binders.value.forEach(b => {
+          if (b.parent_id === parentId) {
+            idsToDelete.push(b.id)
+            findChildren(b.id)
+          }
+        })
+      }
+      findChildren(id)
+      binders.value = binders.value.filter(b => !idsToDelete.includes(b.id))
+    } catch (error) {
+      console.error('Erreur de suppression du classeur', error)
+      throw error
+    }
   }
 
   return {

@@ -64,3 +64,9 @@ class BinderService:
     def delete_binder(self, user_id: int, binder_id: int) -> None:
         binder = self._get_binder_or_404(binder_id, user_id)
         self._binder_dao.delete(binder)
+
+    def get_all_binders_flat(self, user_id: int) -> List[BinderResponse]:
+        binders = self._binder_dao.get_all(user_id, limit=1000)
+        return [BinderResponse.model_validate(b) for b in binders]
+
+
