@@ -1,10 +1,12 @@
 import os
 from flask import Flask
+from flask_cors import CORS
 from app.config import config_by_name
 from app.extensions import db, jwt, migrate, limiter
 
 def create_app(config_name=None):
     flask_app = Flask(__name__)
+    CORS(flask_app, resources={r"/api/*": {"origins": "*"}})
     
     if not config_name:
         config_name = os.environ.get("FLASK_ENV", "development")
