@@ -1,229 +1,266 @@
 <template>
-  <div class="space-y-6 max-w-6xl mx-auto animate-fade-in print:max-w-full print:p-0 print:space-y-0">
+  <!-- Loading State -->
+  <div v-if="loading" class="flex flex-col items-center justify-center py-20 gap-3 no-print h-screen bg-slate-50 dark:bg-[#070913]">
+    <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    <span class="text-sm font-semibold text-slate-400 uppercase tracking-widest">Ouverture de la note...</span>
+  </div>
+
+  <div v-else class="h-screen flex flex-col overflow-hidden w-full animate-fade-in print:h-auto print:overflow-visible">
     
-    <!-- Top Bar Actions (Hidden when printing) -->
-    <div class="flex items-center justify-between no-print">
-      <button 
-        @click="goBack" 
-        class="text-sm font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1"
-      >
-        <ChevronLeft class="w-4 h-4" />
-        Retour aux notes
-      </button>
-
-      <div class="flex items-center gap-3">
-        <!-- Save Status -->
-        <span class="text-xs font-semibold text-slate-400 flex items-center gap-1.5 mr-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-500" :class="[isSaving ? 'animate-pulse' : '']"></span>
-          {{ saveStatus }}
-        </span>
-
-        <!-- View Mode Toggler -->
-        <button 
-          @click="toggleMode"
-          class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-850 transition-all"
-        >
-          <component :is="isEditMode ? Eye : Edit3" class="w-4 h-4 text-indigo-500" />
-          {{ isEditMode ? 'Visualiser la fiche' : 'Modifier la fiche' }}
-        </button>
-        
-        <!-- PDF / Print Trigger -->
-        <button 
-          v-if="!isEditMode"
-          @click="printNote"
-          class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-600/10"
-        >
-          <FileDown class="w-4 h-4" />
-          Exporter en PDF
-        </button>
-
-        <button 
-          v-if="isEditMode"
-          @click="saveNote"
-          class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-600/10"
-        >
-          Enregistrer
-        </button>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="loading" class="flex flex-col items-center justify-center py-20 gap-3 no-print">
-      <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <span class="text-sm font-semibold text-slate-400 uppercase tracking-widest">Ouverture de la note...</span>
-    </div>
-
-    <div v-else class="space-y-6 print:space-y-0">
+    <!-- 1. FULL VIEWPORT EDIT MODE -->
+    <div v-if="isEditMode" class="flex-1 flex flex-col h-full bg-white dark:bg-slate-900 overflow-hidden">
       
-      <!-- Title & Binder Selection Card (Meta) -->
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-4 print:border-none print:shadow-none print:p-0 print:mb-6">
-        <input 
-          v-if="isEditMode"
-          type="text" 
-          v-model="title" 
-          placeholder="Titre de la note..."
-          class="block w-full text-2xl font-bold bg-transparent border-0 border-b border-transparent hover:border-slate-100 focus:border-indigo-500 focus:ring-0 px-0 pb-1.5 focus:outline-none transition-all placeholder-slate-300 dark:placeholder-slate-700"
-          @input="triggerAutoSave"
-        />
-        <h1 v-else class="text-3xl font-extrabold text-slate-900 dark:text-white print:text-black">
-          {{ title || 'Note sans titre' }}
-        </h1>
+      <!-- Header Toolbar -->
+      <div class="flex flex-col border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 z-10 no-print">
+        
+        <!-- Row 1: Global Actions & Title -->
+        <div class="flex items-center justify-between px-6 py-3 border-b border-slate-50 dark:border-slate-850/60">
+          <div class="flex items-center gap-4 flex-1">
+            <!-- Back button -->
+            <button 
+              @click="goBack" 
+              class="text-sm font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1.5 transition-colors"
+            >
+              <ChevronLeft class="w-4.5 h-4.5" />
+              Retour
+            </button>
+            
+            <div class="h-5 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
 
-        <div class="flex items-center gap-3 no-print">
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Associer au classeur :</span>
-          <select 
-            v-if="isEditMode"
-            v-model="binderId"
-            class="px-3 py-1.5 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold transition-all"
-            @change="triggerAutoSave"
+            <!-- Title Input (Direct inline edit) -->
+            <input 
+              type="text" 
+              v-model="title" 
+              placeholder="Titre de la note..."
+              class="block flex-1 max-w-xl text-lg font-bold bg-transparent border-0 focus:ring-0 focus:outline-none placeholder-slate-300 dark:placeholder-slate-700 py-1"
+              @input="triggerAutoSave"
+            />
+          </div>
+
+          <!-- Header Right Controls -->
+          <div class="flex items-center gap-3">
+            <!-- Save Status -->
+            <span class="text-xs font-semibold text-slate-400 flex items-center gap-1.5 mr-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500" :class="[isSaving ? 'animate-pulse' : '']"></span>
+              {{ saveStatus }}
+            </span>
+
+            <!-- Binder select -->
+            <select 
+              v-model="binderId"
+              class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold transition-all"
+              @change="triggerAutoSave"
+            >
+              <option :value="null">Général (Aucun)</option>
+              <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">{{ b.name }}</option>
+            </select>
+
+            <!-- Collapsible Settings Toggle (Context & Links) -->
+            <button 
+              @click="showSettings = !showSettings"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
+              :class="[
+                showSettings 
+                  ? 'border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20 dark:text-indigo-400' 
+                  : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850'
+              ]"
+            >
+              <Compass class="w-3.5 h-3.5" />
+              Contexte / Liens
+            </button>
+
+            <!-- View Toggler -->
+            <button 
+              @click="toggleMode"
+              class="inline-flex items-center gap-2 px-4 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-850 transition-all"
+            >
+              <Eye class="w-3.5 h-3.5 text-indigo-500" />
+              Visualiser
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 2: Formatting Toolbar -->
+        <div class="flex flex-wrap items-center gap-1.5 px-6 py-2 bg-slate-50/50 dark:bg-slate-850/20">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Format</span>
+          <button 
+            v-for="btn in formatButtons" 
+            :key="btn.label" 
+            type="button" 
+            @click="insertText(btn.prefix, btn.suffix)"
+            class="p-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
+            :title="btn.label"
           >
-            <option :value="null">Général (Aucun)</option>
-            <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">{{ b.name }}</option>
-          </select>
-          <span v-else class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 uppercase tracking-wider">
-            {{ getBinderName(binderId) }}
-          </span>
+            {{ btn.label }}
+          </button>
+          
+          <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+          
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">LaTeX</span>
+          <button 
+            v-for="btn in latexButtons" 
+            :key="btn.label" 
+            type="button" 
+            @click="insertText(btn.prefix, btn.suffix)"
+            class="p-2 text-xs font-mono font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
+            :title="btn.label"
+          >
+            {{ btn.label }}
+          </button>
+
+          <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+          
+          <!-- Smart Space: Definition Tooltip insertion -->
+          <button 
+            type="button" 
+            @click="insertDefinitionTooltip"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/30 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-950/60 active:scale-95 transition-all"
+            title="Associer une définition en info-bulle au texte sélectionné"
+          >
+            <BookOpen class="w-3.5 h-3.5" />
+            Définition (Info-bulle)
+          </button>
+        </div>
+
+        <!-- Sliding/Collapsible Drawer for Context and Links -->
+        <div 
+          v-if="showSettings" 
+          class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-slate-50/80 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 transition-all duration-300 animate-slide-down"
+        >
+          <!-- 1. Context Input Section -->
+          <div class="space-y-2">
+            <h3 class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Compass class="w-4 h-4" />
+              Contexte de la note
+            </h3>
+            <textarea 
+              v-model="noteContext"
+              placeholder="Historique, cadre théorique ou d'apprentissage..."
+              rows="3"
+              class="w-full p-3 text-xs bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 resize-y"
+              @input="triggerAutoSave"
+            ></textarea>
+          </div>
+
+          <!-- 2. Linked Notes Section -->
+          <div class="space-y-3">
+            <h3 class="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+              <LinkIcon class="w-4 h-4" />
+              Lier à d'autres notes
+            </h3>
+            
+            <div class="flex gap-2">
+              <select 
+                v-model="selectedLinkTarget"
+                class="flex-1 px-3 py-2 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold"
+              >
+                <option :value="null" disabled>Sélectionner une note...</option>
+                <option 
+                  v-for="item in linkableNotes" 
+                  :key="item.id" 
+                  :value="item.id"
+                >
+                  {{ item.title }}
+                </option>
+              </select>
+              
+              <button 
+                @click="addNoteLink"
+                type="button"
+                class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl active:scale-95 transition-all shadow-sm"
+              >
+                Lier
+              </button>
+            </div>
+
+            <!-- Linked notes badges -->
+            <div v-if="noteLinks.length > 0" class="flex flex-wrap gap-1.5 pt-1 max-h-[80px] overflow-y-auto">
+              <span 
+                v-for="linkedId in noteLinks" 
+                :key="linkedId"
+                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-semibold rounded-lg shadow-sm"
+              >
+                {{ getNoteTitle(linkedId) }}
+                <button 
+                  @click="removeNoteLink(linkedId)" 
+                  type="button" 
+                  class="text-slate-400 hover:text-rose-500 transition-colors"
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Fullscreen Editor Workspace -->
+      <div class="flex-1 flex flex-col w-full h-full overflow-hidden bg-white dark:bg-slate-900">
+        <textarea 
+          ref="textareaRef"
+          v-model="noteBody"
+          placeholder="Rédigez vos notes ici en Markdown..."
+          class="flex-1 w-full h-full p-8 md:p-12 outline-none border-0 focus:ring-0 text-base font-mono text-slate-700 dark:text-slate-300 resize-none overflow-y-auto leading-relaxed bg-transparent"
+          @input="triggerAutoSave"
+        ></textarea>
+      </div>
+
+    </div>
+
+    <!-- 2. CENTERED PREVIEW / READ MODE SHEET -->
+    <div v-else class="flex-1 overflow-y-auto bg-slate-50 dark:bg-[#070913] py-10 px-4 md:px-8 print:p-0 print:bg-white w-full">
+      
+      <!-- Top Bar Actions inside Preview page sheet (Centered wrapper) -->
+      <div class="max-w-4xl mx-auto flex items-center justify-between no-print mb-6">
+        <button 
+          @click="goBack" 
+          class="text-sm font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1"
+        >
+          <ChevronLeft class="w-4 h-4" />
+          Retour aux notes
+        </button>
+
+        <div class="flex items-center gap-3">
+          <!-- View Mode Toggler -->
+          <button 
+            @click="toggleMode"
+            class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-850 transition-all"
+          >
+            <Edit3 class="w-4 h-4 text-indigo-500" />
+            Modifier la fiche
+          </button>
+          
+          <!-- PDF / Print Trigger -->
+          <button 
+            @click="printNote"
+            class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-600/10"
+          >
+            <FileDown class="w-4 h-4" />
+            Exporter en PDF
+          </button>
         </div>
       </div>
 
-      <!-- WORKSPACE 1: EDIT MODE (INTEGRATED SINGLE-COLUMN SHEET) -->
-      <div v-if="isEditMode" class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 lg:p-10 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/40 space-y-6">
+      <!-- Cohesive Paper Sheet -->
+      <div class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-8 lg:p-12 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/40 space-y-6 print:border-none print:shadow-none print:p-0">
         
-        <!-- 1. Context Input Section -->
-        <div class="bg-amber-50/30 border border-amber-100/50 rounded-2xl p-5 dark:bg-amber-950/5 dark:border-amber-900/30 space-y-3">
-          <h3 class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Compass class="w-4 h-4" />
-            Contexte de la note
-          </h3>
-          <textarea 
-            v-model="noteContext"
-            placeholder="Historique, cadre théorique ou d'apprentissage..."
-            rows="2"
-            class="w-full p-3 text-xs bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 resize-y"
-            @input="triggerAutoSave"
-          ></textarea>
-        </div>
-
-        <!-- 2. Main Note Body Section -->
-        <div class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col min-h-[500px]">
-          <!-- Header with Title and Insertion/Toolbar -->
-          <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 flex items-center justify-between">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <FileText class="w-4 h-4 text-indigo-500" />
-              Notes de cours
-            </h3>
-          </div>
-
-          <!-- Markdown, LaTeX & Tooltip Insertion Bar -->
-          <div class="flex flex-wrap items-center gap-1.5 p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Format</span>
-            <button 
-              v-for="btn in formatButtons" 
-              :key="btn.label" 
-              type="button" 
-              @click="insertText(btn.prefix, btn.suffix)"
-              class="p-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
-              :title="btn.label"
-            >
-              {{ btn.label }}
-            </button>
-            
-            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
-            
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">LaTeX</span>
-            <button 
-              v-for="btn in latexButtons" 
-              :key="btn.label" 
-              type="button" 
-              @click="insertText(btn.prefix, btn.suffix)"
-              class="p-2 text-xs font-mono font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
-              :title="btn.label"
-            >
-              {{ btn.label }}
-            </button>
-
-            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
-            
-            <!-- Smart Space: Definition Tooltip insertion -->
-            <button 
-              type="button" 
-              @click="insertDefinitionTooltip"
-              class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/30 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-950/60 active:scale-95 transition-all"
-              title="Associer une définition en info-bulle au texte sélectionné"
-            >
-              <BookOpen class="w-3.5 h-3.5" />
-              Définition (Info-bulle)
-            </button>
-          </div>
-
-          <!-- Raw Markdown Text Area -->
-          <textarea 
-            ref="textareaRef"
-            v-model="noteBody"
-            placeholder="Rédigez vos notes ici en Markdown..."
-            class="flex-1 p-6 outline-none bg-transparent border-0 focus:ring-0 text-sm font-mono text-slate-700 dark:text-slate-300 min-h-[400px] resize-y leading-relaxed"
-            @input="triggerAutoSave"
-          ></textarea>
-        </div>
-
-        <!-- 3. Linked Notes Section -->
-        <div class="bg-indigo-50/20 border border-indigo-100/50 rounded-2xl p-5 dark:bg-indigo-950/5 dark:border-indigo-900/30 space-y-4">
-          <h3 class="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-            <LinkIcon class="w-4 h-4" />
-            Lier à d'autres notes
-          </h3>
-          
-          <div class="flex gap-2">
-            <select 
-              v-model="selectedLinkTarget"
-              class="flex-1 max-w-md px-3 py-2 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold"
-            >
-              <option :value="null" disabled>Sélectionner une note...</option>
-              <option 
-                v-for="item in linkableNotes" 
-                :key="item.id" 
-                :value="item.id"
-              >
-                {{ item.title }}
-              </option>
-            </select>
-            
-            <button 
-              @click="addNoteLink"
-              type="button"
-              class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl active:scale-95 transition-all shadow-sm"
-            >
-              Lier la note
-            </button>
-          </div>
-
-          <!-- Linked notes badges -->
-          <div v-if="noteLinks.length > 0" class="flex flex-wrap gap-1.5 pt-1">
-            <span 
-              v-for="linkedId in noteLinks" 
-              :key="linkedId"
-              class="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg shadow-sm"
-            >
-              {{ getNoteTitle(linkedId) }}
-              <button 
-                @click="removeNoteLink(linkedId)" 
-                type="button" 
-                class="text-slate-400 hover:text-rose-500 transition-colors"
-              >
-                ✕
-              </button>
+        <!-- Note Title -->
+        <div class="border-b border-slate-100 dark:border-slate-800/80 pb-6 print:mb-6">
+          <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white print:text-black">
+            {{ title || 'Note sans titre' }}
+          </h1>
+          <div class="flex items-center gap-3 mt-3 no-print">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Classeur :</span>
+            <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 uppercase tracking-wider">
+              {{ getBinderName(binderId) }}
             </span>
           </div>
         </div>
 
-      </div>
-
-      <!-- WORKSPACE 2: PREVIEW / READ MODE (INTEGRATED COHESIVE SHEET) -->
-      <div v-else class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-8 lg:p-12 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/40 space-y-6 print:border-none print:shadow-none print:p-0">
-        
         <!-- 1. Context Block (Full width, integrated at the top of the paper) -->
         <div 
           v-if="noteContext"
@@ -296,8 +333,7 @@ import {
   BookOpen,
   Compass,
   Link as LinkIcon,
-  ChevronRight,
-  FileText
+  ChevronRight
 } from '@lucide/vue'
 import { marked } from 'marked'
 import katex from 'katex'
@@ -315,6 +351,7 @@ const loading = ref(true)
 const isSaving = ref(false)
 const saveStatus = ref('Enregistré')
 const isEditMode = ref(false)
+const showSettings = ref(false)
 
 const title = ref('')
 const binderId = ref<number | null>(null)
