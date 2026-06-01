@@ -56,3 +56,31 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 2. **Calcul du taux de rétention** : Pour correspondre aux données disponibles dans la table minimale `study_sessions`, le taux de rétention d'un deck est calculé en comparant le nombre de cartes retenues (dont la date de prochaine révision `next_review` est supérieure à l'heure courante) sur le nombre total de cartes du deck.
 
 ---
+
+## [2026-06-01] Initialisation et développement complet du Frontend Web
+
+### Ajouts et modifications
+
+#### ⚙️ Configuration & Infrastructure
+* Initialisation du projet Vue.js 3 + TypeScript via Vite dans [web/](file:///home/robyn/Documents/Dev/StudyHub/web).
+* Installation et configuration de TailwindCSS v3 avec le design system défini dans [AGENTS.md](file:///home/robyn/Documents/Dev/StudyHub/AGENTS.md) (couleurs personnalisées, dark mode, typographie Inter).
+* Configuration du routage avec **Vue Router 4** gérant les guards d'accès authentifié.
+* Intégration de **Pinia** pour la gestion de l'état (Decks, Notes, Binders, Auth).
+* Simulation de l'état d'authentification asynchrone persisté dans le local storage pour découpler le frontend.
+
+#### 🗂️ Modules applicatifs
+* **Classeurs (Binders)** : Explorateur de dossiers interactif affichant récursivement les classeurs et documents associés (Notes et Decks).
+* **Flashcards (Decks)** : Liste des decks de cartes mémoire et interface de révision avec animation flip 3D en pur CSS, avec intégration de l'algorithme d'apprentissage espacé **SM-2** (0 à 5).
+* **Notes** : Liste et éditeur WYSIWYG supportant simultanément le Markdown (`marked.js`) et le LaTeX (`katex.js`). Correction du bug de parsing lié à l'utilisation des tirets bas dans les placeholders temporaires.
+* **Diagrammes** : Éditeur visuel interactif en drag and drop codé en SVG (permettant de créer, nommer, colorer des formes et tracer des liaisons dynamiques à la main), doublé du mode Mermaid.js textuel.
+* **PDFs** : Visualiseur de documents A4 avec simulation d'import, gestion du zoom, de la pagination, et un système d'annotations géoréférencées (X/Y) épinglées sur les pages.
+
+#### 📄 PDF et Impression
+* Intégration d'une feuille de style d'impression `@media print` masquant l'interface utilisateur pour générer un rendu PDF propre de la note via `window.print()`.
+
+### Décisions d'architecture
+1. **Rendu hybride Markdown/LaTeX** : Remplacement temporaire des équations par des identifiants alphanumériques uniques avant compilation Markdown afin de préserver l'intégrité du code LaTeX lors du parsing Markdown.
+2. **Coordonnées relatives centrées pour le Canvas** : Stockage du centre des formes dans l'éditeur de diagrammes pour simplifier l'alignement et l'actualisation dynamique des flèches SVG lors du déplacement.
+
+---
+
