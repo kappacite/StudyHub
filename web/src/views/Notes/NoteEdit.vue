@@ -90,7 +90,7 @@
       </div>
 
       <!-- WORKSPACE 1: EDIT MODE (INTEGRATED SINGLE-COLUMN SHEET) -->
-      <div v-if="isEditMode" class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 lg:p-10 shadow-sm space-y-6">
+      <div v-if="isEditMode" class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 lg:p-10 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/40 space-y-6">
         
         <!-- 1. Context Input Section -->
         <div class="bg-amber-50/30 border border-amber-100/50 rounded-2xl p-5 dark:bg-amber-950/5 dark:border-amber-900/30 space-y-3">
@@ -222,7 +222,7 @@
       </div>
 
       <!-- WORKSPACE 2: PREVIEW / READ MODE (INTEGRATED COHESIVE SHEET) -->
-      <div v-else class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 lg:p-12 shadow-sm space-y-6 print:border-none print:shadow-none print:p-0">
+      <div v-else class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-8 lg:p-12 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/40 space-y-6 print:border-none print:shadow-none print:p-0">
         
         <!-- 1. Context Block (Full width, integrated at the top of the paper) -->
         <div 

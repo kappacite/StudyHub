@@ -1,9 +1,25 @@
 <template>
   <div class="min-h-screen flex bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#0B0F19] dark:text-slate-100">
+    
+    <!-- Invisible Sidebar Hover Trigger (Zen mode only) -->
+    <div 
+      v-if="isZenMode" 
+      class="fixed left-0 top-0 bottom-0 w-3 z-45 no-print"
+      @mouseenter="isSidebarHovered = true"
+    ></div>
+
     <!-- Sidebar -->
     <aside 
-      class="fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-white border-r border-slate-100 transition-all duration-300 dark:bg-[#111827] dark:border-slate-800 lg:static lg:translate-x-0"
-      :class="[isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full']"
+      class="fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-white border-r border-slate-100 transition-all duration-300 dark:bg-[#111827] dark:border-slate-800 lg:translate-x-0"
+      :class="[
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
+        isZenMode 
+          ? 'lg:fixed lg:-translate-x-full lg:shadow-2xl' 
+          : 'lg:static lg:translate-x-0',
+        (isZenMode && isSidebarHovered) ? 'lg:translate-x-0' : ''
+      ]"
+      @mouseenter="isZenMode ? isSidebarHovered = true : null"
+      @mouseleave="isZenMode ? isSidebarHovered = false : null"
     >
       <!-- Logo -->
       <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800">
@@ -90,8 +106,26 @@
 
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+      
+      <!-- Invisible Header Hover Trigger (Zen mode only) -->
+      <div 
+        v-if="isZenMode" 
+        class="fixed top-0 left-0 right-0 h-3 z-29 no-print"
+        @mouseenter="isHeaderHovered = true"
+      ></div>
+
       <!-- Navbar / Top Header -->
-      <header class="flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur border-b border-slate-100 sticky top-0 z-30 dark:bg-[#111827]/80 dark:border-slate-800">
+      <header 
+        class="flex items-center justify-between px-6 py-4 bg-white/85 backdrop-blur border-b border-slate-100 z-30 transition-all duration-300 dark:bg-[#111827]/85 dark:border-slate-800"
+        :class="[
+          isZenMode 
+            ? 'fixed top-0 left-0 right-0 shadow-lg -translate-y-full' 
+            : 'sticky top-0',
+          (isZenMode && isHeaderHovered) ? 'translate-y-0' : ''
+        ]"
+        @mouseenter="isZenMode ? isHeaderHovered = true : null"
+        @mouseleave="isZenMode ? isHeaderHovered = false : null"
+      >
         <div class="flex items-center gap-4">
           <button 
             @click="isMobileMenuOpen = !isMobileMenuOpen" 
@@ -114,7 +148,10 @@
       </header>
 
       <!-- Main Router View with padding -->
-      <main class="flex-1 p-6 overflow-y-auto">
+      <main 
+        class="flex-1 overflow-y-auto transition-all duration-300"
+        :class="[isZenMode ? 'p-4 md:p-8 lg:p-12 bg-slate-100 dark:bg-[#070913]' : 'p-6']"
+      >
         <router-view v-slot="{ Component }">
           <transition 
             name="fade" 
@@ -152,6 +189,13 @@ const route = useRoute()
 
 const isMobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
+
+const isSidebarHovered = ref(false)
+const isHeaderHovered = ref(false)
+
+const isZenMode = computed(() => {
+  return route.name === 'NoteEdit'
+})
 
 const navItems = [
   { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },

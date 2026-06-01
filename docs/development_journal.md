@@ -71,7 +71,7 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 #### 🗂️ Modules applicatifs
 * **Classeurs (Binders)** : Explorateur de dossiers interactif affichant récursivement les classeurs et documents associés (Notes et Decks).
 * **Flashcards (Decks)** : Liste des decks de cartes mémoire et interface de révision avec animation flip 3D en pur CSS, avec intégration de l'algorithme d'apprentissage espacé **SM-2** (0 à 5).
-* **Notes** : Liste et éditeur WYSIWYG supportant simultanément le Markdown (`marked.js`) et le LaTeX (`katex.js`). Ajout des **Espaces Intelligents** sous la forme d'un classeur/feuille unifié vertical (sections contextuelles en haut, liens croisés en bas). Intégration d'un système de **Définitions en Info-bulle** (tooltip) : l'utilisateur sélectionne un terme, lui associe une définition en un clic (syntaxe `[terme]{def:définition}`), et celle-ci s'affiche dans une infobulle interactive au survol en mode lecture.
+* **Notes** : Liste et éditeur WYSIWYG supportant simultanément le Markdown (`marked.js`) et le LaTeX (`katex.js`). Ajout des **Espaces Intelligents** sous la forme d'un classeur/feuille unifié vertical (sections contextuelles en haut, liens croisés en bas). Intégration d'un système de **Définitions en Info-bulle** (tooltip) : l'utilisateur sélectionne un terme, lui associe une définition en un clic (syntaxe `[terme]{def:définition}`), et celle-ci s'affiche dans une infobulle interactive au survol en mode lecture. De plus, un **Mode Zen sans distraction** (plein écran) a été implémenté : lors de la prise de note, les barres latérale et supérieure se masquent automatiquement pour laisser place à une feuille de papier digitale épurée, et réapparaissent de manière fluide par glissement sur simple survol des bords gauche et haut de l'écran.
 * **Diagrammes** : Éditeur visuel interactif en drag and drop codé en SVG (permettant de créer, nommer, colorer des formes et tracer des liaisons dynamiques à la main), doublé du mode Mermaid.js textuel.
 * **PDFs** : Visualiseur de documents A4 avec simulation d'import, gestion du zoom, de la pagination, et un système d'annotations géoréférencées (X/Y) épinglées sur les pages.
 
@@ -81,6 +81,7 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 ### Décisions d'architecture
 1. **Rendu hybride Markdown/LaTeX/Définitions** : Remplacement temporaire des équations LaTeX et des définitions inline par des identifiants alphanumériques uniques avant la compilation Markdown afin de préserver l'intégrité du code LaTeX et du code HTML des info-bulles lors du parsing Markdown.
 2. **Coordonnées relatives centrées pour le Canvas** : Stockage du centre des formes dans l'éditeur de diagrammes pour simplifier l'alignement et l'actualisation dynamique des flèches SVG lors du déplacement.
+3. **Mode Zen non intrusif** : Utilisation d'interrupteurs réactifs basés sur la route active (`NoteEdit`) pour appliquer des styles de positionnement `fixed` et de masquage CSS fluide (transitions Tailwind), couplés à des zones de déclenchement invisibles (triggers de survol de 12px) aux extrémités gauche et haute du viewport pour garantir une navigation fluide sans altérer la mise en page sous-jacente.
 
 ---
 
