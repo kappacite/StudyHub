@@ -87,7 +87,10 @@
 
         <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-50 dark:border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
           <span>Créé le {{ new Date(note.created_at).toLocaleDateString('fr-FR') }}</span>
-          <span class="text-indigo-500 dark:text-indigo-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+          <span 
+            @click.stop="router.push(`/notes/${note.id}?edit=true`)"
+            class="text-indigo-500 dark:text-indigo-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-300 font-bold"
+          >
             Éditer <ChevronRight class="w-3.5 h-3.5" />
           </span>
         </div>
@@ -177,7 +180,7 @@ function stripHtml(html: string): string {
 
 async function createNewNote() {
   const newNote = await notesStore.createNote('Note sans titre')
-  router.push(`/notes/${newNote.id}`)
+  router.push(`/notes/${newNote.id}?edit=true`)
 }
 
 async function confirmDelete(note: Note) {

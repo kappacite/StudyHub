@@ -149,8 +149,12 @@
 
       <!-- Main Router View with padding -->
       <main 
-        class="flex-1 overflow-y-auto transition-all duration-300"
-        :class="[isZenMode ? 'p-4 md:p-8 lg:p-12 bg-slate-100 dark:bg-[#070913]' : 'p-6']"
+        class="flex-1 transition-all duration-300"
+        :class="[
+          isZenMode 
+            ? (isEditMode ? 'p-0 bg-white dark:bg-slate-900 overflow-hidden' : 'p-4 md:p-8 lg:p-12 bg-slate-100 dark:bg-[#070913] overflow-y-auto') 
+            : 'p-6 overflow-y-auto'
+        ]"
       >
         <router-view v-slot="{ Component }">
           <transition 
@@ -195,6 +199,10 @@ const isHeaderHovered = ref(false)
 
 const isZenMode = computed(() => {
   return route.name === 'NoteEdit'
+})
+
+const isEditMode = computed(() => {
+  return route.name === 'NoteEdit' && route.query.edit === 'true'
 })
 
 const navItems = [
