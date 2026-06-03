@@ -6,7 +6,7 @@ from app.extensions import db, jwt, migrate, limiter
 
 def create_app(config_name=None):
     flask_app = Flask(__name__)
-    CORS(flask_app, resources={r"/api/*": {"origins": "*"}})
+    CORS(flask_app, resources={r"/api/.*": {"origins": "*", "allow_headers": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}})
     
     if not config_name:
         config_name = os.environ.get("FLASK_ENV", "development")
