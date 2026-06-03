@@ -10,13 +10,13 @@
 
     <!-- Sidebar -->
     <aside 
-      class="fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-white border-r border-slate-100 transition-all duration-300 dark:bg-[#111827] dark:border-slate-800 lg:translate-x-0"
+      class="fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-white border-r border-slate-100 transition-all duration-300 dark:bg-[#111827] dark:border-slate-800"
       :class="[
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
+        isZenMode ? 'lg:fixed lg:shadow-2xl' : 'lg:static',
         isZenMode 
-          ? 'lg:fixed lg:-translate-x-full lg:shadow-2xl' 
-          : 'lg:static lg:translate-x-0',
-        (isZenMode && isSidebarHovered) ? 'lg:translate-x-0' : ''
+          ? (isSidebarHovered ? 'lg:translate-x-0' : 'lg:-translate-x-full') 
+          : 'lg:translate-x-0'
       ]"
       @mouseenter="isZenMode ? isSidebarHovered = true : null"
       @mouseleave="isZenMode ? isSidebarHovered = false : null"
@@ -119,9 +119,11 @@
         class="flex items-center justify-between px-6 py-4 bg-white/85 backdrop-blur border-b border-slate-100 z-30 transition-all duration-300 dark:bg-[#111827]/85 dark:border-slate-800"
         :class="[
           isZenMode 
-            ? 'fixed top-0 left-0 right-0 shadow-lg -translate-y-full' 
+            ? 'fixed top-0 left-0 right-0 shadow-lg' 
             : 'sticky top-0',
-          (isZenMode && isHeaderHovered) ? 'translate-y-0' : ''
+          isZenMode 
+            ? (isHeaderHovered ? 'translate-y-0' : '-translate-y-full') 
+            : ''
         ]"
         @mouseenter="isZenMode ? isHeaderHovered = true : null"
         @mouseleave="isZenMode ? isHeaderHovered = false : null"
@@ -176,7 +178,6 @@ import { useAuthStore } from '../../stores/auth'
 import { 
   LayoutDashboard, 
   FolderClosed, 
-  Layers, 
   FileText, 
   Activity, 
   FileDown, 
@@ -184,7 +185,8 @@ import {
   Sun, 
   Moon, 
   Menu, 
-  Calendar 
+  Calendar,
+  Brain
 } from '@lucide/vue'
 
 const authStore = useAuthStore()
@@ -208,7 +210,7 @@ const isEditMode = computed(() => {
 const navItems = [
   { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Classeurs', path: '/binders', icon: FolderClosed },
-  { name: 'Flashcards', path: '/decks', icon: Layers },
+  { name: 'Révisions', path: '/reviews', icon: Brain },
   { name: 'Notes', path: '/notes', icon: FileText },
   { name: 'Diagrammes', path: '/diagrams', icon: Activity },
   { name: 'PDFs', path: '/pdfs', icon: FileDown }
@@ -219,6 +221,7 @@ const currentRouteName = computed(() => {
   if (!name) return ''
   if (name === 'StudyDeck') return 'Flashcards (Étude)'
   if (name === 'NoteEdit') return 'Édition de Note'
+  if (name === 'Reviews') return 'Espace Révisions'
   return name
 })
 
