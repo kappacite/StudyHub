@@ -18,3 +18,7 @@ class Deck(db.Model):
     user = relationship("User", back_populates="decks")
     binder = relationship("Binder", back_populates="decks")
     cards = relationship("Flashcard", back_populates="deck", cascade="all, delete-orphan")
+
+    @property
+    def card_count(self) -> int:
+        return len(self.cards)

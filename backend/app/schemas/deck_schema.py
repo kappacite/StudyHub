@@ -18,6 +18,7 @@ class DeckUpdate(BaseModel):
 class DeckResponse(DeckBase):
     id: int
     user_id: int
+    card_count: int
     created_at: datetime
     updated_at: datetime
 
