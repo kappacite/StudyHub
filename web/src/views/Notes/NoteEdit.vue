@@ -128,6 +128,22 @@
               <BookOpen class="w-3.5 h-3.5" />
               Définition (Info-bulle)
             </button>
+
+            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+
+            <!-- Insertion de diagramme -->
+            <div class="relative inline-block">
+              <select 
+                @change="insertDiagramTag($event)"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/30 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-950/60 transition-all focus:outline-none cursor-pointer"
+              >
+                <option value="" disabled selected>Insérer un diagramme...</option>
+                <option v-for="diag in allUserDiagrams" :key="diag.id" :value="diag.id">
+                  {{ diag.title }}
+                </option>
+                <option v-if="allUserDiagrams.length === 0" disabled>Aucun diagramme</option>
+              </select>
+            </div>
           </div>
 
           <!-- Sliding/Collapsible Drawer for Context and Links -->
@@ -233,6 +249,15 @@
           </button>
 
           <div class="flex items-center gap-3">
+            <!-- Page blanche / Blurting (IA) -->
+            <button 
+              @click="router.push(`/notes/${noteId}/blurting`)"
+              class="inline-flex items-center gap-2 px-4 py-2 border border-emerald-250 dark:border-emerald-900 rounded-xl text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 active:scale-95 transition-all"
+            >
+              <Brain class="w-4 h-4 text-emerald-500" />
+              Page blanche (IA)
+            </button>
+
             <!-- View Mode Toggler -->
             <button 
               @click="toggleMode"
@@ -333,6 +358,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import api from '../../services/api'
 import { useNotesStore } from '../../stores/notes'
 import { useBindersStore } from '../../stores/binders'
 import { 
@@ -343,7 +369,8 @@ import {
   BookOpen,
   Compass,
   Link as LinkIcon,
-  ChevronRight
+  ChevronRight,
+  Brain
 } from '@lucide/vue'
 import { marked } from 'marked'
 import katex from 'katex'
@@ -357,6 +384,8 @@ const route = useRoute()
 const router = useRouter()
 
 const noteId = ref(Number(route.params.id))
+const allUserDiagrams = ref<any[]>([])
+const loadedDiagrams = ref<Record<number, any>>({})
 const loading = ref(true)
 const isSaving = ref(false)
 const saveStatus = ref('Enregistré')
@@ -408,12 +437,50 @@ watch(() => route.params.id, async (newVal) => {
 onMounted(async () => {
   await notesStore.fetchNotes()
   await bindersStore.fetchBinders()
+  await loadUserDiagrams()
   await loadNoteDetails()
 })
 
 onBeforeUnmount(() => {
   if (autoSaveTimer) clearTimeout(autoSaveTimer)
 })
+
+async function loadUserDiagrams() {
+  try {
+    const res = await api.get('/diagrams?per_page=1000')
+    allUserDiagrams.value = res.data.data
+  } catch (err) {
+    console.error('Erreur lors du chargement des diagrammes', err)
+  }
+}
+
+async function fetchDiagramIfNeeded(id: number) {
+  if (loadedDiagrams.value[id] !== undefined) return
+  try {
+    const res = await api.get(`/diagrams/${id}`)
+    loadedDiagrams.value[id] = res.data
+  } catch (err) {
+    console.error(`Erreur de chargement du diagramme ${id}`, err)
+    loadedDiagrams.value[id] = null
+  }
+}
+
+watch(noteBody, (newVal) => {
+  const matches = newVal.matchAll(/\[diagram:(\d+)\]/g)
+  for (const match of matches) {
+    const id = Number(match[1])
+    fetchDiagramIfNeeded(id)
+  }
+}, { immediate: true })
+
+function insertDiagramTag(event: Event) {
+  const select = event.target as HTMLSelectElement
+  const id = select.value
+  if (!id) return
+  
+  insertText(`[diagram:${id}]`, '')
+  select.value = '' // Reset
+}
 
 async function loadNoteDetails() {
   loading.value = true
@@ -546,17 +613,134 @@ function renderMarkup(text: string): string {
     return key
   })
 
-  // 4. Mark down parse
+  // 4. Diagram Integration [diagram:ID]
+  temp = temp.replace(/\[diagram:(\d+)\]/g, (_match, idStr) => {
+    const id = Number(idStr)
+    const diag = loadedDiagrams.value[id]
+    
+    let html = ''
+    if (diag === undefined) {
+      html = `
+        <div class="flex items-center gap-2 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/20 text-xs font-semibold text-slate-400 my-4 select-none">
+          <svg class="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Chargement du schéma #${id}...
+        </div>
+      `
+    } else {
+      html = renderDiagramHtml(diag)
+    }
+    
+    const key = `DIAGRAMPLACEHOLDER${placeholders.length}`
+    placeholders.push(html)
+    return key
+  })
+
+  // 5. Mark down parse
   let html = marked.parse(temp) as string
 
-  // 5. Put LaTeX and Definition HTML back
+  // 6. Put LaTeX, Definition and Diagram HTML back
   placeholders.forEach((placeholderHtml, idx) => {
     html = html.replace(`LATEXBLOCKPLACEHOLDER${idx}`, placeholderHtml)
     html = html.replace(`LATEXINLINEPLACEHOLDER${idx}`, placeholderHtml)
     html = html.replace(`DEFPLACEHOLDER${idx}`, placeholderHtml)
+    html = html.replace(`DIAGRAMPLACEHOLDER${idx}`, placeholderHtml)
   })
 
   return html
+}
+
+function renderDiagramHtml(diagram: any): string {
+  if (!diagram) return '<div class="text-xs text-slate-450 italic my-2">Diagramme introuvable.</div>'
+  
+  try {
+    const data = JSON.parse(diagram.code)
+    if (data && data.type === 'visual') {
+      const nodesList = data.nodes || []
+      const connectionsList = data.connections || []
+      
+      const maxX = Math.max(...nodesList.map((n: any) => n.x), 350) + 80
+      const maxY = Math.max(...nodesList.map((n: any) => n.y), 200) + 80
+      
+      let linesSvg = ''
+      connectionsList.forEach((conn: any) => {
+        const fromNode = nodesList.find((n: any) => n.id === conn.from)
+        const toNode = nodesList.find((n: any) => n.id === conn.to)
+        if (fromNode && toNode) {
+          linesSvg += `<line x1="${fromNode.x}" y1="${fromNode.y}" x2="${toNode.x}" y2="${toNode.y}" stroke="#6366f1" stroke-width="2" marker-end="url(#arrow-preview)" />`
+        }
+      })
+      
+      let nodesHtml = ''
+      nodesList.forEach((node: any) => {
+        let shapeStyle = ''
+        if (node.type === 'rect') {
+          shapeStyle = `width: 90px; height: 32px; border-radius: 8px;`
+        } else if (node.type === 'circle') {
+          shapeStyle = `width: 48px; height: 48px; border-radius: 50%;`
+        } else if (node.type === 'diamond') {
+          shapeStyle = `width: 45px; height: 45px; transform: rotate(45deg);`
+        }
+        
+        let colorHex = '#6366f1'
+        if (node.color.includes('emerald')) colorHex = '#10b981'
+        else if (node.color.includes('amber')) colorHex = '#f59e0b'
+        else if (node.color.includes('pink')) colorHex = '#ec4899'
+        
+        if (node.type === 'diamond') {
+          nodesHtml += `
+            <div class="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center" style="top: ${node.y}px; left: ${node.x}px; width: 45px; height: 45px;">
+              <div style="${shapeStyle} background-color: ${colorHex}; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 3px rgba(0,0,0,0.05);"></div>
+              <span class="absolute z-10 text-[8px] font-extrabold text-white px-1 leading-tight select-none">${node.label}</span>
+            </div>
+          `
+        } else {
+          nodesHtml += `
+            <div class="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center px-1 text-[8px] font-bold text-white shadow-sm border border-black/5" style="top: ${node.y}px; left: ${node.x}px; ${shapeStyle} background-color: ${colorHex};">
+              <span class="select-none leading-tight">${node.label}</span>
+            </div>
+          `
+        }
+      })
+      
+      return `
+        <div class="relative w-full border border-slate-150 dark:border-slate-800 rounded-2xl bg-slate-50/20 dark:bg-slate-950/15 p-2 overflow-hidden my-4 no-print select-none" style="height: ${Math.min(400, maxY + 20)}px;">
+          <div class="absolute inset-x-0 top-0 px-4 py-1 flex items-center justify-between text-[8px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50/80 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800/60">
+            <span>Schéma visuel : ${diagram.title}</span>
+          </div>
+          <div class="w-full h-full overflow-auto pt-6">
+            <div class="relative" style="width: ${maxX}px; height: ${maxY}px;">
+              <svg class="absolute inset-0 w-full h-full pointer-events-none">
+                <defs>
+                  <marker id="arrow-preview" viewBox="0 0 10 10" refX="20" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#6366f1" />
+                  </marker>
+                </defs>
+                ${linesSvg}
+              </svg>
+              ${nodesHtml}
+            </div>
+          </div>
+        </div>
+      `
+    } else {
+      return `
+        <div class="border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/30 dark:bg-slate-950/15 p-4 my-4">
+          <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-2">Schéma Mermaid : ${diagram.title}</div>
+          <pre class="text-[10px] text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto select-all">${diagram.code}</pre>
+        </div>
+      `
+    }
+  } catch {
+    return `
+      <div class="border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/30 dark:bg-slate-950/15 p-4 my-4">
+        <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-2">Schéma Mermaid : ${diagram.title}</div>
+        <pre class="text-[10px] text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto select-all">${diagram.code}</pre>
+      </div>
+    `
+  }
 }
 
 function goBack() {

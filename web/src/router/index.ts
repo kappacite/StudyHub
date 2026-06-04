@@ -60,6 +60,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('../views/Notes/NoteEdit.vue')
       },
       {
+        path: 'notes/:id/blurting',
+        name: 'Blurting',
+        component: () => import('../views/Notes/Blurting.vue')
+      },
+      {
         path: 'diagrams',
         name: 'Diagrams',
         component: () => import('../views/Diagrams/Diagrams.vue')

@@ -1,14 +1,16 @@
 <template>
   <div class="space-y-6 animate-fade-in">
-    <!-- Header -->
+    <!-- Header principal -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 class="text-xl font-bold">Créateur de Diagrammes & Cartes Mentales</h1>
-        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Concevez des schémas visuels en plaçant des formes, en créant des liaisons et en les organisant à la main.</p>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
+          Concevez des schémas visuels en plaçant des formes, en créant des liaisons et en les organisant à la main.
+        </p>
       </div>
 
-      <!-- Tab Switcher (Visual Editor vs Mermaid Code Editor) -->
-      <div class="flex items-center gap-1.5 bg-slate-105 p-1 rounded-xl dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+      <!-- Tab Switcher (Créateur Visuel vs Code Mermaid) -->
+      <div v-if="selectedDiagram" class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
         <button 
           @click="activeTab = 'visual'"
           class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
@@ -26,239 +28,338 @@
       </div>
     </div>
 
-    <!-- TAB 1: VISUAL INTERACTIVE CREATOR -->
-    <div v-if="activeTab === 'visual'" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-      <!-- Toolbox Panel (Left - 3 columns) -->
-      <div class="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-6">
-        <div>
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white">Boîte à outils</h3>
-          <p class="text-[10px] text-slate-400 mt-0.5">Cliquez sur une forme pour l'ajouter</p>
-        </div>
-
-        <!-- Add Shapes Buttons -->
-        <div class="grid grid-cols-1 gap-2.5">
+    <!-- Layout principal en grille -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- 1. PANNEAU GAUCHE : LISTE DES DIAGRAMMES (3 colonnes) -->
+      <div class="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-wider">Mes Diagrammes</h3>
           <button 
-            @click="addNode('rect')"
-            class="flex items-center gap-3 p-3 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
+            @click="createNewDiagram"
+            class="p-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 rounded-xl transition-all active:scale-90"
+            title="Créer un nouveau diagramme"
           >
-            <div class="w-8 h-6 bg-indigo-500 rounded border border-indigo-600"></div>
-            <span class="text-xs font-semibold">Concept (Rectangle)</span>
-          </button>
-
-          <button 
-            @click="addNode('circle')"
-            class="flex items-center gap-3 p-3 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
-          >
-            <div class="w-8 h-8 rounded-full bg-emerald-500 border border-emerald-600"></div>
-            <span class="text-xs font-semibold">Événement (Cercle)</span>
-          </button>
-
-          <button 
-            @click="addNode('diamond')"
-            class="flex items-center gap-3 p-3 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
-          >
-            <div class="w-6 h-6 rotate-45 bg-amber-500 border border-amber-600 mx-1"></div>
-            <span class="text-xs font-semibold">Décision (Losange)</span>
+            <Plus class="w-4 h-4" />
           </button>
         </div>
 
-        <div class="h-[1px] bg-slate-100 dark:bg-slate-800"></div>
-
-        <!-- Selection Customization Controls -->
-        <div v-if="selectedNode" class="space-y-4">
-          <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Élément sélectionné</h4>
-          
-          <!-- Label input -->
-          <div>
-            <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase">Texte de l'étiquette</label>
-            <input 
-              type="text" 
-              v-model="selectedNode.label"
-              class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
-            />
-          </div>
-
-          <!-- Color selection -->
-          <div>
-            <label class="block text-[10px] font-bold text-slate-400 mb-1.5 uppercase">Couleur</label>
-            <div class="flex gap-2">
-              <button 
-                v-for="color in colors" 
-                :key="color.bg"
-                @click="selectedNode.color = color.bg"
-                class="w-6 h-6 rounded-full border-2 transition-transform"
-                :class="[color.bg, selectedNode.color === color.bg ? 'border-slate-900 scale-110 dark:border-white' : 'border-transparent']"
-                :title="color.name"
-              ></button>
-            </div>
-          </div>
-
-          <!-- Action operations -->
-          <div class="space-y-2 pt-2">
-            <!-- Link trigger -->
-            <button 
-              @click="startLinking"
-              class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
-              :class="[linkingSourceId === selectedNode.id ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : '']"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
-              </svg>
-              {{ linkingSourceId === selectedNode.id ? 'Cliquez sur la cible...' : 'Créer un lien' }}
-            </button>
-            
-            <!-- Delete node -->
-            <button 
-              @click="deleteSelectedNode"
-              class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-600 border border-rose-100 hover:bg-rose-50 dark:border-rose-950/20 dark:hover:bg-rose-950/30 rounded-xl transition-colors"
-            >
-              <Trash2 class="w-4 h-4" />
-              Supprimer la forme
-            </button>
-          </div>
-        </div>
-
-        <div v-else class="text-center py-6 text-slate-400 text-xs font-medium italic">
-          Sélectionnez une forme sur le plan pour modifier ses options.
-        </div>
-      </div>
-
-      <!-- Canvas Editor Area (Right - 9 columns) -->
-      <div class="lg:col-span-9 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-2 shadow-sm overflow-hidden flex flex-col">
-        
-        <!-- Canvas Status info -->
-        <div class="px-4 py-2 border-b border-slate-50 dark:border-slate-800/50 flex items-center justify-between text-[10px] text-slate-400 font-semibold uppercase tracking-wider select-none">
-          <span>Plan de travail interactif</span>
-          <span>Déplacer : Glisser-Déposer | Éditer : Clic simple</span>
-        </div>
-
-        <!-- Interactive SVG Canvas Container -->
-        <div 
-          class="relative w-full h-[550px] bg-slate-50/50 dark:bg-slate-950/15 overflow-hidden select-none cursor-crosshair"
-          @mousemove="onCanvasMouseMove"
-          @mouseup="onCanvasMouseUp"
-          @mouseleave="onCanvasMouseUp"
-        >
-          <!-- Grid Background (subtle lines) -->
-          <svg class="absolute inset-0 w-full h-full text-slate-200/50 dark:text-slate-800/40 pointer-events-none" width="100%" height="100%">
-            <defs>
-              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <rect width="20" height="20" fill="none" />
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
+        <!-- Chargement -->
+        <div v-if="loadingList" class="flex justify-center py-8">
+          <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
+        </div>
 
-          <!-- SVG Elements (Lines and Markers) -->
-          <svg class="absolute inset-0 w-full h-full pointer-events-none">
-            <defs>
-              <!-- Arrow head definition -->
-              <marker 
-                id="arrowhead" 
-                viewBox="0 0 10 10" 
-                refX="22" 
-                refY="5" 
-                markerWidth="6" 
-                markerHeight="6" 
-                orient="auto-start-reverse"
-              >
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#818cf8" />
-              </marker>
-            </defs>
-
-            <!-- Render connections (arrows) -->
-            <g v-for="(conn, idx) in connections" :key="idx">
-              <line 
-                v-if="getNode(conn.from) && getNode(conn.to)"
-                :x1="getNode(conn.from)!.x" 
-                :y1="getNode(conn.from)!.y" 
-                :x2="getNode(conn.to)!.x" 
-                :y2="getNode(conn.to)!.y" 
-                stroke="#818cf8" 
-                stroke-width="2.5" 
-                marker-end="url(#arrowhead)" 
-              />
-            </g>
-          </svg>
-
-          <!-- Render Nodes (Interactive Shapes) -->
+        <!-- Liste des schémas -->
+        <div v-else class="space-y-2 max-h-[450px] overflow-y-auto pr-1">
           <div 
-            v-for="node in nodes" 
-            :key="node.id"
-            class="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing select-none"
-            :style="{ top: `${node.y}px`, left: `${node.x}px` }"
-            @mousedown.stop="onNodeMouseDown(node, $event)"
-            @click.stop="onNodeClick(node)"
+            v-for="diag in diagrams" 
+            :key="diag.id"
+            @click="selectDiagram(diag)"
+            class="p-3.5 border rounded-2xl cursor-pointer transition-all flex items-center justify-between group"
+            :class="[
+              selectedDiagram?.id === diag.id 
+                ? 'border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold' 
+                : 'border-slate-100 hover:border-slate-200 dark:border-slate-800 dark:hover:border-slate-700 text-slate-700 dark:text-slate-350'
+            ]"
           >
-            <!-- Rectangle node -->
-            <div 
-              v-if="node.type === 'rect'"
-              class="w-32 h-11 rounded-xl border flex items-center justify-center text-center px-2 text-xs font-bold text-white shadow-md transition-all"
-              :class="[
-                node.color,
-                selectedNodeId === node.id ? 'ring-2 ring-indigo-500 scale-105 ring-offset-2 dark:ring-offset-slate-900' : ''
-              ]"
-            >
-              {{ node.label }}
+            <div class="flex items-center gap-2.5 min-w-0">
+              <Activity class="w-4 h-4 flex-shrink-0 text-slate-400" :class="{ 'text-indigo-500': selectedDiagram?.id === diag.id }" />
+              <span class="text-xs truncate font-semibold">{{ diag.title || 'Diagramme sans titre' }}</span>
             </div>
 
-            <!-- Circle node -->
-            <div 
-              v-else-if="node.type === 'circle'"
-              class="w-16 h-16 rounded-full border flex items-center justify-center text-center p-2 text-[10px] font-extrabold text-white shadow-md transition-all"
-              :class="[
-                node.color,
-                selectedNodeId === node.id ? 'ring-2 ring-indigo-500 scale-105 ring-offset-2 dark:ring-offset-slate-900' : ''
-              ]"
+            <!-- Bouton de suppression -->
+            <button 
+              @click.stop="deleteDiagram(diag)"
+              class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all"
+              title="Supprimer le diagramme"
             >
-              {{ node.label }}
-            </div>
+              <Trash2 class="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-            <!-- Diamond node -->
-            <div 
-              v-else-if="node.type === 'diamond'"
-              class="relative w-16 h-16 flex items-center justify-center text-center transition-all select-none"
-              :class="[selectedNodeId === node.id ? 'scale-105' : '']"
-            >
-              <div 
-                class="absolute inset-0 rotate-45 border rounded-lg shadow-md transition-all"
-                :class="[node.color, selectedNodeId === node.id ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900' : '']"
-              ></div>
-              <span class="relative z-10 text-[9px] font-extrabold text-white px-2 leading-tight">{{ node.label }}</span>
-            </div>
+          <div v-if="diagrams.length === 0" class="text-center py-8 text-xs text-slate-400 italic">
+            Aucun diagramme enregistré. Cliquez sur le bouton + pour commencer !
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- TAB 2: CODE MERMAID EDITOR (Previous version logic) -->
-    <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div class="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col space-y-4">
-        <div>
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white">Code Source Mermaid</h3>
-          <p class="text-[11px] text-slate-400 mt-0.5">Modifiez le code ci-dessous pour mettre à jour le schéma en temps réel</p>
+      <!-- 2. PANNEAU CENTRAL/DROIT : L'ÉDITEUR ACTIF (9 colonnes) -->
+      <div class="lg:col-span-9 space-y-6">
+        <!-- Message si aucun diagramme sélectionné -->
+        <div 
+          v-if="!selectedDiagram" 
+          class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-16 flex flex-col items-center justify-center text-center text-slate-400 bg-white dark:bg-slate-900"
+        >
+          <Activity class="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
+          <h4 class="font-bold text-slate-850 dark:text-slate-200">Aucun diagramme en cours d'édition</h4>
+          <p class="text-xs mt-1">Sélectionnez un diagramme dans la liste latérale ou créez-en un nouveau.</p>
+          <button 
+            @click="createNewDiagram"
+            class="mt-4 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all"
+          >
+            Nouveau diagramme
+          </button>
         </div>
-        <textarea v-model="mermaidCode" rows="15" class="w-full p-4 font-mono text-xs bg-slate-50 border border-slate-200 dark:bg-slate-950/40 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 resize-y"></textarea>
-      </div>
 
-      <div class="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col min-h-[500px]">
-        <div class="flex items-center justify-between border-b border-slate-50 dark:border-slate-800/50 pb-4 mb-6">
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white">Rendu Référant (Simulation)</h3>
-        </div>
-        <div class="flex-1 flex items-center justify-center p-4 border border-dashed border-slate-100 dark:border-slate-850 rounded-2xl bg-slate-50/30 dark:bg-slate-950/20 overflow-auto">
-          <!-- Static representation as fallback -->
-          <svg viewBox="0 0 500 400" class="w-full max-w-[460px] h-auto">
-            <circle cx="250" cy="200" r="100" fill="none" stroke="#6366f1" stroke-dasharray="6,6" stroke-width="2" />
-            <rect x="180" y="80" width="120" height="35" rx="10" fill="#6366f1" />
-            <text x="250" y="102" fill="white" text-anchor="middle" font-size="11" font-weight="bold">Acetyl-CoA</text>
-            <circle cx="350" cy="130" r="30" fill="#10b981" />
-            <text x="350" y="133" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Citrate</text>
-            <circle cx="350" cy="270" r="30" fill="#10b981" />
-            <text x="350" y="273" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Succinate</text>
-            <circle cx="150" cy="200" r="35" fill="#f59e0b" />
-            <text x="150" y="203" fill="white" text-anchor="middle" font-size="10" font-weight="bold">Oxaloacétate</text>
-          </svg>
+        <!-- Éditeur actif -->
+        <div v-else class="space-y-4">
+          <!-- Barre d'outils du diagramme en cours d'édition -->
+          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+              <span class="text-xs font-bold text-slate-450 uppercase tracking-wider">Titre :</span>
+              <input 
+                type="text" 
+                v-model="selectedDiagram.title"
+                class="flex-1 sm:w-64 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+                placeholder="Nom du diagramme..."
+              />
+            </div>
+
+            <!-- Intégration de l'ID du diagramme pour insertion dans les notes -->
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <span 
+                class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-slate-500 font-mono font-bold select-all cursor-help"
+                title="Copiez cette balise et collez-la dans n'importe quelle note de cours pour y afficher ce diagramme."
+              >
+                Code note : [diagram:{{ selectedDiagram.id }}]
+              </span>
+
+              <button 
+                @click="saveDiagram"
+                :disabled="saving"
+                class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/10 disabled:opacity-50 active:scale-95 transition-all"
+              >
+                <Save class="w-3.5 h-3.5" />
+                {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 1: CRÉATEUR VISUEL INTERACTIF -->
+          <div v-if="activeTab === 'visual'" class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+            <!-- Palette de formes (3 cols) -->
+            <div class="md:col-span-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm space-y-4">
+              <div>
+                <h4 class="font-bold text-xs text-slate-850 dark:text-white uppercase tracking-wider">Ajouter des formes</h4>
+                <p class="text-[9px] text-slate-400 mt-0.5">Glissez ou cliquez pour insérer sur le plan</p>
+              </div>
+
+              <div class="grid grid-cols-1 gap-2">
+                <button 
+                  @click="addNode('rect')"
+                  class="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
+                >
+                  <div class="w-8 h-5 bg-indigo-500 rounded border border-indigo-600"></div>
+                  <span class="text-[11px] font-bold">Concept (Rectangle)</span>
+                </button>
+
+                <button 
+                  @click="addNode('circle')"
+                  class="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
+                >
+                  <div class="w-7 h-7 rounded-full bg-emerald-500 border border-emerald-600"></div>
+                  <span class="text-[11px] font-bold">Événement (Cercle)</span>
+                </button>
+
+                <button 
+                  @click="addNode('diamond')"
+                  class="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
+                >
+                  <div class="w-5 h-5 rotate-45 bg-amber-500 border border-amber-600 mx-1"></div>
+                  <span class="text-[11px] font-bold">Décision (Losange)</span>
+                </button>
+              </div>
+
+              <div class="h-[1px] bg-slate-100 dark:bg-slate-800"></div>
+
+              <!-- Options du nœud sélectionné -->
+              <div v-if="selectedNode" class="space-y-4">
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Élément sélectionné</h4>
+                
+                <div>
+                  <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Texte</label>
+                  <input 
+                    type="text" 
+                    v-model="selectedNode.label"
+                    class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Couleur</label>
+                  <div class="flex flex-wrap gap-1.5">
+                    <button 
+                      v-for="color in colors" 
+                      :key="color.bg"
+                      @click="selectedNode.color = color.bg"
+                      class="w-5.5 h-5.5 rounded-full border transition-transform"
+                      :class="[color.bg, selectedNode.color === color.bg ? 'border-slate-900 scale-110 dark:border-white' : 'border-transparent']"
+                      :title="color.name"
+                    ></button>
+                  </div>
+                </div>
+
+                <div class="space-y-2 pt-2">
+                  <button 
+                    @click="startLinking"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border border-slate-250 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
+                    :class="[linkingSourceId === selectedNode.id ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : '']"
+                  >
+                    <LinkIcon class="w-3.5 h-3.5" />
+                    {{ linkingSourceId === selectedNode.id ? 'Cible : cliquez sur une forme' : 'Relier à...' }}
+                  </button>
+                  
+                  <button 
+                    @click="deleteSelectedNode"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-600 border border-rose-100 hover:bg-rose-50 dark:border-rose-950/20 dark:hover:bg-rose-950/30 rounded-xl transition-colors"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                    Supprimer la forme
+                  </button>
+                </div>
+              </div>
+
+              <div v-else class="text-center py-4 text-slate-400 text-xs italic">
+                Sélectionnez une forme sur le canevas pour l'éditer.
+              </div>
+            </div>
+
+            <!-- Canevas d'édition (9 cols) -->
+            <div class="md:col-span-9 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-2 shadow-sm flex flex-col overflow-hidden">
+              <div class="px-4 py-1.5 border-b border-slate-50 dark:border-slate-800/50 flex items-center justify-between text-[9px] text-slate-450 font-bold uppercase tracking-wider select-none">
+                <span>Plan interactif</span>
+                <span>Clic : Sélectionner / Déplacer | Option Relier pour lier</span>
+              </div>
+
+              <!-- Zone SVG interactive -->
+              <div 
+                class="relative w-full h-[450px] bg-slate-50/50 dark:bg-slate-950/15 overflow-hidden select-none cursor-crosshair"
+                @mousemove="onCanvasMouseMove"
+                @mouseup="onCanvasMouseUp"
+                @mouseleave="onCanvasMouseUp"
+              >
+                <!-- Grille arrière-plan -->
+                <svg class="absolute inset-0 w-full h-full text-slate-200/50 dark:text-slate-800/40 pointer-events-none" width="100%" height="100%">
+                  <defs>
+                    <pattern id="canvas-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                      <rect width="20" height="20" fill="none" />
+                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5" />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#canvas-grid)" />
+                </svg>
+
+                <!-- Lignes et Flèches -->
+                <svg class="absolute inset-0 w-full h-full pointer-events-none">
+                  <defs>
+                    <marker 
+                      id="arrow" 
+                      viewBox="0 0 10 10" 
+                      refX="22" 
+                      refY="5" 
+                      markerWidth="6" 
+                      markerHeight="6" 
+                      orient="auto-start-reverse"
+                    >
+                      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#6366f1" />
+                    </marker>
+                  </defs>
+
+                  <g v-for="(conn, idx) in connections" :key="idx">
+                    <line 
+                      v-if="getNode(conn.from) && getNode(conn.to)"
+                      :x1="getNode(conn.from)!.x" 
+                      :y1="getNode(conn.from)!.y" 
+                      :x2="getNode(conn.to)!.x" 
+                      :y2="getNode(conn.to)!.y" 
+                      stroke="#6366f1" 
+                      stroke-width="2" 
+                      marker-end="url(#arrow)" 
+                    />
+                  </g>
+                </svg>
+
+                <!-- Formes/Nœuds interactifs -->
+                <div 
+                  v-for="node in nodes" 
+                  :key="node.id"
+                  class="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing select-none"
+                  :style="{ top: `${node.y}px`, left: `${node.x}px` }"
+                  @mousedown.stop="onNodeMouseDown(node, $event)"
+                  @click.stop="onNodeClick(node)"
+                >
+                  <!-- Rectangle -->
+                  <div 
+                    v-if="node.type === 'rect'"
+                    class="w-28 h-10 rounded-xl border flex items-center justify-center text-center px-2 text-[10px] font-bold text-white shadow transition-all"
+                    :class="[
+                      node.color,
+                      selectedNodeId === node.id ? 'ring-2 ring-indigo-500 scale-105 ring-offset-2 dark:ring-offset-slate-900' : ''
+                    ]"
+                  >
+                    {{ node.label }}
+                  </div>
+
+                  <!-- Cercle -->
+                  <div 
+                    v-else-if="node.type === 'circle'"
+                    class="w-14 h-14 rounded-full border flex items-center justify-center text-center p-2 text-[9px] font-extrabold text-white shadow transition-all"
+                    :class="[
+                      node.color,
+                      selectedNodeId === node.id ? 'ring-2 ring-indigo-500 scale-105 ring-offset-2 dark:ring-offset-slate-900' : ''
+                    ]"
+                  >
+                    {{ node.label }}
+                  </div>
+
+                  <!-- Losange -->
+                  <div 
+                    v-else-if="node.type === 'diamond'"
+                    class="relative w-14 h-14 flex items-center justify-center text-center transition-all select-none"
+                    :class="[selectedNodeId === node.id ? 'scale-105' : '']"
+                  >
+                    <div 
+                      class="absolute inset-0 rotate-45 border rounded-lg shadow transition-all"
+                      :class="[node.color, selectedNodeId === node.id ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900' : '']"
+                    ></div>
+                    <span class="relative z-10 text-[8px] font-extrabold text-white px-2 leading-tight">{{ node.label }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: CODE MERMAID EDITOR -->
+          <div v-else class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <!-- Code Editor (4 cols) -->
+            <div class="md:col-span-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm flex flex-col space-y-3">
+              <div>
+                <h4 class="font-bold text-xs text-slate-850 dark:text-white uppercase tracking-wider">Code Mermaid</h4>
+                <p class="text-[9px] text-slate-400 mt-0.5">Décrivez votre schéma textuellement</p>
+              </div>
+              <textarea 
+                v-model="mermaidCode" 
+                rows="15" 
+                class="w-full p-4 font-mono text-xs bg-slate-50 border border-slate-205 dark:bg-slate-950/40 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-350 resize-y"
+              ></textarea>
+            </div>
+
+            <!-- Visual Preview Simulation (8 cols) -->
+            <div class="md:col-span-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm flex flex-col min-h-[400px]">
+              <h3 class="font-bold text-xs text-slate-800 dark:text-white uppercase tracking-wider border-b border-slate-50 dark:border-slate-800/50 pb-3 mb-4">
+                Aperçu du Rendu
+              </h3>
+              <div class="flex-1 flex items-center justify-center p-4 border border-dashed border-slate-100 dark:border-slate-850 rounded-2xl bg-slate-50/30 dark:bg-slate-950/20 overflow-auto">
+                <div class="text-center space-y-2">
+                  <Activity class="w-8 h-8 text-indigo-500 mx-auto animate-pulse" />
+                  <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Rendu du schéma Mermaid</p>
+                  <pre class="text-[10px] text-slate-400 font-mono bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg select-all max-w-sm truncate">{{ mermaidCode }}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -266,8 +367,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Trash2 } from '@lucide/vue'
+import { ref, computed, onMounted } from 'vue'
+import api from '../../services/api'
+import { 
+  Plus, 
+  Trash2, 
+  Save, 
+  Link as LinkIcon, 
+  Activity, 
+  Clock, 
+  Sparkles, 
+  BookOpen 
+} from '@lucide/vue'
 
 interface VisualNode {
   id: number
@@ -283,42 +394,41 @@ interface Connection {
   to: number
 }
 
+interface BackendDiagram {
+  id: number
+  title: string
+  code: string
+  binder_id: number | null
+  created_at: string
+}
+
+const diagrams = ref<BackendDiagram[]>([])
+const selectedDiagram = ref<BackendDiagram | null>(null)
+
 const activeTab = ref('visual')
 const selectedNodeId = ref<number | null>(null)
 const linkingSourceId = ref<number | null>(null)
 
-// Drag and drop state
+// Chargement & Sauvegarde
+const loadingList = ref(false)
+const saving = ref(false)
+
+// Drag and drop canevas
 const isDragging = ref(false)
 const draggedNodeId = ref<number | null>(null)
 const dragOffset = ref({ x: 0, y: 0 })
 
+// Modèles locaux d'édition
+const nodes = ref<VisualNode[]>([])
+const connections = ref<Connection[]>([])
+const mermaidCode = ref('')
+
 const colors = [
-  { name: 'Indigo', bg: 'bg-indigo-600 border-indigo-700 dark:bg-indigo-600' },
-  { name: 'Émeraude', bg: 'bg-emerald-500 border-emerald-600 dark:bg-emerald-600' },
-  { name: 'Ambre', bg: 'bg-amber-500 border-amber-600 dark:bg-amber-600' },
-  { name: 'Rose', bg: 'bg-pink-500 border-pink-600 dark:bg-pink-600' }
+  { name: 'Indigo', bg: 'bg-indigo-600' },
+  { name: 'Émeraude', bg: 'bg-emerald-500' },
+  { name: 'Ambre', bg: 'bg-amber-500' },
+  { name: 'Rose', bg: 'bg-pink-500' }
 ]
-
-// Visual Nodes Mock dataset (Cycle de Krebs visual reconstruction)
-const nodes = ref<VisualNode[]>([
-  { id: 1, label: 'Acetyl-CoA', type: 'rect', x: 250, y: 110, color: 'bg-indigo-600 border-indigo-700 dark:bg-indigo-600' },
-  { id: 2, label: 'Citrate', type: 'circle', x: 370, y: 180, color: 'bg-emerald-500 border-emerald-600 dark:bg-emerald-600' },
-  { id: 3, label: 'Succinate', type: 'circle', x: 340, y: 340, color: 'bg-emerald-500 border-emerald-600 dark:bg-emerald-600' },
-  { id: 4, label: 'Oxaloacétate', type: 'diamond', x: 130, y: 240, color: 'bg-amber-500 border-amber-600 dark:bg-amber-600' }
-])
-
-const connections = ref<Connection[]>([
-  { from: 1, to: 2 },
-  { from: 2, to: 3 },
-  { from: 3, to: 4 },
-  { from: 4, to: 1 }
-])
-
-const mermaidCode = ref(`graph TD
-  AcetylCoA[Acetyl-CoA] --> Citrate((Citrate))
-  Citrate --> Succinate((Succinate))
-  Succinate --> Oxaloacetate((Oxaloacétate))
-  Oxaloacetate --> AcetylCoA`)
 
 const selectedNode = computed(() => {
   if (selectedNodeId.value === null) return null
@@ -329,11 +439,131 @@ function getNode(id: number) {
   return nodes.value.find(n => n.id === id)
 }
 
-// Add Node tool action
+onMounted(async () => {
+  await fetchDiagramsList()
+})
+
+async function fetchDiagramsList() {
+  loadingList.value = true
+  try {
+    const res = await api.get('/diagrams?per_page=1000')
+    diagrams.value = res.data.data
+  } catch (err) {
+    console.error('Erreur lors du chargement des diagrammes', err)
+  } finally {
+    loadingList.value = false
+  }
+}
+
+function selectDiagram(diag: BackendDiagram) {
+  selectedDiagram.value = { ...diag }
+  selectedNodeId.value = null
+  linkingSourceId.value = null
+  
+  // Parser le contenu du diagramme
+  try {
+    const data = JSON.parse(diag.code)
+    if (data && data.type === 'visual') {
+      nodes.value = data.nodes || []
+      connections.value = data.connections || []
+      activeTab.value = 'visual'
+    } else {
+      // Si ce n'est pas du JSON, on charge comme du code Mermaid
+      mermaidCode.value = diag.code || ''
+      activeTab.value = 'mermaid'
+    }
+  } catch {
+    // Si JSON parse échoue, c'est du Mermaid brut
+    mermaidCode.value = diag.code || ''
+    nodes.value = []
+    connections.value = []
+    activeTab.value = 'mermaid'
+  }
+}
+
+async function createNewDiagram() {
+  const title = prompt('Entrez le titre du nouveau diagramme :')
+  if (!title) return
+  
+  const defaultCode = JSON.stringify({
+    type: 'visual',
+    nodes: [
+      { id: 1, label: 'Concept central', type: 'rect', x: 250, y: 150, color: 'bg-indigo-600' }
+    ],
+    connections: []
+  })
+
+  try {
+    const res = await api.post('/diagrams', {
+      title,
+      code: defaultCode
+    })
+    
+    // Rafraîchir la liste et sélectionner le nouveau diagramme
+    await fetchDiagramsList()
+    const newlyCreated = diagrams.value.find(d => d.id === res.data.id)
+    if (newlyCreated) {
+      selectDiagram(newlyCreated)
+    }
+  } catch (err) {
+    console.error('Erreur de création de diagramme', err)
+    alert('Impossible de créer le diagramme.')
+  }
+}
+
+async function saveDiagram() {
+  if (!selectedDiagram.value) return
+  
+  saving.value = true
+  
+  let codePayload = ''
+  if (activeTab.value === 'visual') {
+    codePayload = JSON.stringify({
+      type: 'visual',
+      nodes: nodes.value,
+      connections: connections.value
+    })
+  } else {
+    codePayload = mermaidCode.value
+  }
+
+  try {
+    await api.put(`/diagrams/${selectedDiagram.value.id}`, {
+      title: selectedDiagram.value.title,
+      code: codePayload
+    })
+    
+    alert('Diagramme enregistré avec succès !')
+    await fetchDiagramsList()
+  } catch (err) {
+    console.error('Erreur lors de la sauvegarde du diagramme', err)
+    alert('Erreur lors de la sauvegarde.')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function deleteDiagram(diag: BackendDiagram) {
+  if (!confirm(`Supprimer le diagramme "${diag.title}" définitivement ?`)) return
+  
+  try {
+    await api.delete(`/diagrams/${diag.id}`)
+    
+    if (selectedDiagram.value?.id === diag.id) {
+      selectedDiagram.value = null
+    }
+    
+    await fetchDiagramsList()
+  } catch (err) {
+    console.error(err)
+    alert('Impossible de supprimer le diagramme.')
+  }
+}
+
+// Outils d'édition visuelle
 function addNode(type: 'rect' | 'circle' | 'diamond') {
   const newId = nodes.value.length ? Math.max(...nodes.value.map(n => n.id)) + 1 : 1
-  let label = 'Nouveau'
-  if (type === 'rect') label = 'Concept'
+  let label = 'Concept'
   if (type === 'circle') label = 'Événement'
   if (type === 'diamond') label = 'Décision'
 
@@ -341,21 +571,18 @@ function addNode(type: 'rect' | 'circle' | 'diamond') {
     id: newId,
     label,
     type,
-    x: 100 + Math.random() * 80,
-    y: 100 + Math.random() * 80,
-    color: 'bg-indigo-600 border-indigo-700 dark:bg-indigo-600'
+    x: 150 + Math.random() * 60,
+    y: 150 + Math.random() * 60,
+    color: 'bg-indigo-600'
   }
   
   nodes.value.push(newNode)
   selectedNodeId.value = newId
 }
 
-// Node actions
 function onNodeClick(node: VisualNode) {
   if (linkingSourceId.value !== null) {
-    // If we are in linking mode, make connection to clicked target node
     if (linkingSourceId.value !== node.id) {
-      // Avoid duplicate links
       const alreadyLinked = connections.value.some(
         c => c.from === linkingSourceId.value && c.to === node.id
       )
@@ -380,25 +607,20 @@ function startLinking() {
 
 function deleteSelectedNode() {
   if (selectedNodeId.value === null) return
-  
-  // Remove node
   nodes.value = nodes.value.filter(n => n.id !== selectedNodeId.value)
-  // Remove linked connections
   connections.value = connections.value.filter(
     c => c.from !== selectedNodeId.value && c.to !== selectedNodeId.value
   )
-  
   selectedNodeId.value = null
   linkingSourceId.value = null
 }
 
-// Drag & drop logic
+// Drag & drop canevas
 function onNodeMouseDown(node: VisualNode, event: MouseEvent) {
   isDragging.value = true
   draggedNodeId.value = node.id
   selectedNodeId.value = node.id
   
-  // Save cursor position offset relative to node origin
   dragOffset.value = {
     x: event.clientX - node.x,
     y: event.clientY - node.y
@@ -410,13 +632,11 @@ function onCanvasMouseMove(event: MouseEvent) {
 
   const node = nodes.value.find(n => n.id === draggedNodeId.value)
   if (node) {
-    // Recalculate coordinates within canvas boundaries
     let newX = event.clientX - dragOffset.value.x
     let newY = event.clientY - dragOffset.value.y
 
-    // Boundaries clamping (e.g. 50 to max)
-    node.x = Math.max(40, Math.min(680, newX))
-    node.y = Math.max(40, Math.min(500, newY))
+    node.x = Math.max(30, Math.min(650, newX))
+    node.y = Math.max(30, Math.min(420, newY))
   }
 }
 
@@ -434,9 +654,5 @@ function onCanvasMouseUp() {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.perspective-1000 {
-  perspective: 1000px;
 }
 </style>

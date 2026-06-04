@@ -46,6 +46,7 @@ def create_app(config_name=None):
         from app.api.v1.pdfs import pdfs_bp
         from app.api.v1.stats import stats_bp
         from app.api.v1.health import health_bp
+        from app.api.v1.blurting import blurting_bp
         
         flask_app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
         flask_app.register_blueprint(users_bp, url_prefix="/api/v1/users")
@@ -57,6 +58,7 @@ def create_app(config_name=None):
         flask_app.register_blueprint(pdfs_bp, url_prefix="/api/v1/pdfs")
         flask_app.register_blueprint(stats_bp, url_prefix="/api/v1/stats")
         flask_app.register_blueprint(health_bp, url_prefix="/api/v1/health")
+        flask_app.register_blueprint(blurting_bp, url_prefix="/api/v1/blurting")
         
         # Auto-create tables in development mode if they don't exist
         if flask_app.config.get("DEBUG") or flask_app.config.get("TESTING"):
