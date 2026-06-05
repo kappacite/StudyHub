@@ -89,7 +89,7 @@ fi
 # Configuration des variables par défaut
 export FLASK_ENV=${FLASK_ENV:-development}
 export FLASK_APP=${FLASK_APP:-app}
-export GEMINI_MODEL=${GEMINI_MODEL:-"gemini-3.1-flash-lite"}
+export GEMINI_MODEL=${GEMINI_MODEL:-"gemma-4-31b"}
 
 # Démarrage avec le Python du venv ou le Python global
 if [ -f "backend/venv/bin/python" ]; then
