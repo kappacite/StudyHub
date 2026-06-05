@@ -7,7 +7,7 @@ class AIService:
     def __init__(self):
         # Utilisation de la clé d'API Gemini et du modèle défini par environnement
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        self.model = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
+        self.model = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
         
     def analyze_blurting(self, note_title: str, note_content: str, user_blurting: str) -> dict:
         """
