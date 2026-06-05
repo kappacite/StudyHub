@@ -436,7 +436,7 @@ async function submitForAnalysis() {
       user_blurting: blurtingText.value,
       duration_seconds: timerSeconds.value
     }, {
-      timeout: 60000 // Permettre à l'IA locale de prendre jusqu'à 60 secondes (1 minute) pour répondre
+      timeout: 120000 // Permettre à l'IA de prendre jusqu'à 120 secondes (2 minutes) pour répondre
     })
     
     resultData.value = response.data
