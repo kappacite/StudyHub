@@ -15,6 +15,12 @@ echo -e "${BLUE}====================================================${NC}"
 LOG_DIR="$(pwd)/logs"
 mkdir -p "$LOG_DIR"
 
+# Chargement d'un éventuel fichier .env
+if [ -f ".env" ]; then
+    echo -e "Chargement des variables d'environnement depuis le fichier .env..."
+    export $(grep -v '^#' .env | xargs)
+fi
+
 # Variables pour suivre les processus
 OLLAMA_SPAWNED=false
 BACKEND_PID=""
@@ -64,57 +70,13 @@ if ! command -v npm &> /dev/null; then
 fi
 echo -e "${GREEN}✓ npm est installé ($(npm -v))${NC}"
 
-# Vérifier Ollama
-if ! command -v ollama &> /dev/null; then
-    echo -e "${YELLOW}⚠️  Attention : Ollama n'est pas installé sur ce système.${NC}"
+# 2. Vérification de la configuration Gemini
+echo -e "\n${BLUE}[2/4] Vérification de la configuration Gemini...${NC}"
+if [ -z "$GEMINI_API_KEY" ]; then
+    echo -e "${YELLOW}⚠️  Attention : La clé GEMINI_API_KEY n'est pas configurée dans votre environnement ou votre fichier .env.${NC}"
     echo -e "Les fonctionnalités IA (blurting, fiches de révision automatiques) ne seront pas disponibles."
 else
-    echo -e "${GREEN}✓ Ollama est installé ($(ollama -v | head -n 1))${NC}"
-fi
-
-# 2. Gestion de Ollama
-if command -v ollama &> /dev/null; then
-    echo -e "\n${BLUE}[2/4] Configuration et démarrage d'Ollama...${NC}"
-    
-    # Vérifier si Ollama tourne déjà
-    if curl -s http://localhost:11434/ &> /dev/null; then
-        echo -e "${GREEN}✓ Ollama est déjà actif sur http://localhost:11434${NC}"
-    else
-        echo -e "${YELLOW}Ollama n'est pas actif. Démarrage d'Ollama en tâche de fond...${NC}"
-        ollama serve > "$LOG_DIR/ollama.log" 2>&1 &
-        OLLAMA_PID=$!
-        OLLAMA_SPAWNED=true
-        
-        # Attente que le service réponde
-        echo -e "Attente d'Ollama..."
-        for i in {1..30}; do
-            if curl -s http://localhost:11434/ &> /dev/null; then
-                echo -e "${GREEN}✓ Ollama a démarré avec succès.${NC}"
-                break
-            fi
-            sleep 1
-            if [ $i -eq 30 ]; then
-                echo -e "${RED}❌ Impossible de démarrer ou contacter Ollama.${NC}"
-                cleanup
-            fi
-        done
-    fi
-    
-    # Vérification et téléchargement du modèle requis
-    MODEL_REQUIRED="qwen2.5:7b"
-    echo -e "Vérification du modèle '${MODEL_REQUIRED}'..."
-    if ollama list | grep -q "$MODEL_REQUIRED"; then
-        echo -e "${GREEN}✓ Modèle ${MODEL_REQUIRED} disponible.${NC}"
-    else
-        echo -e "${YELLOW}Le modèle ${MODEL_REQUIRED} n'est pas installé localement.${NC}"
-        echo -e "${YELLOW}Téléchargement en cours (cela peut prendre quelques minutes selon votre connexion)...${NC}"
-        ollama pull "$MODEL_REQUIRED"
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✓ Modèle ${MODEL_REQUIRED} téléchargé avec succès.${NC}"
-        else
-            echo -e "${RED}⚠️  Erreur lors du téléchargement du modèle ${MODEL_REQUIRED}.${NC}"
-        fi
-    fi
+    echo -e "${GREEN}✓ GEMINI_API_KEY est configurée (Modèle ciblé : ${GEMINI_MODEL:-gemini-1.5-flash})${NC}"
 fi
 
 # 3. Démarrage du Flask Backend
@@ -124,17 +86,10 @@ if [ ! -d "backend" ]; then
     exit 1
 fi
 
-# Chargement d'un éventuel fichier .env
-if [ -f ".env" ]; then
-    echo -e "Chargement des variables d'environnement depuis le fichier .env..."
-    export $(grep -v '^#' .env | xargs)
-fi
-
 # Configuration des variables par défaut
 export FLASK_ENV=${FLASK_ENV:-development}
 export FLASK_APP=${FLASK_APP:-app}
-export OLLAMA_API_URL=${OLLAMA_API_URL:-"http://localhost:11434/api/chat"}
-export OLLAMA_MODEL=${OLLAMA_MODEL:-"qwen2.5:7b"}
+export GEMINI_MODEL=${GEMINI_MODEL:-"gemini-1.5-flash"}
 
 # Démarrage avec le Python du venv ou le Python global
 if [ -f "backend/venv/bin/python" ]; then
@@ -190,16 +145,10 @@ echo -e "\n${GREEN}====================================================${NC}"
 echo -e "${GREEN}🚀 Tous les services ont démarré avec succès !      ${NC}"
 echo -e "   - Frontend : http://localhost:3000"
 echo -e "   - Backend  : http://localhost:5000"
-if command -v ollama &> /dev/null; then
-echo -e "   - Ollama   : http://localhost:11434"
-fi
 echo -e "${GREEN}====================================================${NC}"
 echo -e "\n${BLUE}Pour suivre les logs en temps réel :${NC}"
 echo -e " - Backend  : tail -f logs/backend.log"
 echo -e " - Frontend : tail -f logs/frontend.log"
-if [ "$OLLAMA_SPAWNED" = true ]; then
-echo -e " - Ollama   : tail -f logs/ollama.log"
-fi
 echo -e "\nAppuyez sur ${YELLOW}Ctrl+C${NC} pour arrêter tous les services d'un coup."
 
 # Garder le script en cours d'exécution

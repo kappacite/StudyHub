@@ -5,17 +5,22 @@ import os
 
 class AIService:
     def __init__(self):
-        # Utilisation de l'API d'Ollama locale par défaut
-        self.ollama_url = os.environ.get("OLLAMA_API_URL", "http://localhost:11434/api/chat")
-        # qwen2.5:7b est configuré par défaut pour un raisonnement et des analyses d'une grande précision.
-        self.ollama_model = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+        # Utilisation de la clé d'API Gemini et du modèle défini par environnement
+        self.api_key = os.environ.get("GEMINI_API_KEY")
+        self.model = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
         
     def analyze_blurting(self, note_title: str, note_content: str, user_blurting: str) -> dict:
         """
-        Compare la note originale (le cours modèle) avec le blurting rédigé par l'étudiant.
+        Compare la note originale (le cours modèle) avec le blurting rédigé par l'étudiant via l'API Gemini.
         Retourne une analyse sous forme de dictionnaire JSON.
         """
-        # Détermination du nombre de flashcards adaptatif (plus nombreuses et exhaustives) selon la taille de la note
+        if not self.api_key:
+            raise RuntimeError(
+                "La clé d'API Gemini n'est pas configurée. "
+                "Veuillez définir la variable d'environnement GEMINI_API_KEY dans votre fichier .env."
+            )
+            
+        # Détermination du nombre de flashcards adaptatif selon la taille de la note
         word_count = len(note_content.split())
         if word_count < 150:
             max_cards_desc = "d'environ 3 à 5 cartes mémoires"
@@ -49,36 +54,46 @@ class AIService:
             f"Restitution de l'étudiant (Ce qu'il a rédigé de mémoire) :\n"
             f"{user_blurting}"
         )
-        
+
         payload = {
-            "model": self.ollama_model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
+            "contents": [
+                {
+                    "parts": [{"text": user_message}]
+                }
             ],
-            "stream": False,
-            "format": "json",
-            "keep_alive": "15m",
-            "options": {
-                "temperature": 0.2,       # Température basse pour privilégier la rigueur logique et le respect du format JSON
-                "top_p": 0.9,             # Équilibre de diversité
-                "num_ctx": 4096,          # Limitation du contexte à 4096 tokens pour optimiser la mémoire et le temps d'inférence
-                "num_predict": 3072       # Limite augmentée à 3072 tokens pour éviter les troncatures sur de longs rendus de flashcards
+            "systemInstruction": {
+                "parts": [{"text": system_prompt}]
+            },
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "temperature": 0.2
             }
         }
-        
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
+
         try:
             req = urllib.request.Request(
-                self.ollama_url,
+                url,
                 data=json.dumps(payload).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
                 method="POST"
             )
             
-            # Temps d'attente maximum de 60 secondes (1 minute) pour le modèle local
-            with urllib.request.urlopen(req, timeout=60) as response:
+            with urllib.request.urlopen(req, timeout=30) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
-                content = res_data.get("message", {}).get("content", "")
+                
+                candidates = res_data.get("candidates", [])
+                if not candidates:
+                    raise RuntimeError("Aucun candidat renvoyé par l'API Gemini.")
+                    
+                candidate = candidates[0]
+                content_obj = candidate.get("content", {})
+                parts = content_obj.get("parts", [])
+                if not parts:
+                    raise RuntimeError("Aucune partie de contenu renvoyée par l'API Gemini.")
+                    
+                content = parts[0].get("text", "")
                 
                 # Extraction robuste du bloc JSON par recherche d'accolades
                 start_idx = content.find('{')
@@ -90,14 +105,23 @@ class AIService:
                 
                 return json.loads(json_str)
                 
+        except urllib.error.HTTPError as e:
+            error_body = ""
+            try:
+                error_body = e.read().decode("utf-8")
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"Erreur HTTP lors de l'appel à l'API Gemini ({e.code}) : {e.reason}. Détails : {error_body}"
+            ) from e
         except urllib.error.URLError as e:
             raise RuntimeError(
-                f"Impossible de se connecter au service d'IA local Ollama ({self.ollama_url}). "
-                "Veuillez vous assurer qu'Ollama est démarré (`ollama serve`) et que le modèle est disponible."
+                "Impossible de se connecter à l'API Gemini. "
+                "Veuillez vérifier votre connexion internet et les paramètres réseau."
             ) from e
         except json.JSONDecodeError as e:
             raise RuntimeError(
-                "Le modèle d'IA a renvoyé une réponse invalide qui n'a pas pu être analysée comme du JSON."
+                "Le modèle d'IA Gemini a renvoyé une réponse invalide qui n'a pas pu être analysée comme du JSON."
             ) from e
         except Exception as e:
-            raise RuntimeError(f"Une erreur est survenue lors de l'analyse IA : {str(e)}") from e
+            raise RuntimeError(f"Une erreur est survenue lors de l'analyse IA avec Gemini : {str(e)}") from e

@@ -451,7 +451,7 @@ async function submitForAnalysis() {
   } catch (err: any) {
     console.error('Erreur lors de l\'analyse par l\'IA', err)
     const errMsg = err.response?.data?.error?.message || err.message || 'Une erreur inconnue est survenue.'
-    alert(`Erreur d'analyse IA : ${errMsg}\n\nAssurez-vous qu'Ollama est bien démarré sur votre machine locale.`)
+    alert(`Erreur d'analyse IA : ${errMsg}\n\nAssurez-vous que la clé d'API Gemini est correctement configurée et valide.`)
     // Reprendre le chrono si l'analyse échoue
     startTimer()
   } finally {
