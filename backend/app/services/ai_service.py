@@ -126,7 +126,7 @@ class AIService:
                 method="POST"
             )
             
-            with urllib.request.urlopen(req, timeout=30) as response:
+            with urllib.request.urlopen(req, timeout=90) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
                 
                 candidates = res_data.get("candidates", [])
