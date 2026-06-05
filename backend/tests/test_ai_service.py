@@ -15,7 +15,7 @@ def test_ai_service_missing_api_key(monkeypatch):
 @patch("urllib.request.urlopen")
 def test_ai_service_success(mock_urlopen, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test_key")
-    monkeypatch.setenv("GEMINI_MODEL", "gemma-4-26b-a4b-it")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash")
     
     # Simuler la réponse de l'API Gemini
     mock_response = MagicMock()
