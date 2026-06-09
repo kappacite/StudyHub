@@ -598,6 +598,114 @@
         </div>
       </transition>
 
+      <!-- ============================================================ -->
+      <!-- INPUT MODAL (remplace les prompt/confirm/alert natifs)       -->
+      <!-- ============================================================ -->
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="inputModal.visible"
+          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm no-print"
+          @click.self="inputModal.onCancel()"
+        >
+          <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 scale-95 translate-y-2"
+            enter-to-class="opacity-100 scale-100 translate-y-0"
+          >
+            <div
+              v-if="inputModal.visible"
+              class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden"
+            >
+              <!-- Header -->
+              <div class="px-6 pt-6 pb-4 flex items-start gap-4">
+                <div
+                  class="flex items-center justify-center w-11 h-11 rounded-2xl flex-shrink-0 text-white shadow-lg"
+                  :class="inputModal.iconBg || 'bg-indigo-500'"
+                >
+                  <component :is="inputModal.icon" class="w-5 h-5" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-bold text-slate-900 dark:text-white text-base leading-tight">{{ inputModal.title }}</h3>
+                  <p v-if="inputModal.description" class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{{ inputModal.description }}</p>
+                </div>
+                <button @click="inputModal.onCancel()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors mt-0.5">
+                  <X class="w-5 h-5" />
+                </button>
+              </div>
+
+              <!-- Fields -->
+              <div class="px-6 pb-2 space-y-3">
+                <div v-for="(field, i) in inputModal.fields" :key="i">
+                  <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">{{ field.label }}</label>
+
+                  <!-- Texte -->
+                  <input
+                    v-if="field.type === 'text' || field.type === 'textarea'"
+                    v-model="field.value"
+                    :placeholder="field.placeholder || ''"
+                    :ref="i === 0 ? 'modalFirstInput' : undefined"
+                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    @keydown.enter.prevent="inputModal.onConfirm()"
+                    @keydown.escape.prevent="inputModal.onCancel()"
+                  />
+
+                  <!-- Booléen (Vrai / Faux) -->
+                  <div v-else-if="field.type === 'bool'" class="flex gap-3">
+                    <button
+                      @click="field.value = true"
+                      class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
+                      :class="field.value === true ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400' : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-emerald-300'"
+                    >
+                      ✓ Vrai
+                    </button>
+                    <button
+                      @click="field.value = false"
+                      class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
+                      :class="field.value === false ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400' : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-rose-300'"
+                    >
+                      ✗ Faux
+                    </button>
+                  </div>
+
+                  <!-- Select diagramme -->
+                  <select
+                    v-else-if="field.type === 'select'"
+                    v-model="field.value"
+                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  >
+                    <option v-for="opt in field.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex gap-3 px-6 py-5">
+                <button
+                  @click="inputModal.onCancel()"
+                  class="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  @click="inputModal.onConfirm()"
+                  class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95 shadow-md"
+                  :class="inputModal.confirmBg || 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'"
+                >
+                  {{ inputModal.confirmLabel || 'Confirmer' }}
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </div>
+      </Transition>
+
       <!-- Floating Selection Action Bar -->
       <transition 
         enter-active-class="transition duration-200 ease-out"
@@ -806,6 +914,60 @@ const selectionStart = ref(0)
 const selectionEnd = ref(0)
 const showSelectionMenu = ref(false)
 const selectionMenuPos = ref({ top: 0, left: 0 })
+
+// ---------------------------------------------------------------
+// Modal stylisé (remplace prompt / confirm / alert)
+// ---------------------------------------------------------------
+interface ModalField {
+  label: string
+  type: 'text' | 'bool' | 'select'
+  value: any
+  placeholder?: string
+  options?: { value: any; label: string }[]
+}
+interface ModalConfig {
+  visible: boolean
+  title: string
+  description?: string
+  icon: any
+  iconBg?: string
+  confirmBg?: string
+  confirmLabel?: string
+  fields: ModalField[]
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+const inputModal = ref<ModalConfig>({
+  visible: false,
+  title: '',
+  icon: null,
+  fields: [],
+  onConfirm: () => {},
+  onCancel: () => {}
+})
+
+function openModal(config: Omit<ModalConfig, 'visible' | 'onConfirm' | 'onCancel'>): Promise<ModalField[] | null> {
+  return new Promise((resolve) => {
+    inputModal.value = {
+      ...config,
+      visible: true,
+      onConfirm: () => {
+        inputModal.value.visible = false
+        resolve([...inputModal.value.fields])
+      },
+      onCancel: () => {
+        inputModal.value.visible = false
+        resolve(null)
+      }
+    }
+    // Focus le premier champ après rendu
+    setTimeout(() => {
+      const el = document.querySelector<HTMLElement>('.modal-first-input')
+      el?.focus()
+    }, 50)
+  })
+}
 
 const title = ref('')
 const binderId = ref<number | null>(null)
@@ -1645,7 +1807,7 @@ function handleTextareaSelect(event: Event) {
   showSelectionMenu.value = false
 }
 
-function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'code' | 'def' | 'qcm' | 'ordre' | 'assoc' | 'vf' | 'math_bloc' | 'math_ligne' | 'diagramme') {
+async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'code' | 'def' | 'qcm' | 'ordre' | 'assoc' | 'vf' | 'math_bloc' | 'math_ligne' | 'diagramme') {
   const textarea = textareaRef.value
   if (!textarea) return
   
@@ -1664,53 +1826,115 @@ function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'code' | '
   } else if (type === 'code') {
     replaced = `\`${selected}\``
   } else if (type === 'def') {
-    const definition = prompt("Entrez la définition pour ce terme :", "")
-    if (definition === null) return
-    replaced = `[${selected}]{def:${definition.trim() || 'Définition...'}}`
+    const result = await openModal({
+      title: 'Définition info-bulle',
+      description: `Associer une définition au terme sélectionné : « ${selected} »`,
+      icon: BookOpen,
+      iconBg: 'bg-emerald-500',
+      confirmBg: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20',
+      confirmLabel: 'Ajouter la définition',
+      fields: [
+        { label: 'Définition', type: 'text', value: '', placeholder: 'Entrez la définition...' }
+      ]
+    })
+    if (!result) return
+    replaced = `[${selected}]{def:${result[0].value.trim() || 'Définition...'}}`
   } else if (type === 'qcm') {
-    const question = prompt("QCM - Entrez la question :", "Question ?")
-    if (question === null) return
-    const opt1 = prompt("QCM - Entrez une fausse option 1 :", "Option fausse 1")
-    if (opt1 === null) return
-    const opt2 = prompt("QCM - Entrez une fausse option 2 :", "Option fausse 2")
-    if (opt2 === null) return
-    replaced = `{{qcm::${question}::${opt1}|*${selected}*|${opt2}}}`
+    const result = await openModal({
+      title: 'Créer un QCM',
+      description: `La bonne réponse sera : « ${selected} »`,
+      icon: HelpCircle,
+      iconBg: 'bg-purple-500',
+      confirmBg: 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20',
+      confirmLabel: 'Créer le QCM',
+      fields: [
+        { label: 'Question', type: 'text', value: 'Question ?', placeholder: 'Entrez la question...' },
+        { label: 'Option fausse 1', type: 'text', value: '', placeholder: 'Mauvaise réponse 1...' },
+        { label: 'Option fausse 2', type: 'text', value: '', placeholder: 'Mauvaise réponse 2...' }
+      ]
+    })
+    if (!result) return
+    replaced = `{{qcm::${result[0].value}::${result[1].value}|*${selected}*|${result[2].value}}}`
   } else if (type === 'ordre') {
-    const titleVal = prompt("Séquence - Entrez le titre de la séquence :", "Ordre")
-    if (titleVal === null) return
-    const step2 = prompt("Séquence - Entrez l'étape suivante :", "Étape suivante")
-    if (step2 === null) return
-    replaced = `{{ordre::${titleVal}::${selected} > ${step2}}}`
+    const result = await openModal({
+      title: 'Séquence ordonnée',
+      description: `« ${selected} » sera la première étape.`,
+      icon: ListOrdered,
+      iconBg: 'bg-amber-500',
+      confirmBg: 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20',
+      confirmLabel: 'Créer la séquence',
+      fields: [
+        { label: 'Titre de la séquence', type: 'text', value: 'Ordre', placeholder: 'Ex : Étapes de la photosynthèse' },
+        { label: 'Étape suivante', type: 'text', value: '', placeholder: 'Entrez l’étape qui suit...' }
+      ]
+    })
+    if (!result) return
+    replaced = `{{ordre::${result[0].value}::${selected} > ${result[1].value}}}`
   } else if (type === 'assoc') {
-    const titleVal = prompt("Associations - Entrez le titre :", "Relations")
-    if (titleVal === null) return
-    const val = prompt(`Associations - Entrez la valeur à associer à "${selected}" :`, "Valeur")
-    if (val === null) return
-    replaced = `{{assoc::${titleVal}::${selected} = ${val}}}`
+    const result = await openModal({
+      title: 'Créer une association',
+      description: `« ${selected} » sera associé à une valeur.`,
+      icon: LinkIcon,
+      iconBg: 'bg-pink-500',
+      confirmBg: 'bg-pink-600 hover:bg-pink-700 shadow-pink-600/20',
+      confirmLabel: 'Créer l’association',
+      fields: [
+        { label: 'Titre du groupe', type: 'text', value: 'Relations', placeholder: 'Ex : Capitales' },
+        { label: `Valeur associée à « ${selected} »`, type: 'text', value: '', placeholder: 'Ex : Paris' }
+      ]
+    })
+    if (!result) return
+    replaced = `{{assoc::${result[0].value}::${selected} = ${result[1].value}}}`
   } else if (type === 'vf') {
-    const isTrue = confirm(`Vrai/Faux - L'assertion "${selected}" est-elle VRAIE ? (OK = Vrai, Annuler = Faux)`)
-    const ans = isTrue ? 'Vrai' : 'Faux'
-    const justification = prompt("Vrai/Faux - Entrez la justification :", "Justification...")
-    if (justification === null) return
-    replaced = `{{vf::${selected}::${ans}::${justification}}}`
+    const result = await openModal({
+      title: 'Vrai / Faux',
+      description: `L’assertion : « ${selected} »`,
+      icon: CheckCircle2,
+      iconBg: 'bg-rose-500',
+      confirmBg: 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20',
+      confirmLabel: 'Créer la question',
+      fields: [
+        { label: 'Cette assertion est...', type: 'bool', value: true },
+        { label: 'Justification', type: 'text', value: '', placeholder: 'Expliquez pourquoi...' }
+      ]
+    })
+    if (!result) return
+    const ans = result[0].value ? 'Vrai' : 'Faux'
+    replaced = `{{vf::${selected}::${ans}::${result[1].value || 'Justification...'}}}`
   } else if (type === 'math_bloc') {
     replaced = `$$\n${selected}\n$$`
   } else if (type === 'math_ligne') {
     replaced = `$${selected}$`
   } else if (type === 'diagramme') {
     if (allUserDiagrams.value.length === 0) {
-      alert("Vous n'avez créé aucun diagramme pour le moment. Allez dans le module 'Diagrammes' pour en créer un.")
+      await openModal({
+        title: 'Aucun diagramme',
+        description: 'Vous n’avez créé aucun diagramme. Allez dans le module Diagrammes pour en créer un.',
+        icon: Image,
+        iconBg: 'bg-sky-500',
+        confirmLabel: 'Compris',
+        fields: []
+      })
       return
     }
-    const diagList = allUserDiagrams.value.map(d => `#${d.id}: ${d.title}`).join('\n')
-    const choice = prompt(`Sélectionnez un diagramme en entrant son ID :\n\n${diagList}\n`, "")
-    if (choice === null) return
-    const diagId = Number(choice.trim())
-    if (isNaN(diagId) || !allUserDiagrams.value.some(d => d.id === diagId)) {
-      alert("ID de diagramme invalide.")
-      return
-    }
-    replaced = `[diagram:${diagId}]`
+    const result = await openModal({
+      title: 'Insérer un diagramme',
+      description: 'Sélectionnez le diagramme à insérer dans la note.',
+      icon: Image,
+      iconBg: 'bg-sky-500',
+      confirmBg: 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/20',
+      confirmLabel: 'Insérer',
+      fields: [
+        {
+          label: 'Diagramme',
+          type: 'select',
+          value: allUserDiagrams.value[0]?.id,
+          options: allUserDiagrams.value.map(d => ({ value: d.id, label: d.title }))
+        }
+      ]
+    })
+    if (!result) return
+    replaced = `[diagram:${result[0].value}]`
   }
   
   noteBody.value = text.substring(0, start) + replaced + text.substring(end)
@@ -1898,19 +2122,31 @@ function insertDefinitionTooltip() {
   const selected = text.substring(start, end)
   
   if (!selected.trim()) {
-    alert("Veuillez sélectionner un mot ou un terme dans le texte pour lui associer une définition.")
+    await openModal({
+      title: 'Sélection requise',
+      description: 'Veuillez sélectionner un mot ou un terme dans le texte pour lui associer une définition.',
+      icon: BookOpen,
+      iconBg: 'bg-emerald-500',
+      confirmLabel: 'Compris',
+      fields: []
+    })
     return
   }
-  
-  const definition = prompt(`Entrez la définition pour le terme "${selected}" :`)
-  if (definition === null) return // User cancelled
-  
-  if (!definition.trim()) {
-    alert("La définition ne peut pas être vide.")
-    return
-  }
-  
-  const replacement = `[${selected}]{def:${definition.trim()}}`
+
+  const result = await openModal({
+    title: 'Définition info-bulle',
+    description: `Terme sélectionné : « ${selected} »`,
+    icon: BookOpen,
+    iconBg: 'bg-emerald-500',
+    confirmBg: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20',
+    confirmLabel: 'Ajouter la définition',
+    fields: [
+      { label: 'Définition', type: 'text', value: '', placeholder: `Définissez « ${selected} »...` }
+    ]
+  })
+  if (!result || !result[0].value.trim()) return
+
+  const replacement = `[${selected}]{def:${result[0].value.trim()}}`
   noteBody.value = text.substring(0, start) + replacement + text.substring(end)
   
   setTimeout(() => {
