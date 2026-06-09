@@ -84,84 +84,22 @@
 
     <!-- View 2: PDF Interactive Reader & Annotator -->
     <template v-else>
-      <!-- Navigation / Controls -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-        <div class="flex items-center gap-2 text-sm font-semibold">
-          <button 
-            @click="activePdf = null" 
-            class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
-          >
-            Documents
-          </button>
-          <ChevronRight class="w-4 h-4 text-slate-400" />
-          <span class="text-slate-800 dark:text-white font-bold truncate max-w-[200px]">{{ activePdf.name }}</span>
-        </div>
-
-        <!-- Toolbar Reader Controls -->
-        <div class="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-sm">
-          <button @click="prevPage" :disabled="currentPage === 1" class="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg disabled:opacity-40">
-            <ChevronLeft class="w-4 h-4" />
-          </button>
-          <span class="text-xs font-bold px-1 select-none">Page {{ currentPage }} / {{ activePdf.pages.length }}</span>
-          <button @click="nextPage" :disabled="currentPage === activePdf.pages.length" class="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg disabled:opacity-40">
-            <ChevronRight class="w-4 h-4" />
-          </button>
-          
-          <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
-
-          <button @click="zoomIn" class="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg">
-            <ZoomIn class="w-4 h-4" />
-          </button>
-          <span class="text-xs font-bold select-none">{{ zoom }}%</span>
-          <button @click="zoomOut" class="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg">
-            <ZoomOut class="w-4 h-4" />
-          </button>
-        </div>
+      <div class="flex items-center gap-2 text-sm font-semibold border-b border-slate-100 dark:border-slate-800 pb-4">
+        <button 
+          @click="pdfStore.closePdf" 
+          class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+        >
+          Documents
+        </button>
+        <ChevronRight class="w-4 h-4 text-slate-400" />
+        <span class="text-slate-800 dark:text-white font-bold truncate max-w-[200px]">{{ activePdf?.name }}</span>
       </div>
 
       <!-- Document Split Pane (Visualizer + Annotator) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mt-6">
         <!-- Visualizer Area (8 cols) -->
-        <div class="lg:col-span-8 flex justify-center bg-slate-100 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 p-6 rounded-3xl overflow-auto min-h-[500px]">
-          <!-- Simulated A4 Paper page rendering -->
-          <div 
-            class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-lg border border-slate-100 dark:border-slate-800/80 p-12 transition-transform duration-200 transform origin-top max-w-[800px] w-full min-h-[600px] flex flex-col justify-between relative"
-            :style="{ transform: `scale(${zoom / 100})` }"
-          >
-            <!-- Watermark/Header of simulated page -->
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-6 text-[10px] text-slate-400 font-semibold uppercase tracking-wider select-none">
-              <span>{{ activePdf.name }}</span>
-              <span>Page {{ currentPage }}</span>
-            </div>
-
-            <!-- Page Rich Text Content -->
-            <div class="flex-1 space-y-4 prose prose-slate max-w-none dark:prose-invert">
-              <h2 class="text-lg font-bold text-slate-950 dark:text-white leading-tight">
-                {{ activePageContent.title }}
-              </h2>
-              <div 
-                v-html="activePageContent.body" 
-                class="text-xs leading-relaxed space-y-3"
-              ></div>
-            </div>
-
-            <!-- Footer of simulated page -->
-            <div class="border-t border-slate-100 dark:border-slate-800 pt-3 mt-8 flex items-center justify-between text-[10px] text-slate-400 font-semibold uppercase tracking-wider select-none">
-              <span>StudyHub PDF Reader</span>
-              <span>Série 2026</span>
-            </div>
-
-            <!-- Visual annotation pin (simulation) -->
-            <div 
-              v-for="pin in currentPageAnnotations" 
-              :key="pin.id"
-              class="absolute w-6 h-6 rounded-full bg-indigo-600/90 text-white flex items-center justify-center font-bold text-[10px] shadow shadow-indigo-600/30 animate-pulse border-2 border-white select-none cursor-pointer"
-              :style="{ top: `${pin.y}%`, left: `${pin.x}%` }"
-              :title="pin.text"
-            >
-              {{ pin.id }}
-            </div>
-          </div>
+        <div class="lg:col-span-8">
+          <PdfReader />
         </div>
 
         <!-- Annotator Panel (4 cols) -->
@@ -193,7 +131,7 @@
             <h4 class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Liste des notes</h4>
             <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
               <div 
-                v-for="anno in activePdf.annotations" 
+                v-for="anno in activePdf?.annotations" 
                 :key="anno.id"
                 class="p-3 bg-slate-50 dark:bg-slate-850/40 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-start justify-between gap-3 group"
               >
@@ -216,7 +154,7 @@
               </div>
 
               <div 
-                v-if="activePdf.annotations.length === 0" 
+                v-if="activePdf?.annotations.length === 0" 
                 class="text-center py-6 text-slate-400 text-xs font-semibold uppercase tracking-wider"
               >
                 Aucune annotation
@@ -230,91 +168,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Plus, Eye, Trash2, FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from '@lucide/vue'
+import { ref } from 'vue'
+import { Plus, Eye, Trash2, FileText, ChevronRight } from '@lucide/vue'
+import { storeToRefs } from 'pinia'
+import { usePdfStore } from '../../stores/pdf'
+import PdfReader from '../../components/pdf/PdfReader.vue'
 
-interface Annotation {
-  id: number
-  page: number
-  text: string
-  x: number // position X en pourcentage sur le document
-  y: number // position Y
-}
-
-interface PageContent {
-  title: string
-  body: string
-}
-
-interface PdfDocument {
-  id: number
-  name: string
-  size: string
-  created_at: string
-  pages: PageContent[]
-  annotations: Annotation[]
-}
-
+const pdfStore = usePdfStore()
+const { pdfs, activePdf } = storeToRefs(pdfStore)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const newAnnotationText = ref('')
 
 function triggerFileInput() {
   fileInputRef.value?.click()
 }
-const activePdf = ref<PdfDocument | null>(null)
-const currentPage = ref(1)
-const zoom = ref(100)
-const newAnnotationText = ref('')
 
-const pdfs = ref<PdfDocument[]>([
-  {
-    id: 1,
-    name: 'Cours d\'Optique Géométrique L1.pdf',
-    size: '2.4 Mo',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
-    pages: [
-      { 
-        title: 'Chapitre 1 : Les lois de Snell-Descartes', 
-        body: '<p>L\'optique géométrique repose sur l\'approximation que la longueur d\'onde de la lumière est négligeable devant les dimensions des obstacles.</p><h3>Loi de la Réflexion</h3><p>Le rayon réfléchi appartient au plan d\'incidence et l\'angle de réflexion est égal à l\'angle d\'incidence : <strong>i1 = i\'1</strong>.</p><h3>Loi de la Réfraction</h3><p>Les indices de réfraction n1 et n2 et les angles d\'incidence i1 et de réfraction i2 sont liés par la relation : <strong>n1 * sin(i1) = n2 * sin(i2)</strong>.</p>' 
-      },
-      { 
-        title: 'Chapitre 2 : Systèmes centrés et approximation de Gauss', 
-        body: '<p>Un système optique est dit centré s\'il possède un axe de symétrie de révolution appelé axe optique.</p><h3>Conditions de Gauss</h3><p>Pour obtenir des images nettes (stigmatisme approché), les conditions de Gauss doivent être respectées :</p><ul><li>Les rayons incidents doivent être peu inclinés sur l\'axe optique.</li><li>Les rayons doivent couper l\'axe optique à proximité immédiate du centre optique.</li></ul>' 
-      }
-    ],
-    annotations: [
-      { id: 1, page: 1, text: 'Important : Formule n1 sin(i1) = n2 sin(i2) à retenir par cœur !', x: 25, y: 70 },
-      { id: 2, page: 2, text: 'Définition à réviser pour le DS.', x: 40, y: 35 }
-    ]
-  },
-  {
-    id: 2,
-    name: 'TD Biochimie - Cycle de Krebs.pdf',
-    size: '1.8 Mo',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-    pages: [
-      {
-        title: 'Exercice 1 : Réactions enzymatiques du cycle',
-        body: '<p>Le cycle de Krebs est une série de réactions chimiques utilisées par tous les organismes aérobies pour générer de l\'énergie par l\'oxydation de l\'acétate.</p><p>1. Expliquez le rôle de la citrate synthase dans l\'étape d\'assemblage initial.</p><p>2. Donnez le bilan énergétique global du cycle en termes d\'équivalents ATP.</p>'
-      }
-    ],
-    annotations: []
-  }
-])
-
-const activePageContent = computed(() => {
-  if (!activePdf.value) return { title: '', body: '' }
-  return activePdf.value.pages[currentPage.value - 1] || { title: '', body: '' }
-})
-
-const currentPageAnnotations = computed(() => {
-  if (!activePdf.value) return []
-  return activePdf.value.annotations.filter(a => a.page === currentPage.value)
-})
-
-function openPdf(pdf: PdfDocument) {
-  activePdf.value = pdf
-  currentPage.value = 1
-  zoom.value = 100
+function openPdf(pdf: any) {
+  pdfStore.openPdf(pdf.id)
 }
 
 function handleFileUpload(event: Event) {
@@ -323,78 +193,57 @@ function handleFileUpload(event: Event) {
     const file = target.files[0]
     
     // Simulate creating a new PDF entry
-    const newPdf: PdfDocument = {
-      id: pdfs.value.length ? Math.max(...pdfs.value.map(p => p.id)) + 1 : 1,
+    const newPdf = {
+      id: pdfStore.pdfs.length ? Math.max(...pdfStore.pdfs.map(p => p.id)) + 1 : 1,
       name: file.name,
       size: `${(file.size / (1024 * 1024)).toFixed(1)} Mo`,
       created_at: new Date().toISOString(),
       pages: [
         { 
           title: 'Document importé : Page 1', 
-          body: `<p>Contenu simulé pour le document <strong>${file.name}</strong>.</p><p>Pour brancher les fichiers réels, Capacitor/Filesystem ou l'API REST permettront de charger les données réelles du fichier PDF.</p>`
+          body: `<p class="pdf-text-select">Contenu simulé pour le document <strong>${file.name}</strong>.</p><p class="pdf-text-select">Pour brancher les fichiers réels, Capacitor/Filesystem ou l'API REST permettront de charger les données réelles du fichier PDF.</p>`
         }
       ],
       annotations: []
     }
     
-    pdfs.value.push(newPdf)
+    pdfStore.pdfs.push(newPdf)
   }
 }
 
 function deletePdf(id: number) {
   if (confirm('Voulez-vous supprimer ce document ?')) {
-    pdfs.value = pdfs.value.filter(p => p.id !== id)
-    if (activePdf.value?.id === id) activePdf.value = null
+    pdfStore.pdfs = pdfStore.pdfs.filter(p => p.id !== id)
+    if (pdfStore.activePdf?.id === id) pdfStore.closePdf()
   }
-}
-
-// Reader actions
-function nextPage() {
-  if (activePdf.value && currentPage.value < activePdf.value.pages.length) {
-    currentPage.value++
-  }
-}
-
-function prevPage() {
-  if (currentPage.value > 1) {
-    currentPage.value--
-  }
-}
-
-function zoomIn() {
-  if (zoom.value < 150) zoom.value += 10
-}
-
-function zoomOut() {
-  if (zoom.value > 70) zoom.value -= 10
 }
 
 // Annotations
 function addAnnotation() {
-  if (!activePdf.value || !newAnnotationText.value.trim()) return
+  if (!pdfStore.activePdf || !newAnnotationText.value.trim()) return
 
-  const list = activePdf.value.annotations
+  const list = pdfStore.activePdf.annotations
   const newId = list.length ? Math.max(...list.map(a => a.id)) + 1 : 1
   
   // Random placement on screen for simulation
   const mockX = Math.floor(Math.random() * 40) + 20
   const mockY = Math.floor(Math.random() * 50) + 30
 
-  const newAnno: Annotation = {
+  const newAnno = {
     id: newId,
-    page: currentPage.value,
+    page: pdfStore.currentPage,
     text: newAnnotationText.value.trim(),
     x: mockX,
     y: mockY
   }
 
-  activePdf.value.annotations.push(newAnno)
+  pdfStore.activePdf.annotations.push(newAnno)
   newAnnotationText.value = ''
 }
 
 function deleteAnnotation(id: number) {
-  if (activePdf.value) {
-    activePdf.value.annotations = activePdf.value.annotations.filter(a => a.id !== id)
+  if (pdfStore.activePdf) {
+    pdfStore.activePdf.annotations = pdfStore.activePdf.annotations.filter(a => a.id !== id)
   }
 }
 </script>

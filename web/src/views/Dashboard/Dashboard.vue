@@ -105,6 +105,88 @@
             <p class="text-xs text-slate-400 dark:text-slate-500">{{ weeklyGoalStatusText }}</p>
           </div>
         </div>
+
+        <!-- Section de Statistiques de Cartes (Maturité & Prévisions) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Maturity Distribution -->
+          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
+            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6">
+              <Layers class="w-5 h-5 text-indigo-500" />
+              Maturité des Cartes
+            </h3>
+            <div class="space-y-4">
+              <!-- Horizonal stacked bar -->
+              <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-4 overflow-hidden flex">
+                <div 
+                  v-if="maturityLearningPercent > 0"
+                  class="bg-amber-500 h-full transition-all duration-300" 
+                  :style="{ width: maturityLearningPercent + '%' }"
+                  title="En cours d'apprentissage"
+                ></div>
+                <div 
+                  v-if="maturityYoungPercent > 0"
+                  class="bg-indigo-500 h-full transition-all duration-300" 
+                  :style="{ width: maturityYoungPercent + '%' }"
+                  title="Jeunes cartes"
+                ></div>
+                <div 
+                  v-if="maturityMaturePercent > 0"
+                  class="bg-emerald-500 h-full transition-all duration-300" 
+                  :style="{ width: maturityMaturePercent + '%' }"
+                  title="Cartes matures"
+                ></div>
+              </div>
+              
+              <!-- Legend and counts -->
+              <div class="grid grid-cols-3 gap-2 text-center mt-2">
+                <div class="p-2 bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/10 rounded-2xl">
+                  <span class="block text-[10px] font-bold text-amber-600 dark:text-amber-400">Appr.</span>
+                  <span class="block text-sm font-black text-slate-800 dark:text-white mt-0.5">{{ dashboardData?.maturity_distribution?.learning || 0 }}</span>
+                </div>
+                <div class="p-2 bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/10 rounded-2xl">
+                  <span class="block text-[10px] font-bold text-indigo-600 dark:text-indigo-400">Jeunes</span>
+                  <span class="block text-sm font-black text-slate-800 dark:text-white mt-0.5">{{ dashboardData?.maturity_distribution?.young || 0 }}</span>
+                </div>
+                <div class="p-2 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/10 rounded-2xl">
+                  <span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Matures</span>
+                  <span class="block text-sm font-black text-slate-800 dark:text-white mt-0.5">{{ dashboardData?.maturity_distribution?.mature || 0 }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 7-day Forecast -->
+          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
+            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6">
+              <Calendar class="w-5 h-5 text-indigo-500" />
+              Prévisions (7j)
+            </h3>
+            <div class="h-28 flex items-end justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-1 relative">
+              <div 
+                v-for="item in forecastList" 
+                :key="item.date" 
+                class="flex-1 flex flex-col items-center group cursor-pointer relative"
+              >
+                <!-- Popover value on hover -->
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-slate-950 dark:bg-slate-800 text-white dark:text-slate-200 text-[8px] font-bold px-1 py-0.5 rounded -translate-y-5 z-10 whitespace-nowrap shadow absolute">
+                  {{ item.count }}
+                </span>
+                <!-- Bar -->
+                <div 
+                  class="w-full bg-gradient-to-t from-indigo-500 to-indigo-600 rounded-t-md transition-all duration-500 group-hover:brightness-110"
+                  :style="{ height: getForecastBarHeight(item.count) + 'px' }"
+                ></div>
+                <!-- Label -->
+                <span class="text-[8px] font-bold text-slate-400 dark:text-slate-500 mt-1">
+                  {{ formatForecastDate(item.date) }}
+                </span>
+              </div>
+            </div>
+            <div v-if="forecastList.length === 0" class="text-center py-4 text-slate-400 text-[10px] italic">
+              Aucune prévision.
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Quick actions / Recent Decks (Right column) -->
@@ -210,6 +292,7 @@ const router = useRouter()
 const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
 
 const loading = ref(true)
+const dashboardData = ref<any>(null)
 
 // Reactive statistics from backend
 const totalReviewed = ref(0)
@@ -359,6 +442,48 @@ function getStartAndEndOfWeek() {
   }
 }
 
+const maturityTotal = computed(() => {
+  const dist = dashboardData.value?.maturity_distribution
+  if (!dist) return 0
+  return (dist.learning || 0) + (dist.young || 0) + (dist.mature || 0)
+})
+
+const maturityLearningPercent = computed(() => {
+  if (maturityTotal.value === 0) return 0
+  return Math.round((dashboardData.value.maturity_distribution.learning / maturityTotal.value) * 100)
+})
+
+const maturityYoungPercent = computed(() => {
+  if (maturityTotal.value === 0) return 0
+  return Math.round((dashboardData.value.maturity_distribution.young / maturityTotal.value) * 100)
+})
+
+const maturityMaturePercent = computed(() => {
+  if (maturityTotal.value === 0) return 0
+  return Math.round((dashboardData.value.maturity_distribution.mature / maturityTotal.value) * 100)
+})
+
+const forecastList = computed(() => {
+  const forecast = dashboardData.value?.forecast_7_days
+  if (!forecast) return []
+  return Object.keys(forecast).sort().map(date => ({
+    date,
+    count: forecast[date]
+  }))
+})
+
+function getForecastBarHeight(count: number): number {
+  const counts = forecastList.value.map(i => i.count)
+  const max = Math.max(...counts, 0)
+  if (max === 0) return 4
+  return Math.max(4, Math.round((count / max) * 100)) // Max height 100px
+}
+
+function formatForecastDate(dateStr: string): string {
+  const dateObj = new Date(dateStr)
+  return dateObj.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })
+}
+
 onMounted(async () => {
   loading.value = true
   try {
@@ -396,6 +521,9 @@ onMounted(async () => {
       }).then(res => {
         const totalSec = res.data.reduce((acc: number, item: any) => acc + item.duration_seconds, 0)
         weeklyStudySeconds.value = totalSec
+      }),
+      api.get('/stats/dashboard').then(res => {
+        dashboardData.value = res.data
       }),
       fetchDecksStats()
     ])

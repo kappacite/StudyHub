@@ -78,7 +78,7 @@
         </div>
 
         <!-- User profile snippet -->
-        <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40">
+        <div v-if="authStore.isAuthenticated" class="flex items-center gap-3 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40">
           <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 font-semibold dark:bg-indigo-950/60 dark:text-indigo-400">
             {{ userInitials }}
           </div>
@@ -92,6 +92,14 @@
             title="Se déconnecter"
           >
             <LogOut class="w-4 h-4" />
+          </button>
+        </div>
+        <div v-else class="p-2">
+          <button 
+            @click="router.push('/login')" 
+            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95"
+          >
+            Se connecter
           </button>
         </div>
       </div>

@@ -4,10 +4,6 @@ import { useAuthStore } from '../stores/auth'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: '/',
-    redirect: '/dashboard'
-  },
-  {
     path: '/login',
     name: 'Login',
     component: () => import('../views/Auth/Login.vue'),
@@ -21,58 +17,88 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/',
+    component: () => import('../components/layout/PublicLayout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'Home',
+        component: () => import('../views/Marketplace/Home.vue')
+      },
+      {
+        path: 'explore',
+        name: 'Explore',
+        component: () => import('../views/Marketplace/Explore.vue')
+      },
+      {
+        path: 'package/:id',
+        name: 'PackagePreview',
+        component: () => import('../views/Marketplace/PackagePreview.vue')
+      }
+    ]
+  },
+  {
+    path: '/',
     component: () => import('../components/layout/AppLayout.vue'),
-    meta: { requiresAuth: true },
     children: [
       {
         path: 'dashboard',
         name: 'Dashboard',
-        component: () => import('../views/Dashboard/Dashboard.vue')
+        component: () => import('../views/Dashboard/Dashboard.vue'),
+        meta: { requiresAuth: true }
       },
       {
         path: 'binders',
         name: 'Binders',
-        component: () => import('../views/Binders/Binders.vue')
+        component: () => import('../views/Binders/Binders.vue'),
+        meta: { requiresAuth: true }
       },
       {
         path: 'decks',
         name: 'Decks',
-        component: () => import('../views/Decks/Decks.vue')
+        component: () => import('../views/Decks/Decks.vue'),
+        meta: { requiresAuth: true }
       },
       {
         path: 'decks/:id/study',
         name: 'StudyDeck',
-        component: () => import('../views/Decks/StudyDeck.vue')
+        component: () => import('../views/Decks/StudyDeck.vue'),
+        meta: { requiresAuth: true }
       },
       {
         path: 'reviews',
         name: 'Reviews',
-        component: () => import('../views/Reviews/Reviews.vue')
+        component: () => import('../views/Reviews/Reviews.vue'),
+        meta: { requiresAuth: true }
       },
       {
         path: 'notes',
         name: 'Notes',
-        component: () => import('../views/Notes/Notes.vue')
+        component: () => import('../views/Notes/Notes.vue'),
+        meta: { requiresAuth: true }
       },
       {
         path: 'notes/:id',
         name: 'NoteEdit',
-        component: () => import('../views/Notes/NoteEdit.vue')
+        component: () => import('../views/Notes/NoteEdit.vue'),
+        meta: { requiresAuth: true }
       },
       {
         path: 'notes/:id/blurting',
         name: 'Blurting',
-        component: () => import('../views/Notes/Blurting.vue')
+        component: () => import('../views/Notes/Blurting.vue'),
+        meta: { requiresAuth: true }
       },
       {
         path: 'diagrams',
         name: 'Diagrams',
-        component: () => import('../views/Diagrams/Diagrams.vue')
+        component: () => import('../views/Diagrams/Diagrams.vue'),
+        meta: { requiresAuth: true }
       },
       {
         path: 'pdfs',
         name: 'PDFs',
-        component: () => import('../views/PDFs/PDFs.vue')
+        component: () => import('../views/PDFs/PDFs.vue'),
+        meta: { requiresAuth: true }
       }
     ]
   },

@@ -172,6 +172,56 @@
                 </button>
               </div>
 
+              <!-- Contrôles d'occlusion et d'image d'arrière-plan -->
+              <div class="h-[1px] bg-slate-100 dark:bg-slate-800"></div>
+
+              <div class="space-y-4">
+                <div>
+                  <h4 class="font-bold text-xs text-slate-850 dark:text-white uppercase tracking-wider">Image d'arrière-plan</h4>
+                  <p class="text-[9px] text-slate-400 mt-0.5">Importez une image pour l'occulter</p>
+                </div>
+                
+                <input 
+                  type="file" 
+                  ref="fileInput" 
+                  class="hidden" 
+                  accept="image/*" 
+                  @change="onBackgroundImageUploaded" 
+                />
+                
+                <div class="flex gap-2">
+                  <button 
+                    @click="fileInput?.click()" 
+                    class="flex-1 px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-850 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
+                  >
+                    {{ backgroundImage ? 'Changer l\'image' : 'Importer image' }}
+                  </button>
+                  <button 
+                    v-if="backgroundImage"
+                    @click="backgroundImage = null" 
+                    class="p-2 text-rose-500 border border-rose-100 dark:border-rose-950/20 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/25 transition-colors"
+                    title="Supprimer l'image"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div class="space-y-2 pt-1">
+                  <button 
+                    @click="drawingMode = drawingMode === 'mask' ? 'select' : 'mask'"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border rounded-xl transition-all"
+                    :class="[
+                      drawingMode === 'mask' 
+                        ? 'bg-rose-600 border-rose-700 text-white shadow-sm hover:bg-rose-700' 
+                        : 'border-slate-250 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-350'
+                    ]"
+                  >
+                    <Sparkles class="w-3.5 h-3.5" />
+                    {{ drawingMode === 'mask' ? 'Mode Masque : Actif' : 'Dessiner un masque rect' }}
+                  </button>
+                </div>
+              </div>
+
               <div class="h-[1px] bg-slate-100 dark:bg-slate-800"></div>
 
               <!-- Options du nœud sélectionné -->
@@ -221,8 +271,33 @@
                 </div>
               </div>
 
+              <!-- Options du masque sélectionné -->
+              <div v-else-if="selectedMask" class="space-y-4">
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-rose-500">Masque sélectionné</h4>
+                
+                <div>
+                  <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Texte masqué</label>
+                  <input 
+                    type="text" 
+                    v-model="selectedMask.label"
+                    class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500 font-semibold"
+                    placeholder="ex: Le Noyau"
+                  />
+                </div>
+
+                <div class="pt-2">
+                  <button 
+                    @click="deleteSelectedMask"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-600 border border-rose-100 hover:bg-rose-50 dark:border-rose-950/20 dark:hover:bg-rose-950/30 rounded-xl transition-colors"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                    Supprimer le masque
+                  </button>
+                </div>
+              </div>
+
               <div v-else class="text-center py-4 text-slate-400 text-xs italic">
-                Sélectionnez une forme sur le canevas pour l'éditer.
+                Sélectionnez une forme ou un masque sur le canevas pour l'éditer.
               </div>
             </div>
 
@@ -230,30 +305,26 @@
             <div class="md:col-span-9 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-2 shadow-sm flex flex-col overflow-hidden">
               <div class="px-4 py-1.5 border-b border-slate-50 dark:border-slate-800/50 flex items-center justify-between text-[9px] text-slate-450 font-bold uppercase tracking-wider select-none">
                 <span>Plan interactif</span>
-                <span>Clic : Sélectionner / Déplacer | Option Relier pour lier</span>
+                <span v-if="drawingMode === 'mask'" class="text-rose-500 font-extrabold animate-pulse">Mode Masque actif : Cliquez-glissez pour dessiner un masque</span>
+                <span v-else>Clic : Sélectionner / Déplacer | Option Relier pour lier</span>
               </div>
 
               <!-- Zone SVG interactive -->
               <div 
-                class="relative w-full h-[450px] bg-slate-50/50 dark:bg-slate-950/15 overflow-hidden select-none cursor-crosshair"
+                class="relative w-full h-[450px] bg-slate-50/50 dark:bg-slate-950/15 overflow-hidden select-none"
+                :class="[drawingMode === 'mask' ? 'cursor-cell' : 'cursor-crosshair']"
+                @mousedown="onCanvasMouseDown"
                 @mousemove="onCanvasMouseMove"
                 @mouseup="onCanvasMouseUp"
                 @mouseleave="onCanvasMouseUp"
               >
-                <!-- Grille arrière-plan -->
-                <svg class="absolute inset-0 w-full h-full text-slate-200/50 dark:text-slate-800/40 pointer-events-none" width="100%" height="100%">
+                <!-- SVG global pour grille, image de fond, connexions et masques -->
+                <svg class="absolute inset-0 w-full h-full" style="cursor: inherit;">
                   <defs>
                     <pattern id="canvas-grid" width="20" height="20" patternUnits="userSpaceOnUse">
                       <rect width="20" height="20" fill="none" />
-                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5" />
+                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5" class="text-slate-200/50 dark:text-slate-800/40" />
                     </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill="url(#canvas-grid)" />
-                </svg>
-
-                <!-- Lignes et Flèches -->
-                <svg class="absolute inset-0 w-full h-full pointer-events-none">
-                  <defs>
                     <marker 
                       id="arrow" 
                       viewBox="0 0 10 10" 
@@ -266,19 +337,65 @@
                       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#6366f1" />
                     </marker>
                   </defs>
-
-                  <g v-for="(conn, idx) in connections" :key="idx">
-                    <line 
-                      v-if="getNode(conn.from) && getNode(conn.to)"
-                      :x1="getNode(conn.from)!.x" 
-                      :y1="getNode(conn.from)!.y" 
-                      :x2="getNode(conn.to)!.x" 
-                      :y2="getNode(conn.to)!.y" 
-                      stroke="#6366f1" 
-                      stroke-width="2" 
-                      marker-end="url(#arrow)" 
-                    />
+                  
+                  <!-- Grille -->
+                  <rect width="100%" height="100%" fill="url(#canvas-grid)" class="pointer-events-none" />
+                  
+                  <!-- Image de fond -->
+                  <image 
+                    v-if="backgroundImage" 
+                    :href="backgroundImage" 
+                    x="0" 
+                    y="0" 
+                    width="100%" 
+                    height="100%" 
+                    preserveAspectRatio="xMidYMid meet" 
+                    class="pointer-events-none"
+                  />
+                  
+                  <!-- Connexions -->
+                  <g class="pointer-events-none">
+                    <g v-for="(conn, idx) in connections" :key="idx">
+                      <line 
+                        v-if="getNode(conn.from) && getNode(conn.to)"
+                        :x1="getNode(conn.from)!.x" 
+                        :y1="getNode(conn.from)!.y" 
+                        :x2="getNode(conn.to)!.x" 
+                        :y2="getNode(conn.to)!.y" 
+                        stroke="#6366f1" 
+                        stroke-width="2" 
+                        marker-end="url(#arrow)" 
+                      />
+                    </g>
                   </g>
+                  
+                  <!-- Masques d'occlusion -->
+                  <rect 
+                    v-for="mask in masks" 
+                    :key="mask.id" 
+                    :x="mask.x" 
+                    :y="mask.y" 
+                    :width="mask.width" 
+                    :height="mask.height" 
+                    class="stroke-rose-600 stroke-2 cursor-pointer transition-colors"
+                    :class="[
+                      selectedMaskId === mask.id 
+                        ? 'fill-rose-500/50' 
+                        : 'fill-rose-500/30 hover:fill-rose-500/45'
+                    ]"
+                    :style="selectedMaskId === mask.id ? 'stroke-dasharray: 4;' : ''"
+                    @click.stop="onMaskClick(mask)"
+                  />
+                  
+                  <!-- Rectangle de dessin temporaire -->
+                  <rect 
+                    v-if="drawingMode === 'mask' && tempMask"
+                    :x="tempMask.x"
+                    :y="tempMask.y"
+                    :width="tempMask.width"
+                    :height="tempMask.height"
+                    class="fill-rose-500/25 stroke-rose-600 stroke-2 pointer-events-none"
+                  />
                 </svg>
 
                 <!-- Formes/Nœuds interactifs -->
@@ -375,9 +492,7 @@ import {
   Save, 
   Link as LinkIcon, 
   Activity, 
-  Clock, 
-  Sparkles, 
-  BookOpen 
+  Sparkles
 } from '@lucide/vue'
 
 interface VisualNode {
@@ -423,6 +538,17 @@ const nodes = ref<VisualNode[]>([])
 const connections = ref<Connection[]>([])
 const mermaidCode = ref('')
 
+// Modèles locaux d'occlusion et image de fond
+const drawingMode = ref<'select' | 'mask'>('select')
+const isDrawingMask = ref(false)
+const tempMask = ref<{ startX: number; startY: number; x: number; y: number; width: number; height: number } | null>(null)
+const masks = ref<{ id: string; x: number; y: number; width: number; height: number; label: string }[]>([])
+const selectedMaskId = ref<string | null>(null)
+const backgroundImage = ref<string | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+
+const selectedMask = computed(() => masks.value.find(m => m.id === selectedMaskId.value) || null)
+
 const colors = [
   { name: 'Indigo', bg: 'bg-indigo-600' },
   { name: 'Émeraude', bg: 'bg-emerald-500' },
@@ -459,6 +585,8 @@ function selectDiagram(diag: BackendDiagram) {
   selectedDiagram.value = { ...diag }
   selectedNodeId.value = null
   linkingSourceId.value = null
+  selectedMaskId.value = null
+  drawingMode.value = 'select'
   
   // Parser le contenu du diagramme
   try {
@@ -466,10 +594,14 @@ function selectDiagram(diag: BackendDiagram) {
     if (data && data.type === 'visual') {
       nodes.value = data.nodes || []
       connections.value = data.connections || []
+      backgroundImage.value = data.backgroundImage || null
+      masks.value = data.masks || []
       activeTab.value = 'visual'
     } else {
       // Si ce n'est pas du JSON, on charge comme du code Mermaid
       mermaidCode.value = diag.code || ''
+      backgroundImage.value = null
+      masks.value = []
       activeTab.value = 'mermaid'
     }
   } catch {
@@ -477,6 +609,8 @@ function selectDiagram(diag: BackendDiagram) {
     mermaidCode.value = diag.code || ''
     nodes.value = []
     connections.value = []
+    backgroundImage.value = null
+    masks.value = []
     activeTab.value = 'mermaid'
   }
 }
@@ -490,7 +624,9 @@ async function createNewDiagram() {
     nodes: [
       { id: 1, label: 'Concept central', type: 'rect', x: 250, y: 150, color: 'bg-indigo-600' }
     ],
-    connections: []
+    connections: [],
+    backgroundImage: null,
+    masks: []
   })
 
   try {
@@ -498,6 +634,12 @@ async function createNewDiagram() {
       title,
       code: defaultCode
     })
+    
+    // Réinitialiser les états locaux
+    backgroundImage.value = null
+    masks.value = []
+    selectedMaskId.value = null
+    drawingMode.value = 'select'
     
     // Rafraîchir la liste et sélectionner le nouveau diagramme
     await fetchDiagramsList()
@@ -521,7 +663,9 @@ async function saveDiagram() {
     codePayload = JSON.stringify({
       type: 'visual',
       nodes: nodes.value,
-      connections: connections.value
+      connections: connections.value,
+      backgroundImage: backgroundImage.value,
+      masks: masks.value
     })
   } else {
     codePayload = mermaidCode.value
@@ -617,9 +761,12 @@ function deleteSelectedNode() {
 
 // Drag & drop canevas
 function onNodeMouseDown(node: VisualNode, event: MouseEvent) {
+  if (drawingMode.value === 'mask') return
+  
   isDragging.value = true
   draggedNodeId.value = node.id
   selectedNodeId.value = node.id
+  selectedMaskId.value = null
   
   dragOffset.value = {
     x: event.clientX - node.x,
@@ -627,22 +774,99 @@ function onNodeMouseDown(node: VisualNode, event: MouseEvent) {
   }
 }
 
+function onCanvasMouseDown(event: MouseEvent) {
+  if (drawingMode.value === 'mask') {
+    isDrawingMask.value = true
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    tempMask.value = {
+      startX: x,
+      startY: y,
+      x,
+      y,
+      width: 0,
+      height: 0
+    }
+  } else {
+    selectedNodeId.value = null
+    selectedMaskId.value = null
+  }
+}
+
 function onCanvasMouseMove(event: MouseEvent) {
-  if (!isDragging.value || draggedNodeId.value === null) return
+  if (drawingMode.value === 'mask' && isDrawingMask.value && tempMask.value) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    const currentX = event.clientX - rect.left
+    const currentY = event.clientY - rect.top
+    
+    const startX = tempMask.value.startX
+    const startY = tempMask.value.startY
+    
+    tempMask.value.x = Math.min(startX, currentX)
+    tempMask.value.y = Math.min(startY, currentY)
+    tempMask.value.width = Math.abs(currentX - startX)
+    tempMask.value.height = Math.abs(currentY - startY)
+  } else if (isDragging.value && draggedNodeId.value !== null) {
+    const node = nodes.value.find(n => n.id === draggedNodeId.value)
+    if (node) {
+      let newX = event.clientX - dragOffset.value.x
+      let newY = event.clientY - dragOffset.value.y
 
-  const node = nodes.value.find(n => n.id === draggedNodeId.value)
-  if (node) {
-    let newX = event.clientX - dragOffset.value.x
-    let newY = event.clientY - dragOffset.value.y
-
-    node.x = Math.max(30, Math.min(650, newX))
-    node.y = Math.max(30, Math.min(420, newY))
+      node.x = Math.max(30, Math.min(650, newX))
+      node.y = Math.max(30, Math.min(420, newY))
+    }
   }
 }
 
 function onCanvasMouseUp() {
-  isDragging.value = false
-  draggedNodeId.value = null
+  if (drawingMode.value === 'mask' && isDrawingMask.value && tempMask.value) {
+    isDrawingMask.value = false
+    const width = tempMask.value.width
+    const height = tempMask.value.height
+    if (width > 5 && height > 5) {
+      const label = prompt('Entrez le mot caché / label de la zone occultée :')
+      if (label) {
+        const id = 'mask-' + Date.now()
+        masks.value.push({
+          id,
+          x: tempMask.value.x,
+          y: tempMask.value.y,
+          width,
+          height,
+          label
+        })
+        selectedMaskId.value = id
+      }
+    }
+    tempMask.value = null
+  } else {
+    isDragging.value = false
+    draggedNodeId.value = null
+  }
+}
+
+function onBackgroundImageUploaded(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      backgroundImage.value = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+function onMaskClick(mask: any) {
+  selectedNodeId.value = null
+  selectedMaskId.value = mask.id
+}
+
+function deleteSelectedMask() {
+  if (selectedMaskId.value === null) return
+  masks.value = masks.value.filter(m => m.id !== selectedMaskId.value)
+  selectedMaskId.value = null
 }
 </script>
 
