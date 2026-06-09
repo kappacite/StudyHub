@@ -609,12 +609,7 @@
       >
         <div 
           v-if="showSelectionMenu && isEditMode" 
-          class="fixed z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl px-4 py-2.5 flex items-center flex-wrap gap-2.5 max-w-[95vw] sm:max-w-[90vw] md:max-w-[800px] no-print pointer-events-auto"
-          :style="{
-            top: `${selectionMenuPos.top}px`,
-            left: `${selectionMenuPos.left}px`,
-            transform: 'translate(-50%, -100%)'
-          }"
+          class="fixed z-50 bottom-6 left-1/2 -translate-x-1/2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl px-4 py-2.5 flex items-center flex-wrap gap-2.5 max-w-[95vw] no-print pointer-events-auto"
         >
           <div class="flex items-center gap-1.5 border-r border-slate-200 dark:border-slate-800 pr-3 max-w-[150px]">
             <Sparkles class="w-3.5 h-3.5 text-indigo-500 flex-shrink-0 animate-pulse" />
