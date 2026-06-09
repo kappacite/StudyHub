@@ -912,6 +912,7 @@ const isLivePreviewActive = ref(false)
 const selectionText = ref('')
 const selectionStart = ref(0)
 const selectionEnd = ref(0)
+const savedSelectionContent = ref('')  // snapshot du textarea au moment de la sélection
 const showSelectionMenu = ref(false)
 const selectionMenuPos = ref({ top: 0, left: 0 })
 
@@ -1493,8 +1494,10 @@ function renderMarkup(text: string): string {
     const card = noteFlashcards.value.find(c => c.original_text === rawTag);
     const cardId = card ? card.id : null;
     const pairs = pairsStr.split('|').map((p: string) => {
-      const parts = p.split('=');
-      return { key: parts[0].trim(), value: parts[1].trim() };
+      // Utiliser indexOf pour splitter uniquement au premier '=' (évite les bugs avec les expressions contenant des =)
+      const eqIdx = p.indexOf('=')
+      if (eqIdx === -1) return { key: p.trim(), value: '' }
+      return { key: p.substring(0, eqIdx).trim(), value: p.substring(eqIdx + 1).trim() }
     });
     
     if (!isReview) {
@@ -1780,6 +1783,7 @@ function handleTextareaSelect(event: Event) {
       selectionText.value = selected
       selectionStart.value = start
       selectionEnd.value = end
+      savedSelectionContent.value = textarea.value  // snapshot du contenu au moment de la sélection
       
       if (event instanceof MouseEvent) {
         const viewportWidth = window.innerWidth
@@ -1811,7 +1815,8 @@ async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'cod
   const textarea = textareaRef.value
   if (!textarea) return
   
-  const text = textarea.value
+  // Utiliser le snapshot du contenu au moment de la sélection (évite le décalage stale après await)
+  const text = savedSelectionContent.value || textarea.value
   const start = selectionStart.value
   const end = selectionEnd.value
   const selected = text.substring(start, end)
