@@ -37,3 +37,27 @@ def test_dashboard_stats(client, auth_headers, app):
     assert today_entry is not None
     assert today_entry["duration"] == 1500
     assert today_entry["count"] == 2
+    
+    # 4. Récupérer le dashboard global
+    dashboard_resp = client.get("/api/v1/stats/dashboard", headers=auth_headers)
+    assert dashboard_resp.status_code == 200
+    json_data = dashboard_resp.json
+    
+    # Vérifier la structure
+    assert "kpi" in json_data
+    assert "heatmap" in json_data
+    assert "maturity_distribution" in json_data
+    assert "forecast_7_days" in json_data
+    
+    # Vérifier les KPI
+    assert json_data["kpi"]["total_cards_studied"] == 10
+    assert json_data["kpi"]["mature_cards"] == 0
+    assert json_data["kpi"]["retention_rate"] == 0.0
+    
+    # Vérifier la distribution
+    assert json_data["maturity_distribution"]["learning"] == 0
+    assert json_data["maturity_distribution"]["young"] == 0
+    assert json_data["maturity_distribution"]["mature"] == 0
+    
+    # Vérifier la prévision
+    assert len(json_data["forecast_7_days"]) == 7
