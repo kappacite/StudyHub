@@ -21,8 +21,8 @@
       @mouseenter="isZenMode ? isSidebarHovered = true : null"
       @mouseleave="isZenMode ? isSidebarHovered = false : null"
     >
-      <!-- Logo (cliquable → dashboard) -->
-      <router-link to="/dashboard" class="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer" @click="isMobileMenuOpen = false">
+      <!-- Logo (cliquable → /) -->
+      <router-link to="/" class="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer" @click="isMobileMenuOpen = false">
         <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.62 48.62 0 0112 20.9c.38 0 .758-.004 1.136-.011a60.9 60.9 0 00-.5-6.32 48.56 48.56 0 01-8.376-4.422z" />

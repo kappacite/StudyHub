@@ -2209,36 +2209,6 @@ function printNote() {
 </script>
 
 <style>
-/* Markdown formatting body styling */
-.markdown-body h1 {
-  @apply text-2xl font-extrabold text-slate-900 dark:text-white mt-6 mb-4 border-b border-slate-100 dark:border-slate-800 pb-2;
-}
-.markdown-body h2 {
-  @apply text-xl font-bold text-slate-800 dark:text-slate-100 mt-5 mb-3;
-}
-.markdown-body h3 {
-  @apply text-lg font-bold text-slate-800 dark:text-slate-200 mt-4 mb-2;
-}
-.markdown-body p {
-  @apply text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4;
-}
-.markdown-body ul {
-  @apply list-disc pl-6 mb-4 space-y-1.5 text-sm;
-}
-.markdown-body ol {
-  @apply list-decimal pl-6 mb-4 space-y-1.5 text-sm;
-}
-.markdown-body blockquote {
-  @apply border-l-4 border-indigo-500 pl-4 italic text-slate-500 dark:text-slate-400 my-4;
-}
-.markdown-body strong {
-  @apply font-bold text-slate-900 dark:text-white;
-}
-
-.katex-display {
-  @apply my-4 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800/50 overflow-x-auto;
-}
-
 /* Print CSS Settings */
 @media print {
   aside, header, nav, button, select, no-print, .no-print {
