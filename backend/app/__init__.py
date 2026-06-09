@@ -6,7 +6,7 @@ from app.extensions import db, jwt, migrate, limiter
 
 def create_app(config_name=None):
     flask_app = Flask(__name__)
-    CORS(flask_app, resources={r"/api/.*": {"origins": "*", "allow_headers": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}})
+    CORS(flask_app, resources={r"/api/.*": {"origins": "*", "allow_headers": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]}})
     
     if not config_name:
         config_name = os.environ.get("FLASK_ENV", "development")
@@ -40,25 +40,28 @@ def create_app(config_name=None):
         from app.api.v1.users import users_bp
         from app.api.v1.binders import binders_bp
         from app.api.v1.decks import decks_bp
-        from app.api.v1.flashcards import flashcards_bp
+        from app.api.v1.flashcards import flashcards_bp, flashcards_global_bp
         from app.api.v1.notes import notes_bp
         from app.api.v1.diagrams import diagrams_bp
         from app.api.v1.pdfs import pdfs_bp
         from app.api.v1.stats import stats_bp
         from app.api.v1.health import health_bp
         from app.api.v1.blurting import blurting_bp
+        from app.api.v1.packages import packages_bp
         
         flask_app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
         flask_app.register_blueprint(users_bp, url_prefix="/api/v1/users")
         flask_app.register_blueprint(binders_bp, url_prefix="/api/v1/binders")
         flask_app.register_blueprint(decks_bp, url_prefix="/api/v1/decks")
         flask_app.register_blueprint(flashcards_bp, url_prefix="/api/v1/decks/<int:deck_id>/cards")
+        flask_app.register_blueprint(flashcards_global_bp, url_prefix="/api/v1/flashcards")
         flask_app.register_blueprint(notes_bp, url_prefix="/api/v1/notes")
         flask_app.register_blueprint(diagrams_bp, url_prefix="/api/v1/diagrams")
         flask_app.register_blueprint(pdfs_bp, url_prefix="/api/v1/pdfs")
         flask_app.register_blueprint(stats_bp, url_prefix="/api/v1/stats")
         flask_app.register_blueprint(health_bp, url_prefix="/api/v1/health")
         flask_app.register_blueprint(blurting_bp, url_prefix="/api/v1/blurting")
+        flask_app.register_blueprint(packages_bp, url_prefix="/api/v1/packages")
         
         # Auto-create tables in development mode if they don't exist
         if flask_app.config.get("DEBUG") or flask_app.config.get("TESTING"):

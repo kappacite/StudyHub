@@ -19,6 +19,8 @@ class FlashcardAnswer(BaseModel):
 class FlashcardResponse(FlashcardBase):
     id: int
     deck_id: int
+    placeholder_hash: Optional[str] = None
+    original_text: Optional[str] = None
     ease_factor: float
     interval: int
     repetitions: int

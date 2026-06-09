@@ -32,3 +32,14 @@ class DeckStatsResponse(BaseModel):
     next_review: Optional[datetime] = None
     cards_to_review: int = Field(..., description="Nombre de cartes prêtes pour révision")
     total_cards: int = Field(..., description="Nombre total de cartes dans le deck")
+
+class DashboardKpis(BaseModel):
+    total_cards_studied: int
+    mature_cards: int
+    retention_rate: float
+
+class DashboardStatsResponse(BaseModel):
+    kpi: DashboardKpis
+    heatmap: dict[str, int]
+    maturity_distribution: dict[str, int]
+    forecast_7_days: dict[str, int]

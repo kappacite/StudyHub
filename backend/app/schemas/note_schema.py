@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 
 class NoteBase(BaseModel):
@@ -15,9 +15,12 @@ class NoteUpdate(BaseModel):
     content: Optional[str] = None
     binder_id: Optional[int] = None
 
+from app.schemas.flashcard_schema import FlashcardResponse
+
 class NoteResponse(NoteBase):
     id: int
     user_id: int
+    flashcards: List[FlashcardResponse] = []
     created_at: datetime
     updated_at: datetime
 
