@@ -2112,7 +2112,7 @@ function insertText(prefix: string, suffix: string) {
   }, 50)
 }
 
-function insertDefinitionTooltip() {
+async function insertDefinitionTooltip() {
   const textarea = textareaRef.value
   if (!textarea) return
 
