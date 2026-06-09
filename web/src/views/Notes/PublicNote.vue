@@ -1,26 +1,7 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-[#0B0F19] dark:to-indigo-950/10">
     
-    <!-- Header public -->
-    <header class="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-100 dark:border-slate-800">
-      <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 text-white shadow">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.62 48.62 0 0112 20.9c.38 0 .758-.004 1.136-.011a60.9 60.9 0 00-.5-6.32 48.56 48.56 0 01-8.376-4.422z" />
-            </svg>
-          </div>
-          <span class="font-bold text-sm bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">StudyHub</span>
-        </div>
-        <router-link
-          to="/login"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-all shadow active:scale-95"
-        >
-          Rejoindre StudyHub
-          <ArrowRight class="w-4 h-4" />
-        </router-link>
-      </div>
-    </header>
+
 
     <!-- Loading -->
     <div v-if="loading" class="flex flex-col items-center justify-center py-32 gap-4">
