@@ -21,8 +21,8 @@
       @mouseenter="isZenMode ? isSidebarHovered = true : null"
       @mouseleave="isZenMode ? isSidebarHovered = false : null"
     >
-      <!-- Logo -->
-      <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800">
+      <!-- Logo (cliquable → dashboard) -->
+      <router-link to="/dashboard" class="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer" @click="isMobileMenuOpen = false">
         <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.62 48.62 0 0112 20.9c.38 0 .758-.004 1.136-.011a60.9 60.9 0 00-.5-6.32 48.56 48.56 0 01-8.376-4.422z" />
@@ -33,7 +33,7 @@
           <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">StudyHub</h1>
           <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Tout-en-un</span>
         </div>
-      </div>
+      </router-link>
 
       <!-- Navigation Links -->
       <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
@@ -94,11 +94,12 @@
             <LogOut class="w-4 h-4" />
           </button>
         </div>
-        <div v-else class="p-2">
+        <div v-else class="p-3">
           <button 
             @click="router.push('/login')" 
-            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95"
+            class="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
           >
+            <LogIn class="w-4 h-4" />
             Se connecter
           </button>
         </div>
@@ -189,7 +190,8 @@ import {
   FileText, 
   Activity, 
   FileDown, 
-  LogOut, 
+  LogOut,
+  LogIn,
   Sun, 
   Moon, 
   Menu, 
