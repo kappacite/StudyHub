@@ -68,6 +68,28 @@ class DiagramService:
             diagram.binder_id = None
             
         updated = self._diagram_dao.update(diagram)
+        
+        # --- NEW: Synchroniser les notes associées si le code a changé ---
+        if data.code is not None:
+            try:
+                from app.models.note import Note
+                from app.services.note_service import NoteService
+                from app.dao.note_dao import NoteDAO
+                from app.dao.deck_dao import DeckDAO
+                from app.dao.flashcard_dao import FlashcardDAO
+                
+                note_dao = NoteDAO(self._diagram_dao.db)
+                deck_dao = DeckDAO(self._diagram_dao.db)
+                flashcard_dao = FlashcardDAO(self._diagram_dao.db)
+                note_service = NoteService(note_dao, self._binder_dao, deck_dao, flashcard_dao)
+                
+                tag = f"[diagram:{diagram.id}]"
+                notes = self._diagram_dao.db.query(Note).filter(Note.content.like(f"%{tag}%")).all()
+                for note in notes:
+                    note_service._sync_phantom_deck(note)
+            except Exception as e:
+                print(f"Error syncing notes on diagram update: {e}")
+                
         return DiagramResponse.model_validate(updated)
 
     def delete_diagram(self, user_id: int, diagram_id: int) -> None:

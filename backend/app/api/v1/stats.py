@@ -59,3 +59,10 @@ def get_deck_stats(deck_id):
     user_id = int(get_jwt_identity())
     result = stats_service.get_deck_stats(user_id, deck_id)
     return jsonify(result.model_dump()), 200
+
+@stats_bp.route("/dashboard", methods=["GET"])
+@jwt_required_middleware
+def get_dashboard():
+    user_id = int(get_jwt_identity())
+    result = stats_service.get_dashboard_stats(user_id)
+    return jsonify(result.model_dump()), 200

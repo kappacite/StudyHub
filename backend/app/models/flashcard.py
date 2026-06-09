@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Text, Float, DateTime, ForeignKey, String
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.extensions import db
@@ -10,6 +10,10 @@ class Flashcard(db.Model):
     deck_id = Column(Integer, ForeignKey("decks.id", ondelete="CASCADE"), nullable=False)
     front = Column(Text, nullable=False)
     back = Column(Text, nullable=False)
+    
+    # Placeholders de révision (Active Reading)
+    placeholder_hash = Column(String(64), index=True, nullable=True)
+    original_text = Column(Text, nullable=True)
     
     # Paramètres de l'algorithme SM-2
     ease_factor = Column(Float, default=2.5, nullable=False)

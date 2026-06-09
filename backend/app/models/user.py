@@ -16,7 +16,7 @@ class User(db.Model):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relations
-    binders = relationship("Binder", back_populates="user", cascade="all, delete-orphan")
+    binders = relationship("Binder", back_populates="user", cascade="all, delete-orphan", foreign_keys="[Binder.user_id]")
     decks = relationship("Deck", back_populates="user", cascade="all, delete-orphan")
     notes = relationship("Note", back_populates="user", cascade="all, delete-orphan")
     diagrams = relationship("Diagram", back_populates="user", cascade="all, delete-orphan")

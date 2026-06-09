@@ -1,12 +1,15 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import List, Optional
+from sqlalchemy import func
 from app.dao.study_session_dao import StudySessionDAO
 from app.dao.deck_dao import DeckDAO
 from app.dao.flashcard_dao import FlashcardDAO
 from app.models.study_session import StudySession
+from app.models.flashcard import Flashcard
+from app.models.deck import Deck
 from app.schemas.stats_schema import (
     StudySessionCreate, StudySessionResponse, StatsOverviewResponse, 
-    HeatmapItem, DeckStatsResponse
+    HeatmapItem, DeckStatsResponse, DashboardStatsResponse, DashboardKpis
 )
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 
@@ -131,3 +134,103 @@ class StatsService:
             current_date -= timedelta(days=1)
             
         return streak
+
+    def get_dashboard_stats(self, user_id: int) -> DashboardStatsResponse:
+        # 1. KPIs
+        # Total de cartes étudiées (somme des cartes révisées)
+        total_cards_studied = (
+            self._study_session_dao.db.query(func.sum(StudySession.cards_reviewed))
+            .filter(StudySession.user_id == user_id, StudySession.module == "flashcard")
+            .scalar()
+        ) or 0
+        
+        # Nombre de cartes matures (interval > 21)
+        mature_cards = (
+            self._flashcard_dao.db.query(func.count(Flashcard.id))
+            .join(Deck)
+            .filter(Deck.user_id == user_id, Flashcard.interval > 21)
+            .scalar()
+        ) or 0
+        
+        # Taux de rétention (mature_cards / total_cards_studied * 100)
+        retention_rate = 0.0
+        if total_cards_studied > 0:
+            retention_rate = round((mature_cards / total_cards_studied) * 100.0, 2)
+            
+        kpis = DashboardKpis(
+            total_cards_studied=total_cards_studied,
+            mature_cards=mature_cards,
+            retention_rate=retention_rate
+        )
+        
+        # 2. Heatmap (365 derniers jours)
+        start_date = datetime.utcnow() - timedelta(days=365)
+        date_col = func.date(StudySession.created_at)
+        heatmap_results = (
+            self._study_session_dao.db.query(date_col, func.count(StudySession.id))
+            .filter(StudySession.user_id == user_id, StudySession.created_at >= start_date)
+            .group_by(date_col)
+            .all()
+        )
+        
+        heatmap_dict = {}
+        for r in heatmap_results:
+            if r[0]:
+                date_str = r[0] if isinstance(r[0], str) else r[0].isoformat()
+                heatmap_dict[date_str] = r[1]
+                
+        # 3. Maturity Distribution
+        learning_cards = (
+            self._flashcard_dao.db.query(func.count(Flashcard.id))
+            .join(Deck)
+            .filter(Deck.user_id == user_id, Flashcard.interval < 1)
+            .scalar()
+        ) or 0
+        
+        young_cards = (
+            self._flashcard_dao.db.query(func.count(Flashcard.id))
+            .join(Deck)
+            .filter(Deck.user_id == user_id, Flashcard.interval >= 1, Flashcard.interval <= 21)
+            .scalar()
+        ) or 0
+        
+        maturity_dist = {
+            "learning": learning_cards,
+            "young": young_cards,
+            "mature": mature_cards
+        }
+        
+        # 4. Forecast 7 jours
+        today = date.today()
+        forecast_dict = {}
+        
+        # Initialiser les 7 jours avec 0
+        for i in range(7):
+            d = today + timedelta(days=i)
+            forecast_dict[d.isoformat()] = 0
+            
+        next_review_date_col = func.date(Flashcard.next_review)
+        forecast_results = (
+            self._flashcard_dao.db.query(next_review_date_col, func.count(Flashcard.id))
+            .join(Deck)
+            .filter(
+                Deck.user_id == user_id, 
+                next_review_date_col >= today.isoformat(),
+                next_review_date_col <= (today + timedelta(days=6)).isoformat()
+            )
+            .group_by(next_review_date_col)
+            .all()
+        )
+        
+        for r in forecast_results:
+            if r[0]:
+                date_str = r[0] if isinstance(r[0], str) else r[0].isoformat()
+                if date_str in forecast_dict:
+                    forecast_dict[date_str] = r[1]
+                    
+        return DashboardStatsResponse(
+            kpi=kpis,
+            heatmap=heatmap_dict,
+            maturity_distribution=maturity_dist,
+            forecast_7_days=forecast_dict
+        )

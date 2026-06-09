@@ -70,3 +70,23 @@ def delete_flashcard(deck_id, card_id):
     user_id = int(get_jwt_identity())
     flashcard_service.delete_flashcard(user_id, deck_id, card_id)
     return "", 204
+
+# --- API globale de révision directe sans deck_id ---
+flashcards_global_bp = Blueprint("flashcards_global", __name__)
+
+@flashcards_global_bp.route("/<int:card_id>/review", methods=["PATCH"])
+@jwt_required_middleware
+def review_card(card_id):
+    user_id = int(get_jwt_identity())
+    data = request.get_json() or {}
+    score = data.get("score")
+    if score is None or not isinstance(score, int) or not (0 <= score <= 5):
+        return jsonify({
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Le score de révision est obligatoire et doit être un entier entre 0 et 5."
+            }
+        }), 400
+        
+    result = flashcard_service.review_card(user_id, card_id, score)
+    return jsonify(result.model_dump()), 200

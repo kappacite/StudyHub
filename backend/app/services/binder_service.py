@@ -24,7 +24,10 @@ class BinderService:
         binder = Binder(
             name=data.name,
             user_id=user_id,
-            parent_id=data.parent_id
+            parent_id=data.parent_id,
+            is_public=data.is_public or False,
+            description=data.description,
+            tags=data.tags
         )
         created = self._binder_dao.create(binder)
         return BinderResponse.model_validate(created)
@@ -49,14 +52,17 @@ class BinderService:
         if data.parent_id is not None:
             if data.parent_id == binder_id:
                 raise ValidationError("Un classeur ne peut pas être son propre parent.")
-            # Vérifier que le parent existe et appartient bien à l'utilisateur
             self._get_binder_or_404(data.parent_id, user_id)
-            
-            # TODO : Idéalement, vérifier qu'on ne crée pas de cycle récursif.
-            # Pour l'instant, on affecte le parent_id.
             binder.parent_id = data.parent_id
         elif "parent_id" in data.model_fields_set and data.parent_id is None:
             binder.parent_id = None
+            
+        if data.is_public is not None:
+            binder.is_public = data.is_public
+        if data.description is not None:
+            binder.description = data.description
+        if data.tags is not None:
+            binder.tags = data.tags
             
         updated = self._binder_dao.update(binder)
         return BinderResponse.model_validate(updated)

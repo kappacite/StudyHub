@@ -3,6 +3,8 @@ from flask_jwt_extended import get_jwt_identity
 from app.extensions import db
 from app.dao.note_dao import NoteDAO
 from app.dao.binder_dao import BinderDAO
+from app.dao.deck_dao import DeckDAO
+from app.dao.flashcard_dao import FlashcardDAO
 from app.services.note_service import NoteService
 from app.schemas.note_schema import NoteCreate, NoteUpdate
 from app.middlewares.auth_middleware import jwt_required_middleware
@@ -12,7 +14,9 @@ notes_bp = Blueprint("notes", __name__)
 
 note_dao = NoteDAO(db.session)
 binder_dao = BinderDAO(db.session)
-note_service = NoteService(note_dao, binder_dao)
+deck_dao = DeckDAO(db.session)
+flashcard_dao = FlashcardDAO(db.session)
+note_service = NoteService(note_dao, binder_dao, deck_dao, flashcard_dao)
 
 @notes_bp.route("", methods=["GET"])
 @jwt_required_middleware

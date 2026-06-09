@@ -2,6 +2,7 @@ from typing import List, Tuple
 from app.dao.flashcard_dao import FlashcardDAO
 from app.dao.deck_dao import DeckDAO
 from app.models.flashcard import Flashcard
+from app.models.study_session import StudySession
 from app.schemas.flashcard_schema import FlashcardCreate, FlashcardUpdate, FlashcardResponse
 from app.services.spaced_repetition import calculate_sm2
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
@@ -87,4 +88,56 @@ class FlashcardService:
         card.next_review = next_review
         
         updated = self._flashcard_dao.update(card)
+        
+        # Création d'une StudySession
+        study_session = StudySession(
+            user_id=user_id,
+            module="flashcard",
+            duration_seconds=0,
+            cards_reviewed=1,
+            cards_correct=1 if score >= 3 else 0,
+            flashcard_id=card.id,
+            grade=score
+        )
+        self._flashcard_dao.db.add(study_session)
+        self._flashcard_dao.db.commit()
+        
+        return FlashcardResponse.model_validate(updated)
+
+    def review_card(self, user_id: int, card_id: int, score: int) -> FlashcardResponse:
+        card = self._flashcard_dao.get_by_id(card_id)
+        if not card:
+            raise ResourceNotFoundError("Flashcard introuvable.")
+            
+        self._verify_deck_ownership(card.deck_id, user_id)
+        
+        # Calcul de la répétition espacée via SM-2
+        ease_factor, interval, repetitions, next_review = calculate_sm2(
+            score=score,
+            ease_factor=card.ease_factor,
+            interval=card.interval,
+            repetitions=card.repetitions
+        )
+        
+        # Mise à jour de la carte
+        card.ease_factor = ease_factor
+        card.interval = interval
+        card.repetitions = repetitions
+        card.next_review = next_review
+        
+        updated = self._flashcard_dao.update(card)
+        
+        # Création d'une StudySession
+        study_session = StudySession(
+            user_id=user_id,
+            module="flashcard",
+            duration_seconds=0,
+            cards_reviewed=1,
+            cards_correct=1 if score >= 3 else 0,
+            flashcard_id=card.id,
+            grade=score
+        )
+        self._flashcard_dao.db.add(study_session)
+        self._flashcard_dao.db.commit()
+        
         return FlashcardResponse.model_validate(updated)

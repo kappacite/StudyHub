@@ -12,7 +12,13 @@ class StudySession(db.Model):
     duration_seconds = Column(Integer, nullable=False, default=0)
     cards_reviewed = Column(Integer, nullable=True, default=0)
     cards_correct = Column(Integer, nullable=True, default=0)
+    
+    # Pour le suivi des flashcards individuelles
+    flashcard_id = Column(Integer, ForeignKey("flashcards.id", ondelete="CASCADE"), nullable=True)
+    grade = Column(Integer, nullable=True)
+    
     created_at = Column(DateTime, server_default=func.now())
 
     # Relations
     user = relationship("User", back_populates="study_sessions")
+    flashcard = relationship("Flashcard")

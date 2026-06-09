@@ -17,3 +17,8 @@ class Note(db.Model):
     # Relations
     user = relationship("User", back_populates="notes")
     binder = relationship("Binder", back_populates="notes")
+    deck = relationship("Deck", back_populates="note", uselist=False, cascade="all, delete-orphan", foreign_keys="[Deck.note_id]")
+
+    @property
+    def flashcards(self):
+        return self.deck.cards if self.deck else []
