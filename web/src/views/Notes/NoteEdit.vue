@@ -921,7 +921,7 @@ const selectionMenuPos = ref({ top: 0, left: 0 })
 // ---------------------------------------------------------------
 interface ModalField {
   label: string
-  type: 'text' | 'bool' | 'select'
+  type: 'text' | 'bool' | 'select' | 'textarea'
   value: any
   placeholder?: string
   options?: { value: any; label: string }[]
@@ -1599,13 +1599,12 @@ function renderMarkup(text: string): string {
   // 6. Mark down parse
   let html = marked.parse(temp) as string
 
-  // 7. Put LaTeX, Definition, Diagram, and REVISION HTML back
   placeholders.forEach((placeholderHtml, idx) => {
-    html = html.replace(`LATEXBLOCKPLACEHOLDER${idx}`, placeholderHtml)
-    html = html.replace(`LATEXINLINEPLACEHOLDER${idx}`, placeholderHtml)
-    html = html.replace(`DEFPLACEHOLDER${idx}`, placeholderHtml)
-    html = html.replace(`DIAGRAMPLACEHOLDER${idx}`, placeholderHtml)
-    html = html.replace(`REVISIONPLACEHOLDER${idx}`, placeholderHtml)
+    html = html.replace(new RegExp(`LATEXBLOCKPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
+    html = html.replace(new RegExp(`LATEXINLINEPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
+    html = html.replace(new RegExp(`DEFPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
+    html = html.replace(new RegExp(`DIAGRAMPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
+    html = html.replace(new RegExp(`REVISIONPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
   })
 
   return html

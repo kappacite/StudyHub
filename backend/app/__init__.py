@@ -63,17 +63,18 @@ def create_app(config_name=None):
         flask_app.register_blueprint(blurting_bp, url_prefix="/api/v1/blurting")
         flask_app.register_blueprint(packages_bp, url_prefix="/api/v1/packages")
         
-        # Auto-create tables in development mode if they don't exist
+        # Import all models so Alembic can detect them and db.create_all() works
+        import app.models.user
+        import app.models.binder
+        import app.models.deck
+        import app.models.flashcard
+        import app.models.note
+        import app.models.diagram
+        import app.models.pdf_document
+        import app.models.study_session
+
+        # En dev/test : créer les tables directement sans migrations
         if flask_app.config.get("DEBUG") or flask_app.config.get("TESTING"):
-            # Import models to ensure they are registered
-            import app.models.user
-            import app.models.binder
-            import app.models.deck
-            import app.models.flashcard
-            import app.models.note
-            import app.models.diagram
-            import app.models.pdf_document
-            import app.models.study_session
             db.create_all()
             
     return flask_app

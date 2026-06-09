@@ -95,7 +95,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowRight, Globe, Lock, Link2, Copy, Check } from '@lucide/vue'
-import api from '@/services/api'
+import api from '../../services/api'
 import { marked } from 'marked'
 
 const route = useRoute()
