@@ -3,8 +3,14 @@ import { useAuthStore } from '../stores/auth'
 import router from '../router'
 
 const api = axios.create({
-  // Backend URL can be set using VITE_API_BASE_URL env variable, fallback to default Flask dev port
-  baseURL: (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000') + '/api/v1',
+  // En production derrière Nginx, utiliser une URL relative pour éviter les erreurs Mixed Content.
+  // VITE_API_BASE_URL est vide → '/api/v1' (même domaine, Nginx proxifie vers le backend)
+  // En dev → 'http://localhost:5000/api/v1'
+  baseURL: import.meta.env.VITE_API_BASE_URL
+    ? import.meta.env.VITE_API_BASE_URL + '/api/v1'
+    : import.meta.env.DEV
+      ? 'http://localhost:5000/api/v1'
+      : '/api/v1',
   timeout: 10000,
 })
 
