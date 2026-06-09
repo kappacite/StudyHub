@@ -113,7 +113,7 @@
               <!-- Bouton Partage -->
               <div class="relative">
                 <button
-                  @click="togglePublic"
+                  @click="handleShareClick"
                   type="button"
                   :title="isPublic ? 'Note publique — cliquer pour rendre privée' : 'Rendre cette note publique'"
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
@@ -1101,6 +1101,14 @@ async function togglePublic() {
     if (newVal) sharePopupVisible.value = true
   } catch (e) {
     console.error('Erreur toggle visibilité', e)
+  }
+}
+
+function handleShareClick() {
+  if (isPublic.value) {
+    sharePopupVisible.value = !sharePopupVisible.value
+  } else {
+    togglePublic()
   }
 }
 

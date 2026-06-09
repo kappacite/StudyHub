@@ -7,6 +7,9 @@ export interface Binder {
   parent_id: number | null
   name: string
   created_at: string
+  is_public?: boolean
+  description?: string | null
+  tags?: string[] | null
 }
 
 interface BindersResponse {
@@ -49,9 +52,9 @@ export const useBindersStore = defineStore('binders', () => {
     }
   }
 
-  async function updateBinder(id: number, name: string) {
+  async function updateBinder(id: number, data: Partial<Binder>) {
     try {
-      const response = await api.put<Binder>(`/binders/${id}`, { name })
+      const response = await api.put<Binder>(`/binders/${id}`, data)
       const updatedBinder = response.data
       const index = binders.value.findIndex(b => b.id === id)
       if (index !== -1) {

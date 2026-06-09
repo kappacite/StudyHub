@@ -24,14 +24,30 @@
         </template>
       </div>
 
-      <!-- Action Button -->
-      <button 
-        @click="openCreateModal"
-        class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15"
-      >
-        <Plus class="w-4 h-4" />
-        Nouveau dossier
-      </button>
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3">
+        <button 
+          v-if="currentBinderId !== null"
+          @click="openShareModal"
+          class="inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-semibold transition-all active:scale-95"
+          :class="[
+            currentBinder?.is_public 
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:border-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' 
+              : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-350'
+          ]"
+        >
+          <Globe class="w-4 h-4" />
+          {{ currentBinder?.is_public ? 'Public' : 'Partager' }}
+        </button>
+
+        <button 
+          @click="openCreateModal"
+          class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15"
+        >
+          <Plus class="w-4 h-4" />
+          Nouveau dossier
+        </button>
+      </div>
     </div>
 
     <!-- Loading state -->
@@ -191,6 +207,87 @@
         </form>
       </div>
     </div>
+
+    <!-- Share Folder Modal -->
+    <div 
+      v-if="showShareModal"
+      class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    >
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showShareModal = false"></div>
+      
+      <!-- Modal box -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
+        <h3 class="text-lg font-bold mb-2">Partager sur l'Espace Communautaire</h3>
+        <p class="text-xs text-slate-450 dark:text-slate-500 mb-4">
+          Publiez ce classeur et toutes les ressources qu'il contient (notes, flashcards...) pour les rendre accessibles à la communauté.
+        </p>
+        
+        <form @submit.prevent="saveShareSettings">
+          <div class="space-y-4">
+            <!-- Toggle Visibilité -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl">
+              <div>
+                <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">Statut de visibilité</label>
+                <span class="text-[10px] text-slate-450">{{ shareIsPublic ? 'Visible sur la Marketplace' : 'Visible uniquement par vous' }}</span>
+              </div>
+              <button 
+                type="button" 
+                @click="shareIsPublic = !shareIsPublic"
+                class="px-3 py-1.5 border rounded-xl text-xs font-bold transition-all active:scale-95"
+                :class="[
+                  shareIsPublic 
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:border-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' 
+                    : 'border-slate-200 dark:border-slate-800 text-slate-500'
+                ]"
+              >
+                {{ shareIsPublic ? 'Public' : 'Privé' }}
+              </button>
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label for="share-description" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Description</label>
+              <textarea 
+                id="share-description" 
+                v-model="shareDescription"
+                placeholder="Décrivez le contenu de ce dossier..."
+                rows="3"
+                class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+              ></textarea>
+            </div>
+
+            <!-- Tags -->
+            <div>
+              <label for="share-tags" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Mots-clés (tags, séparés par virgules)</label>
+              <input 
+                id="share-tags" 
+                type="text" 
+                v-model="shareTags"
+                placeholder="Ex: Chimie, Médecine, Semestre 1"
+                class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+              />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 mt-6">
+            <button 
+              type="button" 
+              @click="showShareModal = false"
+              class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              Annuler
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all"
+            >
+              Enregistrer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -201,7 +298,7 @@ import { useBindersStore } from '../../stores/binders'
 import type { Binder } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
-import { FolderClosed, Plus, ChevronRight, FileText, Layers, Trash2 } from '@lucide/vue'
+import { FolderClosed, Plus, ChevronRight, FileText, Layers, Trash2, Globe } from '@lucide/vue'
 
 const bindersStore = useBindersStore()
 const notesStore = useNotesStore()
@@ -211,6 +308,12 @@ const router = useRouter()
 const currentBinderId = ref<number | null>(null)
 const showModal = ref(false)
 const newFolderName = ref('')
+
+// Refs pour le partage du classeur
+const showShareModal = ref(false)
+const shareIsPublic = ref(false)
+const shareDescription = ref('')
+const shareTags = ref('')
 
 onMounted(async () => {
   await bindersStore.fetchBinders()
@@ -265,6 +368,34 @@ async function confirmDelete(folder: Binder) {
   if (confirm(`Êtes-vous sûr de vouloir supprimer le dossier "${folder.name}" et tous ses sous-dossiers ?`)) {
     await bindersStore.deleteBinder(folder.id)
   }
+}
+
+const currentBinder = computed(() => {
+  if (currentBinderId.value === null) return null
+  return bindersStore.binders.find(b => b.id === currentBinderId.value) || null
+})
+
+function openShareModal() {
+  if (!currentBinder.value) return
+  shareIsPublic.value = currentBinder.value.is_public || false
+  shareDescription.value = currentBinder.value.description || ''
+  shareTags.value = currentBinder.value.tags ? currentBinder.value.tags.join(', ') : ''
+  showShareModal.value = true
+}
+
+async function saveShareSettings() {
+  if (!currentBinder.value) return
+  const tagsArray = shareTags.value.split(',')
+    .map(t => t.trim())
+    .filter(t => t.length > 0)
+  
+  await bindersStore.updateBinder(currentBinder.value.id, {
+    is_public: shareIsPublic.value,
+    description: shareDescription.value.trim() || null,
+    tags: tagsArray.length > 0 ? tagsArray : null
+  })
+  
+  showShareModal.value = false
 }
 </script>
 
