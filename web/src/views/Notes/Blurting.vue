@@ -268,7 +268,6 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../../services/api'
-import { useNotesStore } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
 import { 
   ChevronLeft, 
@@ -285,7 +284,6 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-const notesStore = useNotesStore()
 const decksStore = useDecksStore()
 
 const noteId = ref(Number(route.params.id))

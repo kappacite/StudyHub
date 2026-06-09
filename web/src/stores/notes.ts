@@ -18,6 +18,7 @@ interface NotesResponse {
 export const useNotesStore = defineStore('notes', () => {
   const notes = ref<Note[]>([])
   const loading = ref(false)
+  const isReviewModeActive = ref(false)
 
   async function fetchNotes() {
     loading.value = true
@@ -107,6 +108,7 @@ export const useNotesStore = defineStore('notes', () => {
   return {
     notes,
     loading,
+    isReviewModeActive,
     fetchNotes,
     fetchNoteById,
     createNote,

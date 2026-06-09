@@ -57,7 +57,7 @@
         v-for="note in filteredNotes" 
         :key="note.id"
         class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200 group cursor-pointer"
-        @click="router.push(`/notes/${note.id}`)"
+        @click="router.push(`/notes/${note.id}?edit=false`)"
       >
         <div>
           <div class="flex items-start justify-between gap-3">
@@ -85,14 +85,27 @@
           </p>
         </div>
 
-        <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-50 dark:border-slate-800/50 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-          <span>Créé le {{ new Date(note.created_at).toLocaleDateString('fr-FR') }}</span>
-          <span 
-            @click.stop="router.push(`/notes/${note.id}?edit=true`)"
-            class="text-indigo-500 dark:text-indigo-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-300 font-bold"
-          >
-            Éditer <ChevronRight class="w-3.5 h-3.5" />
-          </span>
+        <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-50 dark:border-slate-800/50">
+          <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Créé le {{ new Date(note.created_at).toLocaleDateString('fr-FR') }}</span>
+          
+          <div class="flex items-center gap-2">
+            <button 
+              @click.stop="router.push(`/notes/${note.id}?edit=false`)"
+              class="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-150/40 dark:bg-slate-800/40 dark:hover:bg-slate-800 dark:border-slate-700/50 text-slate-650 dark:text-slate-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95"
+              title="Visualiser la note"
+            >
+              <Eye class="w-3.5 h-3.5 text-indigo-500" />
+              Visualiser
+            </button>
+            <button 
+              @click.stop="router.push(`/notes/${note.id}?edit=true`)"
+              class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 shadow-md shadow-indigo-600/10"
+              title="Éditer la note"
+            >
+              <Edit3 class="w-3.5 h-3.5" />
+              Éditer
+            </button>
+          </div>
         </div>
       </div>
 
@@ -120,7 +133,7 @@ import { useRouter } from 'vue-router'
 import { useNotesStore } from '../../stores/notes'
 import type { Note } from '../../stores/notes'
 import { useBindersStore } from '../../stores/binders'
-import { Plus, Search, FileText, Trash2, ChevronRight } from '@lucide/vue'
+import { Plus, Search, FileText, Trash2, Eye, Edit3 } from '@lucide/vue'
 
 const notesStore = useNotesStore()
 const bindersStore = useBindersStore()
