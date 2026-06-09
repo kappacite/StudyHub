@@ -110,6 +110,58 @@
                 Visualiser
               </button>
 
+              <!-- Bouton Partage -->
+              <div class="relative">
+                <button
+                  @click="togglePublic"
+                  type="button"
+                  :title="isPublic ? 'Note publique — cliquer pour rendre privée' : 'Rendre cette note publique'"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
+                  :class="[
+                    isPublic
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:border-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-300'
+                  ]"
+                >
+                  <Globe class="w-3.5 h-3.5" />
+                  {{ isPublic ? 'Public' : 'Privé' }}
+                </button>
+
+                <!-- Popup lien de partage -->
+                <Transition name="popup">
+                  <div
+                    v-if="sharePopupVisible && isPublic"
+                    class="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl p-4 z-50"
+                  >
+                    <div class="flex items-center justify-between mb-3">
+                      <span class="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                        <Globe class="w-3.5 h-3.5 text-emerald-500" />
+                        Note publique
+                      </span>
+                      <button @click="sharePopupVisible = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <X class="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">Toute personne avec ce lien peut lire cette note.</p>
+                    <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2">
+                      <span class="text-[10px] font-mono text-slate-500 dark:text-slate-400 flex-1 truncate">{{ shareUrl }}</span>
+                      <button
+                        @click="copyShareLink"
+                        class="shrink-0 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all active:scale-95"
+                      >
+                        {{ shareCopied ? 'Copié !' : 'Copier' }}
+                      </button>
+                    </div>
+                    <button
+                      @click="togglePublic"
+                      class="mt-3 w-full text-xs text-rose-500 hover:text-rose-600 font-semibold transition-colors"
+                    >
+                      Rendre privée
+                    </button>
+                  </div>
+                </Transition>
+              </div>
+
               <!-- Guide Button (Edit Mode) -->
               <button 
                 @click="showHelpModal = true"
@@ -716,6 +768,7 @@ import {
   Brain,
   HelpCircle,
   X,
+  Globe,
   Columns,
   ListOrdered,
   CheckCircle2,
@@ -761,6 +814,10 @@ const selectionMenuPos = ref({ top: 0, left: 0 })
 
 const title = ref('')
 const binderId = ref<number | null>(null)
+const isPublic = ref(false)
+const shareToken = ref<string | null>(null)
+const sharePopupVisible = ref(false)
+const shareCopied = ref(false)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 // Structured Notes Divisions
@@ -853,6 +910,8 @@ async function loadNoteDetails() {
   if (note) {
     title.value = note.title
     binderId.value = note.binder_id
+    isPublic.value = (note as any).is_public || false
+    shareToken.value = (note as any).share_token || null
     noteFlashcards.value = (note as any).flashcards || []
     
     // Parse structured divisions
@@ -873,6 +932,31 @@ async function loadNoteDetails() {
     }
   }
   loading.value = false
+}
+
+async function togglePublic() {
+  const newVal = !isPublic.value
+  try {
+    const { data } = await api.patch(`/notes/${noteId.value}/visibility`, { is_public: newVal })
+    isPublic.value = data.is_public
+    shareToken.value = data.share_token || null
+    if (newVal) sharePopupVisible.value = true
+  } catch (e) {
+    console.error('Erreur toggle visibilité', e)
+  }
+}
+
+const shareUrl = computed(() => {
+  if (!shareToken.value) return ''
+  return `${window.location.origin}/notes/public/${shareToken.value}`
+})
+
+async function copyShareLink() {
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+    shareCopied.value = true
+    setTimeout(() => { shareCopied.value = false }, 2000)
+  } catch {}
 }
 
 // Structured Divisions Parsers
@@ -1933,13 +2017,22 @@ function printNote() {
   }
   .markdown-body p, .markdown-body ul, .markdown-body ol {
     color: #111827 !important;
-  }
-  .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+  }\n  .markdown-body h1, .markdown-body h2, .markdown-body h3 {
     color: black !important;
   }
   .katex-display {
     background: #f8fafc !important;
     border: 1px solid #e2e8f0 !important;
   }
+}
+
+.popup-enter-active,
+.popup-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.popup-enter-from,
+.popup-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
 }
 </style>

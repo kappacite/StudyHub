@@ -33,6 +33,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'package/:id',
         name: 'PackagePreview',
         component: () => import('../views/Marketplace/PackagePreview.vue')
+      },
+      {
+        path: 'notes/public/:token',
+        name: 'PublicNote',
+        component: () => import('../views/Notes/PublicNote.vue')
       }
     ]
   },

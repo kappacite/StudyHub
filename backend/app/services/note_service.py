@@ -1,4 +1,5 @@
 from typing import List, Tuple, Optional
+import uuid
 from app.dao.note_dao import NoteDAO
 from app.dao.binder_dao import BinderDAO
 from app.dao.deck_dao import DeckDAO
@@ -85,6 +86,14 @@ class NoteService:
             note.binder_id = data.binder_id
         elif "binder_id" in data.model_fields_set and data.binder_id is None:
             note.binder_id = None
+
+        # Gestion visibilité publique
+        if data.is_public is not None:
+            note.is_public = data.is_public
+            if data.is_public and not note.share_token:
+                note.share_token = uuid.uuid4().hex  # Génère un token unique
+            elif not data.is_public:
+                note.share_token = None  # Révoque le lien de partage
             
         updated = self._note_dao.update(note)
         

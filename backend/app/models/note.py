@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+import uuid
 from app.extensions import db
 
 class Note(db.Model):
@@ -11,6 +12,8 @@ class Note(db.Model):
     content = Column(Text, default="", nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     binder_id = Column(Integer, ForeignKey("binders.id", ondelete="SET NULL"), nullable=True)
+    is_public = Column(Boolean, default=False, nullable=False)
+    share_token = Column(String(64), unique=True, nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

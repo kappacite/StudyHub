@@ -83,3 +83,39 @@ def delete_binder(binder_id):
     user_id = int(get_jwt_identity())
     binder_service.delete_binder(user_id, binder_id)
     return "", 204
+
+
+# -------------------------------------------------------
+# Endpoints PUBLICS (sans JWT)
+# -------------------------------------------------------
+
+@binders_bp.route("/public/<int:binder_id>", methods=["GET"])
+def get_public_binder(binder_id):
+    """Accès public à un classeur (is_public=True)."""
+    from app.models.binder import Binder
+    from app.extensions import db as _db
+    binder = _db.session.query(Binder).filter_by(id=binder_id, is_public=True).first()
+    if not binder:
+        return jsonify({"error": {"code": "NOT_FOUND", "message": "Classeur introuvable ou non public."}}), 404
+    from app.schemas.binder_schema import BinderResponse
+    return jsonify(BinderResponse.model_validate(binder).model_dump()), 200
+
+
+# -------------------------------------------------------
+# Toggle visibilité
+# -------------------------------------------------------
+
+@binders_bp.route("/<int:binder_id>/visibility", methods=["PATCH"])
+@jwt_required_middleware
+def toggle_binder_visibility(binder_id):
+    """Passe un classeur en public ou privé."""
+    user_id = int(get_jwt_identity())
+    data = request.get_json() or {}
+    is_public = data.get("is_public")
+    if is_public is None:
+        return jsonify({"error": {"code": "VALIDATION_ERROR", "message": "Champ is_public requis."}}), 400
+
+    from app.schemas.binder_schema import BinderUpdate
+    binder_update = BinderUpdate(is_public=is_public)
+    result = binder_service.update_binder(user_id, binder_id, binder_update)
+    return jsonify(result.model_dump()), 200

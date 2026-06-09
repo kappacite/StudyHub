@@ -79,3 +79,39 @@ def delete_note(note_id):
     user_id = int(get_jwt_identity())
     note_service.delete_note(user_id, note_id)
     return "", 204
+
+
+# -------------------------------------------------------
+# Endpoints PUBLICS (sans JWT)
+# -------------------------------------------------------
+
+@notes_bp.route("/public/<string:token>", methods=["GET"])
+def get_public_note(token):
+    """Accès public à une note via son share_token."""
+    from app.models.note import Note
+    from app.extensions import db as _db
+    note = _db.session.query(Note).filter_by(share_token=token, is_public=True).first()
+    if not note:
+        return jsonify({"error": {"code": "NOT_FOUND", "message": "Note introuvable ou non publique."}}), 404
+    from app.schemas.note_schema import NoteResponse
+    return jsonify(NoteResponse.model_validate(note).model_dump()), 200
+
+
+# -------------------------------------------------------
+# Toggle visibilité
+# -------------------------------------------------------
+
+@notes_bp.route("/<int:note_id>/visibility", methods=["PATCH"])
+@jwt_required_middleware
+def toggle_note_visibility(note_id):
+    """Passe une note en public ou privé et retourne le lien de partage."""
+    user_id = int(get_jwt_identity())
+    data = request.get_json() or {}
+    is_public = data.get("is_public")
+    if is_public is None:
+        return jsonify({"error": {"code": "VALIDATION_ERROR", "message": "Champ is_public requis."}}), 400
+
+    from app.schemas.note_schema import NoteUpdate
+    note_update = NoteUpdate(is_public=is_public)
+    result = note_service.update_note(user_id, note_id, note_update)
+    return jsonify(result.model_dump()), 200
