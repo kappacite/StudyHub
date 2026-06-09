@@ -76,5 +76,26 @@ def create_app(config_name=None):
         # En dev/test : créer les tables directement sans migrations
         if flask_app.config.get("DEBUG") or flask_app.config.get("TESTING"):
             db.create_all()
+        else:
+            # En production : auto-migration au démarrage
+            from flask_migrate import upgrade as flask_db_upgrade, stamp as flask_db_stamp
+            from sqlalchemy import inspect
+            try:
+                inspector = inspect(db.engine)
+                tables = inspector.get_table_names()
+                
+                if tables:
+                    # La base de données existe et contient des tables
+                    if "alembic_version" not in tables:
+                        # Cas où la base a été créée sans Alembic (avant les migrations)
+                        # On la tamponne sur la version initiale de référence
+                        flask_app.logger.info("Base de données existante sans Alembic. Tamponnage sur la version 06f0ddaea360...")
+                        flask_db_stamp(revision="06f0ddaea360")
+                
+                # Exécuter les migrations en attente
+                flask_db_upgrade()
+                flask_app.logger.info("Migrations de base de données appliquées automatiquement avec succès.")
+            except Exception as e:
+                flask_app.logger.error(f"Erreur lors de l'exécution automatique des migrations: {e}")
             
     return flask_app
