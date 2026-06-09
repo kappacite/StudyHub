@@ -418,7 +418,11 @@ onBeforeUnmount(() => {
 })
 
 function goBack() {
-  router.push(`/notes/${noteId.value}`)
+  if (route.query.from === 'reviews') {
+    router.push('/reviews')
+  } else {
+    router.push(`/notes/${noteId.value}`)
+  }
 }
 
 async function submitForAnalysis() {

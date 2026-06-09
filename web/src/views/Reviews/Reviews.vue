@@ -1081,6 +1081,11 @@ async function evaluateFeynman() {
 
 // Blank Sheet actions
 async function startBlankSheet() {
+  if (blankSheetSourceType.value === 'note' && selectedNoteId.value !== null) {
+    router.push(`/notes/${selectedNoteId.value}/blurting?from=reviews`)
+    return
+  }
+  
   blankSheetDraft.value = ''
   blankSheetStep.value = 'work'
   startTimer(blankSheetTimer)
