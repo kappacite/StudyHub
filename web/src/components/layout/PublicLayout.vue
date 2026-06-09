@@ -58,7 +58,7 @@
           <!-- Personal Space Button -->
           <button 
             @click="goToPersonalSpace"
-            class="inline-flex items-center gap-1.5 px-4.5 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 hover:shadow-lg hover:shadow-indigo-500/20 active:scale-95 transition-all"
+            class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl text-sm font-bold shadow-md shadow-indigo-500/10 hover:shadow-lg hover:shadow-indigo-500/20 active:scale-95 transition-all"
           >
             {{ authStore.isAuthenticated ? 'Espace Personnel' : 'Se Connecter' }}
             <ArrowRight class="w-3.5 h-3.5" />
