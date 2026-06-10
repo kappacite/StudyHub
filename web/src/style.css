@@ -52,6 +52,15 @@
 .markdown-body strong {
   @apply font-bold text-slate-900 dark:text-white;
 }
+.markdown-body pre {
+  @apply bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-4 rounded-2xl overflow-x-auto my-4 font-mono text-sm leading-relaxed text-slate-800 dark:text-slate-200;
+}
+.markdown-body pre code {
+  @apply p-0 bg-transparent text-inherit text-xs border-0 mx-0;
+}
+.markdown-body code {
+  @apply font-mono text-xs bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded mx-0.5;
+}
 
 .katex-display {
   @apply my-4 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800/50 overflow-x-auto;

@@ -85,3 +85,39 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 
 ---
 
+## [2026-06-09] Développement de la collaboration (Partage, Marketplace) et de la révision par Feuille Blanche IA
+
+### Ajouts et modifications
+
+#### 🌐 Partage Public & Espace Communautaire (Marketplace)
+*   **Partage Public de Notes** : Ajout d'un interrupteur de visibilité publique dans l'éditeur. Côté backend, cela génère un `share_token` unique cryptographiquement et expose une route publique accessible sans jeton JWT `/notes/public/<token>`.
+*   **Consultation en Lecture Seule** : Création de la vue ([PublicNote.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Notes/PublicNote.vue)) reprenant le moteur de rendu Markdown/KaTeX et un design épuré incitant à la création de compte.
+*   **Espace Communautaire (Marketplace)** : Permet aux utilisateurs de publier des dossiers complets (classeurs / binders) thématiques. Les autres membres peuvent filtrer par tags ou rechercher par mot-clé, inspecter la structure à plat du classeur (titres de notes, decks) et le cloner dans leur propre espace en un clic. Le clonage (fork) incrémente le compteur `fork_count` du package original et sauvegarde une trace de l'auteur original (`original_author_id`).
+
+#### 🧠 Révision Blurting (Feuille Blanche) Assistée par IA
+*   **Intégration de Gemini** : Mise en place d'un service d'analyse IA ([ai_service.py](file:///home/robyn/Documents/Dev/StudyHub/backend/app/services/ai_service.py)) exploitant les modèles génératifs de Google Gemini pour évaluer les restitutions écrites.
+*   **Vue de révision Blurting** : Création de la vue interactive ([Blurting.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Notes/Blurting.vue)) avec minuteur. L'IA compare la saisie de l'étudiant avec le contenu réel de la note de cours et retourne un score de couverture, un retour personnalisé, la liste des notions clés oubliées et des flashcards sur mesure pour pallier ces lacunes.
+*   **Génération de Flashcards en Lot** : Permet à l'étudiant d'enregistrer directement les flashcards suggérées par l'IA dans le deck de son choix en une seule requête `POST /blurting/create-flashcards`.
+
+#### 🗄️ Auto-migrations de Base de Données au Lancement
+*   **Gestion programmatique d'Alembic** : Ajout d'un gestionnaire de démarrage dans la factory Flask ([__init__.py](file:///home/robyn/Documents/Dev/StudyHub/backend/app/__init__.py)) qui applique automatiquement les nouvelles migrations SQL au démarrage du serveur en production ou en développement.
+*   **Résolution des contraintes d'intégrité en production** : Création d'une migration intermédiaire Alembic gérant l'introduction de colonnes `NOT NULL` (comme `is_public`) sur des tables existantes en insérant des valeurs par défaut puis en appliquant la contrainte de non-nullité.
+*   **Support multi-dialectes (Postgres/SQLite)** : Ajustement des scripts Alembic pour utiliser des opérations batch nommées (`fk_binders_original_author_id`) afin de supporter les contraintes complexes sous SQLite.
+
+### Décisions d'architecture
+1. **Rendu hybride KaTeX et MathJax sur notes publiques** : Conservation de l'isolation du parseur pour s'assurer que les notes publiques bénéficient de la même fidélité visuelle sans exiger de session d'authentification.
+2. **Double relation User-Binder** : Création d'une clé étrangère distincte `original_author_id` sur la table des classeurs pour préserver la paternité originale d'un cours même après de multiples clones successifs.
+3. **Mise à jour idempotente au démarrage** : L'auto-migration s'appuie sur le contexte applicatif et filtre les contextes CLI et tests unitaires pour éviter des conflits de verrous SQL ou des lenteurs de chargement.
+
+## [2026-06-10] Intégration de l'édition et du rendu de blocs de code dans l'éditeur de notes
+
+### Ajouts et modifications
+
+#### 📝 Éditeur de notes (NoteEdit.vue)
+* **Barre d'outils d'édition** : Ajout d'une nouvelle section **Code** avec deux boutons : **En Ligne** (pour formater du code inline avec `` ` ``) et **Bloc Code** (pour insérer des blocs de code avec triple-backticks ` ``` ` et retour à la ligne).
+* **Menu de sélection flottant** : Ajout d'un bouton d'insertion rapide **Bloc de code** (`{ }`) à côté de l'option de code en ligne existante pour faciliter la mise en forme du texte sélectionné.
+* **Support dans `applySelectionTransform`** : Gestion du type `'bloc_code'` pour entourer le texte sélectionné par des balises de code de bloc Markdown.
+
+#### 🎨 Design & Rendu (style.css)
+* **Stylisation CSS** : Ajout de styles CSS pour les blocs de code `.markdown-body pre` (background sombre adapté au mode sombre, bordure fine, padding, angles arrondis et gestion de l'overflow horizontal) et les balises `.markdown-body code` (inline, couleur indigo spécifique et arrière-plan).
+* **Compatibilité** : Ces styles profitent également à la consultation publique des notes via [PublicNote.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Notes/PublicNote.vue).

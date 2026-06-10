@@ -203,6 +203,20 @@
             </button>
 
             <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Code</span>
+            <button 
+              v-for="btn in codeButtons" 
+              :key="btn.label" 
+              type="button" 
+              @click="insertText(btn.prefix, btn.suffix)"
+              class="p-2 text-xs font-mono font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
+              :title="btn.label"
+            >
+              {{ btn.label }}
+            </button>
+
+            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
             
             <!-- Smart Space: Definition Tooltip insertion -->
             <button 
@@ -837,13 +851,22 @@
               I
             </button>
 
-            <!-- Code Button -->
+            <!-- Code Button (Inline) -->
             <button 
               @click="applySelectionTransform('code')"
               class="px-1.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-355 rounded-lg text-[9px] font-mono font-bold transition-all active:scale-95"
-              title="Code"
+              title="Code en ligne"
             >
               &lt;/&gt;
+            </button>
+
+            <!-- Bloc Code Button -->
+            <button 
+              @click="applySelectionTransform('bloc_code')"
+              class="px-1.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-355 rounded-lg text-[9px] font-mono font-bold transition-all active:scale-95"
+              title="Bloc de code"
+            >
+              { }
             </button>
           </div>
         </div>
@@ -1001,6 +1024,11 @@ const latexButtons = [
   { label: 'Fraction', prefix: '\\frac{', suffix: '}{}' },
   { label: 'Somme', prefix: '\\sum_{', suffix: '}^{}' },
   { label: 'Intégrale', prefix: '\\int_{', suffix: '}^{}' }
+]
+
+const codeButtons = [
+  { label: 'En Ligne', prefix: '`', suffix: '`' },
+  { label: 'Bloc Code', prefix: '```\n', suffix: '\n```' }
 ]
 
 // Reload components when route parameter changes (for linked notes navigation)
@@ -1818,7 +1846,7 @@ function handleTextareaSelect(event: Event) {
   showSelectionMenu.value = false
 }
 
-async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'code' | 'def' | 'qcm' | 'ordre' | 'assoc' | 'vf' | 'math_bloc' | 'math_ligne' | 'diagramme') {
+async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'code' | 'bloc_code' | 'def' | 'qcm' | 'ordre' | 'assoc' | 'vf' | 'math_bloc' | 'math_ligne' | 'diagramme') {
   const textarea = textareaRef.value
   if (!textarea) return
   
@@ -1837,6 +1865,8 @@ async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'cod
     replaced = `*${selected}*`
   } else if (type === 'code') {
     replaced = `\`${selected}\``
+  } else if (type === 'bloc_code') {
+    replaced = `\`\`\`\n${selected}\n\`\`\``
   } else if (type === 'def') {
     const result = await openModal({
       title: 'Définition info-bulle',
