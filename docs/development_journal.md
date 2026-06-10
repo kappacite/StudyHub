@@ -121,3 +121,6 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 #### 🎨 Design & Rendu (style.css)
 * **Stylisation CSS** : Ajout de styles CSS pour les blocs de code `.markdown-body pre` (background sombre adapté au mode sombre, bordure fine, padding, angles arrondis et gestion de l'overflow horizontal) et les balises `.markdown-body code` (inline, couleur indigo spécifique et arrière-plan).
 * **Compatibilité** : Ces styles profitent également à la consultation publique des notes via [PublicNote.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Notes/PublicNote.vue).
+
+* **Coloration Syntaxique (Highlight.js)** : Intégration de la bibliothèque `highlight.js` (thème `github-dark`) au parseur Markdown `marked` dans [NoteEdit.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Notes/NoteEdit.vue) et [PublicNote.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Notes/PublicNote.vue). Les blocs de code (ex: ` ```python ... `) bénéficient désormais d'une coloration syntaxique automatique de haute qualité pour plus de 100 langages.
+

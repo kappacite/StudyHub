@@ -58,6 +58,9 @@
 .markdown-body pre code {
   @apply p-0 bg-transparent text-inherit text-xs border-0 mx-0;
 }
+.markdown-body pre code.hljs {
+  @apply bg-transparent p-0 text-xs;
+}
 .markdown-body code {
   @apply font-mono text-xs bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded mx-0.5;
 }

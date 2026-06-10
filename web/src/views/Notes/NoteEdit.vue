@@ -904,9 +904,22 @@ import {
 } from '@lucide/vue'
 import { marked } from 'marked'
 import katex from 'katex'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
 
 // Import KaTeX styles for formula rendering
 import 'katex/dist/katex.min.css'
+
+// Configure marked to use highlight.js for syntax highlighting in code blocks
+marked.use({
+  renderer: {
+    code({ text, lang }: { text: string; lang?: string }) {
+      const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext'
+      const highlighted = hljs.highlight(text, { language }).value
+      return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`
+    }
+  }
+})
 
 const notesStore = useNotesStore()
 const bindersStore = useBindersStore()
