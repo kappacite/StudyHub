@@ -115,7 +115,17 @@ const routes: Array<RouteRecordRaw> = [
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    // Si c'est la même page et que seuls les paramètres de requête/hash changent, ne pas scroller
+    if (to.path === from.path) {
+      return false
+    }
+    if (savedPosition) {
+      return savedPosition
+    }
+    return { top: 0 }
+  }
 })
 
 router.beforeEach((to, _from, next) => {

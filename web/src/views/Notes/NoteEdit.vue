@@ -335,6 +335,7 @@
               @input="triggerAutoSave"
               @mouseup="handleTextareaSelect($event)"
               @keyup="handleTextareaSelect($event)"
+              @keydown.tab.prevent="handleTabKey"
             ></textarea>
           </div>
 
@@ -2144,6 +2145,25 @@ function getNoteTitle(id: number): string {
 
 function navigateToNote(id: number) {
   router.push(`/notes/${id}`)
+}
+
+function handleTabKey() {
+  const textarea = textareaRef.value
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = textarea.value
+
+  const tabValue = '  ' // 2 spaces is standard for markdown indentation
+  noteBody.value = text.substring(0, start) + tabValue + text.substring(end)
+
+  setTimeout(() => {
+    textarea.focus()
+    const newCursorPos = start + tabValue.length
+    textarea.setSelectionRange(newCursorPos, newCursorPos)
+    triggerAutoSave()
+  }, 0)
 }
 
 // Textarea insertion helpers (inserts inside noteBody)
