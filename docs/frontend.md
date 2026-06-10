@@ -41,9 +41,18 @@ src/
     ├── Dashboard/      # Heatmap d'activité, objectifs et statistiques
     ├── Binders/        # Explorateur de dossiers et documents associés
     ├── Decks/          # Gestionnaire de decks et module d'étude (Flashcards 3D)
-    ├── Notes/          # Liste des notes et éditeur enrichi (Markdown/LaTeX/PDF)
+    ├── Notes/          # Gestion des notes
+    │   ├── Notes.vue        # Explorateur de notes
+    │   ├── NoteEdit.vue     # Éditeur enrichi avec mode Zen et info-bulles
+    │   ├── PublicNote.vue   # Consultation en lecture seule d'une note publique
+    │   └── Blurting.vue     # Module de révision par feuille blanche assisté par IA
     ├── Diagrams/       # Créateur de diagrammes interactif (Drag & Drop + Mermaid)
-    └── PDFs/           # Liseuse PDF et gestionnaire d'annotations épinglées
+    ├── PDFs/           # Liseuse PDF et annotations épinglées
+    ├── Marketplace/    # Espace communautaire d'exploration et clone de packages
+    │   ├── Home.vue         # Accueil de l'espace communautaire
+    │   ├── Explore.vue      # Recherche et filtrage par tags de packages
+    │   └── PackagePreview.vue # Aperçu complet d'un package avant clonage
+    └── Reviews/        # Centre d'évaluation et planification des révisions (Flashcards + Blurting)
 ```
 
 ---
@@ -87,7 +96,40 @@ Le module de gestion documentaire ([PDFs.vue](file:///home/robyn/Documents/Dev/S
 
 ---
 
-## 6. Commandes Utiles
+## 6. Partage Public de Notes
+
+Pour faciliter la collaboration, l'étudiant peut basculer la visibilité d'une note en **Public** à partir de l'éditeur ([NoteEdit.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Notes/NoteEdit.vue)).
+*   **Génération du Token** : L'activation génère un token aléatoire unique côté backend.
+*   **Consultation anonyme** : L'application expose la route publique `/notes/public/:token` pointant sur la vue ([PublicNote.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Notes/PublicNote.vue)).
+*   **Lecture Seule** : Cette page permet de lire la note sans être connecté. Elle embarque le même moteur de rendu hybride Markdown + LaTeX + KaTeX ainsi qu'une barre d'en-tête simplifiée avec un bouton d'action pour copier l'URL ou s'inscrire/se connecter à la plateforme.
+
+---
+
+## 7. Révision Blurting IA (Feuille Blanche)
+
+Le module de révision intègre un outil de **Blurting** ([Blurting.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Notes/Blurting.vue)) assisté par l'IA de Gemini.
+*   **Flux de travail** : L'utilisateur accède à la révision d'une note spécifique depuis la vue globale des révisions ([Reviews.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Reviews/Reviews.vue)).
+*   **Interface interactive** : Une zone d'édition libre permet de taper tout ce dont on se rappelle par rapport au cours sous forme de texte brut ou structuré. Un chronomètre suit le temps passé.
+*   **Évaluation par IA** : Au clic sur "Soumettre", le texte saisi est envoyé à l'API backend qui le compare au contenu complet de la note. L'IA de Gemini retourne :
+    *   Un feedback textuel constructif.
+    *   Un score global de couverture (en %).
+    *   La liste des concepts clés omis ou mal restitués.
+    *   Des suggestions de flashcards prêtes à l'emploi (recto/verso) pour travailler les lacunes.
+*   **Génération de Flashcards** : L'étudiant sélectionne les cartes proposées par l'IA et les ajoute en un clic à son deck de révision.
+
+---
+
+## 8. Espace Communautaire (Marketplace)
+
+La Marketplace permet aux étudiants de partager leurs classeurs thématiques sous forme de packages d'études réutilisables.
+*   **Exploration** ([Explore.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Marketplace/Explore.vue)) : Permet de rechercher des packages par mots-clés ou par filtres de tags thématiques configurés à la création du partage.
+*   **Aperçu du Package** ([PackagePreview.vue](file:///home/robyn/Documents/Dev/StudyHub/web/src/views/Marketplace/PackagePreview.vue)) : Affiche les métadonnées (description, auteur, nombre de clones, tags) et liste à plat le contenu (noms des notes, decks, diagrammes) sans exposer le contenu intégral afin de respecter la vie privée ou les droits d'auteur avant clonage.
+*   **Clonage de Classeur** : Permet de copier l'intégralité de l'arborescence (et ses sous-classeurs récursivement) directement dans sa bibliothèque personnelle pour commencer à étudier.
+
+---
+
+## 9. Commandes Utiles
+
 Pour travailler sur la partie Web :
 ```bash
 # Se placer dans le répertoire

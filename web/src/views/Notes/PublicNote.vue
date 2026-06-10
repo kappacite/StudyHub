@@ -115,6 +115,8 @@ import 'katex/dist/katex.min.css'
 
 // Configure marked to use highlight.js for syntax highlighting in code blocks
 marked.use({
+  breaks: true,
+  gfm: true,
   renderer: {
     code({ text, lang }: { text: string; lang?: string }) {
       const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext'
@@ -171,11 +173,15 @@ const parsedNote = computed(() => {
 })
 
 function renderMarkup(text: string): string {
-  const markdownText = text || ''
+  const normalizedText = (text || '').replace(/\r\n/g, '\n')
+  let temp = normalizedText.replace(/\n{3,}/g, (match) => {
+    const count = match.length - 2
+    return '\n\n' + Array(count).fill('&nbsp;').join('\n\n') + '\n\n'
+  })
   const placeholders: string[] = []
 
   // 1. Double dollars $$ (Display equations block)
-  let temp = markdownText.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => {
+  temp = temp.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => {
     try {
       const html = katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false })
       const key = `LATEXBLOCKPLACEHOLDER${placeholders.length}`
@@ -235,7 +241,7 @@ function renderMarkup(text: string): string {
     }).join('');
     
     const displayHtml = `
-      <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800/60 rounded-2xl my-4">
+      <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
         <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">QCM</strong>
         <p class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-2">${question}</p>
         <ul class="list-none pl-0 mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-400">${listItems}</ul>
@@ -243,14 +249,14 @@ function renderMarkup(text: string): string {
     `;
     const key = `REVISIONPLACEHOLDER${placeholders.length}`;
     placeholders.push(displayHtml);
-    return key;
+    return '\n\n' + key + '\n\n';
   });
 
   // VF: {{vf::Affirmation::Vrai/Faux::Justification}}
   temp = temp.replace(/\{\{vf::(.*?)::(.*?)::(.*?)\}\}/g, (_rawTag, assertion, answer, justification) => {
     const isVrai = answer.trim().toLowerCase() === "vrai";
     const displayHtml = `
-      <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800/60 rounded-2xl my-4">
+      <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
         <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Vrai ou Faux</strong>
         <p class="font-semibold text-sm text-slate-800 dark:text-slate-100">${assertion}</p>
         <div class="mt-2 text-xs font-bold">Réponse : <span class="${isVrai ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${answer}</span></div>
@@ -259,22 +265,26 @@ function renderMarkup(text: string): string {
     `;
     const key = `REVISIONPLACEHOLDER${placeholders.length}`;
     placeholders.push(displayHtml);
-    return key;
+    return '\n\n' + key + '\n\n';
   });
 
   // Ordre: {{ordre::Titre::Étape 1 > Étape 2 > Étape 3}}
   temp = temp.replace(/\{\{ordre::(.*?)::(.*?)\}\}/g, (_rawTag, title, stepsStr) => {
     const steps = stepsStr.split('>').map((s: string) => s.trim());
-    const stepItems = steps.map((s: string, idx: number) => `<li class="mb-1"><span class="font-bold text-indigo-500 mr-1.5">Étape ${idx+1} :</span> ${s}</li>`).join('');
+    const cleanStep = (str: string) => {
+      const cleaned = str.replace(/^(?:étape\s*\d+[\s\-:]*|\d+[\.\s\-:]+)\s*/i, '').trim();
+      return cleaned.length > 0 ? cleaned : str;
+    };
+    const stepItems = steps.map((s: string) => `<li class="mb-1">${cleanStep(s)}</li>`).join('');
     const displayHtml = `
-      <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800/60 rounded-2xl my-4">
-        <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Séquence : ${title}</strong>
-        <ol class="list-none pl-0 mt-3 space-y-1 text-xs">${stepItems}</ol>
+      <div class="bg-slate-50/50 dark:bg-slate-900/50 p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl my-2 max-w-2xl shadow-sm not-prose">
+        <strong class="text-[9px] uppercase tracking-wider text-slate-400 font-bold block mb-0.5">Séquence : ${title}</strong>
+        <ol class="list-decimal mt-1.5 space-y-0.5 text-xs" style="margin-left: 1rem !important; padding-left: 1rem !important;">${stepItems}</ol>
       </div>
     `;
     const key = `REVISIONPLACEHOLDER${placeholders.length}`;
     placeholders.push(displayHtml);
-    return key;
+    return '\n\n' + key + '\n\n';
   });
 
   // Assoc: {{assoc::Titre::A=1 | B=2 | C=3}}
@@ -284,9 +294,9 @@ function renderMarkup(text: string): string {
       if (eqIdx === -1) return { key: p.trim(), value: '' }
       return { key: p.substring(0, eqIdx).trim(), value: p.substring(eqIdx + 1).trim() }
     });
-    const rows = pairs.map((p: { key: string, value: string }) => `<tr><td class="border border-slate-200 dark:border-slate-800 p-2 font-semibold text-slate-700 dark:text-slate-300">${p.key}</td><td class="border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-400">${p.value}</td></tr>`).join('');
+    const rows = pairs.map((p: { key: string, value: string }) => `<tr><td class="border border-slate-200 dark:border-slate-800 p-2 font-semibold text-slate-700 dark:text-slate-350">${p.key}</td><td class="border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-400">${p.value}</td></tr>`).join('');
     const displayHtml = `
-      <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800/60 rounded-2xl my-4">
+      <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
         <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Associations : ${title}</strong>
         <table class="table-auto text-xs mt-3 w-full border-collapse border border-slate-200 dark:border-slate-800">
           <thead>
@@ -301,7 +311,7 @@ function renderMarkup(text: string): string {
     `;
     const key = `REVISIONPLACEHOLDER${placeholders.length}`;
     placeholders.push(displayHtml);
-    return key;
+    return '\n\n' + key + '\n\n';
   });
 
   // 6. Markdown parse
@@ -315,6 +325,11 @@ function renderMarkup(text: string): string {
     html = html.replace(new RegExp(`DIAGRAMPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
     html = html.replace(new RegExp(`REVISIONPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
   })
+
+  // Post-processing: strip <p> wrappers around block elements and remove empty <p> tags
+  html = html.replace(/<p>\s*(<div\b)/gi, '$1')
+  html = html.replace(/(<\/div>)\s*<\/p>/gi, '$1')
+  html = html.replace(/<p>\s*<\/p>/gi, '')
 
   return html
 }

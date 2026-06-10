@@ -11,12 +11,13 @@ def test_placeholder_parsing_logic():
         "{{qcm::Qui a écrit Les Misérables ?::Zola|*Victor Hugo*|Maupassant}}\n"
         "{{ordre::Cycle de l'eau::Évaporation > Condensation > Précipitation}}\n"
         "{{assoc::Capitales::France=Paris | Espagne=Madrid}}\n"
-        "{{vf::La Terre est plate::Faux::La Terre est ronde.}}"
+        "{{vf::La Terre est plate::Faux::La Terre est ronde.}}\n"
+        "[La PVM]{def:Python Virtual Machine, exécute le bytecode.}"
     )
     
     placeholders = extract_placeholders_from_text(content, note_id=1)
     
-    assert len(placeholders) == 5
+    assert len(placeholders) == 6
     
     # 1. Trou
     assert placeholders[0]["type"] == "trou"
@@ -44,11 +45,16 @@ def test_placeholder_parsing_logic():
     assert "Faux" in placeholders[4]["back"]
     assert "La Terre est ronde" in placeholders[4]["back"]
 
+    # 6. Def
+    assert placeholders[5]["type"] == "def"
+    assert "La PVM" in placeholders[5]["front"]
+    assert "Python Virtual Machine" in placeholders[5]["back"]
+
 def test_note_phantom_deck_sync(client, auth_headers):
     # 1. Créer une note avec des placeholders
     note_data = {
         "title": "Notes sur l'Histoire",
-        "content": "La capitale de la France est {{trou::Paris}}."
+        "content": "[Paris]{def:La capitale de la France}."
     }
     
     response = client.post("/api/v1/notes", json=note_data, headers=auth_headers)
@@ -64,15 +70,15 @@ def test_note_phantom_deck_sync(client, auth_headers):
         # Vérifier que la carte est créée
         cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
         assert len(cards) == 1
-        assert "La capitale de la France est [...]" in cards[0].front
-        assert cards[0].back == "Paris"
+        assert "Paris" in cards[0].front
+        assert cards[0].back == "La capitale de la France"
         card_id = cards[0].id
         placeholder_hash = cards[0].placeholder_hash
 
     # 3. Mettre à jour la note : changer le placeholder
     update_data = {
         "title": "Notes sur l'Histoire",
-        "content": "La capitale de la France est {{trou::Paris}}.\nQui a écrit Germinal ? {{trou::Zola}}"
+        "content": "[Paris]{def:La capitale de la France}.\n{{vf::Le ciel est bleu::Vrai::Le ciel est bleu.}}"
     }
     
     response = client.put(f"/api/v1/notes/{note_id}", json=update_data, headers=auth_headers)
@@ -87,7 +93,7 @@ def test_note_phantom_deck_sync(client, auth_headers):
     # 4. Retirer un placeholder
     update_data_2 = {
         "title": "Notes sur l'Histoire",
-        "content": "La capitale de la France est {{trou::Paris}}."
+        "content": "[Paris]{def:La capitale de la France}."
     }
     
     response = client.put(f"/api/v1/notes/{note_id}", json=update_data_2, headers=auth_headers)
@@ -98,13 +104,13 @@ def test_note_phantom_deck_sync(client, auth_headers):
         cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
         # Devrait redevenir 1 seule carte
         assert len(cards) == 1
-        assert cards[0].back == "Paris"
+        assert cards[0].front == "Définition : Paris"
 
 def test_review_card_direct_api(client, auth_headers):
     # 1. Créer une note avec placeholder
     note_data = {
         "title": "Notes Physiques",
-        "content": "La formule de la force est {{trou::F=ma}}."
+        "content": "[F=ma]{def:La formule de la force}."
     }
     response = client.post("/api/v1/notes", json=note_data, headers=auth_headers)
     assert response.status_code == 201

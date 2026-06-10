@@ -97,7 +97,7 @@ studyhub/
 │   ├── requirements.txt
 │   ├── alembic/
 │   ├── app/
-│   │   ├── __init__.py        # Application factory
+│   │   ├── __init__.py        # Application factory (auto-migrations)
 │   │   ├── config.py          # Config par environnement
 │   │   ├── extensions.py      # SQLAlchemy, JWT, Migrate...
 │   │   │
@@ -121,6 +121,7 @@ studyhub/
 │   │   │   └── binder.py
 │   │   │
 │   │   ├── services/          # COUCHE LOGIQUE MÉTIER
+│   │   │   ├── ai_service.py         # Intégration IA (Gemini - Blurting)
 │   │   │   ├── auth_service.py
 │   │   │   ├── user_service.py
 │   │   │   ├── deck_service.py
@@ -130,6 +131,7 @@ studyhub/
 │   │   │   ├── diagram_service.py
 │   │   │   ├── pdf_service.py
 │   │   │   ├── binder_service.py
+│   │   │   ├── community_service.py  # Gestion packages/marketplace
 │   │   │   └── stats_service.py
 │   │   │
 │   │   ├── schemas/           # Pydantic — validation I/O
@@ -156,6 +158,8 @@ studyhub/
 │   │   │   │   ├── diagrams.py
 │   │   │   │   ├── pdfs.py
 │   │   │   │   ├── binders.py
+│   │   │   │   ├── blurting.py        # Analyse de feuilles blanches par IA
+│   │   │   │   ├── packages.py        # Marketplace communautaire
 │   │   │   │   └── stats.py
 │   │   │   └── __init__.py
 │   │   │
@@ -532,7 +536,7 @@ au retour de la connexion (stratégie "cache then network").
 
 ## 8. Agent Transverse — Système utilisateur & Auth
 
-### Modèle utilisateur
+### Modèle de données & Partage
 
 ```python
 # app/models/user.py
@@ -551,6 +555,36 @@ class User(Base):
     binders    = relationship("Binder", back_populates="user", cascade="all, delete")
     decks      = relationship("Deck",   back_populates="user", cascade="all, delete")
     notes      = relationship("Note",   back_populates="user", cascade="all, delete")
+
+# app/models/binder.py
+class Binder(Base):
+    __tablename__ = "binders"
+
+    id                 = Column(Integer, primary_key=True)
+    name               = Column(String(100), nullable=False)
+    user_id            = Column(Integer, ForeignKey("users.id"), nullable=False)
+    parent_id          = Column(Integer, ForeignKey("binders.id"), nullable=True)
+    is_public          = Column(Boolean, default=False, nullable=False)
+    description        = Column(Text, nullable=True)
+    tags               = Column(JSON, nullable=True)
+    fork_count         = Column(Integer, default=0, nullable=False)
+    original_author_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at         = Column(DateTime, server_default=func.now())
+    updated_at         = Column(DateTime, onupdate=func.now())
+
+# app/models/note.py
+class Note(Base):
+    __tablename__ = "notes"
+
+    id          = Column(Integer, primary_key=True)
+    title       = Column(String(200), nullable=False)
+    content     = Column(Text, default="", nullable=False)
+    user_id     = Column(Integer, ForeignKey("users.id"), nullable=False)
+    binder_id   = Column(Integer, ForeignKey("binders.id"), nullable=True)
+    is_public   = Column(Boolean, default=False, nullable=False)
+    share_token = Column(String(64), unique=True, nullable=True, index=True)
+    created_at  = Column(DateTime, server_default=func.now())
+    updated_at  = Column(DateTime, onupdate=func.now())
 ```
 
 ### Endpoints Auth
@@ -732,6 +766,8 @@ POST   /api/v1/binders
 GET    /api/v1/binders/:id
 PUT    /api/v1/binders/:id
 DELETE /api/v1/binders/:id
+GET    /api/v1/binders/public/:id         → Accès public à un classeur
+PATCH  /api/v1/binders/:id/visibility     → Toggle visibilité publique (is_public: bool)
 
 # Decks de flashcards
 GET    /api/v1/decks                      ?page&per_page&binder_id&search
@@ -755,6 +791,17 @@ POST   /api/v1/notes
 GET    /api/v1/notes/:id
 PUT    /api/v1/notes/:id
 DELETE /api/v1/notes/:id
+GET    /api/v1/notes/public/:token        → Accès public à une note par share_token
+PATCH  /api/v1/notes/:id/visibility       → Toggle visibilité publique (is_public: bool)
+
+# Espace Communautaire (Packages)
+GET    /api/v1/packages                   ?search&page&per_page (public)
+GET    /api/v1/packages/:binder_id        → Détails du package public (public)
+POST   /api/v1/packages/:binder_id/clone  → Cloner le package dans son compte (sécurisé)
+
+# Révision Blurting (Feuille Blanche IA)
+POST   /api/v1/blurting/analyze           → Analyse IA (Gemini) de la restitution (sécurisé)
+POST   /api/v1/blurting/create-flashcards → Crée des cartes générées par l'analyse (sécurisé)
 
 # Diagrammes
 GET    /api/v1/diagrams                   ?page&per_page&binder_id

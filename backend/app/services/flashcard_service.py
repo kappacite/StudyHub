@@ -68,7 +68,20 @@ class FlashcardService:
     def get_study_cards(self, user_id: int, deck_id: int) -> List[FlashcardResponse]:
         self._verify_deck_ownership(deck_id, user_id)
         cards = self._flashcard_dao.get_cards_to_study(deck_id)
-        return [FlashcardResponse.model_validate(c) for c in cards]
+        
+        # Only keep definitions, true/false, diagram occlusions, and normal cards
+        filtered_cards = []
+        for c in cards:
+            if c.original_text:
+                is_def = c.original_text.startswith('[') and ']{def:' in c.original_text
+                is_vf = '{{vf::' in c.original_text
+                is_occl = c.original_text.startswith('[diagram:') and 'mask:' in c.original_text
+                if is_def or is_vf or is_occl:
+                    filtered_cards.append(c)
+            else:
+                filtered_cards.append(c)
+                
+        return [FlashcardResponse.model_validate(c) for c in filtered_cards]
 
     def answer_card(self, user_id: int, deck_id: int, card_id: int, score: int) -> FlashcardResponse:
         card = self._get_card_or_404(card_id, deck_id, user_id)

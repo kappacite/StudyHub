@@ -68,6 +68,8 @@ class NoteService:
 
     def get_note(self, user_id: int, note_id: int) -> NoteResponse:
         note = self._get_note_or_404(note_id, user_id)
+        if self._deck_dao and self._flashcard_dao:
+            self._sync_phantom_deck(note)
         return NoteResponse.model_validate(note)
 
     def update_note(self, user_id: int, note_id: int, data: NoteUpdate) -> NoteResponse:

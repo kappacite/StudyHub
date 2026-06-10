@@ -56,6 +56,11 @@ classDiagram
         +string name
         +int user_id
         +int parent_id
+        +boolean is_public
+        +string description
+        +json tags
+        +int fork_count
+        +int original_author_id
         +datetime created_at
         +datetime updated_at
     }
@@ -84,6 +89,10 @@ classDiagram
         +string content
         +int user_id
         +int binder_id
+        +boolean is_public
+        +string share_token
+        +datetime created_at
+        +datetime updated_at
     }
     class Diagram {
         +int id
@@ -109,7 +118,8 @@ classDiagram
         +datetime created_at
     }
 
-    User "1" --> "*" Binder
+    User "1" --> "*" Binder : owner
+    User "1" --> "*" Binder : original_author
     User "1" --> "*" Deck
     User "1" --> "*" Note
     User "1" --> "*" Diagram
@@ -161,6 +171,8 @@ Tous les endpoints sont préfixés par `/api/v1` et sont sécurisés par JWT (sa
 | | `GET` | `/binders/<id>` | Détails d'un classeur |
 | | `PUT` | `/binders/<id>` | Modification d'un classeur |
 | | `DELETE` | `/binders/<id>` | Suppression récursive d'un classeur |
+| | `PATCH` | `/binders/<id>/visibility` | Toggle visibilité publique |
+| | `GET` | `/binders/public/<id>` | Détails publics d'un classeur |
 | **Decks** | `GET` | `/decks` | Recherche et liste paginée des decks |
 | | `POST` | `/decks` | Création d'un deck |
 | | `GET` | `/decks/<id>` | Détails d'un deck |
@@ -178,6 +190,13 @@ Tous les endpoints sont préfixés par `/api/v1` et sont sécurisés par JWT (sa
 | | `GET` | `/notes/<id>` | Détails d'une note |
 | | `PUT` | `/notes/<id>` | Modification d'une note |
 | | `DELETE` | `/notes/<id>` | Suppression d'une note |
+| | `PATCH` | `/notes/<id>/visibility` | Toggle visibilité publique |
+| | `GET` | `/notes/public/<token>` | Consulter une note publique via son token |
+| **Packages (Marketplace)** | `GET` | `/packages` | Liste paginée des packages publics |
+| | `GET` | `/packages/<binder_id>` | Détails d'un package public |
+| | `POST` | `/packages/<binder_id>/clone` | Cloner un package public |
+| **Blurting (Feuille Blanche IA)** | `POST` | `/blurting/analyze` | Analyser la restitution écrite par l'IA |
+| | `POST` | `/blurting/create-flashcards` | Créer les flashcards suggérées |
 | **Diagrammes** | `GET` | `/diagrams` | Liste paginée des diagrammes |
 | | `POST` | `/diagrams` | Création d'un diagramme Mermaid |
 | | `GET` | `/diagrams/<id>` | Détails d'un diagramme |
@@ -196,7 +215,20 @@ Tous les endpoints sont préfixés par `/api/v1` et sont sécurisés par JWT (sa
 
 ---
 
-## 5. Exécution des tests unitaires
+## 5. Gestion et exécution des migrations automatiques
+
+Le projet utilise **Alembic** (via **Flask-Migrate**) pour gérer les schémas de base de données.
+Pour simplifier le déploiement et la mise en production, l'application Flask intègre un mécanisme d'auto-détection et d'auto-migration automatique au lancement.
+
+### Fonctionnement au démarrage (`app/__init__.py`)
+1. Lorsque l'application Flask s'initialise (via `create_app()`), elle vérifie si elle est exécutée dans un contexte de serveur HTTP (pour ne pas interférer avec les commandes CLI ou les tests unitaires).
+2. Elle examine la base de données. Si la base de données n'existe pas encore (notamment en mode SQLite), elle est automatiquement créée.
+3. Elle exécute ensuite de manière programmatique la commande `flask db upgrade` d'Alembic en utilisant le contexte d'application.
+4. Cela permet de déployer une nouvelle version de l'application sur le serveur sans avoir à exécuter manuellement les scripts de migration en ligne de commande.
+
+---
+
+## 6. Exécution des tests unitaires
 
 Les tests unitaires utilisent une base de données SQLite en mémoire pour garantir l'isolation et la vitesse d'exécution.
 

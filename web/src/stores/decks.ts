@@ -187,12 +187,9 @@ export const useDecksStore = defineStore('decks', () => {
     }
   }
 
-  async function answerCard(cardId: number, quality: number) {
-    const card = cards.value.find(c => c.id === cardId)
-    if (!card) throw new Error('Carte introuvable localement pour évaluation')
-    
+  async function answerCard(deckId: number, cardId: number, quality: number) {
     try {
-      const response = await api.post<Flashcard>(`/decks/${card.deck_id}/study/answer/${cardId}`, {
+      const response = await api.post<Flashcard>(`/decks/${deckId}/study/answer/${cardId}`, {
         score: quality
       })
       const updatedCard = response.data

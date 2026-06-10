@@ -29,34 +29,65 @@
 
 /* Markdown formatting body styling */
 .markdown-body {
-  white-space: pre-wrap;
+  white-space: normal;
 }
+
 .markdown-body h1 {
-  @apply text-2xl font-extrabold text-slate-900 dark:text-white mt-6 mb-4 border-b border-slate-100 dark:border-slate-800 pb-2;
+  @apply text-2xl font-extrabold text-slate-900 dark:text-white pb-2 !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
 }
 .markdown-body h2 {
-  @apply text-xl font-bold text-slate-800 dark:text-slate-100 mt-5 mb-3;
+  @apply text-xl font-bold text-slate-800 dark:text-slate-100 !important;
+  margin-top: 0.875rem !important;
+  margin-bottom: 0.5rem !important;
 }
 .markdown-body h3 {
-  @apply text-lg font-bold text-slate-800 dark:text-slate-200 mt-4 mb-2;
+  @apply text-lg font-bold text-slate-800 dark:text-slate-200 !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.375rem !important;
 }
 .markdown-body p {
-  @apply text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4;
+  @apply text-sm text-slate-600 dark:text-slate-400 leading-relaxed !important;
+  margin-top: 0 !important;
+  margin-bottom: 0.625rem !important;
 }
 .markdown-body ul {
-  @apply list-disc pl-6 mb-4 space-y-1.5 text-sm;
+  @apply list-disc pl-6 text-sm !important;
+  margin-top: 0 !important;
+  margin-bottom: 0.625rem !important;
 }
 .markdown-body ol {
-  @apply list-decimal pl-6 mb-4 space-y-1.5 text-sm;
+  @apply list-decimal pl-6 text-sm !important;
+  margin-top: 0 !important;
+  margin-bottom: 0.625rem !important;
+}
+.markdown-body li {
+  @apply text-sm !important;
+  margin-top: 0.125rem !important;
+  margin-bottom: 0.125rem !important;
 }
 .markdown-body blockquote {
-  @apply border-l-4 border-indigo-500 pl-4 italic text-slate-500 dark:text-slate-400 my-4;
+  @apply border-l-4 border-indigo-500 pl-4 italic text-slate-500 dark:text-slate-400 !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+}
+.markdown-body hr {
+  border: 0 !important;
+  height: 1px !important;
+  background: linear-gradient(to right, transparent, #e2e8f0, transparent) !important;
+  @apply my-6 !important;
+}
+.dark .markdown-body hr {
+  background: linear-gradient(to right, transparent, #1e293b, transparent) !important;
 }
 .markdown-body strong {
   @apply font-bold text-slate-900 dark:text-white;
 }
 .markdown-body pre {
-  @apply bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-4 rounded-2xl overflow-x-auto my-4 font-mono text-sm leading-relaxed text-slate-800 dark:text-slate-200;
+  @apply bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-4 rounded-2xl overflow-x-auto font-mono text-sm leading-relaxed text-slate-800 dark:text-slate-200 !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
 }
 .markdown-body pre code {
   @apply p-0 bg-transparent text-inherit text-xs border-0 mx-0;
@@ -68,6 +99,96 @@
   @apply font-mono text-xs bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded mx-0.5;
 }
 
+/* Markdown Tables */
+.markdown-body table {
+  width: 100% !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+  text-align: left !important;
+  border-collapse: collapse !important;
+  border: 1px solid #e2e8f0 !important;
+  white-space: normal !important;
+}
+.dark .markdown-body table {
+  border-color: #1e293b !important;
+}
+.markdown-body thead {
+  background-color: rgba(241, 245, 249, 0.6) !important;
+}
+.dark .markdown-body thead {
+  background-color: rgba(30, 41, 59, 0.4) !important;
+}
+.markdown-body th {
+  padding: 0.75rem 1rem !important;
+  color: #1e293b !important;
+  font-weight: 800 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border: 1px solid #e2e8f0 !important;
+  white-space: normal !important;
+}
+.dark .markdown-body th {
+  color: #e2e8f0 !important;
+  border-color: #1e293b !important;
+}
+.markdown-body td {
+  padding: 0.75rem 1rem !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+  font-size: 0.875rem !important;
+  white-space: normal !important;
+}
+.dark .markdown-body td {
+  border-color: rgba(30, 41, 59, 0.6) !important;
+  color: #94a3b8 !important;
+}
+.markdown-body tr:nth-child(even) {
+  background-color: rgba(248, 250, 252, 0.5) !important;
+}
+.dark .markdown-body tr:nth-child(even) {
+  background-color: rgba(30, 41, 59, 0.1) !important;
+}
+.markdown-body tr:hover td {
+  background-color: #f8fafc !important;
+  transition: background-color 0.15s ease !important;
+}
+.dark .markdown-body tr:hover td {
+  background-color: rgba(30, 41, 59, 0.2) !important;
+}
+
 .katex-display {
   @apply my-4 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800/50 overflow-x-auto;
+}
+
+/* ── Reset : empêcher .markdown-body de polluer les blocs .not-prose ── */
+.markdown-body .not-prose {
+  white-space: normal;
+}
+.markdown-body .not-prose p,
+.markdown-body .not-prose h1,
+.markdown-body .not-prose h2,
+.markdown-body .not-prose h3,
+.markdown-body .not-prose h4 {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+.markdown-body .not-prose ul,
+.markdown-body .not-prose ol {
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none;
+}
+.markdown-body .not-prose strong {
+  color: inherit;
+}
+.markdown-body .not-prose code {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-size: inherit;
 }

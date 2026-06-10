@@ -20,12 +20,12 @@ def extract_placeholders_from_text(content: str, note_id: int) -> List[Dict[str,
     assoc_re = re.compile(r"\{\{assoc::(.*?)::(.*?)\}\}")
     # 5. VF: {{vf::Affirmation::Vrai/Faux::Justification}}
     vf_re = re.compile(r"\{\{vf::(.*?)::(.*?)::(.*?)\}\}")
+    # 6. Def: [term]{def:definition}
+    def_re = re.compile(r"\[([^\]]+)\]\{def:([^\}]+)\}")
 
     placeholder_idx = 0
 
     for line_num, line in enumerate(lines):
-        # On va chercher tous les placeholders dans la ligne de manière ordonnée
-        
         # --- Trou ---
         for match in trou_re.finditer(line):
             raw_tag = match.group(0)
@@ -39,6 +39,7 @@ def extract_placeholders_from_text(content: str, note_id: int) -> List[Dict[str,
             front_text = re.sub(r"\{\{ordre::.*?::(.*?)\}\}", r"\1", front_text)
             front_text = re.sub(r"\{\{assoc::.*?::(.*?)\}\}", r"\1", front_text)
             front_text = re.sub(r"\{\{vf::(.*?)::.*?::.*?\}\}", r"\1", front_text)
+            front_text = re.sub(r"\[([^\]]+)\]\{def:[^\}]+\}", r"\1", front_text)
             
             placeholders.append({
                 "index": placeholder_idx,
@@ -115,6 +116,22 @@ def extract_placeholders_from_text(content: str, note_id: int) -> List[Dict[str,
                 "type": "vf",
                 "front": f"Vrai ou Faux :\n{assertion.strip()}",
                 "back": f"{response.strip()} - Justification : {justification.strip()}",
+                "hash": generate_placeholder_hash(note_id, placeholder_idx, raw_tag)
+            })
+            placeholder_idx += 1
+
+        # --- Def ---
+        for match in def_re.finditer(line):
+            raw_tag = match.group(0)
+            term = match.group(1)
+            definition = match.group(2)
+            
+            placeholders.append({
+                "index": placeholder_idx,
+                "raw_tag": raw_tag,
+                "type": "def",
+                "front": f"Définition : {term.strip()}",
+                "back": definition.strip(),
                 "hash": generate_placeholder_hash(note_id, placeholder_idx, raw_tag)
             })
             placeholder_idx += 1

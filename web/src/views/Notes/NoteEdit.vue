@@ -636,10 +636,10 @@
           >
             <div
               v-if="inputModal.visible"
-              class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden"
+              class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden custom-input-modal"
             >
               <!-- Header -->
-              <div class="px-6 pt-6 pb-4 flex items-start gap-4">
+              <div class="px-6 pt-6 pb-4 flex items-start gap-4 input-modal-header">
                 <div
                   class="flex items-center justify-center w-11 h-11 rounded-2xl flex-shrink-0 text-white shadow-lg"
                   :class="inputModal.iconBg || 'bg-indigo-500'"
@@ -647,8 +647,8 @@
                   <component :is="inputModal.icon" class="w-5 h-5" />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <h3 class="font-bold text-slate-900 dark:text-white text-base leading-tight">{{ inputModal.title }}</h3>
-                  <p v-if="inputModal.description" class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{{ inputModal.description }}</p>
+                  <h3 class="font-bold text-slate-900 dark:text-white text-base input-modal-title">{{ inputModal.title }}</h3>
+                  <p v-if="inputModal.description" class="text-xs text-slate-500 dark:text-slate-400 input-modal-desc">{{ inputModal.description }}</p>
                 </div>
                 <button @click="inputModal.onCancel()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors mt-0.5">
                   <X class="w-5 h-5" />
@@ -716,6 +716,66 @@
                   {{ inputModal.confirmLabel || 'Confirmer' }}
                 </button>
               </div>
+            </div>
+          </Transition>
+        </div>
+      </Transition>
+
+      <!-- SM-2 Evaluation Modal -->
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="evaluationModal.visible"
+          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
+          @click.self="evaluationModal.visible = false"
+        >
+          <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 scale-95 translate-y-2"
+            enter-to-class="opacity-100 scale-100 translate-y-0"
+          >
+            <div
+              v-if="evaluationModal.visible"
+              class="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-2xl p-6 text-center sm2-modal-container"
+            >
+              <!-- Icon/Header -->
+              <div class="flex flex-col items-center mb-3">
+                <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-2 border border-indigo-100 dark:border-indigo-900/40">
+                  <Sparkles class="w-5 h-5 animate-pulse" />
+                </div>
+                <h3 class="font-extrabold text-slate-900 dark:text-white text-base sm2-modal-title">C'était facile ?</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 sm2-modal-desc">Évaluez votre niveau de rappel pour l'algorithme d'apprentissage.</p>
+              </div>
+
+              <!-- Buttons Grid -->
+              <div class="grid grid-cols-2 gap-2.5 mb-4">
+                <button
+                  v-for="btn in evaluationButtons"
+                  :key="btn.val"
+                  @click="submitSm2Evaluation(btn.val)"
+                  :disabled="isEvaluating"
+                  class="flex flex-col items-center border-2 rounded-2xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none sm2-modal-btn"
+                  :class="btn.class"
+                >
+                  <span class="text-2xl sm2-btn-emoji">{{ btn.emoji }}</span>
+                  <span class="text-xs font-bold sm2-btn-label">{{ btn.label }}</span>
+                  <span class="text-[9px] opacity-60 sm2-btn-desc">{{ btn.desc }}</span>
+                </button>
+              </div>
+
+              <!-- Actions -->
+              <button
+                @click="evaluationModal.visible = false"
+                class="w-full py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all sm2-modal-cancel"
+              >
+                Passer sans évaluer
+              </button>
             </div>
           </Transition>
         </div>
@@ -913,6 +973,8 @@ import 'katex/dist/katex.min.css'
 
 // Configure marked to use highlight.js for syntax highlighting in code blocks
 marked.use({
+  breaks: true,
+  gfm: true,
   renderer: {
     code({ text, lang }: { text: string; lang?: string }) {
       const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext'
@@ -945,6 +1007,53 @@ const isEditMode = computed({
 const showSettings = ref(false)
 const showHelpModal = ref(false)
 const isLivePreviewActive = ref(false)
+
+// Evaluation SM-2 Popup Modal State
+const evaluationModal = ref({
+  visible: false,
+  cardId: null as number | null,
+  rawTag: ''
+})
+
+const evaluationButtons = [
+  { val: 1, label: 'À revoir', emoji: '🔁', desc: 'Pas retenu', class: 'border-rose-100 dark:border-rose-950/40 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:border-rose-350' },
+  { val: 2, label: 'Difficile', emoji: '😕', desc: 'Gros effort', class: 'border-amber-100 dark:border-amber-950/40 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 hover:border-amber-350' },
+  { val: 3, label: 'Correct', emoji: '🙂', desc: 'Rappel normal', class: 'border-emerald-100 dark:border-emerald-950/40 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 hover:border-emerald-350' },
+  { val: 5, label: 'Facile', emoji: '😎', desc: 'Aucun effort', class: 'border-blue-100 dark:border-blue-950/40 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:border-blue-350' }
+]
+
+const isEvaluating = ref(false)
+
+function openEvaluationModal(cardId: number, rawTag: string) {
+  evaluationModal.value = {
+    visible: true,
+    cardId,
+    rawTag
+  }
+}
+
+async function submitSm2Evaluation(score: number) {
+  const { cardId, rawTag } = evaluationModal.value
+  if (!cardId || !rawTag) return
+  
+  try {
+    isEvaluating.value = true
+    await api.patch(`/flashcards/${cardId}/review`, { score })
+    
+    const state = placeholderStates.value[rawTag]
+    if (state) {
+      state.score = score
+      placeholderStates.value = { ...placeholderStates.value }
+    }
+    
+    evaluationModal.value.visible = false
+  } catch (err) {
+    console.error('Erreur lors du vote SM-2', err)
+    alert("Erreur lors de l'enregistrement de l'évaluation.")
+  } finally {
+    isEvaluating.value = false
+  }
+}
 
 const selectionText = ref('')
 const selectionStart = ref(0)
@@ -1237,37 +1346,32 @@ function compileStructuredNote() {
 
 // Rendering marked + LaTeX + Definition tooltips
 function renderSm2Buttons(cardId: number | null, rawTag: string): string {
-  if (!cardId) return `<span class="text-[10px] text-slate-400 italic font-semibold">En attente de sauvegarde...</span>`;
+  if (!cardId) return `<span class="text-[10px] text-slate-450 italic font-semibold align-middle">En attente de sauvegarde...</span>`;
   const state = placeholderStates.value[rawTag];
-  if (!state) return '';
-  const scoreSelected = state.score !== undefined;
+  if (!state || state.score === undefined) return '';
   
   const buttons = [
-    { label: "À revoir", val: 1, color: "bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900" },
-    { label: "Difficile", val: 2, color: "bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900" },
-    { label: "Correct", val: 3, color: "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900" },
-    { label: "Facile", val: 5, color: "bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900" }
+    { label: "À revoir", val: 1 },
+    { label: "Difficile", val: 2 },
+    { label: "Correct", val: 3 },
+    { label: "Facile", val: 5 }
   ];
   
-  if (scoreSelected) {
-    const b = buttons.find(x => x.val === state.score);
-    return `<span class="text-xs font-bold px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-slate-700 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">★ Score : ${b ? b.label : state.score}</span>`;
-  }
-  
-  const buttonsHtml = buttons.map(b => {
-    return `<button type="button" class="px-2.5 py-1 text-[10px] font-bold border rounded-lg transition-all ${b.color} active:scale-95" data-action="sm2-vote" data-card-id="${cardId}" data-tag="${encodeURIComponent(rawTag)}" data-score="${b.val}">${b.label}</button>`;
-  }).join(' ');
-  
-  return `<div class="flex items-center gap-1.5"><span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mr-1.5">Évaluer :</span> ${buttonsHtml}</div>`;
+  const b = buttons.find(x => x.val === state.score);
+  return `<button type="button" data-action="sm2-re-evaluate" data-card-id="${cardId}" data-tag="${encodeURIComponent(rawTag)}" class="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-[9px] font-bold text-indigo-650 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 align-middle transition-all cursor-pointer">★ ${b ? b.label : state.score}</button>`;
 }
 
 // Rendering marked + LaTeX + Definition tooltips + Active Reading Placeholders
 function renderMarkup(text: string): string {
-  const markdownText = text || ''
+  const normalizedText = (text || '').replace(/\r\n/g, '\n')
+  let temp = normalizedText.replace(/\n{3,}/g, (match) => {
+    const count = match.length - 2
+    return '\n\n' + Array(count).fill('&nbsp;').join('\n\n') + '\n\n'
+  })
   const placeholders: string[] = []
 
   // 1. Double dollars $$ (Display equations block)
-  let temp = markdownText.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => {
+  temp = temp.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => {
     try {
       const html = katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false })
       const key = `LATEXBLOCKPLACEHOLDER${placeholders.length}`
@@ -1323,7 +1427,6 @@ function renderMarkup(text: string): string {
     return key
   })
 
-  // --- 5. Active Reading Placeholders Parsing ---
   const isReview = notesStore.isReviewModeActive;
   const shuffleArray = (arr: any[]) => arr.map((a: any) => [Math.random(), a]).sort((a: any, b: any) => a[0] - b[0]).map((a: any) => a[1]);
 
@@ -1343,9 +1446,9 @@ function renderMarkup(text: string): string {
       
       let elementHtml = "";
       if (!state.revealed) {
-        elementHtml = `<span class="px-2.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-transparent rounded-lg cursor-pointer border border-slate-350 dark:border-slate-600 select-none hover:bg-slate-300 hover:text-slate-500/10 active:scale-95 transition-all inline-block align-middle font-mono font-bold" data-action="reveal" data-tag="${encodeURIComponent(rawTag)}">???</span>`;
+        elementHtml = `<span class="px-2.5 py-0.5 bg-slate-200 dark:bg-slate-750 text-transparent rounded-lg cursor-pointer border border-slate-300 dark:border-slate-600 select-none hover:bg-slate-300 hover:text-slate-500/10 active:scale-95 transition-all inline-block align-middle font-mono font-bold" data-action="reveal" data-tag="${encodeURIComponent(rawTag)}">???</span>`;
       } else {
-        elementHtml = `<span class="inline-flex flex-col items-center bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border border-indigo-200 dark:border-slate-700 my-1"><span class="font-bold text-indigo-600 dark:text-indigo-400 border-b border-indigo-100 dark:border-slate-700 pb-1 px-3 mb-2">${word}</span> ${renderSm2Buttons(cardId, rawTag)}</span>`;
+        elementHtml = `<span class="bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-lg font-bold border-b border-indigo-400 inline-flex items-center align-middle select-all transition-all">${word}${renderSm2Buttons(cardId, rawTag)}</span>`;
       }
       const key = `REVISIONPLACEHOLDER${placeholders.length}`;
       placeholders.push(elementHtml);
@@ -1369,15 +1472,15 @@ function renderMarkup(text: string): string {
       }).join('');
       
       const displayHtml = `
-        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800/60 rounded-2xl my-4">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">QCM</strong>
+        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold block mb-1">QCM</strong>
           <p class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-2">${question}</p>
           <ul class="list-none pl-0 mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-400">${listItems}</ul>
         </div>
       `;
       const key = `REVISIONPLACEHOLDER${placeholders.length}`;
       placeholders.push(displayHtml);
-      return key;
+      return '\n\n' + key + '\n\n';
     } else {
       placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || { answered: false, selectedOption: null };
       const state = placeholderStates.value[rawTag];
@@ -1400,16 +1503,18 @@ function renderMarkup(text: string): string {
       }).join(' ');
       
       const elementHtml = `
-        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">QCM :</strong>
+        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <div class="flex items-center justify-between mb-1.5">
+            <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold">QCM</strong>
+            ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
+          </div>
           <p class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-3">${question}</p>
           <div class="flex flex-wrap gap-2">${buttonsHtml}</div>
-          ${state.answered ? `<div class="mt-4 border-t border-slate-200/50 dark:border-slate-700/50 pt-3 flex justify-center">${renderSm2Buttons(cardId, rawTag)}</div>` : ''}
         </div>
       `;
       const key = `REVISIONPLACEHOLDER${placeholders.length}`;
       placeholders.push(elementHtml);
-      return key;
+      return '\n\n' + key + '\n\n';
     }
   });
 
@@ -1421,16 +1526,16 @@ function renderMarkup(text: string): string {
     
     if (!isReview) {
       const displayHtml = `
-        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800/60 rounded-2xl my-4">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Vrai ou Faux</strong>
+        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold block mb-1">Vrai ou Faux</strong>
           <p class="font-semibold text-sm text-slate-800 dark:text-slate-100">${assertion}</p>
           <div class="mt-2 text-xs font-bold">Réponse : <span class="${isVrai ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${answer}</span></div>
-          <div class="text-xs text-slate-500 italic mt-1">${justification}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 italic mt-1">${justification}</div>
         </div>
       `;
       const key = `REVISIONPLACEHOLDER${placeholders.length}`;
       placeholders.push(displayHtml);
-      return key;
+      return '\n\n' + key + '\n\n';
     } else {
       placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || { answered: false, selectedAnswer: null };
       const state = placeholderStates.value[rawTag];
@@ -1452,24 +1557,24 @@ function renderMarkup(text: string): string {
       }).join(' ');
       
       const elementHtml = `
-        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Vrai ou Faux ?</strong>
+        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <div class="flex items-center justify-between mb-1.5">
+            <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold">Vrai ou Faux</strong>
+            ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
+          </div>
           <p class="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-3">${assertion}</p>
           <div class="flex gap-3 mb-3">${btns}</div>
           ${state.answered ? `
-            <div class="bg-slate-100/50 dark:bg-slate-850 p-3 rounded-xl text-xs mt-3">
-              <div class="font-semibold text-slate-700 dark:text-slate-300 mb-1">Justification :</div>
+            <div class="bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs mt-3">
+              <div class="font-bold text-slate-700 dark:text-slate-300 mb-1">Justification :</div>
               <div class="italic text-slate-500 dark:text-slate-400">${justification}</div>
-            </div>
-            <div class="mt-4 border-t border-slate-200/50 dark:border-slate-700/50 pt-3 flex justify-center">
-              ${renderSm2Buttons(cardId, rawTag)}
             </div>
           ` : ''}
         </div>
       `;
       const key = `REVISIONPLACEHOLDER${placeholders.length}`;
       placeholders.push(elementHtml);
-      return key;
+      return '\n\n' + key + '\n\n';
     }
   });
 
@@ -1479,17 +1584,22 @@ function renderMarkup(text: string): string {
     const cardId = card ? card.id : null;
     const steps = stepsStr.split('>').map((s: string) => s.trim());
     
+    const cleanStep = (str: string) => {
+      const cleaned = str.replace(/^(?:étape\s*\d+[\s\-:]*|\d+[\.\s\-:]+)\s*/i, '').trim();
+      return cleaned.length > 0 ? cleaned : str;
+    };
+    
     if (!isReview) {
-      const stepItems = steps.map((s: string, idx: number) => `<li class="mb-1"><span class="font-bold text-indigo-500 mr-1.5">Étape ${idx+1} :</span> ${s}</li>`).join('');
+      const stepItems = steps.map((s: string) => `<li class="mb-1">${cleanStep(s)}</li>`).join('');
       const displayHtml = `
-        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800/60 rounded-2xl my-4">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Séquence : ${title}</strong>
-          <ol class="list-none pl-0 mt-3 space-y-1 text-xs">${stepItems}</ol>
+        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl my-2 max-w-2xl shadow-sm not-prose">
+          <strong class="text-[9px] uppercase tracking-wider text-slate-455 font-bold block mb-0.5">Séquence : ${title}</strong>
+          <ol class="list-decimal mt-1.5 space-y-0.5 text-xs" style="margin-left: 1rem !important; padding-left: 1rem !important;">${stepItems}</ol>
         </div>
       `;
       const key = `REVISIONPLACEHOLDER${placeholders.length}`;
       placeholders.push(displayHtml);
-      return key;
+      return '\n\n' + key + '\n\n';
     } else {
       placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || { 
         answered: false, 
@@ -1500,7 +1610,7 @@ function renderMarkup(text: string): string {
       const stepButtons = state.order.map((step: string, idx: number) => {
         return `
           <div class="flex items-center justify-between p-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold mb-1.5 shadow-sm">
-            <span>${step}</span>
+            <span>${cleanStep(step)}</span>
             ${!state.answered ? `
               <div class="flex gap-1 no-print">
                 <button type="button" class="px-1.5 py-0.5 hover:bg-slate-100 dark:hover:bg-slate-850 rounded text-slate-400 hover:text-indigo-650" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="up">▲</button>
@@ -1512,8 +1622,11 @@ function renderMarkup(text: string): string {
       }).join('');
       
       const elementHtml = `
-        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Séquence (Classer dans l'ordre) : ${title}</strong>
+        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <div class="flex items-center justify-between mb-1.5">
+            <strong class="text-[10px] uppercase tracking-wider text-slate-455 font-bold">Séquence : ${title}</strong>
+            ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
+          </div>
           <div class="mt-3">${stepButtons}</div>
           
           ${!state.answered ? `
@@ -1521,21 +1634,18 @@ function renderMarkup(text: string): string {
               Valider l'ordre
             </button>
           ` : `
-            <div class="mt-3 bg-slate-100/50 dark:bg-slate-850 p-3 rounded-xl text-xs flex flex-col gap-1.5">
+            <div class="mt-3 bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
               <div class="font-bold text-slate-700 dark:text-slate-350">Ordre attendu :</div>
               <div class="flex flex-wrap items-center gap-1">
-                ${steps.map((s: string, idx: number) => `<span class="bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200/50 text-[10px] font-semibold">${idx+1}. ${s}</span>`).join(' ➜ ')}
+                ${steps.map((s: string) => `<span class="bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200/50 text-[10px] font-semibold">${cleanStep(s)}</span>`).join(' ➜ ')}
               </div>
-            </div>
-            <div class="mt-4 border-t border-slate-200/50 dark:border-slate-700/50 pt-3 flex justify-center">
-              ${renderSm2Buttons(cardId, rawTag)}
             </div>
           `}
         </div>
       `;
       const key = `REVISIONPLACEHOLDER${placeholders.length}`;
       placeholders.push(elementHtml);
-      return key;
+      return '\n\n' + key + '\n\n';
     }
   });
 
@@ -1553,7 +1663,7 @@ function renderMarkup(text: string): string {
     if (!isReview) {
       const rows = pairs.map((p: { key: string, value: string }) => `<tr><td class="border border-slate-200 dark:border-slate-800 p-2 font-semibold text-slate-700 dark:text-slate-300">${p.key}</td><td class="border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-400">${p.value}</td></tr>`).join('');
       const displayHtml = `
-        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800/60 rounded-2xl my-4">
+        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Associations : ${title}</strong>
           <table class="table-auto text-xs mt-3 w-full border-collapse border border-slate-200 dark:border-slate-800">
             <thead>
@@ -1568,7 +1678,7 @@ function renderMarkup(text: string): string {
       `;
       const key = `REVISIONPLACEHOLDER${placeholders.length}`;
       placeholders.push(displayHtml);
-      return key;
+      return '\n\n' + key + '\n\n';
     } else {
       const keysList = pairs.map((p: any) => p.key);
       const valuesList = pairs.map((p: any) => p.value);
@@ -1614,35 +1724,35 @@ function renderMarkup(text: string): string {
       }).join('');
       
       const elementHtml = `
-        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Associer les paires : ${title}</strong>
+        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <div class="flex items-center justify-between mb-1.5">
+            <strong class="text-[10px] uppercase tracking-wider text-slate-455 font-bold">Associations : ${title}</strong>
+            ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
+          </div>
           <div class="grid grid-cols-2 gap-4 mt-3">
             <div class="flex flex-col gap-1.5"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Clés</div>${keysHtml}</div>
             <div class="flex flex-col gap-1.5"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Valeurs</div>${valuesHtml}</div>
           </div>
           
-          ${Object.keys(state.matches).length > 0 ? `<div class="mt-4 border-t border-slate-200/50 dark:border-slate-700/50 pt-3"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2">Liaisons créées :</div><div class="flex flex-col gap-1.5">${matchesHtml}</div></div>` : ''}
+          ${Object.keys(state.matches).length > 0 ? `<div class="mt-4 border-t border-slate-200 dark:border-slate-800 pt-3"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2">Liaisons créées :</div><div class="flex flex-col gap-1.5">${matchesHtml}</div></div>` : ''}
           
           ${!state.answered ? `
             <button type="button" class="w-full mt-4 px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent disabled:opacity-40" data-action="assoc-validate" data-tag="${encodeURIComponent(rawTag)}" ${Object.keys(state.matches).length !== keysList.length ? 'disabled' : ''}>
               Valider les liaisons
             </button>
           ` : `
-            <div class="mt-4 bg-slate-100/50 dark:bg-slate-850 p-3 rounded-xl text-xs flex flex-col gap-1.5">
+            <div class="mt-4 bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
               <div class="font-bold text-slate-700 dark:text-slate-350">Associations attendues :</div>
               <div class="grid grid-cols-1 gap-1.5">
                 ${pairs.map((p: any) => `<div class="text-[11px] font-semibold text-slate-500"><span class="text-indigo-600 dark:text-indigo-400 font-bold">${p.key}</span> ➜ ${p.value}</div>`).join('')}
               </div>
-            </div>
-            <div class="mt-4 border-t border-slate-200/50 dark:border-slate-700/50 pt-3 flex justify-center">
-              ${renderSm2Buttons(cardId, rawTag)}
             </div>
           `}
         </div>
       `;
       const key = `REVISIONPLACEHOLDER${placeholders.length}`;
       placeholders.push(elementHtml);
-      return key;
+      return '\n\n' + key + '\n\n';
     }
   });
 
@@ -1656,6 +1766,15 @@ function renderMarkup(text: string): string {
     html = html.replace(new RegExp(`DIAGRAMPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
     html = html.replace(new RegExp(`REVISIONPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
   })
+
+  // Post-processing: marked wraps placeholder text in <p> tags.
+  // After replacement, this creates <p><div ...>...</div></p> which
+  // the browser auto-splits into <p></p> <div>...</div> <p></p>,
+  // and each empty <p> gets .markdown-body p { mb-4 } margins.
+  // Fix: strip <p> wrappers around block elements and remove empty <p> tags.
+  html = html.replace(/<p>\s*(<div\b)/gi, '$1')
+  html = html.replace(/(<\/div>)\s*<\/p>/gi, '$1')
+  html = html.replace(/<p>\s*<\/p>/gi, '')
 
   return html
 }
@@ -2098,6 +2217,28 @@ async function handlePlaceholderInteraction(event: MouseEvent) {
     }
   }
   
+  else if (action === 'sm2-re-evaluate') {
+    const cardId = Number(target.getAttribute('data-card-id'))
+    openEvaluationModal(cardId, rawTag)
+  }
+  
+  // Trigger evaluation modal if applicable
+  const isActionRequiringEvaluation = 
+    (action === 'reveal') || // Trou or diagram mask revealed
+    (action === 'qcm-select') ||
+    (action === 'vf-select') ||
+    (action === 'order-validate') ||
+    (action === 'assoc-validate')
+
+  const card = noteFlashcards.value.find(c => c.original_text === rawTag)
+  const cardId = card ? card.id : null
+    
+  if (isActionRequiringEvaluation && cardId && (!state || state.score === undefined)) {
+    setTimeout(() => {
+      openEvaluationModal(cardId, rawTag)
+    }, 700)
+  }
+  
   // Force reactive update
   placeholderStates.value = { ...placeholderStates.value }
 }
@@ -2310,5 +2451,74 @@ function printNote() {
 .popup-leave-to {
   opacity: 0;
   transform: translateY(-6px) scale(0.97);
+}
+
+/* Spacing & Margin resets for Modals */
+.sm2-modal-container {
+  padding: 1.5rem !important;
+}
+.sm2-modal-container .sm2-modal-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  margin-bottom: 4px !important;
+  line-height: 1.1 !important;
+  font-size: 1.125rem !important;
+}
+.sm2-modal-container .sm2-modal-desc {
+  margin: 0 !important;
+  padding: 0 !important;
+  margin-top: 4px !important;
+  line-height: 1.25 !important;
+  font-size: 0.75rem !important;
+}
+.sm2-modal-container .sm2-modal-btn {
+  margin: 0 !important;
+  padding: 0.625rem 0.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+.sm2-modal-container .sm2-modal-btn .sm2-btn-emoji {
+  margin: 0 0 2px 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  font-size: 1.5rem !important;
+}
+.sm2-modal-container .sm2-modal-btn .sm2-btn-label {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  font-size: 0.75rem !important;
+}
+.sm2-modal-container .sm2-modal-btn .sm2-btn-desc {
+  margin: 2px 0 0 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  font-size: 9px !important;
+}
+.sm2-modal-container .sm2-modal-cancel {
+  margin-top: 0.75rem !important;
+}
+
+/* Input modal spacing reset */
+.custom-input-modal {
+  padding: 0 !important;
+}
+.custom-input-modal .input-modal-header {
+  padding: 1.5rem 1.5rem 1rem 1.5rem !important;
+}
+.custom-input-modal .input-modal-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.1 !important;
+  font-size: 1.125rem !important;
+}
+.custom-input-modal .input-modal-desc {
+  margin: 4px 0 0 0 !important;
+  padding: 0 !important;
+  line-height: 1.25 !important;
+  font-size: 0.75rem !important;
 }
 </style>

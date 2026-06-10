@@ -145,15 +145,20 @@ const ratingButtons = [
 ]
 
 onMounted(async () => {
-  const deck = await decksStore.fetchDeckById(deckId)
-  if (deck) {
-    deckName.value = deck.name
+  try {
+    const deck = await decksStore.fetchDeckById(deckId)
+    if (deck) {
+      deckName.value = deck.name
+    }
+    
+    // Fetch cards scheduled for study today
+    studyCards.value = await decksStore.fetchStudyCards(deckId)
+    totalCards.value = studyCards.value.length
+  } catch (error) {
+    console.error('Erreur lors du chargement de la session d\'étude :', error)
+  } finally {
+    loading.value = false
   }
-  
-  // Fetch cards scheduled for study today
-  studyCards.value = await decksStore.fetchStudyCards(deckId)
-  totalCards.value = studyCards.value.length
-  loading.value = false
 })
 
 function flipCard() {
@@ -161,33 +166,42 @@ function flipCard() {
 }
 
 async function rateCard(score: number) {
+  if (!deckId || !currentCard.value?.id) {
+    console.error('Identifiants manquants pour la notation :', { deckId, cardId: currentCard.value?.id })
+    return
+  }
+
   loading.value = true
-  
-  // Submit score to trigger SM-2 recalculations
-  await decksStore.answerCard(currentCard.value.id, score)
-  
-  isFlipped.value = false
-  
-  // Wait a moment for flip animation back to normal
-  setTimeout(() => {
-    // If user failed, card stays in queue (re-added to the end or just retry later).
-    // In our mock, if score < 3 we keep it in queue to learn it again during the session
-    if (score < 3) {
-      // Move to end of queue to see it again
-      const card = studyCards.value[currentIndex.value]
-      studyCards.value.push(card)
-      totalCards.value = studyCards.value.length
-    }
+  try {
+    // Submit score to trigger SM-2 recalculations
+    await decksStore.answerCard(deckId, currentCard.value.id, score)
     
-    // Progress
-    currentIndex.value++
+    isFlipped.value = false
     
-    // Check if session complete
-    if (currentIndex.value >= studyCards.value.length) {
-      studyCards.value = []
-    }
+    // Wait a moment for flip animation back to normal
+    setTimeout(() => {
+      // If user failed, card stays in queue (re-added to the end or just retry later).
+      // In our mock, if score < 3 we keep it in queue to learn it again during the session
+      if (score < 3) {
+        // Move to end of queue to see it again
+        const card = studyCards.value[currentIndex.value]
+        studyCards.value.push(card)
+        totalCards.value = studyCards.value.length
+      }
+      
+      // Progress
+      currentIndex.value++
+      
+      // Check if session complete
+      if (currentIndex.value >= studyCards.value.length) {
+        studyCards.value = []
+      }
+      loading.value = false
+    }, 350)
+  } catch (error) {
+    console.error('Erreur lors de la notation de la carte :', error)
     loading.value = false
-  }, 350)
+  }
 }
 </script>
 

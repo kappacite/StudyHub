@@ -48,7 +48,7 @@ def test_community_marketplace_and_cloning(client, auth_headers, other_auth_head
     # Ajouter une note avec placeholder dans ce binder
     note_data = {
         "title": "Les Alcènes",
-        "content": "Un alcène possède une double liaison C=C {{trou::insaturée}}.",
+        "content": "Un alcène possède une [double liaison C=C]{def:insaturée}.",
         "binder_id": binder_id
     }
     client.post("/api/v1/notes", json=note_data, headers=auth_headers)

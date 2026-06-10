@@ -14,6 +14,8 @@ Ce document décrit en détail chaque endpoint de l'API v1 de StudyHub pour faci
 7. [Diagrammes](#7-diagrammes)
 8. [PDFs](#8-pdfs)
 9. [Dashboard & Statistiques](#9-dashboard--statistiques)
+10. [Espace Communautaire (Packages)](#10-espace-communautaire-packages)
+11. [Révision Blurting (Feuille Blanche IA)](#11-révision-blurting-feuille-blanche-ia)
 
 ---
 
@@ -256,6 +258,54 @@ Supprime le classeur, tous les sous-classeurs récursivement, et tout son conten
 * **Route** : `DELETE /binders/<id>`
 * **Type** : `[Sécurisé]`
 * **Response** (Status `204 No Content`) : *Corps vide*
+
+### 🔓 Modifier la visibilité d'un classeur (Public / Privé)
+Rend le classeur public pour l'espace communautaire ou le repasse en privé.
+* **Route** : `PATCH /binders/<id>/visibility`
+* **Type** : `[Sécurisé]`
+* **Request Body** :
+  ```json
+  {
+    "is_public": true
+  }
+  ```
+* **Response** (Status `200 OK`) :
+  ```json
+  {
+    "id": 1,
+    "name": "Semestre 1 - V2",
+    "parent_id": 3,
+    "user_id": 1,
+    "is_public": true,
+    "description": null,
+    "tags": null,
+    "fork_count": 0,
+    "original_author_id": null,
+    "created_at": "2026-06-01T20:50:50",
+    "updated_at": "2026-06-01T20:56:00"
+  }
+  ```
+
+### 🔍 Détails publics d'un classeur
+Permet de récupérer les détails d'un classeur public (sans authentification).
+* **Route** : `GET /binders/public/<id>`
+* **Type** : Public
+* **Response** (Status `200 OK`) :
+  ```json
+  {
+    "id": 1,
+    "name": "Semestre 1 - V2",
+    "parent_id": 3,
+    "user_id": 1,
+    "is_public": true,
+    "description": null,
+    "tags": null,
+    "fork_count": 0,
+    "original_author_id": null,
+    "created_at": "2026-06-01T20:50:50",
+    "updated_at": "2026-06-01T20:56:00"
+  }
+  ```
 
 ---
 
@@ -633,6 +683,49 @@ Enregistre l'évaluation de l'étudiant pour une carte mémoire donnée et recal
 * **Type** : `[Sécurisé]`
 * **Response** (Status `204 No Content`) : *Corps vide*
 
+### 🔓 Modifier la visibilité d'une note (Public / Privé)
+* **Route** : `PATCH /notes/<id>/visibility`
+* **Type** : `[Sécurisé]`
+* **Request Body** :
+  ```json
+  {
+    "is_public": true
+  }
+  ```
+* **Response** (Status `200 OK`) :
+  ```json
+  {
+    "id": 1,
+    "title": "Cours de Physiologie Humaine",
+    "content": "<p>Mise à jour...</p>",
+    "binder_id": null,
+    "user_id": 1,
+    "is_public": true,
+    "share_token": "a1b2c3d4e5f6g7h8i9j0",
+    "created_at": "2026-06-01T20:53:00",
+    "updated_at": "2026-06-01T20:59:30"
+  }
+  ```
+
+### 🔍 Consulter une note publique (via token de partage)
+Permet de consulter une note de manière anonyme.
+* **Route** : `GET /notes/public/<token>`
+* **Type** : Public
+* **Response** (Status `200 OK`) :
+  ```json
+  {
+    "id": 1,
+    "title": "Cours de Physiologie Humaine",
+    "content": "<p>Mise à jour...</p>",
+    "binder_id": null,
+    "user_id": 1,
+    "is_public": true,
+    "share_token": "a1b2c3d4e5f6g7h8i9j0",
+    "created_at": "2026-06-01T20:53:00",
+    "updated_at": "2026-06-01T20:59:30"
+  }
+  ```
+
 ---
 
 ## 7. Diagrammes
@@ -914,5 +1007,166 @@ Renvoie le score de rétention et l'échéance de révision d'un deck de flashca
     "next_review": "2026-06-02T12:00:00",
     "cards_to_review": 5,
     "total_cards": 38
+  }
+  ```
+
+---
+
+## 10. Espace Communautaire (Packages)
+
+Le module communautaire permet de publier des classeurs (et tout leur contenu sous-jacent : notes, decks, diagrammes) de manière publique pour que d'autres étudiants puissent les explorer et les cloner dans leur propre espace.
+
+### 🌐 Lister les packages publics (Marketplace)
+* **Route** : `GET /packages`
+* **Type** : Public
+* **Query Parameters** :
+  * `page` (int, défaut `1`)
+  * `per_page` (int, défaut `20`)
+  * `search` (string, optionnel - recherche par nom, description ou tags)
+* **Response** (Status `200 OK`) :
+  ```json
+  {
+    "data": [
+      {
+        "id": 1,
+        "name": "Physiologie S1",
+        "parent_id": null,
+        "user_id": 2,
+        "is_public": true,
+        "description": "Classeur complet contenant les cours de physio du S1",
+        "tags": ["Médecine", "S1", "Biologie"],
+        "fork_count": 12,
+        "original_author_id": null,
+        "created_at": "2026-06-01T20:50:50",
+        "updated_at": "2026-06-01T20:56:00"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "per_page": 20,
+      "total": 1,
+      "pages": 1
+    }
+  }
+  ```
+
+### 🔍 Consulter le contenu d'un package public
+Retourne les métadonnées du classeur et un aperçu textuel à plat de tout ce qu'il contient (les titres des notes, les noms des decks, etc.).
+* **Route** : `GET /packages/<binder_id>`
+* **Type** : Public
+* **Response** (Status `200 OK`) :
+  ```json
+  {
+    "binder": {
+      "id": 1,
+      "name": "Physiologie S1",
+      "parent_id": null,
+      "user_id": 2,
+      "is_public": true,
+      "description": "Classeur complet contenant les cours de physio du S1",
+      "tags": ["Médecine", "S1", "Biologie"],
+      "fork_count": 12,
+      "original_author_id": null,
+      "created_at": "2026-06-01T20:50:50",
+      "updated_at": "2026-06-01T20:56:00"
+    },
+    "notes": ["Système cardiovasculaire", "Système rénal"],
+    "decks": ["Anatomie cardiaque"],
+    "diagrams": ["Cycle cardiaque"],
+    "pdfs": ["cours-physio.pdf"]
+  }
+  ```
+
+### 👯 Cloner un package public
+Copie récursivement tout le contenu d'un package public (classeurs enfants, notes, decks, flashcards, diagrammes, PDFs) dans le compte de l'utilisateur connecté. Le clone incrémente le compteur de forks (`fork_count`) du package source.
+* **Route** : `POST /packages/<binder_id>/clone`
+* **Type** : `[Sécurisé]`
+* **Response** (Status `201 Created` - Retourne le nouveau classeur cloné racine) :
+  ```json
+  {
+    "id": 15,
+    "name": "Physiologie S1",
+    "parent_id": null,
+    "user_id": 1,
+    "is_public": false,
+    "description": "Classeur complet contenant les cours de physio du S1",
+    "tags": ["Médecine", "S1", "Biologie"],
+    "fork_count": 0,
+    "original_author_id": 2,
+    "created_at": "2026-06-09T22:50:00",
+    "updated_at": "2026-06-09T22:50:00"
+  }
+  ```
+
+---
+
+## 11. Révision Blurting (Feuille Blanche IA)
+
+Le Blurting consiste à rédiger sur une feuille blanche tout ce dont on se rappelle par rapport à un cours, puis à le comparer au cours réel. StudyHub automatise ce procédé grâce à l'IA de Gemini.
+
+### 🧠 Analyser une restitution écrite (Blurting)
+Compare le texte restitué par l'étudiant avec le contenu d'une note de cours.
+* **Route** : `POST /blurting/analyze`
+* **Type** : `[Sécurisé]`
+* **Request Body** :
+  ```json
+  {
+    "note_id": 1,
+    "user_blurting": "Le système cardiovasculaire comprend le cœur qui pompe le sang...",
+    "duration_seconds": 300
+  }
+  ```
+* **Response** (Status `200 OK`) :
+  ```json
+  {
+    "feedback": "Votre restitution est excellente concernant les fonctions de pompage...",
+    "coverage_score": 75,
+    "key_points_missed": [
+      "Le rôle des valves auriculo-ventriculaires",
+      "La régulation nerveuse par le système sympathique"
+    ],
+    "suggested_flashcards": [
+      {
+        "front": "Quel est le rôle des valves auriculo-ventriculaires ?",
+        "back": "Empêcher le reflux du sang des ventricules vers les oreillettes lors de la systole."
+      }
+    ]
+  }
+  ```
+
+### 🃏 Créer les flashcards suggérées par l'analyse
+Crée en une fois les flashcards sélectionnées suite à l'analyse et les insère dans un deck.
+* **Route** : `POST /blurting/create-flashcards`
+* **Type** : `[Sécurisé]`
+* **Request Body** :
+  ```json
+  {
+    "deck_id": 1,
+    "flashcards": [
+      {
+        "front": "Quel est le rôle des valves auriculo-ventriculaires ?",
+        "back": "Empêcher le reflux du sang des ventricules vers les oreillettes lors de la systole."
+      }
+    ]
+  }
+  ```
+* **Response** (Status `201 Created`) :
+  ```json
+  {
+    "created_count": 1,
+    "flashcards": [
+      {
+        "id": 105,
+        "deck_id": 1,
+        "front": "Quel est le rôle des valves auriculo-ventriculaires ?",
+        "back": "Empêcher le reflux du sang des ventricules vers les oreillettes lors de la systole.",
+        "ease_factor": 2.5,
+        "interval": 0,
+        "repetitions": 0,
+        "next_review": "2026-06-09T22:55:00",
+        "created_at": "2026-06-09T22:55:00",
+        "updated_at": "2026-06-09T22:55:00"
+      }
+    ]
   }
   ```

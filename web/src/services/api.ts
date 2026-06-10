@@ -17,7 +17,7 @@ const api = axios.create({
 // Request Interceptor: inject JWT token
 api.interceptors.request.use((config) => {
   const auth = useAuthStore()
-  if (auth.token) {
+  if (auth.token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${auth.token}`
   }
   return config
@@ -31,6 +31,15 @@ api.interceptors.response.use(
     
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
+      
+      // If the refresh token itself failed, log out and redirect to login immediately
+      if (originalRequest.url?.includes('/auth/refresh')) {
+        const auth = useAuthStore()
+        auth.logout()
+        router.push('/login')
+        return Promise.reject(error)
+      }
+      
       const auth = useAuthStore()
       
       try {
