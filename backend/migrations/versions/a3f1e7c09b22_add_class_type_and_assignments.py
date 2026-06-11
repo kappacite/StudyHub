@@ -26,11 +26,13 @@ def upgrade():
     } if "groups" in tables else set()
 
     # Extend groups table
+    is_postgres = bind.dialect.name == 'postgresql'
+    is_class_default = 'false' if is_postgres else '0'
     with op.batch_alter_table('groups', schema=None) as batch_op:
         if "type" not in group_columns:
             batch_op.add_column(sa.Column('type', sa.String(length=10), nullable=False, server_default='study'))
         if "is_class" not in group_columns:
-            batch_op.add_column(sa.Column('is_class', sa.Boolean(), nullable=False, server_default=sa.text('0')))
+            batch_op.add_column(sa.Column('is_class', sa.Boolean(), nullable=False, server_default=sa.text(is_class_default)))
 
     # Create assignments table
     if "assignments" not in tables:
