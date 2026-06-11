@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Bool
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
+from app.models.search_type import TSVectorType
 from app.extensions import db
 
 class Note(db.Model):
@@ -15,6 +16,7 @@ class Note(db.Model):
     is_public = Column(Boolean, default=False, nullable=False)
     share_token = Column(String(64), unique=True, nullable=True, index=True)
     last_blurting_at = Column(DateTime, nullable=True)
+    search_vector = Column(TSVectorType, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

@@ -9,7 +9,7 @@ class SearchDAO:
         """
         Détecte le moteur de base de données (PostgreSQL vs SQLite) et utilise la stratégie appropriée.
         """
-        is_postgresql = self.db.bind.dialect.name == "postgresql"
+        is_postgresql = self.db.get_bind().dialect.name == "postgresql"
         if is_postgresql:
             return self._pg_search(user_id, query, types, limit)
         else:

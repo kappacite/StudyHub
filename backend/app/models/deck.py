@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from app.models.search_type import TSVectorType
 from app.extensions import db
 
 class Deck(db.Model):
@@ -12,6 +13,7 @@ class Deck(db.Model):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     binder_id = Column(Integer, ForeignKey("binders.id", ondelete="SET NULL"), nullable=True)
     note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=True)
+    search_vector = Column(TSVectorType, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

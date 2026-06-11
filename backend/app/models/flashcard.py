@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, Text, Float, DateTime, ForeignKey, String
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from app.models.search_type import TSVectorType
 from app.extensions import db
 
 class Flashcard(db.Model):
@@ -20,6 +21,7 @@ class Flashcard(db.Model):
     interval = Column(Integer, default=0, nullable=False)  # en jours
     repetitions = Column(Integer, default=0, nullable=False)
     next_review = Column(DateTime, server_default=func.now(), nullable=False)
+    search_vector = Column(TSVectorType, nullable=True)
     
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

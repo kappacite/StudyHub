@@ -9,6 +9,7 @@ from app.services.pdf_service import PDFService
 from app.services.stats_service import StatsService
 from app.services.focus_service import FocusService
 from app.services.planning_service import PlanningService
+from app.services.search_service import SearchService
 
 __all__ = [
     "AuthService",
@@ -21,5 +22,6 @@ __all__ = [
     "PDFService",
     "StatsService",
     "FocusService",
-    "PlanningService"
+    "PlanningService",
+    "SearchService"
 ]

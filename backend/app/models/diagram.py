@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from app.models.search_type import TSVectorType
 from app.extensions import db
 
 class Diagram(db.Model):
@@ -11,6 +12,7 @@ class Diagram(db.Model):
     code = Column(Text, default="", nullable=False)  # Code Mermaid.js
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     binder_id = Column(Integer, ForeignKey("binders.id", ondelete="SET NULL"), nullable=True)
+    search_vector = Column(TSVectorType, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
