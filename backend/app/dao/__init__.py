@@ -7,6 +7,7 @@ from app.dao.note_dao import NoteDAO
 from app.dao.diagram_dao import DiagramDAO
 from app.dao.pdf_dao import PDFDAO
 from app.dao.study_session_dao import StudySessionDAO
+from app.dao.group_dao import GroupDAO
 
 __all__ = [
     "BaseDAO",
@@ -17,5 +18,6 @@ __all__ = [
     "NoteDAO",
     "DiagramDAO",
     "PDFDAO",
-    "StudySessionDAO"
+    "StudySessionDAO",
+    "GroupDAO"
 ]

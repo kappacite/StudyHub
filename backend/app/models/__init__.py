@@ -7,6 +7,7 @@ from app.models.diagram import Diagram
 from app.models.pdf_document import PDFDocument
 from app.models.study_session import StudySession
 from app.models.tag import Tag
+from app.models.group import Group, GroupMember, GroupBinder, GroupActivity
 
 __all__ = [
     "User",
@@ -17,5 +18,9 @@ __all__ = [
     "Diagram",
     "PDFDocument",
     "StudySession",
-    "Tag"
+    "Tag",
+    "Group",
+    "GroupMember",
+    "GroupBinder",
+    "GroupActivity"
 ]
