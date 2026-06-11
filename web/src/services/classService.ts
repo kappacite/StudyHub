@@ -59,6 +59,11 @@ const classService = {
     return resp.data
   },
 
+  async getMyClasses(): Promise<ClassInfo[]> {
+    const resp = await api.get<ClassInfo[]>('/classes')
+    return resp.data
+  },
+
   async listAssignments(classId: number): Promise<Assignment[]> {
     const resp = await api.get<Assignment[]>(`/classes/${classId}/assignments`)
     return resp.data

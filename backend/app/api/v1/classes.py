@@ -33,7 +33,16 @@ def _make_service() -> ClassService:
     )
 
 
-# ─── Créer une classe ─────────────────────────────────────────────────────────
+# ─── Lister/Créer une classe ───────────────────────────────────────────────────
+
+@classes_bp.route("", methods=["GET"])
+@jwt_required()
+def get_my_classes():
+    user_id = int(get_jwt_identity())
+    service = _make_service()
+    result = service.get_my_classes(user_id)
+    return jsonify([c.model_dump(mode="json") for c in result]), 200
+
 
 @classes_bp.route("", methods=["POST"])
 @jwt_required()

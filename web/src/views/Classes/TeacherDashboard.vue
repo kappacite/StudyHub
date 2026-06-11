@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useGroupsStore } from '../../stores/groups'
 import { useBindersStore } from '../../stores/binders'
 import classService from '../../services/classService'
 import type { Assignment } from '../../services/classService'
@@ -12,7 +11,6 @@ import {
 } from 'lucide-vue-next'
 
 const router = useRouter()
-const groupsStore = useGroupsStore()
 const bindersStore = useBindersStore()
 
 // Classes = groups where is_class = true and user is teacher
@@ -38,22 +36,29 @@ const newAsgDesc = ref('')
 const newAsgBinderId = ref<number | null>(null)
 const newAsgDueDate = ref('')
 
-onMounted(async () => {
-  loading.value = true
-  await Promise.all([
-    groupsStore.fetchMyGroups(),
+async function loadClasses() {
+  const [myClasses, _] = await Promise.all([
+    classService.getMyClasses(),
     bindersStore.fetchBinders()
   ])
-  // Filter for classes + load their assignments
-  const classGroups = groupsStore.groups.filter(g => (g as unknown as { is_class?: boolean }).is_class)
   const results = await Promise.all(
-    classGroups.map(async g => {
-      const asgns = await classService.listAssignments(g.id).catch(() => [])
-      return { ...g, assignments: asgns }
+    myClasses.map(async c => {
+      const asgns = await classService.listAssignments(c.id).catch(() => [])
+      return { ...c, assignments: asgns }
     })
   )
   classes.value = results
-  loading.value = false
+}
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    await loadClasses()
+  } catch (e: any) {
+    error.value = "Impossible de charger les classes."
+  } finally {
+    loading.value = false
+  }
 })
 
 async function createClass() {
@@ -62,16 +67,7 @@ async function createClass() {
   error.value = ''
   try {
     await classService.createClass(newClassName.value.trim(), newClassDesc.value.trim() || undefined)
-    // Reload
-    await groupsStore.fetchMyGroups()
-    const classGroups = groupsStore.groups.filter(g => (g as unknown as { is_class?: boolean }).is_class)
-    const results = await Promise.all(
-      classGroups.map(async g => {
-        const asgns = await classService.listAssignments(g.id).catch(() => [])
-        return { ...g, assignments: asgns }
-      })
-    )
-    classes.value = results
+    await loadClasses()
     showCreateClassModal.value = false
     newClassName.value = ''
     newClassDesc.value = ''

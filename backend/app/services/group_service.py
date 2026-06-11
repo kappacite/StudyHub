@@ -77,6 +77,8 @@ class GroupService:
         groups = self._group_dao.get_user_groups(user_id)
         response = []
         for g in groups:
+            if g.is_class:
+                continue
             members_count = len(g.members_assoc)
             binders_count = len(g.binders_assoc)
             response.append(

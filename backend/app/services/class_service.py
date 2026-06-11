@@ -108,6 +108,28 @@ class ClassService:
     # Création de classe
     # ─────────────────────────────────────────────────────────────────────────
 
+    def get_my_classes(self, user_id: int) -> List[ClassResponseSchema]:
+        groups = self._group_dao.get_user_groups(user_id)
+        response = []
+        for g in groups:
+            if not g.is_class:
+                continue
+            members_count = len(g.members_assoc)
+            response.append(
+                ClassResponseSchema(
+                    id=g.id,
+                    name=g.name,
+                    description=g.description,
+                    invite_code=g.invite_code,
+                    type=g.type,
+                    is_class=g.is_class,
+                    created_by=g.created_by,
+                    created_at=g.created_at,
+                    members_count=members_count
+                )
+            )
+        return response
+
     def create_class(self, user_id: int, data: ClassCreateSchema) -> ClassResponseSchema:
         # Limite : max 5 groupes/classes créés
         created_count = self._group_dao.count_user_created_groups(user_id)
