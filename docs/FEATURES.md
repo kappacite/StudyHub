@@ -230,7 +230,7 @@ Après cette fonctionnalité, vérifier :
 
 ## 2. Espace Focus
 
-**Statut :** `[ ] Non démarré`
+**Statut :** `[x] Terminé`
 
 **Dépendances :** Aucune (peut être développé en parallèle de la feature 1)
 
@@ -284,42 +284,42 @@ GET /api/v1/focus/retention
 
 #### Backend
 
-- [ ] **2.2.1** Créer `backend/app/services/focus_service.py` avec les trois méthodes de calcul.
+- [x] **2.2.1** Créer `backend/app/services/focus_service.py` avec les trois méthodes de calcul.
   `commit: feat(focus): add FocusService with today/forecast/retention logic`
 
-- [ ] **2.2.2** Créer `backend/app/schemas/focus_schema.py` (Pydantic) pour les trois réponses.
+- [x] **2.2.2** Créer `backend/app/schemas/focus_schema.py` (Pydantic) pour les trois réponses.
   `commit: feat(focus): add Pydantic response schemas`
 
-- [ ] **2.2.3** Créer `backend/app/api/v1/focus.py` avec les trois endpoints GET.
+- [x] **2.2.3** Créer `backend/app/api/v1/focus.py` avec les trois endpoints GET.
   Enregistrer le blueprint.
   `commit: feat(focus): add /focus REST endpoints`
 
 #### Frontend
 
-- [ ] **2.2.4** Créer `web/src/services/focusService.ts` avec trois fonctions wrappant les appels Axios.
+- [x] **2.2.4** Créer `web/src/services/focusService.ts` avec trois fonctions wrappant les appels Axios.
   `commit: feat(focus): add focusService`
 
-- [ ] **2.2.5** Créer `web/src/stores/focus.ts` avec state : `todayItems`, `forecast`, `retention`. Actions : `loadFocusData()` (appelle les trois endpoints en parallèle avec `Promise.all`).
+- [x] **2.2.5** Créer `web/src/stores/focus.ts` avec state : `todayItems`, `forecast`, `retention`. Actions : `loadFocusData()` (appelle les trois endpoints en parallèle avec `Promise.all`).
   `commit: feat(focus): add focus Pinia store`
 
-- [ ] **2.2.6** Créer `web/src/components/dashboard/FocusWidget.vue`.
+- [x] **2.2.6** Créer `web/src/components/dashboard/FocusWidget.vue`.
   Affiche : total du jour, badges (retard / cartes / blurting), mini-sparkline 7 jours (SVG inline), streak, bouton "Lancer la révision", lien "Voir le détail".
   `commit: feat(focus): add FocusWidget component`
 
-- [ ] **2.2.7** Intégrer `FocusWidget` dans `web/src/views/Dashboard/Dashboard.vue` en position haute.
+- [x] **2.2.7** Intégrer `FocusWidget` dans `web/src/views/Dashboard/Dashboard.vue` en position haute.
   `commit: feat(focus): integrate FocusWidget in Dashboard`
 
-- [ ] **2.2.8** Créer `web/src/views/Focus/FocusPage.vue` avec les trois zones :
+- [x] **2.2.8** Créer `web/src/views/Focus/FocusPage.vue` avec les trois zones :
   - **Zone Maintenant** : liste des items du jour avec code couleur (rouge = retard, neutre = normal, violet = blurting). Bouton "Réviser" par item + bouton "Tout réviser".
   - **Zone Forecast** : graphique en barres 14 jours avec légende de charge (bas/moyen/haut).
   - **Zone Rétention** : tableau par matière avec barre de progression, tendance, count retard.
   `commit: feat(focus): add FocusPage view`
 
-- [ ] **2.2.9** Ajouter la route `/focus` dans `router/index.ts`.
+- [x] **2.2.9** Ajouter la route `/focus` dans `router/index.ts`.
   Ajouter l'entrée dans la sidebar (`AppLayout.vue`).
   `commit: feat(focus): add /focus route and sidebar entry`
 
-- [ ] **2.2.10** Implémenter le bouton "Tout réviser" : construit une file d'items ordonnée (retards d'abord, puis SM-2 du jour, puis blurting) et navigue vers le premier item. État de la file géré dans le store.
+- [x] **2.2.10** Implémenter le bouton "Tout réviser" : construit une file d'items ordonnée (retards d'abord, puis SM-2 du jour, puis blurting) et navigue vers le premier item. État de la file géré dans le store.
   `commit: feat(focus): implement unified review queue`
 
 ---
