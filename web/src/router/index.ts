@@ -152,6 +152,24 @@ const routes: Array<RouteRecordRaw> = [
         name: 'GroupDetail',
         component: () => import('../views/Groups/GroupDetail.vue'),
         meta: { requiresAuth: true }
+      },
+      {
+        path: 'classes/teacher',
+        name: 'TeacherDashboard',
+        component: () => import('../views/Classes/TeacherDashboard.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'classes/student',
+        name: 'StudentClassView',
+        component: () => import('../views/Classes/StudentClassView.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'classes/:classId/assignments/:asgnId',
+        name: 'AssignmentDetail',
+        component: () => import('../views/Classes/AssignmentDetail.vue'),
+        meta: { requiresAuth: true }
       }
     ]
   },

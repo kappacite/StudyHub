@@ -8,6 +8,7 @@ export const useFocusStore = defineStore('focus', () => {
   const lateCount = ref(0)
   const flashcardCount = ref(0)
   const blurtingCount = ref(0)
+  const assignmentCount = ref(0)
   const items = ref<FocusItem[]>([])
   
   const forecast = ref<ForecastItem[]>([])
@@ -34,6 +35,7 @@ export const useFocusStore = defineStore('focus', () => {
       lateCount.value = todayRes.late_count
       flashcardCount.value = todayRes.flashcard_count
       blurtingCount.value = todayRes.blurting_count
+      assignmentCount.value = todayRes.assignment_count || 0
       items.value = todayRes.items
       
       forecast.value = forecastRes.forecast
@@ -85,6 +87,7 @@ export const useFocusStore = defineStore('focus', () => {
     lateCount,
     flashcardCount,
     blurtingCount,
+    assignmentCount,
     items,
     forecast,
     retention,

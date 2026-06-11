@@ -33,6 +33,9 @@
           <span class="px-2.5 py-1 rounded-xl bg-white/5 text-indigo-200 border border-white/5">
             {{ focusStore.blurtingCount }} feuilles blanches
           </span>
+          <span v-if="focusStore.assignmentCount > 0" class="px-2.5 py-1 rounded-xl bg-white/5 text-indigo-200 border border-white/5">
+            {{ focusStore.assignmentCount }} devoirs
+          </span>
         </div>
       </div>
 
@@ -133,6 +136,8 @@ function startStudy() {
       router.push(`/decks/${firstItem.id}/study?focus=true`)
     } else if (firstItem.type === 'note') {
       router.push(`/notes/${firstItem.id}/blurting?focus=true&from=focus`)
+    } else if (firstItem.type === 'assignment') {
+      router.push(`/binders/${firstItem.id}`)
     }
   }
 }

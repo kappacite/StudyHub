@@ -200,7 +200,8 @@ import {
   CheckCircle2, 
   Calendar, 
   Activity, 
-  ArrowRight 
+  ArrowRight,
+  GraduationCap
 } from '@lucide/vue'
 
 const focusStore = useFocusStore()
@@ -218,22 +219,29 @@ function getItemClasses(item: FocusItem) {
   if (item.type === 'note') {
     return 'border-purple-100 bg-purple-50/10 hover:bg-purple-50/20 dark:border-purple-900/30'
   }
+  if (item.type === 'assignment') {
+    return 'border-sky-100 bg-sky-50/10 hover:bg-sky-50/20 dark:border-sky-900/30'
+  }
   return 'border-slate-100 bg-slate-50/20 hover:bg-slate-50/40 dark:border-slate-800/80 dark:hover:bg-slate-800/60'
 }
 
 function getItemIconBg(item: FocusItem) {
   if (item.is_late) return 'bg-rose-50 dark:bg-rose-950/30'
   if (item.type === 'note') return 'bg-purple-50 dark:bg-purple-950/30'
+  if (item.type === 'assignment') return 'bg-sky-50 dark:bg-sky-950/30'
   return 'bg-indigo-50 dark:bg-indigo-950/30'
 }
 
 function getItemIcon(item: FocusItem) {
-  return item.type === 'deck' ? Layers : FileText
+  if (item.type === 'deck') return Layers
+  if (item.type === 'note') return FileText
+  return GraduationCap
 }
 
 function getItemIconColor(item: FocusItem) {
   if (item.is_late) return 'text-rose-500'
   if (item.type === 'note') return 'text-purple-500'
+  if (item.type === 'assignment') return 'text-sky-500'
   return 'text-indigo-500'
 }
 
@@ -241,7 +249,10 @@ function getItemSummary(item: FocusItem) {
   if (item.type === 'deck') {
     return `${item.count} carte(s) mémoire à réviser`
   }
-  return 'Feuille blanche à restituer (Blurting)'
+  if (item.type === 'note') {
+    return 'Feuille blanche à restituer (Blurting)'
+  }
+  return item.due_date ? `Devoir à terminer avant le ${new Date(item.due_date).toLocaleDateString('fr-FR')}` : 'Devoir sans date limite'
 }
 
 function studyItem(item: FocusItem) {
@@ -249,6 +260,8 @@ function studyItem(item: FocusItem) {
     router.push(`/decks/${item.id}/study?focus=true`)
   } else if (item.type === 'note') {
     router.push(`/notes/${item.id}/blurting?focus=true&from=focus`)
+  } else if (item.type === 'assignment') {
+    router.push(`/binders/${item.id}`)
   }
 }
 
