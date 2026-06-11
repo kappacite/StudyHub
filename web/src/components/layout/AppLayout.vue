@@ -221,6 +221,7 @@ const isEditMode = computed(() => {
 const navItems = [
   { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Priorités (Focus)', path: '/focus', icon: Flame },
+  { name: 'Planning', path: '/planning', icon: Calendar },
   { name: 'Classeurs', path: '/binders', icon: FolderClosed },
   { name: 'Révisions', path: '/reviews', icon: Brain },
   { name: 'Notes', path: '/notes', icon: FileText },
@@ -234,6 +235,7 @@ const currentRouteName = computed(() => {
   if (name === 'StudyDeck') return 'Flashcards (Étude)'
   if (name === 'NoteEdit') return 'Édition de Note'
   if (name === 'Reviews') return 'Espace Révisions'
+  if (name === 'Planning') return 'Planning des révisions'
   return name
 })
 

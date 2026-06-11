@@ -7,7 +7,7 @@
         class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1"
       >
         <ChevronLeft class="w-4 h-4" />
-        {{ isFocusMode ? 'Retour au Focus' : 'Retour aux decks' }}
+        {{ isFocusMode ? 'Retour au Focus' : ($route.query.advance === 'true' ? 'Retour au Planning' : 'Retour aux decks') }}
       </button>
       <span class="text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 px-2.5 py-1 rounded-lg uppercase tracking-wider">
         {{ deckName }}
@@ -41,6 +41,13 @@
         class="w-full px-4 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/10"
       >
         {{ focusStore.reviewQueue.length > 0 ? 'Continuer les révisions' : 'Retour au Focus' }}
+      </button>
+      <button 
+        v-else-if="$route.query.advance === 'true'"
+        @click="router.push('/planning')"
+        class="w-full px-4 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/10"
+      >
+        Retour au Planning
       </button>
       <button 
         v-else
@@ -125,10 +132,12 @@ import { useRouter, useRoute } from 'vue-router'
 import { useDecksStore } from '../../stores/decks'
 import type { Flashcard } from '../../stores/decks'
 import { useFocusStore } from '../../stores/focus'
+import { usePlanningStore } from '../../stores/planning'
 import { ChevronLeft, Sparkles } from '@lucide/vue'
 
 const decksStore = useDecksStore()
 const focusStore = useFocusStore()
+const planningStore = usePlanningStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -168,8 +177,12 @@ async function loadSession() {
       deckName.value = deck.name
     }
     
-    // Fetch cards scheduled for study today
-    studyCards.value = await decksStore.fetchStudyCards(deckId.value)
+    if (route.query.advance === 'true') {
+      studyCards.value = [...planningStore.advanceReviewCards]
+    } else {
+      // Fetch cards scheduled for study today
+      studyCards.value = await decksStore.fetchStudyCards(deckId.value)
+    }
     totalCards.value = studyCards.value.length
   } catch (error) {
     console.error('Erreur lors du chargement de la session d\'étude :', error)
@@ -192,6 +205,8 @@ watch(() => route.params.id, (newId) => {
 function goBack() {
   if (isFocusMode.value) {
     router.push('/focus')
+  } else if (route.query.advance === 'true') {
+    router.push('/planning')
   } else {
     router.push('/decks')
   }
