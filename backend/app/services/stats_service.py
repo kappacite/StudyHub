@@ -33,6 +33,29 @@ class StatsService:
             cards_correct=data.cards_correct
         )
         created = self._study_session_dao.create(session)
+        
+        # Enregistrement automatique de l'activité dans les groupes de l'utilisateur
+        try:
+            from app.dao.group_dao import GroupDAO
+            from app.extensions import db
+            group_dao = GroupDAO(db.session)
+            user_groups = group_dao.get_user_groups(user_id)
+            for group in user_groups:
+                group_dao.add_group_activity(
+                    group_id=group.id,
+                    user_id=user_id,
+                    activity_type="completed_session",
+                    payload={
+                        "module": data.module,
+                        "duration_seconds": data.duration_seconds,
+                        "cards_reviewed": data.cards_reviewed,
+                        "cards_correct": data.cards_correct
+                    }
+                )
+        except Exception as e:
+            # Ne pas bloquer la création de session si l'enregistrement de l'activité échoue
+            pass
+
         return StudySessionResponse.model_validate(created)
 
     def get_sessions(
