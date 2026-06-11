@@ -34,3 +34,16 @@ class FlashcardDAO(BaseDAO[Flashcard]):
             )
             .all()
         )
+
+    def get_cards_due_between(self, user_id: int, date_from: datetime, date_to: datetime) -> List[Flashcard]:
+        from app.models.deck import Deck
+        return (
+            self.db.query(self.model)
+            .join(Deck)
+            .filter(
+                Deck.user_id == user_id,
+                self.model.next_review >= date_from,
+                self.model.next_review <= date_to
+            )
+            .all()
+        )
