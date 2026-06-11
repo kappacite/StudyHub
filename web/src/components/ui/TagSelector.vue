@@ -1,6 +1,25 @@
 <template>
-  <div class="space-y-2">
-    <div class="flex flex-wrap gap-1.5">
+  <div ref="rootRef" class="relative" :class="compact ? '' : 'space-y-2'">
+    <button
+      v-if="compact"
+      type="button"
+      class="flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition-all hover:border-indigo-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-indigo-900 dark:hover:bg-slate-850"
+      :disabled="disabled"
+      @click="isOpen = !isOpen"
+    >
+      <span class="flex min-w-0 items-center gap-1.5">
+        <span
+          v-for="tag in selectedTags.slice(0, 2)"
+          :key="tag.id"
+          class="h-2.5 w-2.5 shrink-0 rounded-full"
+          :style="{ backgroundColor: tag.color || '#4F46E5' }"
+        ></span>
+        <span class="truncate">{{ compactLabel }}</span>
+      </span>
+      <span class="rounded-lg bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-400 dark:bg-slate-800">{{ selectedTags.length }}</span>
+    </button>
+
+    <div v-if="!compact" class="flex flex-wrap gap-1.5">
       <TagBadge
         v-for="tag in selectedTags"
         :key="tag.id"
@@ -11,9 +30,25 @@
       <span v-if="selectedTags.length === 0" class="text-xs font-semibold text-slate-400">Aucun tag</span>
     </div>
 
-    <div class="flex flex-col gap-2 sm:flex-row">
+    <div
+      v-if="!compact || isOpen"
+      class="tag-selector-panel"
+      :class="compact ? 'absolute right-0 top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/30' : ''"
+    >
+      <div v-if="compact" class="mb-3 flex flex-wrap gap-1.5">
+        <TagBadge
+          v-for="tag in selectedTags"
+          :key="tag.id"
+          :tag="tag"
+          removable
+          @remove="removeTag(tag.id)"
+        />
+        <span v-if="selectedTags.length === 0" class="text-xs font-semibold text-slate-400">Aucun tag</span>
+      </div>
+
+      <div class="flex flex-col gap-2 sm:flex-row">
       <select
-        class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold dark:border-slate-800 dark:bg-slate-900"
+        class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-950"
         :disabled="disabled"
         @change="addSelectedTag"
       >
@@ -26,21 +61,24 @@
           v-model="newTagName"
           type="text"
           maxlength="30"
-          class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold dark:border-slate-800 dark:bg-slate-900"
+          class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-950"
           placeholder="Nouveau tag"
           :disabled="disabled || isCreating"
           @keydown.enter.prevent="createAndSelectTag"
         />
-        <input
-          v-model="newTagColor"
-          type="color"
-          class="h-9 w-10 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900"
-          :disabled="disabled || isCreating"
-          title="Couleur du tag"
-        />
+        <label class="relative flex h-9 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-slate-50 transition hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-950" title="Couleur du tag">
+          <span class="h-5 w-5 rounded-full border border-white shadow-sm ring-1 ring-slate-200 dark:ring-slate-700" :style="{ backgroundColor: newTagColor }"></span>
+          <input
+            v-model="newTagColor"
+            type="color"
+            class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            :disabled="disabled || isCreating"
+            aria-label="Couleur du tag"
+          />
+        </label>
         <button
           type="button"
-          class="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+          class="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:opacity-50"
           :disabled="disabled || isCreating || !newTagName.trim()"
           @click="createAndSelectTag"
         >
@@ -48,19 +86,35 @@
         </button>
       </div>
     </div>
+
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        <button
+          v-for="color in presetColors"
+          :key="color"
+          type="button"
+          class="h-6 w-6 rounded-full border-2 transition hover:scale-105"
+          :class="newTagColor.toLowerCase() === color.toLowerCase() ? 'border-slate-900 dark:border-white' : 'border-white dark:border-slate-900'"
+          :style="{ backgroundColor: color }"
+          :disabled="disabled || isCreating"
+          @click="newTagColor = color"
+        ></button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import TagBadge from './TagBadge.vue'
 import { useTagsStore, type Tag } from '../../stores/tags'
 
 const props = withDefaults(defineProps<{
   modelValue: Tag[]
   disabled?: boolean
+  compact?: boolean
 }>(), {
-  disabled: false
+  disabled: false,
+  compact: false
 })
 
 const emit = defineEmits<{
@@ -72,10 +126,18 @@ const tagsStore = useTagsStore()
 const newTagName = ref('')
 const newTagColor = ref('#4F46E5')
 const isCreating = ref(false)
+const isOpen = ref(false)
+const rootRef = ref<HTMLElement | null>(null)
+const presetColors = ['#4F46E5', '#0F766E', '#F59E0B', '#E11D48', '#7C3AED', '#0284C7']
 
 const selectedIds = computed(() => new Set(props.modelValue.map(tag => tag.id)))
 const selectedTags = computed(() => props.modelValue)
 const availableTags = computed(() => tagsStore.tags.filter(tag => !selectedIds.value.has(tag.id)))
+const compactLabel = computed(() => {
+  if (selectedTags.value.length === 0) return 'Tags'
+  if (selectedTags.value.length === 1) return selectedTags.value[0].name
+  return `${selectedTags.value[0].name} +${selectedTags.value.length - 1}`
+})
 
 function update(tags: Tag[]) {
   emit('update:modelValue', tags)
@@ -106,4 +168,14 @@ async function createAndSelectTag() {
     isCreating.value = false
   }
 }
+
+function handleClickOutside(event: MouseEvent) {
+  if (!props.compact || !isOpen.value) return
+  if (rootRef.value && !rootRef.value.contains(event.target as Node)) {
+    isOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('mousedown', handleClickOutside))
+onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutside))
 </script>
