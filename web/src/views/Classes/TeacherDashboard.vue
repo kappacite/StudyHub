@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBindersStore } from '../../stores/binders'
+import { useNotesStore } from '../../stores/notes'
+import { useDecksStore } from '../../stores/decks'
 import classService from '../../services/classService'
-import type { Assignment } from '../../services/classService'
+import type { Assignment, StudentMaterialsProgress } from '../../services/classService'
+import groupService from '../../services/groupService'
+import type { GroupBinder } from '../../services/groupService'
 import {
   GraduationCap, Plus, Users, ClipboardList,
-  Loader2, AlertCircle, Calendar,
+  Loader2, AlertCircle, Calendar, BookOpen, Clock,
   BarChart3, Trash2, Eye
 } from 'lucide-vue-next'
 
 const router = useRouter()
 const bindersStore = useBindersStore()
+const notesStore = useNotesStore()
+const decksStore = useDecksStore()
 
 // Classes = groups where is_class = true and user is teacher
 const classes = ref<Array<{
@@ -29,6 +35,7 @@ const error = ref('')
 // Create class form
 const newClassName = ref('')
 const newClassDesc = ref('')
+const newClassIsPublic = ref(false)
 
 // Create assignment form
 const newAsgTitle = ref('')
@@ -36,10 +43,104 @@ const newAsgDesc = ref('')
 const newAsgBinderId = ref<number | null>(null)
 const newAsgDueDate = ref('')
 
+// Associate binder state
+const showAssociateModal = ref(false)
+const associateClassId = ref<number | null>(null)
+const associateBinderId = ref<number | null>(null)
+
+// Extra class details state
+const classDetails = ref<Record<number, {
+  binders: GroupBinder[];
+  progress: StudentMaterialsProgress[];
+  loading: boolean;
+  activeTab: 'assignments' | 'resources' | 'progress';
+}>>({})
+
+const availableBindersToAssociate = computed(() => {
+  if (!associateClassId.value) return []
+  const sharedIds = classDetails.value[associateClassId.value]?.binders.map(b => b.binder_id) || []
+  return bindersStore.binders.filter(b => !sharedIds.includes(b.id))
+})
+
+async function selectClassTab(classId: number, tab: 'assignments' | 'resources' | 'progress') {
+  if (!classDetails.value[classId]) {
+    classDetails.value[classId] = {
+      binders: [],
+      progress: [],
+      loading: false,
+      activeTab: 'assignments'
+    }
+  }
+  
+  classDetails.value[classId].activeTab = tab
+
+  if (tab === 'assignments') return
+
+  classDetails.value[classId].loading = true
+  try {
+    if (tab === 'resources') {
+      const detail = await groupService.getGroupDetail(classId)
+      classDetails.value[classId].binders = detail.binders
+    } else if (tab === 'progress') {
+      const [detail, prog] = await Promise.all([
+        groupService.getGroupDetail(classId),
+        classService.getClassMaterialsProgress(classId)
+      ])
+      classDetails.value[classId].binders = detail.binders
+      classDetails.value[classId].progress = prog
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    classDetails.value[classId].loading = false
+  }
+}
+
+async function associateBinder() {
+  if (!associateClassId.value || !associateBinderId.value) return
+  creating.value = true
+  try {
+    await groupService.shareBinder(associateClassId.value, associateBinderId.value, 'read')
+    await selectClassTab(associateClassId.value, 'resources')
+    showAssociateModal.value = false
+    associateBinderId.value = null
+  } catch (e) {
+    alert("Impossible d'associer ce classeur.")
+  } finally {
+    creating.value = false
+  }
+}
+
+async function dissociateBinder(classId: number, binderId: number) {
+  if (!confirm("Retirer ce classeur de la classe ? Les élèves n'y auront plus accès.")) return
+  try {
+    await groupService.unshareBinder(classId, binderId)
+    if (classDetails.value[classId]) {
+      await selectClassTab(classId, classDetails.value[classId].activeTab)
+    }
+  } catch (e) {
+    alert("Impossible de retirer ce classeur.")
+  }
+}
+
+function openAssociateBinder(classId: number) {
+  associateClassId.value = classId
+  showAssociateModal.value = true
+  associateBinderId.value = null
+}
+
+function getBinderStats(binderId: number) {
+  const directNotes = notesStore.notes.filter(n => n.binder_id === binderId).length
+  const directDecks = decksStore.decks.filter(d => d.binder_id === binderId).length
+  return { notes: directNotes, decks: directDecks }
+}
+
 async function loadClasses() {
-  const [myClasses, _] = await Promise.all([
+  const [myClasses, _, _2, _3] = await Promise.all([
     classService.getMyClasses(),
-    bindersStore.fetchBinders()
+    bindersStore.fetchBinders(),
+    notesStore.fetchNotes(),
+    decksStore.fetchDecks()
   ])
   const results = await Promise.all(
     myClasses.map(async c => {
@@ -66,11 +167,16 @@ async function createClass() {
   creating.value = true
   error.value = ''
   try {
-    await classService.createClass(newClassName.value.trim(), newClassDesc.value.trim() || undefined)
+    await classService.createClass(
+      newClassName.value.trim(),
+      newClassDesc.value.trim() || undefined,
+      newClassIsPublic.value
+    )
     await loadClasses()
     showCreateClassModal.value = false
     newClassName.value = ''
     newClassDesc.value = ''
+    newClassIsPublic.value = false
   } catch (e: unknown) {
     const err = e as { response?: { data?: { error?: { message?: string } } } }
     error.value = err?.response?.data?.error?.message || 'Erreur lors de la création.'
@@ -233,49 +339,189 @@ function isPast(d: string | null): boolean {
             </div>
           </div>
 
-          <!-- Assignments table -->
-          <div v-if="cls.assignments.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-600 text-sm">
-            <ClipboardList class="w-8 h-8 mx-auto mb-2 opacity-50" />
-            Aucun devoir assigné pour cette classe.
-          </div>
-          <div v-else class="space-y-2">
-            <div
-              v-for="asgn in cls.assignments"
-              :key="asgn.id"
-              class="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl px-4 py-3"
+          <!-- Tabs inside Class Card -->
+          <div class="flex border-b border-slate-100 dark:border-slate-700/60 mb-4 px-1 -mx-5">
+            <button
+              v-for="tab in [
+                { id: 'assignments', label: 'Devoirs' },
+                { id: 'resources', label: 'Cours & Classeurs' },
+                { id: 'progress', label: 'Suivi Révisions' }
+              ]"
+              :key="tab.id"
+              @click="selectClassTab(cls.id, tab.id)"
+              :class="[
+                'px-5 py-2.5 text-xs font-bold border-b-2 -mb-px transition-all',
+                (classDetails[cls.id]?.activeTab || 'assignments') === tab.id
+                  ? 'border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-350'
+              ]"
             >
-              <div class="flex items-center gap-3 min-w-0">
-                <div :class="[
-                  'flex-shrink-0 w-2 h-2 rounded-full',
-                  isPast(asgn.due_date) ? 'bg-red-500' : isDueSoon(asgn.due_date) ? 'bg-amber-500' : 'bg-green-500'
-                ]"></div>
-                <div class="min-w-0">
-                  <p class="font-medium text-slate-800 dark:text-white text-sm truncate">{{ asgn.title }}</p>
-                  <p class="text-xs text-slate-400 mt-0.5">{{ asgn.binder_name }}</p>
+              {{ tab.label }}
+            </button>
+          </div>
+
+          <!-- TAB 1: Assignments -->
+          <div v-if="(classDetails[cls.id]?.activeTab || 'assignments') === 'assignments'" class="space-y-2">
+            <div v-if="cls.assignments.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-655 text-sm">
+              <ClipboardList class="w-8 h-8 mx-auto mb-2 opacity-50" />
+              Aucun devoir assigné pour cette classe.
+            </div>
+            <div v-else class="space-y-2">
+              <div
+                v-for="asgn in cls.assignments"
+                :key="asgn.id"
+                class="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl px-4 py-3"
+              >
+                <div class="flex items-center gap-3 min-w-0">
+                  <div :class="[
+                    'flex-shrink-0 w-2 h-2 rounded-full',
+                    isPast(asgn.due_date) ? 'bg-red-500' : isDueSoon(asgn.due_date) ? 'bg-amber-500' : 'bg-green-500'
+                  ]"></div>
+                  <div class="min-w-0">
+                    <p class="font-medium text-slate-800 dark:text-white text-sm truncate">{{ asgn.title }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ asgn.binder_name }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                  <span :class="[
+                    'flex items-center gap-1 text-xs font-medium',
+                    isPast(asgn.due_date) ? 'text-red-500' : isDueSoon(asgn.due_date) ? 'text-amber-500' : 'text-slate-500'
+                  ]">
+                    <Calendar class="w-3.5 h-3.5" />
+                    {{ formatDate(asgn.due_date) }}
+                  </span>
+                  <button
+                    @click="router.push(`/classes/${cls.id}/assignments/${asgn.id}`)"
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
+                    title="Voir la progression"
+                  >
+                    <BarChart3 class="w-4 h-4" />
+                  </button>
+                  <button
+                    @click="deleteAssignment(cls.id, asgn.id)"
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                    title="Supprimer"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-              <div class="flex items-center gap-3 flex-shrink-0">
-                <span :class="[
-                  'flex items-center gap-1 text-xs font-medium',
-                  isPast(asgn.due_date) ? 'text-red-500' : isDueSoon(asgn.due_date) ? 'text-amber-500' : 'text-slate-500'
-                ]">
-                  <Calendar class="w-3.5 h-3.5" />
-                  {{ formatDate(asgn.due_date) }}
-                </span>
+            </div>
+          </div>
+
+          <!-- TAB 2: Resources -->
+          <div v-else-if="classDetails[cls.id]?.activeTab === 'resources'">
+            <div v-if="classDetails[cls.id]?.loading" class="flex items-center justify-center py-8">
+              <Loader2 class="w-6 h-6 text-amber-500 animate-spin" />
+            </div>
+            <div v-else>
+              <div class="flex items-center justify-between gap-4 mb-4">
+                <span class="text-xs text-slate-400">Classeurs, cours & révisions associés à la classe</span>
                 <button
-                  @click="router.push(`/classes/${cls.id}/assignments/${asgn.id}`)"
-                  class="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
-                  title="Voir la progression"
+                  @click="openAssociateBinder(cls.id)"
+                  class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-100 text-amber-600 dark:text-amber-400 text-xs font-semibold transition"
                 >
-                  <BarChart3 class="w-4 h-4" />
+                  <Plus class="w-3.5 h-3.5" />
+                  Associer un classeur
                 </button>
-                <button
-                  @click="deleteAssignment(cls.id, asgn.id)"
-                  class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-                  title="Supprimer"
+              </div>
+
+              <div v-if="!classDetails[cls.id]?.binders || classDetails[cls.id].binders.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-655 text-sm border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
+                <BookOpen class="w-8 h-8 mx-auto mb-2 opacity-50" />
+                Aucun cours ou classeur associé.
+              </div>
+              <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div
+                  v-for="b in classDetails[cls.id].binders"
+                  :key="b.binder_id"
+                  class="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl px-4 py-3 cursor-pointer hover:border-amber-500/20 border border-transparent transition-all"
+                  @click="router.push(`/binders/${b.binder_id}`)"
                 >
-                  <Trash2 class="w-4 h-4" />
-                </button>
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex-shrink-0">
+                      <BookOpen class="w-4 h-4" />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-bold text-slate-800 dark:text-white text-xs truncate hover:text-amber-600 transition-colors">{{ b.binder_name }}</p>
+                      <p class="text-[10px] text-slate-455 mt-0.5 flex items-center gap-1.5">
+                        <span>{{ getBinderStats(b.binder_id).notes }} cours</span>
+                        <span class="w-1 h-1 rounded-full bg-slate-350 dark:bg-slate-700"></span>
+                        <span>{{ getBinderStats(b.binder_id).decks }} révisions</span>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    @click.stop="dissociateBinder(cls.id, b.binder_id)"
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                    title="Dissocier"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Student Revisions & Scores Progress -->
+          <div v-else-if="classDetails[cls.id]?.activeTab === 'progress'">
+            <div v-if="classDetails[cls.id]?.loading" class="flex items-center justify-center py-8">
+              <Loader2 class="w-6 h-6 text-amber-500 animate-spin" />
+            </div>
+            <div v-else>
+              <div v-if="!classDetails[cls.id]?.binders || classDetails[cls.id].binders.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-655 text-sm">
+                Aucun classeur ou cours n'est associé à cette classe. Associez-en un pour suivre le travail des élèves.
+              </div>
+              <div v-else-if="!classDetails[cls.id]?.progress || classDetails[cls.id].progress.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-655 text-sm">
+                Aucun élève dans cette classe.
+              </div>
+              <div v-else class="space-y-4">
+                <div v-for="student in classDetails[cls.id].progress" :key="student.user_id" class="border border-slate-105 dark:border-slate-750/60 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-900/10">
+                  <div class="flex items-center justify-between border-b border-slate-105 dark:border-slate-700/60 pb-2 mb-3">
+                    <span class="font-bold text-slate-800 dark:text-white text-sm">{{ student.username }}</span>
+                    <span class="text-[10px] text-slate-455">Révisions par classeur</span>
+                  </div>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div v-for="bp in student.binders_progress" :key="bp.binder_id" class="bg-white dark:bg-slate-800/40 border border-slate-105 dark:border-slate-700/40 rounded-lg p-3 flex flex-col justify-between">
+                      <div>
+                        <div class="flex items-center justify-between gap-2 mb-1">
+                          <span class="font-bold text-xs text-slate-750 dark:text-slate-200 truncate">{{ bp.binder_name }}</span>
+                          <span :class="[
+                            'text-[10px] font-extrabold px-1.5 py-0.5 rounded-full uppercase tracking-wider',
+                            bp.cards_reviewed === 0 ? 'bg-slate-100 text-slate-500' :
+                            bp.cards_reviewed >= bp.total_cards ? 'bg-green-50 text-green-650 dark:bg-green-950/20 dark:text-green-400' :
+                            'bg-blue-50 text-blue-650 dark:bg-blue-950/20 dark:text-blue-400'
+                          ]">
+                            {{ bp.cards_reviewed === 0 ? 'Non commencé' : bp.cards_reviewed >= bp.total_cards ? 'Terminé' : 'En cours' }}
+                          </span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-455 dark:text-slate-400 mt-1">
+                          <span>{{ bp.cards_reviewed }} / {{ bp.total_cards }} cartes</span>
+                          <span v-if="bp.cards_reviewed > 0" :class="[
+                            'font-bold',
+                            bp.score_pct >= 80 ? 'text-green-600' : bp.score_pct >= 50 ? 'text-amber-600' : 'text-red-500'
+                          ]">{{ Math.round(bp.score_pct) }}% réussite</span>
+                        </div>
+                      </div>
+                      
+                      <!-- Progress Bar -->
+                      <div class="mt-2 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                        <div
+                          class="h-full rounded-full transition-all"
+                          :class="[
+                            bp.cards_reviewed >= bp.total_cards ? 'bg-green-500' : 'bg-amber-500'
+                          ]"
+                          :style="{ width: (bp.total_cards > 0 ? (bp.cards_reviewed / bp.total_cards * 100) : 0) + '%' }"
+                        ></div>
+                      </div>
+                      
+                      <div v-if="bp.last_reviewed_at" class="text-[9px] text-slate-400 mt-2 flex items-center gap-1">
+                        <Clock class="w-3 h-3 text-slate-400" />
+                        Dernière révision : {{ formatDate(bp.last_reviewed_at) }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -304,6 +550,14 @@ function isPast(d: string | null): boolean {
               <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Description (optionnel)</label>
               <textarea v-model="newClassDesc" placeholder="Objectifs du cours, niveau requis…" rows="3"
                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition resize-none" />
+            </div>
+            <div class="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700/60 mt-3 pt-3">
+              <div>
+                <label class="block text-sm font-bold text-slate-800 dark:text-slate-200">Cours public</label>
+                <span class="text-xs text-slate-400">Si actif, le cours apparaîtra dans l'espace communautaire.</span>
+              </div>
+              <input v-model="newClassIsPublic" type="checkbox"
+                class="w-5 h-5 text-amber-500 border-slate-300 rounded focus:ring-amber-500 cursor-pointer" />
             </div>
             <div v-if="error" class="flex items-center gap-2 text-red-500 text-sm"><AlertCircle class="w-4 h-4 flex-shrink-0" />{{ error }}</div>
           </div>
@@ -363,6 +617,43 @@ function isPast(d: string | null): boolean {
               <Loader2 v-if="creating" class="w-4 h-4 animate-spin" />
               <Plus v-else class="w-4 h-4" />
               Créer le devoir
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Associate Binder Modal -->
+    <Teleport to="body">
+      <div v-if="showAssociateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showAssociateModal = false">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <BookOpen class="w-5 h-5 text-amber-500" />
+              Associer un classeur
+            </h2>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Classeur à associer <span class="text-red-500">*</span></label>
+              <select v-model="associateBinderId"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 transition">
+                <option :value="null" disabled>Choisir un classeur…</option>
+                <option v-for="b in availableBindersToAssociate" :key="b.id" :value="b.id">{{ b.name }}</option>
+              </select>
+              <p v-if="availableBindersToAssociate.length === 0" class="text-xs text-slate-400 mt-1.5">
+                Tous vos classeurs sont déjà associés à cette classe.
+              </p>
+            </div>
+            <div v-if="error" class="flex items-center gap-2 text-red-500 text-sm"><AlertCircle class="w-4 h-4 flex-shrink-0" />{{ error }}</div>
+          </div>
+          <div class="p-6 pt-0 flex gap-3">
+            <button @click="showAssociateModal = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition text-sm font-medium">Annuler</button>
+            <button @click="associateBinder" :disabled="!associateBinderId || creating"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white font-medium text-sm transition">
+              <Loader2 v-if="creating" class="w-4 h-4 animate-spin" />
+              <Plus v-else class="w-4 h-4" />
+              Associer
             </button>
           </div>
         </div>

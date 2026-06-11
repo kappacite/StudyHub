@@ -24,6 +24,15 @@ def _ensure_sqlite_dev_schema(flask_app):
 
     db.session.commit()
 
+    # Ensure is_public column exists in groups table for SQLite
+    if inspector.has_table("groups"):
+        columns = {column["name"] for column in inspector.get_columns("groups")}
+        if "is_public" not in columns:
+            db.session.execute(text("ALTER TABLE groups ADD COLUMN is_public BOOLEAN DEFAULT 0 NOT NULL"))
+            db.session.commit()
+            flask_app.logger.info("Colonne SQLite manquante ajoutée: groups.is_public")
+
+
 def create_app(config_name=None):
     flask_app = Flask(__name__)
     CORS(flask_app, resources={r"/api/.*": {"origins": "*", "allow_headers": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]}})

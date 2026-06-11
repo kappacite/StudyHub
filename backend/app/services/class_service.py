@@ -20,7 +20,8 @@ from app.models.user import User
 from app.schemas.class_schema import (
     ClassCreateSchema, AssignmentCreateSchema,
     AssignmentResponseSchema, AssignmentSummarySchema,
-    AssignmentProgressResponseSchema, ClassResponseSchema
+    AssignmentProgressResponseSchema, ClassResponseSchema,
+    BinderProgressResponseSchema, StudentMaterialsProgressResponseSchema
 )
 from app.middlewares.error_handler import (
     ResourceNotFoundError, ForbiddenError, ConflictError
@@ -123,6 +124,7 @@ class ClassService:
                     invite_code=g.invite_code,
                     type=g.type,
                     is_class=g.is_class,
+                    is_public=g.is_public,
                     created_by=g.created_by,
                     created_at=g.created_at,
                     members_count=members_count
@@ -147,7 +149,8 @@ class ClassService:
             invite_code=invite_code,
             created_by=user_id,
             type="class",
-            is_class=True
+            is_class=True,
+            is_public=data.is_public or False
         )
         created = self._group_dao.create(group)
         self._group_dao.add_group_member(created.id, user_id, "owner")
@@ -160,6 +163,7 @@ class ClassService:
             invite_code=created.invite_code,
             type=created.type,
             is_class=created.is_class,
+            is_public=created.is_public,
             created_by=created.created_by,
             created_at=created.created_at,
             members_count=members_count
@@ -319,3 +323,254 @@ class ClassService:
             a for a in all_asgns
             if a.due_date and now <= a.due_date <= deadline and a.status != "done"
         ]
+
+    def list_public_classes(self, search: Optional[str] = None) -> List[ClassResponseSchema]:
+        query = db.session.query(Group).filter(Group.is_class == True, Group.is_public == True)
+        if search:
+            query = query.filter(Group.name.ilike(f"%{search}%") | Group.description.ilike(f"%{search}%"))
+        classes = query.order_by(Group.created_at.desc()).all()
+        
+        response = []
+        for g in classes:
+            members_count = len(g.members_assoc)
+            response.append(
+                ClassResponseSchema(
+                    id=g.id,
+                    name=g.name,
+                    description=g.description,
+                    invite_code=g.invite_code,
+                    type=g.type,
+                    is_class=g.is_class,
+                    is_public=g.is_public,
+                    created_by=g.created_by,
+                    created_at=g.created_at,
+                    members_count=members_count
+                )
+            )
+        return response
+
+    def follow_class(self, user_id: int, class_id: int) -> ClassResponseSchema:
+        from app.middlewares.error_handler import ConflictError
+        cls = self._get_class_or_404(class_id)
+        if not cls.is_public:
+            raise ForbiddenError("Vous ne pouvez pas suivre une classe privée.")
+            
+        existing = self._group_dao.get_group_member(class_id, user_id)
+        if existing:
+            raise ConflictError("Vous suivez déjà cette classe ou en êtes membre.")
+            
+        self._group_dao.add_group_member(class_id, user_id, "follower")
+        db.session.commit()
+        
+        members_count = len(cls.members_assoc)
+        return ClassResponseSchema(
+            id=cls.id,
+            name=cls.name,
+            description=cls.description,
+            invite_code=cls.invite_code,
+            type=cls.type,
+            is_class=cls.is_class,
+            is_public=cls.is_public,
+            created_by=cls.created_by,
+            created_at=cls.created_at,
+            members_count=members_count
+        )
+
+    def get_class_materials_progress(
+        self, class_id: int, user_id: int
+    ) -> List[StudentMaterialsProgressResponseSchema]:
+        self._get_class_or_404(class_id)
+        self._require_teacher(class_id, user_id)
+
+        group = self._group_dao.get_by_id(class_id)
+        students = []
+        for m in group.members_assoc:
+            if m.role not in ("owner", "admin"):
+                students.append(m.user)
+
+        shared_binders = [assoc.binder for assoc in group.binders_assoc if assoc.binder]
+
+        results = []
+        from app.models.study_session import StudySession
+        from sqlalchemy import func
+
+        for student in students:
+            binders_progress = []
+            for binder in shared_binders:
+                card_ids = get_all_card_ids_in_binder(db.session, binder.id)
+                total_cards = len(card_ids)
+
+                if total_cards == 0:
+                    binders_progress.append(
+                        BinderProgressResponseSchema(
+                            binder_id=binder.id,
+                            binder_name=binder.name,
+                            cards_reviewed=0,
+                            total_cards=0,
+                            score_pct=100.0,
+                            last_reviewed_at=None
+                        )
+                    )
+                    continue
+
+                sessions = (
+                    db.session.query(
+                        StudySession.flashcard_id,
+                        func.sum(StudySession.cards_reviewed).label("reviewed"),
+                        func.sum(StudySession.cards_correct).label("correct"),
+                        func.max(StudySession.created_at).label("last_reviewed")
+                    )
+                    .filter(
+                        StudySession.user_id == student.id,
+                        StudySession.module == "flashcard",
+                        StudySession.flashcard_id.in_(card_ids)
+                    )
+                    .group_by(StudySession.flashcard_id)
+                    .all()
+                )
+
+                reviewed_card_ids = {s[0] for s in sessions if s[0]}
+                unique_reviewed = len(reviewed_card_ids)
+
+                total_reviewed = sum(s[1] or 0 for s in sessions)
+                total_correct = sum(s[2] or 0 for s in sessions)
+                score_pct = (total_correct / total_reviewed * 100.0) if total_reviewed > 0 else 0.0
+                last_reviewed_at = max(s[3] for s in sessions if s[3]) if sessions else None
+
+                binders_progress.append(
+                    BinderProgressResponseSchema(
+                        binder_id=binder.id,
+                        binder_name=binder.name,
+                        cards_reviewed=unique_reviewed,
+                        total_cards=total_cards,
+                        score_pct=score_pct,
+                        last_reviewed_at=last_reviewed_at
+                    )
+                )
+
+            results.append(
+                StudentMaterialsProgressResponseSchema(
+                    user_id=student.id,
+                    username=student.username,
+                    binders_progress=binders_progress
+                )
+            )
+
+        return results
+
+
+def get_all_card_ids_in_binder(db_session, binder_id: int) -> List[int]:
+    card_ids = []
+    
+    from app.models.deck import Deck
+    from app.models.flashcard import Flashcard
+    from app.models.binder import Binder
+    
+    def collect_cards(b_id):
+        decks = db_session.query(Deck).filter_by(binder_id=b_id).all()
+        for d in decks:
+            cards = db_session.query(Flashcard.id).filter_by(deck_id=d.id).all()
+            card_ids.extend([c[0] for c in cards])
+            
+        children = db_session.query(Binder.id).filter_by(parent_id=b_id).all()
+        for child_id_tup in children:
+            collect_cards(child_id_tup[0])
+            
+    collect_cards(binder_id)
+    return card_ids
+
+
+def update_assignment_progress(db_session, user_id: int, assignment_id: int):
+    assignment = db_session.get(Assignment, assignment_id)
+    if not assignment:
+        return
+        
+    card_ids = get_all_card_ids_in_binder(db_session, assignment.binder_id)
+    total_cards = len(card_ids)
+    
+    if total_cards == 0:
+        progress = db_session.get(AssignmentProgress, (assignment_id, user_id))
+        if not progress:
+            progress = AssignmentProgress(assignment_id=assignment_id, user_id=user_id)
+            db_session.add(progress)
+        progress.cards_reviewed = 0
+        progress.score_pct = 100.0
+        if not progress.completed_at:
+            progress.completed_at = datetime.utcnow()
+        db_session.commit()
+        return
+
+    from app.models.study_session import StudySession
+    
+    sessions = (
+        db_session.query(StudySession)
+        .filter(
+            StudySession.user_id == user_id,
+            StudySession.module == "flashcard",
+            StudySession.flashcard_id.in_(card_ids),
+            StudySession.created_at >= assignment.created_at - timedelta(seconds=5)
+        )
+        .all()
+    )
+    
+    reviewed_card_ids = {s.flashcard_id for s in sessions if s.flashcard_id}
+    unique_reviewed = len(reviewed_card_ids)
+    
+    total_reviewed = sum(s.cards_reviewed or 0 for s in sessions)
+    total_correct = sum(s.cards_correct or 0 for s in sessions)
+    score_pct = (total_correct / total_reviewed * 100.0) if total_reviewed > 0 else 0.0
+    
+    progress = db_session.get(AssignmentProgress, (assignment_id, user_id))
+    if not progress:
+        progress = AssignmentProgress(assignment_id=assignment_id, user_id=user_id)
+        db_session.add(progress)
+        
+    progress.cards_reviewed = unique_reviewed
+    progress.score_pct = score_pct
+    
+    if unique_reviewed >= total_cards:
+        if not progress.completed_at:
+            progress.completed_at = datetime.utcnow()
+    else:
+        progress.completed_at = None
+        
+    db_session.commit()
+
+
+def trigger_assignment_progress_update(db_session, user_id: int, card_id: int):
+    from app.models.flashcard import Flashcard
+    from app.models.deck import Deck
+    from app.models.binder import Binder
+    
+    card = db_session.get(Flashcard, card_id)
+    if not card or not card.deck_id:
+        return
+    deck = db_session.get(Deck, card.deck_id)
+    if not deck or not deck.binder_id:
+        return
+        
+    binder_ids = []
+    curr_binder_id = deck.binder_id
+    while curr_binder_id:
+        binder_ids.append(curr_binder_id)
+        b = db_session.get(Binder, curr_binder_id)
+        curr_binder_id = b.parent_id if b else None
+        
+    if not binder_ids:
+        return
+        
+    from app.models.assignment import Assignment
+    from app.models.group import GroupMember
+    
+    assignments = (
+        db_session.query(Assignment)
+        .join(GroupMember, Assignment.group_id == GroupMember.group_id)
+        .filter(
+            GroupMember.user_id == user_id,
+            Assignment.binder_id.in_(binder_ids)
+        )
+        .all()
+    )
+    
+    for asgn in assignments:
+        update_assignment_progress(db_session, user_id, asgn.id)

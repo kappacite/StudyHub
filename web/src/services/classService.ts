@@ -9,6 +9,7 @@ export interface ClassInfo {
   invite_code: string
   type: string
   is_class: boolean
+  is_public: boolean
   created_by: number | null
   created_at: string
   members_count: number
@@ -54,8 +55,8 @@ export interface AssignmentSummary {
 // ─── Service ────────────────────────────────────────────────────────────────
 
 const classService = {
-  async createClass(name: string, description?: string): Promise<ClassInfo> {
-    const resp = await api.post<ClassInfo>('/classes', { name, description })
+  async createClass(name: string, description?: string, isPublic?: boolean): Promise<ClassInfo> {
+    const resp = await api.post<ClassInfo>('/classes', { name, description, is_public: isPublic })
     return resp.data
   },
 
@@ -96,7 +97,38 @@ const classService = {
   async getMyAssignments(): Promise<AssignmentSummary[]> {
     const resp = await api.get<AssignmentSummary[]>('/assignments/mine')
     return resp.data
+  },
+
+  async getPublicClasses(search?: string): Promise<ClassInfo[]> {
+    const resp = await api.get<ClassInfo[]>('/classes/public', { params: { search } })
+    return resp.data
+  },
+
+  async followClass(classId: number): Promise<ClassInfo> {
+    const resp = await api.post<ClassInfo>(`/classes/${classId}/follow`)
+    return resp.data
+  },
+
+  async getClassMaterialsProgress(classId: number): Promise<StudentMaterialsProgress[]> {
+    const resp = await api.get<StudentMaterialsProgress[]>(`/classes/${classId}/materials/progress`)
+    return resp.data
   }
 }
 
+export interface BinderProgress {
+  binder_id: number
+  binder_name: string
+  cards_reviewed: number
+  total_cards: number
+  score_pct: number
+  last_reviewed_at: string | null
+}
+
+export interface StudentMaterialsProgress {
+  user_id: number
+  username: string
+  binders_progress: BinderProgress[]
+}
+
 export default classService
+

@@ -114,6 +114,15 @@ def get_student_progress(class_id: int, student_id: int):
     return jsonify([r.model_dump(mode="json") for r in result]), 200
 
 
+@classes_bp.route("/<int:class_id>/materials/progress", methods=["GET"])
+@jwt_required()
+def get_class_materials_progress(class_id: int):
+    user_id = int(get_jwt_identity())
+    service = _make_service()
+    result = service.get_class_materials_progress(class_id, user_id)
+    return jsonify([r.model_dump(mode="json") for r in result]), 200
+
+
 # ─── Vue élève — mes devoirs ──────────────────────────────────────────────────
 
 @assignments_mine_bp.route("/mine", methods=["GET"])
@@ -123,3 +132,24 @@ def get_my_assignments():
     service = _make_service()
     result = service.get_my_assignments(user_id)
     return jsonify([a.model_dump(mode="json") for a in result]), 200
+
+
+# ─── Classes Publiques & Follow ───────────────────────────────────────────────
+
+@classes_bp.route("/public", methods=["GET"])
+@jwt_required()
+def get_public_classes():
+    search = request.args.get("search")
+    service = _make_service()
+    result = service.list_public_classes(search)
+    return jsonify([c.model_dump(mode="json") for c in result]), 200
+
+
+@classes_bp.route("/<int:class_id>/follow", methods=["POST"])
+@jwt_required()
+def follow_class(class_id: int):
+    user_id = int(get_jwt_identity())
+    service = _make_service()
+    result = service.follow_class(user_id, class_id)
+    return jsonify(result.model_dump(mode="json")), 200
+

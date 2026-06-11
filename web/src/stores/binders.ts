@@ -11,6 +11,7 @@ export interface Binder {
   is_public?: boolean
   description?: string | null
   tags?: Tag[]
+  user_id?: number
 }
 
 interface BindersResponse {

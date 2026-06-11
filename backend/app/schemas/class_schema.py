@@ -9,6 +9,8 @@ class ClassCreateSchema(BaseModel):
     """Créer un groupe de type 'class' (espace de cours)."""
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
+    is_public: Optional[bool] = False
+
 
 
 class AssignmentCreateSchema(BaseModel):
@@ -72,8 +74,28 @@ class ClassResponseSchema(BaseModel):
     invite_code: str
     type: str
     is_class: bool
+    is_public: bool = False
     created_by: Optional[int] = None
     created_at: datetime
     members_count: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BinderProgressResponseSchema(BaseModel):
+    binder_id: int
+    binder_name: str
+    cards_reviewed: int
+    total_cards: int
+    score_pct: float
+    last_reviewed_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StudentMaterialsProgressResponseSchema(BaseModel):
+    user_id: int
+    username: str
+    binders_progress: List[BinderProgressResponseSchema] = []
 
     model_config = ConfigDict(from_attributes=True)

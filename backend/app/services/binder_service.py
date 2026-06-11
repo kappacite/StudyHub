@@ -12,18 +12,14 @@ class BinderService:
         self._binder_dao = binder_dao
         self._tag_service = TagService(TagDAO(binder_dao.db))
 
-    def _get_binder_or_404(self, binder_id: int, user_id: int) -> Binder:
-        binder = self._binder_dao.get_by_id(binder_id)
-        if not binder:
-            raise ResourceNotFoundError("Classeur introuvable.")
-        if binder.user_id != user_id:
-            raise ForbiddenError("Accès interdit à ce classeur.")
-        return binder
+    def _get_binder_or_404(self, binder_id: int, user_id: int, write_required: bool = False) -> Binder:
+        from app.utils.security import check_binder_access
+        return check_binder_access(self._binder_dao.db, binder_id, user_id, write_required)
 
     def create_binder(self, user_id: int, data: BinderCreate) -> BinderResponse:
         # Si un parent_id est spécifié, vérifier son existence et son appartenance
         if data.parent_id is not None:
-            self._get_binder_or_404(data.parent_id, user_id)
+            self._get_binder_or_404(data.parent_id, user_id, write_required=True)
             
         binder = Binder(
             name=data.name,
@@ -38,7 +34,7 @@ class BinderService:
         return BinderResponse.model_validate(created)
 
     def get_binder(self, user_id: int, binder_id: int) -> BinderResponse:
-        binder = self._get_binder_or_404(binder_id, user_id)
+        binder = self._get_binder_or_404(binder_id, user_id, write_required=False)
         return BinderResponse.model_validate(binder)
 
     def get_binders(
@@ -56,7 +52,7 @@ class BinderService:
         return [BinderResponse.model_validate(b) for b in binders], total
 
     def update_binder(self, user_id: int, binder_id: int, data: BinderUpdate) -> BinderResponse:
-        binder = self._get_binder_or_404(binder_id, user_id)
+        binder = self._get_binder_or_404(binder_id, user_id, write_required=True)
         
         if data.name is not None:
             binder.name = data.name
@@ -64,7 +60,7 @@ class BinderService:
         if data.parent_id is not None:
             if data.parent_id == binder_id:
                 raise ValidationError("Un classeur ne peut pas être son propre parent.")
-            self._get_binder_or_404(data.parent_id, user_id)
+            self._get_binder_or_404(data.parent_id, user_id, write_required=True)
             binder.parent_id = data.parent_id
         elif "parent_id" in data.model_fields_set and data.parent_id is None:
             binder.parent_id = None
@@ -79,7 +75,7 @@ class BinderService:
         return BinderResponse.model_validate(updated)
 
     def delete_binder(self, user_id: int, binder_id: int) -> None:
-        binder = self._get_binder_or_404(binder_id, user_id)
+        binder = self._get_binder_or_404(binder_id, user_id, write_required=True)
         self._binder_dao.delete(binder)
 
     def get_all_binders_flat(self, user_id: int) -> List[BinderResponse]:

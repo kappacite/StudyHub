@@ -26,27 +26,40 @@
 
       <!-- Action Buttons -->
       <div class="flex items-center gap-3">
-        <button 
-          v-if="currentBinderId !== null"
-          @click="openShareModal"
-          class="inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-semibold transition-all active:scale-95"
-          :class="[
-            currentBinder?.is_public 
-              ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:border-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' 
-              : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-350'
-          ]"
-        >
-          <Globe class="w-4 h-4" />
-          {{ currentBinder?.is_public ? 'Public' : 'Partager' }}
-        </button>
+        <template v-if="isOwner">
+          <button 
+            v-if="currentBinderId !== null"
+            @click="openShareModal"
+            class="inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-semibold transition-all active:scale-95"
+            :class="[
+              currentBinder?.is_public 
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:border-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' 
+                : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-350'
+            ]"
+          >
+            <Globe class="w-4 h-4" />
+            {{ currentBinder?.is_public ? 'Public' : 'Partager' }}
+          </button>
 
-        <button 
-          @click="openCreateModal"
-          class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15"
-        >
-          <Plus class="w-4 h-4" />
-          Nouveau dossier
-        </button>
+          <button 
+            @click="openCreateModal"
+            class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15"
+          >
+            <Plus class="w-4 h-4" />
+            Nouveau dossier
+          </button>
+        </template>
+        <template v-else>
+          <button 
+            @click="cloneBinder"
+            :disabled="cloning"
+            class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15 disabled:opacity-50"
+          >
+            <Loader2 v-if="cloning" class="w-4 h-4 animate-spin" />
+            <Copy v-else class="w-4 h-4" />
+            {{ cloning ? 'Copie en cours...' : 'Créer une copie personnelle' }}
+          </button>
+        </template>
       </div>
     </div>
 
@@ -70,6 +83,23 @@
         @click="filterByTag(tag.id)"
       >
         {{ tag.name }}
+      </button>
+    </div>
+
+    <!-- Read only / Follow class warning banner -->
+    <div v-if="!isOwner" class="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-850 dark:text-amber-300">
+      <div class="flex items-center gap-2">
+        <Eye class="w-5 h-5 text-amber-500 flex-shrink-0" />
+        <span class="text-xs font-semibold">Vous visualisez ce dossier en lecture seule (cours suivi). Pour le modifier, veuillez créer une copie personnelle.</span>
+      </div>
+      <button 
+        @click="cloneBinder"
+        :disabled="cloning"
+        class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+      >
+        <Loader2 v-if="cloning" class="w-3.5 h-3.5 animate-spin" />
+        <Copy v-else class="w-3.5 h-3.5" />
+        Créer une copie
       </button>
     </div>
 
@@ -106,6 +136,7 @@
             </div>
             
             <button 
+              v-if="isOwner"
               @click.stop="confirmDelete(folder)" 
               class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
               title="Supprimer"
@@ -324,8 +355,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import api from '../../services/api'
 import { useBindersStore } from '../../stores/binders'
 import type { Binder } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
@@ -333,15 +365,41 @@ import { useDecksStore } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
-import { FolderClosed, Plus, ChevronRight, FileText, Layers, Trash2, Globe } from '@lucide/vue'
+import { FolderClosed, Plus, ChevronRight, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2 } from 'lucide-vue-next'
 
 const bindersStore = useBindersStore()
 const notesStore = useNotesStore()
 const decksStore = useDecksStore()
 const tagsStore = useTagsStore()
 const router = useRouter()
+const route = useRoute()
 
 const currentBinderId = ref<number | null>(null)
+
+async function fetchMissingBinder(binderId: number) {
+  try {
+    const response = await api.get(`/binders/${binderId}`)
+    const fetchedBinder = response.data
+    if (!bindersStore.binders.some(b => b.id === fetchedBinder.id)) {
+      bindersStore.binders.push(fetchedBinder)
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement du classeur', error)
+  }
+}
+
+watch(() => route.params.id, (newId) => {
+  currentBinderId.value = newId ? Number(newId) : null
+}, { immediate: true })
+
+watch(currentBinderId, async (newVal) => {
+  if (newVal !== null) {
+    const exists = bindersStore.binders.some(b => b.id === newVal)
+    if (!exists) {
+      await fetchMissingBinder(newVal)
+    }
+  }
+}, { immediate: true })
 const showModal = ref(false)
 const newFolderName = ref('')
 const folderTags = ref<Tag[]>([])
@@ -425,6 +483,33 @@ const currentBinder = computed(() => {
   if (currentBinderId.value === null) return null
   return bindersStore.binders.find(b => b.id === currentBinderId.value) || null
 })
+
+import { useAuthStore } from '../../stores/auth'
+const authStore = useAuthStore()
+const currentUserId = computed(() => authStore.user?.id)
+
+const isOwner = computed(() => {
+  if (currentBinderId.value === null) return true
+  return !currentBinder.value || currentBinder.value.user_id === currentUserId.value
+})
+
+const cloning = ref(false)
+async function cloneBinder() {
+  if (currentBinderId.value === null) return
+  cloning.value = true
+  try {
+    const response = await api.post(`/packages/${currentBinderId.value}/clone`)
+    const cloned = response.data
+    await bindersStore.fetchBinders()
+    router.push(`/binders/${cloned.id}`)
+  } catch (err) {
+    console.error('Erreur lors du clonage du classeur', err)
+    alert('Impossible de copier ce classeur.')
+  } finally {
+    cloning.value = false
+  }
+}
+
 
 function openShareModal() {
   if (!currentBinder.value) return

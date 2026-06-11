@@ -14,6 +14,8 @@ class Group(db.Model):
     created_at = Column(DateTime, server_default=func.now())
     type = Column(String(10), default="study", nullable=False)       # "study" | "class"
     is_class = Column(Boolean, default=False, nullable=False)        # shortcut
+    is_public = Column(Boolean, default=False, nullable=False)
+
 
     # Relations
     owner = relationship("User", foreign_keys=[created_by])

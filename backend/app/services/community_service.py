@@ -43,18 +43,32 @@ class CommunityService:
 
     def clone_package(self, user_id: int, binder_id: int) -> BinderResponse:
         # 1. Récupérer le classeur source
-        # Il doit être public ou appartenir à l'utilisateur lui-même
-        parent_binder = (
-            db.session.query(Binder)
-            .filter(
-                Binder.id == binder_id,
-                or_(Binder.is_public == True, Binder.user_id == user_id)
-            )
-            .first()
-        )
-        
+        # Il doit être public, appartenir à l'utilisateur, ou être partagé dans un de ses groupes/classes
+        parent_binder = db.session.query(Binder).filter(Binder.id == binder_id).first()
         if not parent_binder:
-            raise ResourceNotFoundError("Package/Classeur public introuvable.")
+            raise ResourceNotFoundError("Package/Classeur introuvable.")
+            
+        if parent_binder.user_id != user_id and not parent_binder.is_public:
+            from app.models.group import GroupBinder, GroupMember
+            curr_id = binder_id
+            binder_ids = []
+            while curr_id:
+                binder_ids.append(curr_id)
+                b = db.session.get(Binder, curr_id)
+                curr_id = b.parent_id if b else None
+                
+            membership = (
+                db.session.query(GroupMember)
+                .join(GroupBinder, GroupMember.group_id == GroupBinder.group_id)
+                .filter(
+                    GroupBinder.binder_id.in_(binder_ids),
+                    GroupMember.user_id == user_id
+                )
+                .first()
+            )
+            if not membership:
+                raise ResourceNotFoundError("Package/Classeur public introuvable.")
+
             
         # 2. Fonction récursive de clonage profond
         def clone_binder_recursive(old_binder: Binder, new_parent_id: Optional[int] = None) -> Binder:

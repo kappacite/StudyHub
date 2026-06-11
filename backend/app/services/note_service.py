@@ -24,19 +24,26 @@ class NoteService:
         self._deck_dao = deck_dao
         self._flashcard_dao = flashcard_dao
 
-    def _get_note_or_404(self, note_id: int, user_id: int) -> Note:
+    def _get_note_or_404(self, note_id: int, user_id: int, write_required: bool = False) -> Note:
         note = self._note_dao.get_by_id(note_id)
         if not note:
             raise ResourceNotFoundError("Note introuvable.")
         if note.user_id != user_id:
-            raise ForbiddenError("Accès interdit à cette note.")
+            if note.binder_id:
+                from app.utils.security import check_binder_access
+                check_binder_access(self._note_dao.db, note.binder_id, user_id, write_required=write_required)
+            else:
+                raise ForbiddenError("Accès interdit à cette note.")
+        elif write_required and note.binder_id:
+            from app.utils.security import check_binder_access
+            check_binder_access(self._note_dao.db, note.binder_id, user_id, write_required=True)
         return note
+
 
     def create_note(self, user_id: int, data: NoteCreate) -> NoteResponse:
         if data.binder_id is not None:
-            binder = self._binder_dao.get_by_id(data.binder_id)
-            if not binder or binder.user_id != user_id:
-                raise ForbiddenError("Accès interdit à ce classeur.")
+            from app.utils.security import check_binder_access
+            check_binder_access(self._note_dao.db, data.binder_id, user_id, write_required=True)
                 
         note = Note(
             title=data.title,
@@ -68,13 +75,13 @@ class NoteService:
         return [NoteResponse.model_validate(n) for n in notes], total
 
     def get_note(self, user_id: int, note_id: int) -> NoteResponse:
-        note = self._get_note_or_404(note_id, user_id)
+        note = self._get_note_or_404(note_id, user_id, write_required=False)
         if self._deck_dao and self._flashcard_dao:
             self._sync_phantom_deck(note)
         return NoteResponse.model_validate(note)
 
     def update_note(self, user_id: int, note_id: int, data: NoteUpdate) -> NoteResponse:
-        note = self._get_note_or_404(note_id, user_id)
+        note = self._get_note_or_404(note_id, user_id, write_required=True)
         
         if data.title is not None:
             note.title = data.title
@@ -83,9 +90,8 @@ class NoteService:
             note.content = data.content
             
         if data.binder_id is not None:
-            binder = self._binder_dao.get_by_id(data.binder_id)
-            if not binder or binder.user_id != user_id:
-                raise ForbiddenError("Accès interdit à ce classeur.")
+            from app.utils.security import check_binder_access
+            check_binder_access(self._note_dao.db, data.binder_id, user_id, write_required=True)
             note.binder_id = data.binder_id
         elif "binder_id" in data.model_fields_set and data.binder_id is None:
             note.binder_id = None
@@ -107,7 +113,7 @@ class NoteService:
         return NoteResponse.model_validate(updated)
 
     def delete_note(self, user_id: int, note_id: int) -> None:
-        note = self._get_note_or_404(note_id, user_id)
+        note = self._get_note_or_404(note_id, user_id, write_required=True)
         self._note_dao.delete(note)
 
     def _sync_phantom_deck(self, note: Note) -> None:
