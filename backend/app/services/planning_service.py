@@ -1,5 +1,5 @@
 from datetime import datetime, date, timedelta, time
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.dao.flashcard_dao import FlashcardDAO
 from app.dao.deck_dao import DeckDAO
 from app.models.flashcard import Flashcard
@@ -67,7 +67,7 @@ class PlanningService:
             
         return {"days": result}
 
-    def advance_review(self, user_id: int, deck_id: int, card_ids: List[int]) -> List[Flashcard]:
+    def advance_review(self, user_id: int, deck_id: int, card_ids: Optional[List[int]] = None, date_str: Optional[str] = None) -> List[Flashcard]:
         """
         Valide la demande de révision anticipée et retourne les cartes concernées.
         
@@ -82,12 +82,29 @@ class PlanningService:
         if deck.user_id != user_id:
             raise ForbiddenError("Accès interdit à ce deck.")
             
-        cards = (
-            self._flashcard_dao.db.query(Flashcard)
-            .filter(
-                Flashcard.deck_id == deck_id,
-                Flashcard.id.in_(card_ids)
+        if card_ids:
+            cards = (
+                self._flashcard_dao.db.query(Flashcard)
+                .filter(
+                    Flashcard.deck_id == deck_id,
+                    Flashcard.id.in_(card_ids)
+                )
+                .all()
             )
-            .all()
-        )
+        elif date_str:
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            date_start = datetime.combine(target_date, time.min)
+            date_end = datetime.combine(target_date, time.max)
+            cards = (
+                self._flashcard_dao.db.query(Flashcard)
+                .filter(
+                    Flashcard.deck_id == deck_id,
+                    Flashcard.next_review >= date_start,
+                    Flashcard.next_review <= date_end
+                )
+                .all()
+            )
+        else:
+            cards = []
+            
         return cards

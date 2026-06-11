@@ -70,6 +70,6 @@ def post_planning_advance():
             }
         }), 400
         
-    cards = planning_service.advance_review(user_id, req_data.deck_id, req_data.card_ids)
+    cards = planning_service.advance_review(user_id, req_data.deck_id, req_data.card_ids, req_data.date)
     response_data = [FlashcardResponse.model_validate(c).model_dump() for c in cards]
     return jsonify(response_data), 200

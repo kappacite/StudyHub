@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import List
+from typing import List, Optional
 
 class DeckBreakdownSchema(BaseModel):
     deck_id: int
@@ -20,4 +20,5 @@ class PlanningCalendarResponse(BaseModel):
 
 class PlanningAdvanceRequest(BaseModel):
     deck_id: int
-    card_ids: List[int]
+    card_ids: Optional[List[int]] = None
+    date: Optional[str] = None
