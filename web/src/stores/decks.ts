@@ -208,6 +208,37 @@ export const useDecksStore = defineStore('decks', () => {
     }
   }
 
+  async function importAnki(file: File, binderId: number | null = null) {
+    loading.value = true
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      if (binderId !== null) {
+        formData.append('binder_id', String(binderId))
+      }
+      
+      const response = await api.post<{
+        deck_id: number
+        deck_name: string
+        cards_imported: number
+        cards_skipped: number
+        warnings: string[]
+      }>('/import/anki', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      await fetchDecks()
+      return response.data
+    } catch (error) {
+      console.error('Erreur lors de l\'importation Anki', error)
+      throw error
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     decks,
     cards,
@@ -222,6 +253,7 @@ export const useDecksStore = defineStore('decks', () => {
     updateCard,
     deleteCard,
     fetchStudyCards,
-    answerCard
+    answerCard,
+    importAnki
   }
 })

@@ -610,7 +610,7 @@ Purement frontend + appel à l'endpoint `POST /api/v1/stats/sessions` déjà exi
 
 ## 6. Import depuis Anki
 
-**Statut :** `[ ] Non démarré`
+**Statut :** `[x] Terminé`
 
 **Dépendances :** Aucune
 
@@ -1164,6 +1164,7 @@ def test_teacher_progress_view_forbidden_for_student()
 | 2026-06-11 | Planning des révisions | 3.2.1 à 3.2.13 | Backend /planning/calendar et /planning/advance implémentés et testés (SM-2, anticipation). Vue frontend PlanningPage avec sélection de deck et intégration de calendrier. |
 | 2026-06-11 | Recherche globale full-text | 4.2.1 à 4.2.7 | Backend SearchDAO/SearchService (multi-dialecte PostgreSQL/SQLite) et endpoint de recherche implémentés. Composable useSearch et composant SearchModal créés avec raccourci Ctrl+K / Cmd+K et auto-sélection de deck/diagramme par ID. |
 | 2026-06-11 | Minuteur Pomodoro | 5.2.1 à 5.2.5 | Composable usePomodoro et Pinia store pomodoro créés. Notification push natives (Capacitor) et web. Bips sonores auto-générés. Composant flottant PomodoroTimer avec panneau de paramètres. Logs de sessions. |
+| 2026-06-11 | Import depuis Anki | 6.2.1 à 6.2.5 | Backend anki_parser (décompression zip, lecture collection.anki2 SQLite en mémoire), ImportService et endpoint /import/anki créés et testés avec succès (8/8 tests passés). Modal frontend AnkiImportModal et bouton intégrés dans Decks.vue. |
 
 ---
 

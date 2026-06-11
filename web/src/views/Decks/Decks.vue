@@ -8,13 +8,23 @@
           <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Créez et révisez vos cartes mémoire avec l'algorithme de répétition espacée SM-2</p>
         </div>
         
-        <button 
-          @click="openCreateDeckModal"
-          class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15"
-        >
-          <Plus class="w-4 h-4" />
-          Nouveau Deck
-        </button>
+        <div class="flex items-center gap-3">
+          <button 
+            @click="showAnkiModal = true"
+            class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+          >
+            <Upload class="w-4 h-4 text-indigo-500" />
+            Importer Anki
+          </button>
+
+          <button 
+            @click="openCreateDeckModal"
+            class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15 cursor-pointer"
+          >
+            <Plus class="w-4 h-4" />
+            Nouveau Deck
+          </button>
+        </div>
       </div>
 
       <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
@@ -261,6 +271,13 @@
         </form>
       </div>
     </div>
+
+    <!-- Anki Import Modal -->
+    <AnkiImportModal 
+      :is-open="showAnkiModal" 
+      @close="showAnkiModal = false" 
+      @success="decksStore.fetchDecks"
+    />
   </div>
 </template>
 
@@ -272,7 +289,8 @@ import type { Deck, Flashcard } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
-import { Plus, ChevronRight, Layers, Edit, Trash2 } from '@lucide/vue'
+import { Plus, ChevronRight, Layers, Edit, Trash2, Upload } from '@lucide/vue'
+import AnkiImportModal from '../../components/decks/AnkiImportModal.vue'
 
 const decksStore = useDecksStore()
 const tagsStore = useTagsStore()
@@ -281,6 +299,7 @@ const route = useRoute()
 
 const selectedDeck = ref<Deck | null>(null)
 const selectedTagId = ref<number | null>(null)
+const showAnkiModal = ref(false)
 
 // Deck Form Modal
 const showDeckModal = ref(false)
