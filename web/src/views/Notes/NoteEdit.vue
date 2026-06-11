@@ -30,15 +30,16 @@
         <div class="flex flex-col border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 z-10 no-print">
           
           <!-- Row 1: Global Actions & Title -->
-          <div class="flex items-center justify-between px-6 py-3 border-b border-slate-50 dark:border-slate-850/60">
-            <div class="flex items-center gap-4 flex-1">
-              <!-- Back button -->
+          <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-slate-50 dark:border-slate-850/60">
+            <div class="flex min-w-[18rem] flex-1 items-center gap-4">
+              <!-- Sidebar toggle -->
               <button 
-                @click="goBack" 
-                class="text-sm font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1.5 transition-colors"
+                @click="toggleShortcutSidebar" 
+                class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-800 dark:text-slate-400 dark:hover:border-indigo-900 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-400"
+                type="button"
+                title="Afficher la barre de raccourcis"
               >
-                <ChevronLeft class="w-4.5 h-4.5" />
-                Retour
+                <Menu class="h-5 w-5" />
               </button>
               
               <div class="h-5 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
@@ -54,7 +55,7 @@
             </div>
 
             <!-- Header Right Controls -->
-            <div class="flex items-center gap-3">
+            <div class="flex max-w-full flex-wrap items-center justify-end gap-2">
               <!-- Save Status -->
               <span class="text-xs font-semibold text-slate-400 flex items-center gap-1.5 mr-2">
                 <span class="w-2 h-2 rounded-full bg-emerald-500" :class="[isSaving ? 'animate-pulse' : '']"></span>
@@ -71,8 +72,8 @@
                 <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">{{ b.name }}</option>
               </select>
 
-              <div class="w-72">
-                <TagSelector v-model="noteTags" @change="saveNoteTags" />
+              <div class="w-48 sm:w-56">
+                <TagSelector v-model="noteTags" compact @change="saveNoteTags" />
               </div>
 
               <!-- Collapsible Settings Toggle (Context & Links) -->
@@ -401,6 +402,15 @@
             >
               <Brain class="w-4 h-4 text-emerald-500" />
               Page blanche (IA)
+            </button>
+
+            <!-- QCM (IA) -->
+            <button 
+              @click="router.push(`/notes/${noteId}/quiz`)"
+              class="inline-flex items-center gap-2 px-4 py-2 border border-indigo-250 dark:border-indigo-900 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 active:scale-95 transition-all"
+            >
+              <HelpCircle class="w-4 h-4 text-indigo-500" />
+              QCM (IA)
             </button>
 
             <!-- View Mode Toggler -->
@@ -952,7 +962,8 @@ import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
 import { 
-  ChevronLeft, 
+  ChevronLeft,
+  Menu,
   Eye, 
   Edit3, 
   FileDown,
@@ -1016,6 +1027,10 @@ const isEditMode = computed({
 const showSettings = ref(false)
 const showHelpModal = ref(false)
 const isLivePreviewActive = ref(false)
+
+function toggleShortcutSidebar() {
+  window.dispatchEvent(new CustomEvent('studyhub:toggle-sidebar'))
+}
 
 // Evaluation SM-2 Popup Modal State
 const evaluationModal = ref({
