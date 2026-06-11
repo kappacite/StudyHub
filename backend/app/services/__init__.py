@@ -7,6 +7,8 @@ from app.services.note_service import NoteService
 from app.services.diagram_service import DiagramService
 from app.services.pdf_service import PDFService
 from app.services.stats_service import StatsService
+from app.services.focus_service import FocusService
+from app.services.planning_service import PlanningService
 
 __all__ = [
     "AuthService",
@@ -17,5 +19,7 @@ __all__ = [
     "NoteService",
     "DiagramService",
     "PDFService",
-    "StatsService"
+    "StatsService",
+    "FocusService",
+    "PlanningService"
 ]

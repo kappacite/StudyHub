@@ -10,6 +10,9 @@ from app.schemas.stats_schema import (
     StudySessionCreate, StudySessionResponse, StatsOverviewResponse, 
     HeatmapItem, DeckStatsResponse
 )
+from app.schemas.planning_schema import (
+    DeckBreakdownSchema, PlanningDaySchema, PlanningCalendarResponse, PlanningAdvanceRequest
+)
 
 __all__ = [
     "UserBase", "UserCreate", "UserUpdate", "UserResponse",
@@ -21,5 +24,6 @@ __all__ = [
     "DiagramBase", "DiagramCreate", "DiagramUpdate", "DiagramResponse",
     "PDFBase", "PDFCreate", "PDFResponse",
     "StudySessionCreate", "StudySessionResponse", "StatsOverviewResponse",
-    "HeatmapItem", "DeckStatsResponse"
+    "HeatmapItem", "DeckStatsResponse",
+    "DeckBreakdownSchema", "PlanningDaySchema", "PlanningCalendarResponse", "PlanningAdvanceRequest"
 ]
