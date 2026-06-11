@@ -170,7 +170,7 @@
                   @click="addNode('rect')"
                   class="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
                 >
-                  <div class="w-8 h-5 bg-indigo-500 rounded border border-indigo-600"></div>
+                  <div class="h-8 w-12 rounded-lg border-2 border-indigo-600 bg-indigo-500 shadow-sm"></div>
                   <span class="text-[11px] font-bold">Concept (Rectangle)</span>
                 </button>
 
@@ -178,7 +178,7 @@
                   @click="addNode('circle')"
                   class="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
                 >
-                  <div class="w-7 h-7 rounded-full bg-emerald-500 border border-emerald-600"></div>
+                  <div class="h-10 w-10 rounded-full border-2 border-emerald-600 bg-emerald-500 shadow-sm"></div>
                   <span class="text-[11px] font-bold">Événement (Cercle)</span>
                 </button>
 
@@ -186,7 +186,7 @@
                   @click="addNode('diamond')"
                   class="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
                 >
-                  <div class="w-5 h-5 rotate-45 bg-amber-500 border border-amber-600 mx-1"></div>
+                  <div class="mx-2 h-8 w-8 rotate-45 border-2 border-amber-600 bg-amber-500 shadow-sm"></div>
                   <span class="text-[11px] font-bold">Décision (Losange)</span>
                 </button>
               </div>
@@ -258,13 +258,13 @@
 
                 <div>
                   <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Couleur</label>
-                  <div class="flex flex-wrap gap-1.5">
+                  <div class="flex flex-wrap gap-2">
                     <button 
                       v-for="color in colors" 
                       :key="color.bg"
                       @click="selectedNode.color = color.bg"
-                      class="w-5.5 h-5.5 rounded-full border transition-transform"
-                      :class="[color.bg, selectedNode.color === color.bg ? 'border-slate-900 scale-110 dark:border-white' : 'border-transparent']"
+                      class="h-8 w-8 rounded-full border-2 shadow-sm transition-transform hover:scale-105"
+                      :class="[color.bg, selectedNode.color === color.bg ? 'border-slate-900 scale-110 ring-2 ring-indigo-200 dark:border-white dark:ring-indigo-900' : 'border-white dark:border-slate-900']"
                       :title="color.name"
                     ></button>
                   </div>
