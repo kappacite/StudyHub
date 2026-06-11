@@ -494,30 +494,30 @@ GET /api/v1/search?q=<query>&types=note,deck,flashcard,diagram&limit=20
 
 #### Backend
 
-- [ ] **4.2.1** Créer `backend/app/dao/search_dao.py`.
+- [x] **4.2.1** Créer `backend/app/dao/search_dao.py`.
   - `search_all(user_id, query, types, limit)` — détecte le moteur DB (PostgreSQL vs SQLite) et utilise la stratégie appropriée.
   - Méthode privée `_pg_search` (tsvector) et `_sqlite_search` (LIKE).
   `commit: feat(search): add SearchDAO with dual-engine strategy`
 
-- [ ] **4.2.2** Générer la migration pour les colonnes `search_vector` et les triggers PostgreSQL.
+- [x] **4.2.2** Générer la migration pour les colonnes `search_vector` et les triggers PostgreSQL.
   La migration doit être no-op sur SQLite (vérifier le dialecte dans la migration Alembic).
   `commit: chore(db): migration add full-text search vectors`
 
-- [ ] **4.2.3** Créer `backend/app/services/search_service.py`.
+- [x] **4.2.3** Créer `backend/app/services/search_service.py`.
   - Sanitise la query (longueur min 2 chars, max 100 chars, strip caractères spéciaux)
   - Formate les extraits (`excerpt`) : 150 chars autour du premier match, avec `<mark>` autour du terme trouvé
   `commit: feat(search): add SearchService with excerpt formatting`
 
-- [ ] **4.2.4** Créer `backend/app/api/v1/search.py` avec l'endpoint GET.
+- [x] **4.2.4** Créer `backend/app/api/v1/search.py` avec l'endpoint GET.
   `commit: feat(search): add /search REST endpoint`
 
 #### Frontend
 
-- [ ] **4.2.5** Créer `web/src/composables/useSearch.ts`.
+- [x] **4.2.5** Créer `web/src/composables/useSearch.ts`.
   Gère : debounce 300ms, AbortController pour annuler les requêtes en vol, état `isLoading`, `results`, `error`.
   `commit: feat(search): add useSearch composable`
 
-- [ ] **4.2.6** Créer `web/src/components/ui/SearchModal.vue`.
+- [x] **4.2.6** Créer `web/src/components/ui/SearchModal.vue`.
   - Overlay avec fond semi-transparent, animation d'apparition
   - Input avec focus automatique à l'ouverture
   - Résultats groupés par type avec icônes
@@ -526,7 +526,7 @@ GET /api/v1/search?q=<query>&types=note,deck,flashcard,diagram&limit=20
   - État vide, état chargement, état erreur
   `commit: feat(search): add SearchModal component`
 
-- [ ] **4.2.7** Enregistrer le raccourci `Ctrl+K` / `Cmd+K` dans `AppLayout.vue` pour ouvrir `SearchModal`.
+- [x] **4.2.7** Enregistrer le raccourci `Ctrl+K` / `Cmd+K` dans `AppLayout.vue` pour ouvrir `SearchModal`.
   `commit: feat(search): register global keyboard shortcut`
 
 ---
@@ -573,24 +573,24 @@ Purement frontend + appel à l'endpoint `POST /api/v1/stats/sessions` déjà exi
 
 ### 5.2 Étapes de développement
 
-- [ ] **5.2.1** Créer `web/src/composables/usePomodoro.ts`.
+- [x] **5.2.1** Créer `web/src/composables/usePomodoro.ts`.
   État : `phase` ("work" | "break" | "idle"), `remaining_seconds`, `session_count`, `is_running`.
   Actions : `start()`, `pause()`, `reset()`, `skip()`.
   Configuration : `work_minutes` (défaut 25), `break_minutes` (défaut 5), `long_break_minutes` (défaut 15, toutes les 4 sessions).
   À la fin d'une phase "work" : appeler `POST /api/v1/stats/sessions` avec `module: "pomodoro"`, `duration_seconds`.
   `commit: feat(pomodoro): add usePomodoro composable`
 
-- [ ] **5.2.2** Créer `web/src/components/ui/PomodoroTimer.vue`.
+- [x] **5.2.2** Créer `web/src/components/ui/PomodoroTimer.vue`.
   Widget compact (coin bas-droite), toujours visible quand actif. Affiche le countdown, la phase, le compte de sessions. Boutons play/pause/reset. Cercle SVG animé comme indicateur de progression.
   `commit: feat(pomodoro): add PomodoroTimer widget component`
 
-- [ ] **5.2.3** Intégrer `PomodoroTimer` dans `AppLayout.vue` (visible sur toutes les pages).
+- [x] **5.2.3** Intégrer `PomodoroTimer` dans `AppLayout.vue` (visible sur toutes les pages).
   `commit: feat(pomodoro): integrate PomodoroTimer in global layout`
 
-- [ ] **5.2.4** Ajouter un écran de configuration dans les Settings (durées personnalisables, activer/désactiver les sons).
+- [x] **5.2.4** Ajouter un écran de configuration dans les Settings (durées personnalisables, activer/désactiver les sons).
   `commit: feat(pomodoro): add pomodoro settings`
 
-- [ ] **5.2.5** Intégrer `@capacitor/local-notifications` : déclencher une notification à la fin de chaque phase. Conditionner à `usePlatform().isNative`.
+- [x] **5.2.5** Intégrer `@capacitor/local-notifications` : déclencher une notification à la fin de chaque phase. Conditionner à `usePlatform().isNative`.
   `commit: feat(pomodoro): add native notifications via Capacitor`
 
 ---
@@ -651,32 +651,32 @@ Le format Anki stocke les cartes dans la table `notes` (≠ nos notes) avec un c
 
 #### Backend
 
-- [ ] **6.2.1** Créer `backend/app/utils/anki_parser.py`.
+- [x] **6.2.1** Créer `backend/app/utils/anki_parser.py`.
   - `parse_apkg(file_bytes)` → `AnkiDeck(name, cards: List[AnkiCard])`
   - Décompresse le ZIP, ouvre le SQLite en mémoire, lit `notes.flds` et `col.decks`
   - Gère les erreurs : fichier corrompu, ZIP invalide, SQLite illisible
   `commit: feat(import): add Anki .apkg parser utility`
 
-- [ ] **6.2.2** Créer `backend/app/services/import_service.py`.
+- [x] **6.2.2** Créer `backend/app/services/import_service.py`.
   - `import_anki(user_id, file_bytes, binder_id)` → résultat d'import
   - Valide le fichier, parse, crée le `Deck` via `DeckDAO`, crée les `Flashcard` via `FlashcardDAO`
   - Initialise les paramètres SM-2 par défaut pour chaque carte (`ease_factor=2.5`, `interval=0`, `repetitions=0`, `next_review=today`)
   - Les cartes HTML Anki (contenu avec balises) sont importées telles quelles ; ajouter un warning si détecté
   `commit: feat(import): add ImportService for Anki decks`
 
-- [ ] **6.2.3** Créer `backend/app/api/v1/imports.py` avec l'endpoint POST.
+- [x] **6.2.3** Créer `backend/app/api/v1/imports.py` avec l'endpoint POST.
   `commit: feat(import): add /import/anki REST endpoint`
 
 #### Frontend
 
-- [ ] **6.2.4** Créer `web/src/components/decks/AnkiImportModal.vue`.
+- [x] **6.2.4** Créer `web/src/components/decks/AnkiImportModal.vue`.
   - Zone de drop de fichier (drag & drop + input classique)
   - Validation côté client : extension `.apkg`, taille < 50 MB
   - Sélecteur de classeur de destination (optionnel)
   - Affichage du résultat : X cartes importées, warnings éventuels
   `commit: feat(import): add AnkiImportModal component`
 
-- [ ] **6.2.5** Ajouter un bouton "Importer depuis Anki" dans la vue `Decks.vue`.
+- [x] **6.2.5** Ajouter un bouton "Importer depuis Anki" dans la vue `Decks.vue`.
   `commit: feat(import): add import button in Decks view`
 
 ---
@@ -698,7 +698,7 @@ def test_import_user_isolation()
 
 ## 7. Génération de QCM depuis une note
 
-**Statut :** `[ ] Non démarré`
+**Statut :** `[x] Terminé`
 
 **Dépendances :** Aucune (mais cohérent à développer après le blurting existant)
 
@@ -788,35 +788,35 @@ Texte source :
 
 #### Backend
 
-- [ ] **7.2.1** Créer `backend/app/models/quiz.py` avec `Quiz` et `QuizQuestion`.
+- [x] **7.2.1** Créer `backend/app/models/quiz.py` avec `Quiz` et `QuizQuestion`.
   `commit: feat(quiz): add Quiz and QuizQuestion models`
 
-- [ ] **7.2.2** Générer la migration Alembic.
+- [x] **7.2.2** Générer la migration Alembic.
   `commit: chore(db): migration add quizzes tables`
 
-- [ ] **7.2.3** Créer `backend/app/dao/quiz_dao.py`.
+- [x] **7.2.3** Créer `backend/app/dao/quiz_dao.py`.
   `commit: feat(quiz): add QuizDAO`
 
-- [ ] **7.2.4** Étendre `backend/app/services/ai_service.py` avec la méthode `generate_quiz(note_content, count)`.
+- [x] **7.2.4** Étendre `backend/app/services/ai_service.py` avec la méthode `generate_quiz(note_content, count)`.
   Gérer les erreurs Gemini (timeout, réponse JSON invalide, quota dépassé).
   `commit: feat(quiz): add generate_quiz in AIService`
 
-- [ ] **7.2.5** Créer `backend/app/services/quiz_service.py`.
+- [x] **7.2.5** Créer `backend/app/services/quiz_service.py`.
   `commit: feat(quiz): add QuizService`
 
-- [ ] **7.2.6** Créer `backend/app/api/v1/quiz.py` avec les 4 endpoints.
+- [x] **7.2.6** Créer `backend/app/api/v1/quiz.py` avec les 4 endpoints.
   Appliquer `flask-limiter` sur `/generate` : `@limiter.limit("10 per hour")`.
   `commit: feat(quiz): add quiz REST endpoints with rate limiting`
 
 #### Frontend
 
-- [ ] **7.2.7** Créer `web/src/views/Notes/NoteQuiz.vue`.
+- [x] **7.2.7** Créer `web/src/views/Notes/NoteQuiz.vue`.
   - État "génération" : spinner + message d'attente
   - État "en cours" : une question à la fois, 4 boutons options, pas de retour arrière
   - État "résultat" : score, liste des questions ratées avec la bonne réponse, bouton "Créer des flashcards"
   `commit: feat(quiz): add NoteQuiz view`
 
-- [ ] **7.2.8** Ajouter un bouton "Générer un QCM" dans `NoteEdit.vue`.
+- [x] **7.2.8** Ajouter un bouton "Générer un QCM" dans `NoteEdit.vue`.
   `commit: feat(quiz): add quiz generation button in NoteEdit`
 
 ---
@@ -837,7 +837,7 @@ def test_ai_service_handles_gemini_invalid_json()
 
 ## 8. Mode examen
 
-**Statut :** `[ ] Non démarré`
+**Statut :** `[x] Terminé`
 
 **Dépendances :** Feature 7 (QCM) recommandée, Feature 1 (Tags) pour filtrer par matière
 
@@ -883,30 +883,30 @@ class ExamSession(Base):
 
 #### Backend
 
-- [ ] **8.2.1** Créer le modèle `ExamSession` et la migration.
+- [x] **8.2.1** Créer le modèle `ExamSession` et la migration.
   `commit: feat(exam): add ExamSession model and migration`
 
-- [ ] **8.2.2** Créer `backend/app/services/exam_service.py`.
+- [x] **8.2.2** Créer `backend/app/services/exam_service.py`.
   - `start_exam(user_id, binder_id, config)` : récupère les flashcards dues du classeur + génère ou récupère des QCM depuis les notes du classeur. Mélange et sérialise le snapshot.
   - `submit_answer(session_id, item)` : évalue la réponse selon le type.
   - `complete_exam(session_id)` : calcule les scores, enregistre une `StudySession`.
   `commit: feat(exam): add ExamService`
 
-- [ ] **8.2.3** Créer `backend/app/api/v1/exam.py`.
+- [x] **8.2.3** Créer `backend/app/api/v1/exam.py`.
   `commit: feat(exam): add exam REST endpoints`
 
 #### Frontend
 
-- [ ] **8.2.4** Créer `web/src/views/Exam/ExamSetup.vue` — formulaire de configuration (classeur, durée, types de questions).
+- [x] **8.2.4** Créer `web/src/views/Exam/ExamSetup.vue` — formulaire de configuration (classeur, durée, types de questions).
   `commit: feat(exam): add ExamSetup view`
 
-- [ ] **8.2.5** Créer `web/src/views/Exam/ExamSession.vue` — interface épurée : une question à la fois, chronomètre décompte, barre de progression, pas de navigation, pas de sidebar.
+- [x] **8.2.5** Créer `web/src/views/Exam/ExamSession.vue` — interface épurée : une question à la fois, chronomètre décompte, barre de progression, pas de navigation, pas de sidebar.
   `commit: feat(exam): add ExamSession view (distraction-free)`
 
-- [ ] **8.2.6** Créer `web/src/views/Exam/ExamResults.vue` — score global, score par type, liste des erreurs avec corrections.
+- [x] **8.2.6** Créer `web/src/views/Exam/ExamResults.vue` — score global, score par type, liste des erreurs avec corrections.
   `commit: feat(exam): add ExamResults view`
 
-- [ ] **8.2.7** Configurer le router pour que les routes `/exam/session` masquent la sidebar (`AppLayout` sans navigation).
+- [x] **8.2.7** Configurer le router pour que les routes `/exam/session` masquent la sidebar (`AppLayout` sans navigation).
   `commit: feat(exam): configure distraction-free layout for exam`
 
 ---
@@ -925,7 +925,7 @@ def test_exam_user_isolation()
 
 ## 9. Groupes asynchrones
 
-**Statut :** `[ ] Non démarré`
+**Statut :** `[x] Terminé`
 
 **Dépendances :** Feature 1 (Tags) recommandée
 
@@ -996,34 +996,34 @@ GET    /api/v1/groups/:id/members/progress     → stats de révision par membre
 
 #### Backend
 
-- [ ] **9.2.1** Créer les 4 modèles et la migration.
+- [x] **9.2.1** Créer les 4 modèles et la migration.
   `commit: feat(groups): add Group, GroupMember, GroupBinder, GroupActivity models`
 
-- [ ] **9.2.2** Créer `backend/app/dao/group_dao.py`.
+- [x] **9.2.2** Créer `backend/app/dao/group_dao.py`.
   `commit: feat(groups): add GroupDAO`
 
-- [ ] **9.2.3** Créer `backend/app/services/group_service.py`.
+- [x] **9.2.3** Créer `backend/app/services/group_service.py`.
   Règles : un utilisateur peut créer max 5 groupes, appartenir à max 20 groupes. Le code d'invitation est un string aléatoire 8 chars alphanumériques.
   `commit: feat(groups): add GroupService with business rules`
 
-- [ ] **9.2.4** Créer `backend/app/api/v1/groups.py` avec tous les endpoints.
+- [x] **9.2.4** Créer `backend/app/api/v1/groups.py` avec tous les endpoints.
   `commit: feat(groups): add groups REST endpoints`
 
-- [ ] **9.2.5** Enregistrer automatiquement une `GroupActivity` lors des événements : join, share binder, complete study session (via `StatsService`).
+- [x] **9.2.5** Enregistrer automatiquement une `GroupActivity` lors des événements : join, share binder, complete study session (via `StatsService`).
   `commit: feat(groups): add activity tracking hooks`
 
 #### Frontend
 
-- [ ] **9.2.6** Créer `web/src/views/Groups/GroupsList.vue` — liste des groupes rejoints + bouton créer + champ "rejoindre avec un code".
+- [x] **9.2.6** Créer `web/src/views/Groups/GroupsList.vue` — liste des groupes rejoints + bouton créer + champ "rejoindre avec un code".
   `commit: feat(groups): add GroupsList view`
 
-- [ ] **9.2.7** Créer `web/src/views/Groups/GroupDetail.vue` — onglets : Classeurs partagés / Activité / Membres / Progression.
+- [x] **9.2.7** Créer `web/src/views/Groups/GroupDetail.vue` — onglets : Classeurs partagés / Activité / Membres / Progression.
   `commit: feat(groups): add GroupDetail view`
 
-- [ ] **9.2.8** Créer `web/src/stores/groups.ts`.
+- [x] **9.2.8** Créer `web/src/stores/groups.ts`.
   `commit: feat(groups): add groups Pinia store`
 
-- [ ] **9.2.9** Ajouter l'entrée "Groupes" dans la sidebar.
+- [x] **9.2.9** Ajouter l'entrée "Groupes" dans la sidebar.
   `commit: feat(groups): add groups entry in sidebar`
 
 ---
@@ -1045,7 +1045,7 @@ def test_activity_recorded_on_join()
 
 ## 10. Système professeur
 
-**Statut :** `[ ] Non démarré`
+**Statut :** `[x] Terminé`
 
 **Dépendances :** Feature 9 (Groupes asynchrones) — le système professeur est une extension des groupes avec des rôles et fonctionnalités supplémentaires.
 
@@ -1108,34 +1108,34 @@ GET    /api/v1/assignments/mine                        → devoirs assignés à 
 
 #### Backend
 
-- [ ] **10.2.1** Ajouter les colonnes `type` et `is_class` au modèle `Group`. Générer la migration.
+- [x] **10.2.1** Ajouter les colonnes `type` et `is_class` au modèle `Group`. Générer la migration.
   `commit: feat(classes): extend Group model with class type`
 
-- [ ] **10.2.2** Créer `backend/app/models/assignment.py` avec `Assignment` et `AssignmentProgress`. Migration.
+- [x] **10.2.2** Créer `backend/app/models/assignment.py` avec `Assignment` et `AssignmentProgress`. Migration.
   `commit: feat(classes): add Assignment and AssignmentProgress models`
 
-- [ ] **10.2.3** Créer `backend/app/services/class_service.py`.
+- [x] **10.2.3** Créer `backend/app/services/class_service.py`.
   Hérite/compose avec `GroupService`. Ajoute : vérification du rôle `teacher` pour les opérations d'assignation, calcul de progression agrégée par classe.
   `commit: feat(classes): add ClassService`
 
-- [ ] **10.2.4** Créer `backend/app/api/v1/classes.py`.
+- [x] **10.2.4** Créer `backend/app/api/v1/classes.py`.
   `commit: feat(classes): add classes REST endpoints`
 
-- [ ] **10.2.5** Modifier `FocusService.get_today_items()` pour inclure les devoirs assignés avec deadline proche (≤ 3 jours).
+- [x] **10.2.5** Modifier `FocusService.get_today_items()` pour inclure les devoirs assignés avec deadline proche (≤ 3 jours).
   `commit: feat(classes): integrate assignments in Focus today items`
 
 #### Frontend
 
-- [ ] **10.2.6** Créer `web/src/views/Classes/TeacherDashboard.vue` — vue prof : liste des classes, progression globale par classe, bouton créer un devoir.
+- [x] **10.2.6** Créer `web/src/views/Classes/TeacherDashboard.vue` — vue prof : liste des classes, progression globale par classe, bouton créer un devoir.
   `commit: feat(classes): add TeacherDashboard view`
 
-- [ ] **10.2.7** Créer `web/src/views/Classes/StudentClassView.vue` — vue élève : liste des devoirs avec statut (à faire / en cours / terminé / en retard), lien vers le classeur.
+- [x] **10.2.7** Créer `web/src/views/Classes/StudentClassView.vue` — vue élève : liste des devoirs avec statut (à faire / en cours / terminé / en retard), lien vers le classeur.
   `commit: feat(classes): add StudentClassView`
 
-- [ ] **10.2.8** Créer `web/src/views/Classes/AssignmentDetail.vue` — vue prof : tableau de progression par élève (barres, scores, date de complétion).
+- [x] **10.2.8** Créer `web/src/views/Classes/AssignmentDetail.vue` — vue prof : tableau de progression par élève (barres, scores, date de complétion).
   `commit: feat(classes): add AssignmentDetail view with student progress`
 
-- [ ] **10.2.9** Modifier `FocusWidget` et `FocusPage` pour afficher les devoirs avec deadline dans la file du jour.
+- [x] **10.2.9** Modifier `FocusWidget` et `FocusPage` pour afficher les devoirs avec deadline dans la file du jour.
   `commit: feat(classes): integrate assignments in Focus views`
 
 ---
@@ -1165,6 +1165,7 @@ def test_teacher_progress_view_forbidden_for_student()
 | 2026-06-11 | Recherche globale full-text | 4.2.1 à 4.2.7 | Backend SearchDAO/SearchService (multi-dialecte PostgreSQL/SQLite) et endpoint de recherche implémentés. Composable useSearch et composant SearchModal créés avec raccourci Ctrl+K / Cmd+K et auto-sélection de deck/diagramme par ID. |
 | 2026-06-11 | Minuteur Pomodoro | 5.2.1 à 5.2.5 | Composable usePomodoro et Pinia store pomodoro créés. Notification push natives (Capacitor) et web. Bips sonores auto-générés. Composant flottant PomodoroTimer avec panneau de paramètres. Logs de sessions. |
 | 2026-06-11 | Import depuis Anki | 6.2.1 à 6.2.5 | Backend anki_parser (décompression zip, lecture collection.anki2 SQLite en mémoire), ImportService et endpoint /import/anki créés et testés avec succès (8/8 tests passés). Modal frontend AnkiImportModal et bouton intégrés dans Decks.vue. |
+| 2026-06-11 | Génération de QCM | 7.2.1 à 7.2.8 | Modèles, DAO, Service, et endpoints d'API REST backend implémentés pour les QCM (avec rate-limiting de 10/heure par Gemini). Frontend : implémentation du service `quizService.ts`, de l'interface `NoteQuiz.vue` (génération IA, jeu de QCM interactif, scoring et export des mauvaises réponses vers les flashcards d'un deck), et bouton de lancement sur `NoteEdit.vue`. Tests unitaires (65/65 passés) et compilation de production Web OK. |
 
 ---
 
