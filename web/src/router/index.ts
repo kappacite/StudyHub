@@ -106,6 +106,30 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'notes/:id/quiz',
+        name: 'NoteQuiz',
+        component: () => import('../views/Notes/NoteQuiz.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'exam/setup',
+        name: 'ExamSetup',
+        component: () => import('../views/Exam/ExamSetup.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'exam/:id',
+        name: 'ExamSession',
+        component: () => import('../views/Exam/ExamSession.vue'),
+        meta: { requiresAuth: true, immersive: true }
+      },
+      {
+        path: 'exam/:id/results',
+        name: 'ExamResults',
+        component: () => import('../views/Exam/ExamResults.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'diagrams',
         name: 'Diagrams',
         component: () => import('../views/Diagrams/Diagrams.vue'),
@@ -115,6 +139,18 @@ const routes: Array<RouteRecordRaw> = [
         path: 'pdfs',
         name: 'PDFs',
         component: () => import('../views/PDFs/PDFs.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'groups',
+        name: 'Groups',
+        component: () => import('../views/Groups/GroupsList.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'groups/:id',
+        name: 'GroupDetail',
+        component: () => import('../views/Groups/GroupDetail.vue'),
         meta: { requiresAuth: true }
       }
     ]

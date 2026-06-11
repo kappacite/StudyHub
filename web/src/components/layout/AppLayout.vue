@@ -1,25 +1,17 @@
 <template>
   <div class="min-h-screen flex bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#0B0F19] dark:text-slate-100">
     
-    <!-- Invisible Sidebar Hover Trigger (Zen mode only) -->
-    <div 
-      v-if="isZenMode" 
-      class="fixed left-0 top-0 bottom-0 w-3 z-45 no-print"
-      @mouseenter="isSidebarHovered = true"
-    ></div>
-
     <!-- Sidebar -->
     <aside 
+      v-if="!$route.meta.immersive"
       class="fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-white border-r border-slate-100 transition-all duration-300 dark:bg-[#111827] dark:border-slate-800"
       :class="[
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
         isZenMode ? 'lg:fixed lg:shadow-2xl' : 'lg:static',
         isZenMode 
-          ? (isSidebarHovered ? 'lg:translate-x-0' : 'lg:-translate-x-full') 
+          ? (isZenSidebarOpen ? 'lg:translate-x-0' : 'lg:-translate-x-full') 
           : 'lg:translate-x-0'
       ]"
-      @mouseenter="isZenMode ? isSidebarHovered = true : null"
-      @mouseleave="isZenMode ? isSidebarHovered = false : null"
     >
       <!-- Logo (cliquable → /) -->
       <router-link to="/" class="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer" @click="isMobileMenuOpen = false">
@@ -48,6 +40,7 @@
               : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
           ]"
           @click="isMobileMenuOpen = false"
+          @click.capture="isZenSidebarOpen = false"
         >
           <component 
             :is="item.icon" 
@@ -113,18 +106,25 @@
       @click="isMobileMenuOpen = false"
     ></div>
 
+    <div 
+      v-if="isZenSidebarOpen && !$route.meta.immersive" 
+      class="fixed inset-0 z-40 hidden bg-slate-900/20 backdrop-blur-[1px] lg:block"
+      @click="isZenSidebarOpen = false"
+    ></div>
+
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col min-w-0 min-h-screen">
       
       <!-- Invisible Header Hover Trigger (Zen mode only) -->
       <div 
-        v-if="isZenMode" 
+        v-if="isZenMode && !$route.meta.immersive" 
         class="fixed top-0 left-0 right-0 h-3 z-29 no-print"
         @mouseenter="isHeaderHovered = true"
       ></div>
 
       <!-- Navbar / Top Header -->
       <header 
+        v-if="!$route.meta.immersive"
         class="flex items-center justify-between px-6 py-4 bg-white/85 backdrop-blur border-b border-slate-100 z-30 transition-all duration-300 dark:bg-[#111827]/85 dark:border-slate-800"
         :class="[
           isZenMode 
@@ -173,9 +173,11 @@
       <main 
         class="flex-1 transition-all duration-300"
         :class="[
-          isZenMode 
-            ? (isEditMode ? 'p-0 bg-white dark:bg-slate-900 overflow-hidden' : 'p-4 md:p-8 lg:p-12 bg-slate-100 dark:bg-[#070913] overflow-y-auto') 
-            : 'p-6 overflow-y-auto'
+          $route.meta.immersive
+            ? 'p-0 bg-slate-50 dark:bg-[#070913] overflow-y-auto'
+            : isZenMode 
+              ? (isEditMode ? 'p-0 bg-white dark:bg-slate-900 overflow-hidden' : 'p-4 md:p-8 lg:p-12 bg-slate-100 dark:bg-[#070913] overflow-y-auto') 
+              : 'p-6 overflow-y-auto'
         ]"
       >
         <router-view v-slot="{ Component }">
@@ -193,7 +195,7 @@
     <SearchModal :is-open="isSearchOpen" @close="isSearchOpen = false" />
 
     <!-- Pomodoro Timer Floating Widget -->
-    <PomodoroTimer />
+    <PomodoroTimer v-if="!$route.meta.immersive" />
   </div>
 </template>
 
@@ -217,7 +219,9 @@ import {
   Calendar,
   Brain,
   Flame,
-  Search
+  Search,
+  ShieldAlert,
+  UsersRound
 } from '@lucide/vue'
 
 
@@ -226,10 +230,10 @@ const router = useRouter()
 const route = useRoute()
 
 const isMobileMenuOpen = ref(false)
+const isZenSidebarOpen = ref(false)
 const isDarkMode = ref(false)
 const isSearchOpen = ref(false)
 
-const isSidebarHovered = ref(false)
 const isHeaderHovered = ref(false)
 
 const isZenMode = computed(() => {
@@ -248,7 +252,9 @@ const navItems = [
   { name: 'Révisions', path: '/reviews', icon: Brain },
   { name: 'Notes', path: '/notes', icon: FileText },
   { name: 'Diagrammes', path: '/diagrams', icon: Activity },
-  { name: 'PDFs', path: '/pdfs', icon: FileDown }
+  { name: 'PDFs', path: '/pdfs', icon: FileDown },
+  { name: 'Groupes', path: '/groups', icon: UsersRound },
+  { name: 'Mode Examen', path: '/exam/setup', icon: ShieldAlert }
 ]
 
 const currentRouteName = computed(() => {
@@ -258,6 +264,9 @@ const currentRouteName = computed(() => {
   if (name === 'NoteEdit') return 'Édition de Note'
   if (name === 'Reviews') return 'Espace Révisions'
   if (name === 'Planning') return 'Planning des révisions'
+  if (name === 'ExamSetup') return 'Configuration Examen'
+  if (name === 'ExamSession') return 'Session d\'Examen'
+  if (name === 'ExamResults') return 'Résultats d\'Examen'
   return name
 })
 
@@ -295,8 +304,17 @@ function handleKeyDown(e: KeyboardEvent) {
   }
 }
 
+function handleToggleSidebar() {
+  if (isZenMode.value) {
+    isZenSidebarOpen.value = !isZenSidebarOpen.value
+  } else {
+    isMobileMenuOpen.value = !isMobileMenuOpen.value
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('studyhub:toggle-sidebar', handleToggleSidebar)
 
   const savedTheme = localStorage.getItem('sh_theme')
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -312,6 +330,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('studyhub:toggle-sidebar', handleToggleSidebar)
 })
 </script>
 
