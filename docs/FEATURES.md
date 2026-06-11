@@ -354,7 +354,7 @@ def test_user_isolation_focus_data()
 
 ## 3. Planning des révisions
 
-**Statut :** `[ ] Non démarré`
+**Statut :** `[x] Terminé`
 
 **Dépendances :** Feature 2 (Espace Focus) pour cohérence des données
 
@@ -390,36 +390,36 @@ POST /api/v1/planning/advance
 
 #### Backend
 
-- [ ] **3.2.1** Ajouter `get_cards_due_between(user_id, date_from, date_to)` dans `FlashcardDAO`.
+- [x] **3.2.1** Ajouter `get_cards_due_between(user_id, date_from, date_to)` dans `FlashcardDAO`.
   Retourne les cartes groupées par `next_review` et par `deck_id`.
   `commit: feat(planning): add date-range query in FlashcardDAO`
 
-- [ ] **3.2.2** Créer `backend/app/services/planning_service.py`.
+- [x] **3.2.2** Créer `backend/app/services/planning_service.py`.
   - `get_calendar(user_id, date_from, date_to)` — agrège par jour
   - `advance_review(user_id, deck_id, card_ids)` — valide l'appartenance, délègue à `SpacedRepetitionService`
   `commit: feat(planning): add PlanningService`
 
-- [ ] **3.2.3** Créer `backend/app/api/v1/planning.py` avec les deux endpoints.
+- [x] **3.2.3** Créer `backend/app/api/v1/planning.py` avec les deux endpoints.
   `commit: feat(planning): add /planning REST endpoints`
 
 #### Frontend
 
-- [ ] **3.2.4** Créer `web/src/stores/planning.ts`.
+- [x] **3.2.4** Créer `web/src/stores/planning.ts`.
   `commit: feat(planning): add planning Pinia store`
 
-- [ ] **3.2.5** Créer `web/src/components/planning/WeekCalendar.vue`.
+- [x] **3.2.5** Créer `web/src/components/planning/WeekCalendar.vue`.
   Chaque colonne = un jour. Barre de charge colorée (vert < 10, orange 10-25, rouge > 25). Clic sur une barre = popover avec le détail par deck.
   `commit: feat(planning): add WeekCalendar component`
 
-- [ ] **3.2.6** Créer `web/src/components/planning/MonthCalendar.vue`.
+- [x] **3.2.6** Créer `web/src/components/planning/MonthCalendar.vue`.
   Grille mensuelle, chaque cellule colorée selon la charge. Style heatmap similaire au dashboard GitHub-style existant.
   `commit: feat(planning): add MonthCalendar component`
 
-- [ ] **3.2.7** Créer `web/src/views/Planning/PlanningPage.vue`.
+- [x] **3.2.7** Créer `web/src/views/Planning/PlanningPage.vue`.
   Toggle semaine / mois. Bouton "Révisions anticipées" sur les jours à forte charge — ouvre une modale listant les decks concernés avec case à cocher.
   `commit: feat(planning): add PlanningPage view`
 
-- [ ] **3.2.8** Ajouter la route `/planning` dans le router et la sidebar.
+- [x] **3.2.8** Ajouter la route `/planning` dans le router et la sidebar.
   `commit: feat(planning): add /planning route and sidebar entry`
 
 ---
