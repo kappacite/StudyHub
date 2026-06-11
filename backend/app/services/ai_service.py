@@ -171,3 +171,109 @@ class AIService:
             ) from e
         except Exception as e:
             raise RuntimeError(f"Une erreur est survenue lors de l'analyse IA avec Gemini : {str(e)}") from e
+
+    def generate_quiz(self, note_content: str, count: int = 7) -> list:
+        """
+        Génère un QCM de `count` questions à partir du contenu d'une note via Gemini.
+        """
+        if not self.api_key:
+            raise RuntimeError(
+                "La clé d'API Gemini n'est pas configurée. "
+                "Veuillez définir la variable d'environnement GEMINI_API_KEY dans votre fichier .env."
+            )
+            
+        system_prompt = (
+            "Tu es un assistant pédagogique. À partir du texte fourni par l'utilisateur, génère exactement [COUNT] questions à choix multiples.\n\n"
+            "Règles strictes :\n"
+            "- Chaque question a exactement 4 options (a, b, c, d)\n"
+            "- Une seule option est correcte\n"
+            "- Les mauvaises réponses doivent être plausibles (pas triviales)\n"
+            "- Couvre les concepts les plus importants du texte\n"
+            "- Les questions doivent être en français\n\n"
+            "Tu dois impérativement renvoyer uniquement un tableau JSON valide contenant des objets avec exactement les clés suivantes, sans texte d'introduction ni de conclusion, et sans balises markdown :\n"
+            "[\n"
+            "  {\n"
+            "    \"question\": \"...\",\n"
+            "    \"options\": [\n"
+            "      {\"id\": \"a\", \"text\": \"...\", \"correct\": false},\n"
+            "      {\"id\": \"b\", \"text\": \"...\", \"correct\": true},\n"
+            "      {\"id\": \"c\", \"text\": \"...\", \"correct\": false},\n"
+            "      {\"id\": \"d\", \"text\": \"...\", \"correct\": false}\n"
+            "    ]\n"
+            "  }\n"
+            "]\n"
+        ).replace("[COUNT]", str(count))
+
+        payload = {
+            "contents": [
+                {
+                    "parts": [{"text": f"Texte source :\n{note_content}"}]
+                }
+            ],
+            "systemInstruction": {
+                "parts": [{"text": system_prompt}]
+            },
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "temperature": 0.3
+            }
+        }
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
+
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            
+            with urllib.request.urlopen(req, timeout=90) as response:
+                res_data = json.loads(response.read().decode("utf-8"))
+                
+                candidates = res_data.get("candidates", [])
+                if not candidates:
+                    raise RuntimeError("Aucun candidat renvoyé par l'API Gemini.")
+                    
+                candidate = candidates[0]
+                content_obj = candidate.get("content", {})
+                parts = content_obj.get("parts", [])
+                if not parts:
+                    raise RuntimeError("Aucune partie de contenu renvoyée par l'API Gemini.")
+                    
+                content = parts[0].get("text", "")
+                
+                # Extraction robuste du bloc JSON par recherche de crochets
+                start_idx = content.find('[')
+                end_idx = content.rfind(']')
+                if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                    json_str = content[start_idx:end_idx+1]
+                else:
+                    json_str = content
+                
+                parsed = json.loads(json_str)
+                if not isinstance(parsed, list):
+                    raise ValueError("Le format renvoyé par Gemini n'est pas une liste de questions.")
+                    
+                return parsed
+                
+        except urllib.error.HTTPError as e:
+            error_body = ""
+            try:
+                error_body = e.read().decode("utf-8")
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"Erreur HTTP lors de l'appel à l'API Gemini ({e.code}) : {e.reason}. Détails : {error_body}"
+            ) from e
+        except urllib.error.URLError as e:
+            raise RuntimeError(
+                "Impossible de se connecter à l'API Gemini. Veuillez vérifier votre connexion internet."
+            ) from e
+        except json.JSONDecodeError as e:
+            raise RuntimeError(
+                "Le modèle d'IA Gemini a renvoyé une réponse invalide qui n'a pas pu être analysée comme du JSON."
+            ) from e
+        except Exception as e:
+            raise RuntimeError(f"Une erreur est survenue lors de la génération du QCM avec Gemini : {str(e)}") from e
