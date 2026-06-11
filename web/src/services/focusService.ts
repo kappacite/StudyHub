@@ -1,12 +1,14 @@
 import api from './api'
 
 export interface FocusItem {
-  type: 'deck' | 'note'
+  type: 'deck' | 'note' | 'assignment'
   id: number
   title: string
   count: number
   is_late: boolean
   last_session_ago_days: number | null
+  due_date?: string | null
+  assignment_id?: number | null
 }
 
 export interface FocusToday {
@@ -14,6 +16,7 @@ export interface FocusToday {
   late_count: number
   flashcard_count: number
   blurting_count: number
+  assignment_count: number
   items: FocusItem[]
 }
 

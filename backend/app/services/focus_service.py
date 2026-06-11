@@ -112,12 +112,45 @@ class FocusService:
         # Sort items: late ones first
         items.sort(key=lambda x: (not x.is_late, x.title))
 
+        # 3. Devoirs avec deadline ≤ 3 jours (Feature 10)
+        assignment_items = []
+        assignment_count = 0
+        try:
+            from app.services.class_service import ClassService
+            from app.dao.group_dao import GroupDAO
+            from app.dao.binder_dao import BinderDAO
+            from app.dao.user_dao import UserDAO
+            class_service = ClassService(
+                group_dao=GroupDAO(db.session),
+                binder_dao=BinderDAO(db.session),
+                user_dao=UserDAO(db.session)
+            )
+            due_soon = class_service.get_assignments_due_soon(user_id, days=3)
+            for asgn in due_soon:
+                is_late = asgn.status == "late"
+                assignment_items.append(FocusItemSchema(
+                    type="assignment",
+                    id=asgn.binder_id,
+                    assignment_id=asgn.id,
+                    title=f"{asgn.title} ({asgn.group_name})",
+                    count=1,
+                    is_late=is_late,
+                    due_date=asgn.due_date.date().isoformat() if asgn.due_date else None
+                ))
+            assignment_count = len(assignment_items)
+        except Exception:
+            pass  # Ne pas bloquer le Focus si les classes ne sont pas disponibles
+
+        all_items = assignment_items + items
+        all_items.sort(key=lambda x: (not x.is_late, x.title))
+
         return FocusTodayResponse(
-            total_due=flashcard_count + blurting_count,
+            total_due=flashcard_count + blurting_count + assignment_count,
             late_count=total_late_cards + total_late_notes,
             flashcard_count=flashcard_count,
             blurting_count=blurting_count,
-            items=items
+            assignment_count=assignment_count,
+            items=all_items
         )
 
     def get_forecast(self, user_id: int, days: int = 14) -> FocusForecastResponse:

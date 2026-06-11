@@ -2,12 +2,14 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 class FocusItemSchema(BaseModel):
-    type: str  # "deck" | "note"
+    type: str  # "deck" | "note" | "assignment"
     id: int
     title: str
     count: int
     is_late: bool
     last_session_ago_days: Optional[int] = None
+    due_date: Optional[str] = None    # ISO date string, pour les devoirs
+    assignment_id: Optional[int] = None  # id du devoir si type="assignment"
 
     class Config:
         from_attributes = True
@@ -17,6 +19,7 @@ class FocusTodayResponse(BaseModel):
     late_count: int
     flashcard_count: int
     blurting_count: int
+    assignment_count: int = 0
     items: List[FocusItemSchema]
 
     class Config:
