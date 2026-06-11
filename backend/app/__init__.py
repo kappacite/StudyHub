@@ -4,6 +4,26 @@ from flask_cors import CORS
 from app.config import config_by_name
 from app.extensions import db, jwt, migrate, limiter
 
+def _ensure_sqlite_dev_schema(flask_app):
+    """Additive schema sync for existing SQLite dev/test databases."""
+    if db.engine.dialect.name != "sqlite":
+        return
+
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(db.engine)
+    search_vector_tables = ("notes", "decks", "flashcards", "diagrams")
+    for table_name in search_vector_tables:
+        if not inspector.has_table(table_name):
+            continue
+
+        columns = {column["name"] for column in inspector.get_columns(table_name)}
+        if "search_vector" not in columns:
+            db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN search_vector TEXT"))
+            flask_app.logger.info("Colonne SQLite manquante ajoutée: %s.search_vector", table_name)
+
+    db.session.commit()
+
 def create_app(config_name=None):
     flask_app = Flask(__name__)
     CORS(flask_app, resources={r"/api/.*": {"origins": "*", "allow_headers": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]}})
@@ -53,6 +73,10 @@ def create_app(config_name=None):
         from app.api.v1.planning import planning_bp
         from app.api.v1.search import search_bp
         from app.api.v1.imports import imports_bp
+        from app.api.v1.quizzes import quizzes_bp
+        from app.api.v1.exam import exam_bp
+        from app.api.v1.groups import groups_bp
+        from app.api.v1.classes import classes_bp, assignments_mine_bp
         
         flask_app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
         flask_app.register_blueprint(users_bp, url_prefix="/api/v1/users")
@@ -72,6 +96,11 @@ def create_app(config_name=None):
         flask_app.register_blueprint(planning_bp, url_prefix="/api/v1/planning")
         flask_app.register_blueprint(search_bp, url_prefix="/api/v1/search")
         flask_app.register_blueprint(imports_bp, url_prefix="/api/v1/import")
+        flask_app.register_blueprint(quizzes_bp, url_prefix="/api/v1/quizzes")
+        flask_app.register_blueprint(exam_bp, url_prefix="/api/v1/exam")
+        flask_app.register_blueprint(groups_bp, url_prefix="/api/v1/groups")
+        flask_app.register_blueprint(classes_bp, url_prefix="/api/v1/classes")
+        flask_app.register_blueprint(assignments_mine_bp, url_prefix="/api/v1/assignments")
         
         # Import all models so Alembic can detect them and db.create_all() works
         import app.models.user
@@ -83,10 +112,15 @@ def create_app(config_name=None):
         import app.models.pdf_document
         import app.models.study_session
         import app.models.tag
+        import app.models.quiz
+        import app.models.exam
+        import app.models.group
+        import app.models.assignment
 
         # En dev/test : créer les tables directement sans migrations
         if flask_app.config.get("DEBUG") or flask_app.config.get("TESTING"):
             db.create_all()
+            _ensure_sqlite_dev_schema(flask_app)
         else:
             # En production : auto-migration au démarrage
             from flask_migrate import upgrade as flask_db_upgrade, stamp as flask_db_stamp
