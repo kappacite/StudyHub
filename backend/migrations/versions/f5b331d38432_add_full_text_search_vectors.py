@@ -7,6 +7,7 @@ Create Date: 2026-06-11 18:42:36.256063
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -18,13 +19,15 @@ depends_on = None
 
 def upgrade():
     bind = op.get_bind()
+    search_type = postgresql.TSVECTOR() if bind.dialect.name == 'postgresql' else sa.Text()
+
+    op.add_column('notes', sa.Column('search_vector', search_type, nullable=True))
+    op.add_column('decks', sa.Column('search_vector', search_type, nullable=True))
+    op.add_column('flashcards', sa.Column('search_vector', search_type, nullable=True))
+    op.add_column('diagrams', sa.Column('search_vector', search_type, nullable=True))
+
     if bind.dialect.name != 'postgresql':
         return
-        
-    op.add_column('notes', sa.Column('search_vector', sa.dialects.postgresql.TSVECTOR(), nullable=True))
-    op.add_column('decks', sa.Column('search_vector', sa.dialects.postgresql.TSVECTOR(), nullable=True))
-    op.add_column('flashcards', sa.Column('search_vector', sa.dialects.postgresql.TSVECTOR(), nullable=True))
-    op.add_column('diagrams', sa.Column('search_vector', sa.dialects.postgresql.TSVECTOR(), nullable=True))
     
     op.execute("CREATE INDEX notes_search_idx ON notes USING GIN(search_vector);")
     op.execute("CREATE INDEX decks_search_idx ON decks USING GIN(search_vector);")
@@ -51,19 +54,18 @@ def upgrade():
 
 def downgrade():
     bind = op.get_bind()
-    if bind.dialect.name != 'postgresql':
-        return
-        
-    op.execute("DROP TRIGGER IF EXISTS notes_search_update ON notes;")
-    op.execute("DROP TRIGGER IF EXISTS decks_search_update ON decks;")
-    op.execute("DROP TRIGGER IF EXISTS flashcards_search_update ON flashcards;")
-    op.execute("DROP TRIGGER IF EXISTS diagrams_search_update ON diagrams;")
-    
-    op.execute("DROP INDEX IF EXISTS notes_search_idx;")
-    op.execute("DROP INDEX IF EXISTS decks_search_idx;")
-    op.execute("DROP INDEX IF EXISTS flashcards_search_idx;")
-    op.execute("DROP INDEX IF EXISTS diagrams_search_idx;")
-    
+
+    if bind.dialect.name == 'postgresql':
+        op.execute("DROP TRIGGER IF EXISTS notes_search_update ON notes;")
+        op.execute("DROP TRIGGER IF EXISTS decks_search_update ON decks;")
+        op.execute("DROP TRIGGER IF EXISTS flashcards_search_update ON flashcards;")
+        op.execute("DROP TRIGGER IF EXISTS diagrams_search_update ON diagrams;")
+
+        op.execute("DROP INDEX IF EXISTS notes_search_idx;")
+        op.execute("DROP INDEX IF EXISTS decks_search_idx;")
+        op.execute("DROP INDEX IF EXISTS flashcards_search_idx;")
+        op.execute("DROP INDEX IF EXISTS diagrams_search_idx;")
+
     op.drop_column('notes', 'search_vector')
     op.drop_column('decks', 'search_vector')
     op.drop_column('flashcards', 'search_vector')
