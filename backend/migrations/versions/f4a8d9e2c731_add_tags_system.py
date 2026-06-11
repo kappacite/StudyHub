@@ -40,20 +40,43 @@ def upgrade():
             """
             INSERT INTO tags (name, user_id)
             SELECT DISTINCT tag_name, user_id
-            FROM binders
-            CROSS JOIN LATERAL json_array_elements_text(tags::json) AS tag_name
-            WHERE tags IS NOT NULL
+            FROM (
+                SELECT tag_name, user_id
+                FROM binders,
+                LATERAL json_array_elements_text(
+                    CASE WHEN json_typeof(tags::json) = 'array' THEN tags::json ELSE '[]'::json END
+                ) AS tag_name
+                WHERE tags IS NOT NULL
+                
+                UNION
+                
+                SELECT tags::json#>>'{}' AS tag_name, user_id
+                FROM binders
+                WHERE tags IS NOT NULL AND json_typeof(tags::json) = 'string'
+            ) sub
+            WHERE tag_name IS NOT NULL AND tag_name <> ''
             ON CONFLICT (name, user_id) DO NOTHING
             """
         )
         op.execute(
             """
             INSERT INTO binder_tags (binder_id, tag_id)
-            SELECT binders.id, tags.id
-            FROM binders
-            CROSS JOIN LATERAL json_array_elements_text(binders.tags::json) AS tag_name
-            JOIN tags ON tags.name = tag_name AND tags.user_id = binders.user_id
-            WHERE binders.tags IS NOT NULL
+            SELECT DISTINCT sub.binder_id, tags.id
+            FROM (
+                SELECT binders.id AS binder_id, tag_name, binders.user_id
+                FROM binders,
+                LATERAL json_array_elements_text(
+                    CASE WHEN json_typeof(binders.tags::json) = 'array' THEN binders.tags::json ELSE '[]'::json END
+                ) AS tag_name
+                WHERE binders.tags IS NOT NULL
+                
+                UNION
+                
+                SELECT binders.id AS binder_id, binders.tags::json#>>'{}' AS tag_name, binders.user_id
+                FROM binders
+                WHERE binders.tags IS NOT NULL AND json_typeof(binders.tags::json) = 'string'
+            ) sub
+            JOIN tags ON tags.name = sub.tag_name AND tags.user_id = sub.user_id
             ON CONFLICT DO NOTHING
             """
         )

@@ -82,8 +82,9 @@ class FlashcardService:
             if c.original_text:
                 is_def = c.original_text.startswith('[') and ']{def:' in c.original_text
                 is_vf = '{{vf::' in c.original_text
+                is_qcm = '{{qcm::' in c.original_text
                 is_occl = c.original_text.startswith('[diagram:') and 'mask:' in c.original_text
-                if is_def or is_vf or is_occl:
+                if is_def or is_vf or is_qcm or is_occl:
                     filtered_cards.append(c)
             else:
                 filtered_cards.append(c)

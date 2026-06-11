@@ -143,7 +143,8 @@ class NoteService:
             self._deck_dao.update(deck)
             
         # 2. Extraire les placeholders du contenu
-        placeholders = extract_placeholders_from_text(note.content, note.id)
+        raw_placeholders = extract_placeholders_from_text(note.content, note.id)
+        placeholders = [p for p in raw_placeholders if p["type"] in ("def", "qcm", "vf")]
         
         # --- NEW: Extraire les masques de diagrammes intégrés ---
         import re

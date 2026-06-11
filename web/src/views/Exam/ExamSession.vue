@@ -309,7 +309,7 @@ async function forceQuit() {
             <button
               @click="prevQuestion"
               :disabled="currentItemIndex === 0"
-              class="inline-flex items-center gap-2 px-5 py-2.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:pointer-events-none"
+              class="inline-flex items-center gap-2 px-5 py-2.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:pointer-events-none text-slate-600 dark:text-slate-300"
             >
               <ChevronLeft class="w-4 h-4" />
               Précédente

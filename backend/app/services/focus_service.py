@@ -36,6 +36,20 @@ class FocusService:
                 .all()
             )
             
+            # Filter due cards to only keep valid ones (definitions, true/false, QCM, diagram occlusions, and normal cards)
+            valid_due_cards = []
+            for c in due_cards:
+                if c.original_text:
+                    is_def = c.original_text.startswith('[') and ']{def:' in c.original_text
+                    is_vf = '{{vf::' in c.original_text
+                    is_qcm = '{{qcm::' in c.original_text
+                    is_occl = c.original_text.startswith('[diagram:') and 'mask:' in c.original_text
+                    if is_def or is_vf or is_qcm or is_occl:
+                        valid_due_cards.append(c)
+                else:
+                    valid_due_cards.append(c)
+            
+            due_cards = valid_due_cards
             count = len(due_cards)
             if count > 0:
                 flashcard_count += count
@@ -163,6 +177,13 @@ class FocusService:
         cards = db.session.query(Flashcard).join(Deck).filter(Deck.user_id == user_id).all()
         for c in cards:
             if c.next_review:
+                if c.original_text:
+                    is_def = c.original_text.startswith('[') and ']{def:' in c.original_text
+                    is_vf = '{{vf::' in c.original_text
+                    is_qcm = '{{qcm::' in c.original_text
+                    is_occl = c.original_text.startswith('[diagram:') and 'mask:' in c.original_text
+                    if not (is_def or is_vf or is_qcm or is_occl):
+                        continue
                 card_date = c.next_review.date()
                 date_str = card_date.isoformat()
                 if date_str in forecast_dict:
@@ -231,15 +252,26 @@ class FocusService:
             trend_7d = round(rate_a - rate_b, 2)
 
             # Overdue flashcards count in the binder
-            overdue_count = (
-                db.session.query(func.count(Flashcard.id))
+            overdue_cards = (
+                db.session.query(Flashcard)
                 .join(Deck)
                 .filter(
                     Deck.binder_id == binder.id,
                     Flashcard.next_review <= now
                 )
-                .scalar()
-            ) or 0
+                .all()
+            )
+            overdue_count = 0
+            for c in overdue_cards:
+                if c.original_text:
+                    is_def = c.original_text.startswith('[') and ']{def:' in c.original_text
+                    is_vf = '{{vf::' in c.original_text
+                    is_qcm = '{{qcm::' in c.original_text
+                    is_occl = c.original_text.startswith('[diagram:') and 'mask:' in c.original_text
+                    if is_def or is_vf or is_qcm or is_occl:
+                        overdue_count += 1
+                else:
+                    overdue_count += 1
 
             by_subject.append(RetentionSubjectSchema(
                 binder_id=binder.id,

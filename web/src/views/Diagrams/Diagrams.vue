@@ -211,7 +211,7 @@
                 <div class="flex gap-2">
                   <button 
                     @click="fileInput?.click()" 
-                    class="flex-1 px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-850 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
+                    class="flex-1 px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-850 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-slate-700 dark:text-slate-200"
                   >
                     {{ backgroundImage ? 'Changer l\'image' : 'Importer image' }}
                   </button>
