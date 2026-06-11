@@ -3,11 +3,11 @@
     <!-- Header/Breadcrumb -->
     <div class="flex items-center justify-between text-sm font-semibold">
       <button 
-        @click="router.push('/decks')" 
+        @click="goBack" 
         class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1"
       >
         <ChevronLeft class="w-4 h-4" />
-        Retour aux decks
+        {{ isFocusMode ? 'Retour au Focus' : 'Retour aux decks' }}
       </button>
       <span class="text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 px-2.5 py-1 rounded-lg uppercase tracking-wider">
         {{ deckName }}
@@ -36,6 +36,14 @@
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Félicitations, vous avez révisé toutes les cartes prévues pour aujourd'hui dans ce deck.</p>
       </div>
       <button 
+        v-if="isFocusMode"
+        @click="handleNextFocusItem"
+        class="w-full px-4 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/10"
+      >
+        {{ focusStore.reviewQueue.length > 0 ? 'Continuer les révisions' : 'Retour au Focus' }}
+      </button>
+      <button 
+        v-else
         @click="router.push('/decks')"
         class="w-full px-4 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/10"
       >
@@ -112,20 +120,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDecksStore } from '../../stores/decks'
 import type { Flashcard } from '../../stores/decks'
+import { useFocusStore } from '../../stores/focus'
 import { ChevronLeft, Sparkles } from '@lucide/vue'
 
 const decksStore = useDecksStore()
+const focusStore = useFocusStore()
 const router = useRouter()
 const route = useRoute()
 
-const deckId = Number(route.params.id)
+const deckId = ref(Number(route.params.id))
 const deckName = ref('Deck')
 const loading = ref(true)
 const isFlipped = ref(false)
+
+const isFocusMode = computed(() => route.query.focus === 'true')
 
 const studyCards = ref<Flashcard[]>([])
 const currentIndex = ref(0)
@@ -138,43 +150,80 @@ const currentCard = computed(() => {
 const ratingButtons = [
   { value: 0, label: 'Oubli', class: 'bg-rose-50 border-rose-100 hover:bg-rose-100/50 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/30 dark:text-rose-400' },
   { value: 1, label: 'Flou', class: 'bg-rose-50/50 border-rose-100/50 hover:bg-rose-100/30 text-rose-500 dark:bg-rose-950/10 dark:border-rose-900/20 dark:text-rose-400' },
-  { value: 2, label: 'Difficile', class: 'bg-amber-50 border-amber-100 hover:bg-amber-100/50 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-400' },
+  { value: 2, label: 'Difficile', class: 'bg-amber-50 border-amber-100 hover:bg-amber-100/50 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-450' },
   { value: 3, label: 'Correct', class: 'bg-indigo-50 border-indigo-100 hover:bg-indigo-100/50 text-indigo-600 dark:bg-indigo-950/20 dark:border-indigo-900/30 dark:text-indigo-400' },
-  { value: 4, label: 'Bien', class: 'bg-emerald-50/50 border-emerald-100/50 hover:bg-emerald-100/30 text-emerald-500 dark:bg-emerald-950/10 dark:border-emerald-900/20 dark:text-emerald-400' },
-  { value: 5, label: 'Facile', class: 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100/50 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/30 dark:text-emerald-400' }
+  { value: 4, label: 'Bien', class: 'bg-emerald-50/50 border-emerald-100/50 hover:bg-emerald-100/30 text-emerald-500 dark:bg-emerald-950/10 dark:border-emerald-900/20 dark:text-emerald-450' },
+  { value: 5, label: 'Facile', class: 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100/50 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/30 dark:text-emerald-450' }
 ]
 
-onMounted(async () => {
+async function loadSession() {
+  loading.value = true
+  currentIndex.value = 0
+  isFlipped.value = false
+  studyCards.value = []
+  
   try {
-    const deck = await decksStore.fetchDeckById(deckId)
+    const deck = await decksStore.fetchDeckById(deckId.value)
     if (deck) {
       deckName.value = deck.name
     }
     
     // Fetch cards scheduled for study today
-    studyCards.value = await decksStore.fetchStudyCards(deckId)
+    studyCards.value = await decksStore.fetchStudyCards(deckId.value)
     totalCards.value = studyCards.value.length
   } catch (error) {
     console.error('Erreur lors du chargement de la session d\'étude :', error)
   } finally {
     loading.value = false
   }
+}
+
+onMounted(async () => {
+  await loadSession()
 })
+
+watch(() => route.params.id, (newId) => {
+  if (route.name === 'StudyDeck') {
+    deckId.value = Number(newId)
+    loadSession()
+  }
+})
+
+function goBack() {
+  if (isFocusMode.value) {
+    router.push('/focus')
+  } else {
+    router.push('/decks')
+  }
+}
+
+function handleNextFocusItem() {
+  const nextItem = focusStore.nextQueueItem()
+  if (nextItem) {
+    if (nextItem.type === 'deck') {
+      router.push(`/decks/${nextItem.id}/study?focus=true`)
+    } else if (nextItem.type === 'note') {
+      router.push(`/notes/${nextItem.id}/blurting?focus=true&from=focus`)
+    }
+  } else {
+    router.push('/focus')
+  }
+}
 
 function flipCard() {
   isFlipped.value = !isFlipped.value
 }
 
 async function rateCard(score: number) {
-  if (!deckId || !currentCard.value?.id) {
-    console.error('Identifiants manquants pour la notation :', { deckId, cardId: currentCard.value?.id })
+  if (!deckId.value || !currentCard.value?.id) {
+    console.error('Identifiants manquants pour la notation :', { deckId: deckId.value, cardId: currentCard.value?.id })
     return
   }
 
   loading.value = true
   try {
     // Submit score to trigger SM-2 recalculations
-    await decksStore.answerCard(deckId, currentCard.value.id, score)
+    await decksStore.answerCard(deckId.value, currentCard.value.id, score)
     
     isFlipped.value = false
     

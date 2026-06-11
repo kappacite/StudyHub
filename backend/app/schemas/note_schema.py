@@ -24,6 +24,7 @@ class NoteResponse(NoteBase):
     user_id: int
     is_public: bool = False
     share_token: Optional[str] = None
+    last_blurting_at: Optional[datetime] = None
     flashcards: List[FlashcardResponse] = []
     tags: List[TagResponseSchema] = []
     created_at: datetime

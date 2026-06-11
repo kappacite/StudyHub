@@ -52,6 +52,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'focus',
+        name: 'Focus',
+        component: () => import('../views/Focus/FocusPage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'binders',
         name: 'Binders',
         component: () => import('../views/Binders/Binders.vue'),

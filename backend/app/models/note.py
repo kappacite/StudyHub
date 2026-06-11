@@ -14,6 +14,7 @@ class Note(db.Model):
     binder_id = Column(Integer, ForeignKey("binders.id", ondelete="SET NULL"), nullable=True)
     is_public = Column(Boolean, default=False, nullable=False)
     share_token = Column(String(64), unique=True, nullable=True, index=True)
+    last_blurting_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

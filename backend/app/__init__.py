@@ -49,6 +49,7 @@ def create_app(config_name=None):
         from app.api.v1.blurting import blurting_bp
         from app.api.v1.packages import packages_bp
         from app.api.v1.tags import tags_bp
+        from app.api.v1.focus import focus_bp
         
         flask_app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
         flask_app.register_blueprint(users_bp, url_prefix="/api/v1/users")
@@ -64,6 +65,7 @@ def create_app(config_name=None):
         flask_app.register_blueprint(blurting_bp, url_prefix="/api/v1/blurting")
         flask_app.register_blueprint(packages_bp, url_prefix="/api/v1/packages")
         flask_app.register_blueprint(tags_bp, url_prefix="/api/v1/tags")
+        flask_app.register_blueprint(focus_bp, url_prefix="/api/v1/focus")
         
         # Import all models so Alembic can detect them and db.create_all() works
         import app.models.user

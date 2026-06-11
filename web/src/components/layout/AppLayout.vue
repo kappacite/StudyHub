@@ -196,7 +196,8 @@ import {
   Moon, 
   Menu, 
   Calendar,
-  Brain
+  Brain,
+  Flame
 } from '@lucide/vue'
 
 const authStore = useAuthStore()
@@ -219,6 +220,7 @@ const isEditMode = computed(() => {
 
 const navItems = [
   { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'Priorités (Focus)', path: '/focus', icon: Flame },
   { name: 'Classeurs', path: '/binders', icon: FolderClosed },
   { name: 'Révisions', path: '/reviews', icon: Brain },
   { name: 'Notes', path: '/notes', icon: FileText },

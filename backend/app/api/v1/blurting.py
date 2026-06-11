@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity
+from datetime import datetime
 from app.extensions import db
 from app.dao.note_dao import NoteDAO
 from app.dao.deck_dao import DeckDAO
@@ -61,6 +62,10 @@ def analyze():
             cards_correct=0
         )
         stats_service.create_session(user_id, session_data)
+        
+    # Enregistrer la date du blurting
+    note.last_blurting_at = datetime.utcnow()
+    note_dao.update(note)
         
     return jsonify(analysis_result), 200
 

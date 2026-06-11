@@ -28,6 +28,9 @@
       </div>
     </div>
 
+    <!-- Focus Summary Widget -->
+    <FocusWidget />
+
     <!-- Quick stats widgets -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <div 
@@ -272,6 +275,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useDecksStore } from '../../stores/decks'
+import FocusWidget from '../../components/dashboard/FocusWidget.vue'
 import api from '../../services/api'
 import { 
   Flame, 

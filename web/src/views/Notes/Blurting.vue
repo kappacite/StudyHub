@@ -7,7 +7,7 @@
           <button 
             @click="goBack"
             class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-            title="Retour à la note"
+            :title="isFocusMode ? 'Retour au Focus' : 'Retour à la note'"
           >
             <ChevronLeft class="w-5 h-5" />
           </button>
@@ -45,6 +45,15 @@
           >
             <RotateCcw class="w-4 h-4" />
             Recommencer
+          </button>
+
+          <button
+            v-if="step === 'results' && isFocusMode"
+            @click="handleNextFocusItem"
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/15 active:scale-95 transition-all"
+          >
+            {{ focusStore.reviewQueue.length > 0 ? 'Continuer' : 'Terminer' }}
+            <ArrowRight class="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -265,10 +274,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../../services/api'
 import { useDecksStore } from '../../stores/decks'
+import { useFocusStore } from '../../stores/focus'
 import { 
   ChevronLeft, 
   Clock, 
@@ -279,16 +289,20 @@ import {
   AlertTriangle, 
   XCircle, 
   Plus, 
-  RotateCcw
+  RotateCcw,
+  ArrowRight
 } from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()
 const decksStore = useDecksStore()
+const focusStore = useFocusStore()
 
 const noteId = ref(Number(route.params.id))
 const noteTitle = ref('')
 const noteContent = ref('')
+
+const isFocusMode = computed(() => route.query.focus === 'true')
 
 const step = ref<'writing' | 'results'>('writing')
 const blurtingText = ref('')
@@ -391,10 +405,7 @@ function stopTimer() {
   }
 }
 
-onMounted(async () => {
-  startTimer()
-  
-  // Charger la note
+async function loadNote() {
   try {
     const res = await api.get(`/notes/${noteId.value}`)
     noteTitle.value = res.data.title
@@ -404,6 +415,11 @@ onMounted(async () => {
     alert('Impossible de charger la note.')
     goBack()
   }
+}
+
+onMounted(async () => {
+  startTimer()
+  await loadNote()
 
   // Charger les decks de l'utilisateur
   try {
@@ -413,15 +429,40 @@ onMounted(async () => {
   }
 })
 
+watch(() => route.params.id, (newId) => {
+  if (route.name === 'Blurting') {
+    noteId.value = Number(newId)
+    resetSession()
+    loadNote()
+  }
+})
+
 onBeforeUnmount(() => {
   stopTimer()
 })
 
 function goBack() {
-  if (route.query.from === 'reviews') {
+  if (isFocusMode.value) {
+    router.push('/focus')
+  } else if (route.query.from === 'reviews') {
     router.push('/reviews')
   } else {
     router.push(`/notes/${noteId.value}`)
+  }
+}
+
+function handleNextFocusItem() {
+  const nextItem = focusStore.nextQueueItem()
+  if (nextItem) {
+    if (nextItem.type === 'deck') {
+      router.push(`/decks/${nextItem.id}/study?focus=true`)
+    } else if (nextItem.type === 'note') {
+      noteId.value = nextItem.id
+      resetSession()
+      loadNote()
+    }
+  } else {
+    router.push('/focus')
   }
 }
 
