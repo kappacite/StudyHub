@@ -17,3 +17,4 @@ class Diagram(db.Model):
     # Relations
     user = relationship("User", back_populates="diagrams")
     binder = relationship("Binder", back_populates="diagrams")
+    tags = relationship("Tag", secondary="diagram_tags", back_populates="diagrams")

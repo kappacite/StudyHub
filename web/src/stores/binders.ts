@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '../services/api'
+import type { Tag } from './tags'
 
 export interface Binder {
   id: number
@@ -9,7 +10,7 @@ export interface Binder {
   created_at: string
   is_public?: boolean
   description?: string | null
-  tags?: string[] | null
+  tags?: Tag[]
 }
 
 interface BindersResponse {
@@ -20,10 +21,12 @@ export const useBindersStore = defineStore('binders', () => {
   const binders = ref<Binder[]>([])
   const loading = ref(false)
 
-  async function fetchBinders() {
+  async function fetchBinders(tagId: number | null = null) {
     loading.value = true
     try {
-      const response = await api.get<BindersResponse>('/binders?all=true')
+      const params = new URLSearchParams({ all: 'true' })
+      if (tagId !== null) params.set('tag_id', String(tagId))
+      const response = await api.get<BindersResponse>(`/binders?${params.toString()}`)
       binders.value = response.data.data
       return binders.value
     } catch (error) {
@@ -52,7 +55,7 @@ export const useBindersStore = defineStore('binders', () => {
     }
   }
 
-  async function updateBinder(id: number, data: Partial<Binder>) {
+  async function updateBinder(id: number, data: Record<string, unknown>) {
     try {
       const response = await api.put<Binder>(`/binders/${id}`, data)
       const updatedBinder = response.data

@@ -6,6 +6,7 @@ from app.dao.binder_dao import BinderDAO
 from app.services.diagram_service import DiagramService
 from app.schemas.diagram_schema import DiagramCreate, DiagramUpdate
 from app.middlewares.auth_middleware import jwt_required_middleware
+from app.api.v1.tags import remove_entity_tag, set_entity_tags
 import math
 
 diagrams_bp = Blueprint("diagrams", __name__)
@@ -24,8 +25,9 @@ def get_diagrams():
     
     binder_id_str = request.args.get("binder_id")
     binder_id = int(binder_id_str) if binder_id_str is not None and binder_id_str != "" else None
+    tag_id = request.args.get("tag_id", type=int)
     
-    diagrams, total = diagram_service.get_diagrams(user_id, binder_id, page, per_page)
+    diagrams, total = diagram_service.get_diagrams(user_id, binder_id, tag_id, page, per_page)
     pages = math.ceil(total / per_page) if total > 0 else 0
     
     return jsonify({
@@ -73,3 +75,15 @@ def delete_diagram(diagram_id):
     user_id = int(get_jwt_identity())
     diagram_service.delete_diagram(user_id, diagram_id)
     return "", 204
+
+
+@diagrams_bp.route("/<int:diagram_id>/tags", methods=["POST"])
+@jwt_required_middleware
+def set_diagram_tags(diagram_id):
+    return set_entity_tags("diagrams", diagram_id)
+
+
+@diagrams_bp.route("/<int:diagram_id>/tags/<int:tag_id>", methods=["DELETE"])
+@jwt_required_middleware
+def remove_diagram_tag(diagram_id, tag_id):
+    return remove_entity_tag("diagrams", diagram_id, tag_id)

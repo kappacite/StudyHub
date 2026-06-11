@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '../services/api'
+import type { Tag } from './tags'
 
 export interface Note {
   id: number
@@ -9,6 +10,7 @@ export interface Note {
   content: string
   created_at: string
   updated_at: string
+  tags: Tag[]
 }
 
 interface NotesResponse {
@@ -20,10 +22,12 @@ export const useNotesStore = defineStore('notes', () => {
   const loading = ref(false)
   const isReviewModeActive = ref(false)
 
-  async function fetchNotes() {
+  async function fetchNotes(tagId: number | null = null) {
     loading.value = true
     try {
-      const response = await api.get<NotesResponse>('/notes?per_page=1000')
+      const params = new URLSearchParams({ per_page: '1000' })
+      if (tagId !== null) params.set('tag_id', String(tagId))
+      const response = await api.get<NotesResponse>(`/notes?${params.toString()}`)
       notes.value = response.data.data
       return notes.value
     } catch (error) {

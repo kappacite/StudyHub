@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
+from app.schemas.tag_schema import TagResponseSchema
 
 class NoteBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
@@ -24,6 +25,7 @@ class NoteResponse(NoteBase):
     is_public: bool = False
     share_token: Optional[str] = None
     flashcards: List[FlashcardResponse] = []
+    tags: List[TagResponseSchema] = []
     created_at: datetime
     updated_at: datetime
 

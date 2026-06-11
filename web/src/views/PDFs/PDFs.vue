@@ -26,10 +26,34 @@
         </div>
       </div>
 
+      <!-- Tag Filter Bar -->
+      <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">Filtrer par tag</span>
+        <button
+          type="button"
+          class="rounded-xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+          :class="selectedTagId === null ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-700'"
+          @click="filterByTag(null)"
+        >
+          Tous
+        </button>
+        <button
+          v-for="tag in tagsStore.tags"
+          :key="tag.id"
+          type="button"
+          class="rounded-xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+          :style="selectedTagId === tag.id ? { backgroundColor: tag.color || '#4F46E5', color: '#fff' } : undefined"
+          :class="selectedTagId === tag.id ? '' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-700'"
+          @click="filterByTag(tag.id)"
+        >
+          {{ tag.name }}
+        </button>
+      </div>
+
       <!-- PDF Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div 
-          v-for="pdf in pdfs" 
+          v-for="pdf in filteredPdfs" 
           :key="pdf.id"
           class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
         >
@@ -38,13 +62,22 @@
               <span class="inline-flex items-center px-2 py-1 rounded-lg text-[9px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 dark:text-slate-400 uppercase tracking-wider">
                 {{ pdf.size }}
               </span>
-              <button 
-                @click.stop="deletePdf(pdf.id)" 
-                class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
-                title="Supprimer le document"
-              >
-                <Trash2 class="w-4 h-4" />
-              </button>
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                <button 
+                  @click.stop="openEditPdfModal(pdf)" 
+                  class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                  title="Modifier le document"
+                >
+                  <PenLine class="w-4 h-4" />
+                </button>
+                <button 
+                  @click.stop="deletePdf(pdf.id)" 
+                  class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
+                  title="Supprimer le document"
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <!-- PDF icon & details -->
@@ -52,8 +85,12 @@
               <div class="w-12 h-14 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-500 flex items-center justify-center border border-rose-100/50 dark:border-rose-900/30 flex-shrink-0">
                 <FileText class="w-6 h-6" />
               </div>
-              <div class="min-w-0">
+              <div class="min-w-0 flex-1">
                 <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{{ pdf.name }}</h3>
+                <!-- Tag Badges -->
+                <div v-if="pdf.tags?.length" class="mt-1 flex flex-wrap gap-1">
+                  <TagBadge v-for="tag in pdf.tags" :key="tag.id" :tag="tag" />
+                </div>
                 <p class="text-[10px] text-slate-400 mt-0.5">Ajouté le {{ new Date(pdf.created_at).toLocaleDateString('fr-FR') }}</p>
                 <p class="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wider mt-1">{{ pdf.annotations.length }} annotations</p>
               </div>
@@ -72,7 +109,7 @@
         </div>
 
         <div 
-          v-if="pdfs.length === 0" 
+          v-if="filteredPdfs.length === 0" 
           class="col-span-full border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-12 flex flex-col items-center justify-center text-center text-slate-400"
         >
           <FileText class="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
@@ -164,20 +201,85 @@
         </div>
       </div>
     </template>
+
+    <!-- Edit PDF Modal -->
+    <div v-if="showEditPdfModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showEditPdfModal = false"></div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
+        <h3 class="text-lg font-bold mb-4">Modifier le document PDF</h3>
+        <form @submit.prevent="submitPdfForm">
+          <div class="space-y-4">
+            <div>
+              <label for="pdf-name" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Nom du document</label>
+              <input id="pdf-name" type="text" required v-model="pdfForm.name" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tags</label>
+              <TagSelector v-model="pdfForm.tags" />
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-3 mt-6">
+            <button type="button" @click="showEditPdfModal = false" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800">Annuler</button>
+            <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Plus, Eye, Trash2, FileText, ChevronRight } from '@lucide/vue'
+import { ref, computed, onMounted } from 'vue'
+import { Plus, Eye, Trash2, FileText, ChevronRight, PenLine } from '@lucide/vue'
 import { storeToRefs } from 'pinia'
 import { usePdfStore } from '../../stores/pdf'
+import { useTagsStore, type Tag } from '../../stores/tags'
 import PdfReader from '../../components/pdf/PdfReader.vue'
+import TagSelector from '../../components/ui/TagSelector.vue'
+import TagBadge from '../../components/ui/TagBadge.vue'
 
 const pdfStore = usePdfStore()
+const tagsStore = useTagsStore()
 const { pdfs, activePdf } = storeToRefs(pdfStore)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const newAnnotationText = ref('')
+
+const selectedTagId = ref<number | null>(null)
+const showEditPdfModal = ref(false)
+const pdfForm = ref<{ id: number; name: string; tags: Tag[] }>({ id: 0, name: '', tags: [] })
+
+onMounted(async () => {
+  await tagsStore.fetchTags()
+})
+
+const filteredPdfs = computed(() => {
+  if (selectedTagId.value === null) {
+    return pdfs.value
+  }
+  return pdfs.value.filter(pdf => pdf.tags && pdf.tags.some(t => t.id === selectedTagId.value))
+})
+
+function filterByTag(tagId: number | null) {
+  selectedTagId.value = tagId
+}
+
+function openEditPdfModal(pdf: any) {
+  pdfForm.value = {
+    id: pdf.id,
+    name: pdf.name,
+    tags: pdf.tags || []
+  }
+  showEditPdfModal.value = true
+}
+
+function submitPdfForm() {
+  const pdf = pdfStore.pdfs.find(p => p.id === pdfForm.value.id)
+  if (pdf) {
+    pdf.name = pdfForm.value.name
+    pdf.tags = pdfForm.value.tags
+  }
+  showEditPdfModal.value = false
+}
 
 function triggerFileInput() {
   fileInputRef.value?.click()
@@ -204,7 +306,8 @@ function handleFileUpload(event: Event) {
           body: `<p class="pdf-text-select">Contenu simulé pour le document <strong>${file.name}</strong>.</p><p class="pdf-text-select">Pour brancher les fichiers réels, Capacitor/Filesystem ou l'API REST permettront de charger les données réelles du fichier PDF.</p>`
         }
       ],
-      annotations: []
+      annotations: [],
+      tags: []
     }
     
     pdfStore.pdfs.push(newPdf)

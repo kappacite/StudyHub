@@ -37,12 +37,13 @@ class DiagramService:
         self, 
         user_id: int, 
         binder_id: Optional[int] = None, 
+        tag_id: Optional[int] = None,
         page: int = 1, 
         per_page: int = 20
     ) -> Tuple[List[DiagramResponse], int]:
         offset = (page - 1) * per_page
-        diagrams = self._diagram_dao.get_by_binder(user_id, binder_id, limit=per_page, offset=offset)
-        total = self._diagram_dao.count_by_binder(user_id, binder_id)
+        diagrams = self._diagram_dao.get_by_binder(user_id, binder_id, tag_id, limit=per_page, offset=offset)
+        total = self._diagram_dao.count_by_binder(user_id, binder_id, tag_id)
         
         return [DiagramResponse.model_validate(d) for d in diagrams], total
 

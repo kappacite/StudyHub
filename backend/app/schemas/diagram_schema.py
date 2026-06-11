@@ -1,6 +1,7 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
+from app.schemas.tag_schema import TagResponseSchema
 
 class DiagramBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
@@ -18,6 +19,7 @@ class DiagramUpdate(BaseModel):
 class DiagramResponse(DiagramBase):
     id: int
     user_id: int
+    tags: List[TagResponseSchema] = []
     created_at: datetime
     updated_at: datetime
 

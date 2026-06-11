@@ -5,6 +5,7 @@ from app.dao.binder_dao import BinderDAO
 from app.services.binder_service import BinderService
 from app.schemas.binder_schema import BinderCreate, BinderUpdate
 from app.middlewares.auth_middleware import jwt_required_middleware
+from app.api.v1.tags import remove_entity_tag, set_entity_tags
 import math
 
 binders_bp = Blueprint("binders", __name__)
@@ -31,9 +32,10 @@ def get_binders():
     
     parent_id_str = request.args.get("parent_id")
     parent_id = int(parent_id_str) if parent_id_str is not None and parent_id_str != "" else None
+    tag_id = request.args.get("tag_id", type=int)
     
     # Appel service
-    binders, total = binder_service.get_binders(user_id, parent_id, page, per_page)
+    binders, total = binder_service.get_binders(user_id, parent_id, tag_id, page, per_page)
     
     pages = math.ceil(total / per_page) if total > 0 else 0
     
@@ -83,6 +85,18 @@ def delete_binder(binder_id):
     user_id = int(get_jwt_identity())
     binder_service.delete_binder(user_id, binder_id)
     return "", 204
+
+
+@binders_bp.route("/<int:binder_id>/tags", methods=["POST"])
+@jwt_required_middleware
+def set_binder_tags(binder_id):
+    return set_entity_tags("binders", binder_id)
+
+
+@binders_bp.route("/<int:binder_id>/tags/<int:tag_id>", methods=["DELETE"])
+@jwt_required_middleware
+def remove_binder_tag(binder_id, tag_id):
+    return remove_entity_tag("binders", binder_id, tag_id)
 
 
 # -------------------------------------------------------

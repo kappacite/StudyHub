@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import type { Tag } from './tags'
 
 export interface Annotation {
   id: number
@@ -21,6 +22,7 @@ export interface PdfDocument {
   created_at: string
   pages: PageContent[]
   annotations: Annotation[]
+  tags: Tag[]
 }
 
 export const usePdfStore = defineStore('pdf', () => {
@@ -43,7 +45,8 @@ export const usePdfStore = defineStore('pdf', () => {
       annotations: [
         { id: 1, page: 1, text: 'Important : Formule n1 sin(i1) = n2 sin(i2) à retenir par cœur !', x: 25, y: 70 },
         { id: 2, page: 2, text: 'Définition à réviser pour le DS.', x: 40, y: 35 }
-      ]
+      ],
+      tags: []
     },
     {
       id: 2,
@@ -56,7 +59,8 @@ export const usePdfStore = defineStore('pdf', () => {
           body: '<p class="pdf-text-select">Le cycle de Krebs est une série de réactions chimiques utilisées par tous les organismes aérobies pour générer de l\'énergie par l\'oxydation de l\'acétate.</p><p class="pdf-text-select">1. Expliquez le rôle de la citrate synthase dans l\'étape d\'assemblage initial.</p><p class="pdf-text-select">2. Donnez le bilan énergétique global du cycle en termes d\'équivalents ATP.</p>'
         }
       ],
-      annotations: []
+      annotations: [],
+      tags: []
     }
   ])
 

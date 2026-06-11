@@ -57,12 +57,13 @@ class NoteService:
         user_id: int, 
         binder_id: Optional[int] = None, 
         search: Optional[str] = None, 
+        tag_id: Optional[int] = None,
         page: int = 1, 
         per_page: int = 20
     ) -> Tuple[List[NoteResponse], int]:
         offset = (page - 1) * per_page
-        notes = self._note_dao.search_notes(user_id, binder_id, search, limit=per_page, offset=offset)
-        total = self._note_dao.count_notes(user_id, binder_id, search)
+        notes = self._note_dao.search_notes(user_id, binder_id, search, tag_id, limit=per_page, offset=offset)
+        total = self._note_dao.count_notes(user_id, binder_id, search, tag_id)
         
         return [NoteResponse.model_validate(n) for n in notes], total
 

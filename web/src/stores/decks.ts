@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '../services/api'
+import type { Tag } from './tags'
 
 export interface Flashcard {
   id: number
@@ -20,6 +21,7 @@ export interface Deck {
   description: string
   card_count: number
   created_at: string
+  tags: Tag[]
 }
 
 interface DecksResponse {
@@ -35,10 +37,12 @@ export const useDecksStore = defineStore('decks', () => {
   const cards = ref<Flashcard[]>([])
   const loading = ref(false)
 
-  async function fetchDecks() {
+  async function fetchDecks(tagId: number | null = null) {
     loading.value = true
     try {
-      const response = await api.get<DecksResponse>('/decks?per_page=1000')
+      const params = new URLSearchParams({ per_page: '1000' })
+      if (tagId !== null) params.set('tag_id', String(tagId))
+      const response = await api.get<DecksResponse>(`/decks?${params.toString()}`)
       decks.value = response.data.data
       return decks.value
     } catch (error) {

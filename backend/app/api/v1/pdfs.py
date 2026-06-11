@@ -6,6 +6,7 @@ from app.dao.binder_dao import BinderDAO
 from app.services.pdf_service import PDFService
 from app.middlewares.auth_middleware import jwt_required_middleware
 from app.middlewares.error_handler import ValidationError
+from app.api.v1.tags import remove_entity_tag, set_entity_tags
 import math
 
 pdfs_bp = Blueprint("pdfs", __name__)
@@ -24,8 +25,9 @@ def get_pdfs():
     
     binder_id_str = request.args.get("binder_id")
     binder_id = int(binder_id_str) if binder_id_str is not None and binder_id_str != "" else None
+    tag_id = request.args.get("tag_id", type=int)
     
-    pdfs, total = pdf_service.get_pdfs(user_id, binder_id, page, per_page)
+    pdfs, total = pdf_service.get_pdfs(user_id, binder_id, tag_id, page, per_page)
     pages = math.ceil(total / per_page) if total > 0 else 0
     
     return jsonify({
@@ -100,3 +102,15 @@ def delete_pdf(pdf_id):
     
     pdf_service.delete_pdf(user_id, pdf_id, upload_folder)
     return "", 204
+
+
+@pdfs_bp.route("/<int:pdf_id>/tags", methods=["POST"])
+@jwt_required_middleware
+def set_pdf_tags(pdf_id):
+    return set_entity_tags("pdfs", pdf_id)
+
+
+@pdfs_bp.route("/<int:pdf_id>/tags/<int:tag_id>", methods=["DELETE"])
+@jwt_required_middleware
+def remove_pdf_tag(pdf_id, tag_id):
+    return remove_entity_tag("pdfs", pdf_id, tag_id)

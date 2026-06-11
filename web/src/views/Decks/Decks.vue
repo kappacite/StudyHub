@@ -17,6 +17,29 @@
         </button>
       </div>
 
+      <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filtrer</span>
+        <button
+          type="button"
+          class="rounded-xl px-3 py-1.5 text-xs font-bold"
+          :class="selectedTagId === null ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+          @click="filterByTag(null)"
+        >
+          Tous
+        </button>
+        <button
+          v-for="tag in tagsStore.tags"
+          :key="tag.id"
+          type="button"
+          class="rounded-xl px-3 py-1.5 text-xs font-bold"
+          :style="selectedTagId === tag.id ? { backgroundColor: tag.color || '#4F46E5', color: '#fff' } : undefined"
+          :class="selectedTagId === tag.id ? '' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+          @click="filterByTag(tag.id)"
+        >
+          {{ tag.name }}
+        </button>
+      </div>
+
       <!-- Decks Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div 
@@ -50,6 +73,9 @@
 
             <h3 class="font-bold text-lg text-slate-800 dark:text-white mt-4">{{ deck.name }}</h3>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">{{ deck.description || 'Aucune description' }}</p>
+            <div v-if="deck.tags?.length" class="mt-3 flex flex-wrap gap-1.5">
+              <TagBadge v-for="tag in deck.tags" :key="tag.id" :tag="tag" />
+            </div>
           </div>
 
           <div class="flex items-center gap-3 mt-6 pt-4 border-t border-slate-50 dark:border-slate-800/50">
@@ -199,6 +225,10 @@
               <label for="deck-desc" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Description</label>
               <textarea id="deck-desc" v-model="deckForm.description" rows="3" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium" placeholder="Ex: Verbes irréguliers et vocabulaire utile pour voyager."></textarea>
             </div>
+            <div v-if="isEditingDeck">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tags</label>
+              <TagSelector v-model="deckForm.tags" @change="saveDeckTags" />
+            </div>
           </div>
           <div class="flex items-center justify-end gap-3 mt-6">
             <button type="button" @click="showDeckModal = false" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800">Annuler</button>
@@ -235,21 +265,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDecksStore } from '../../stores/decks'
 import type { Deck, Flashcard } from '../../stores/decks'
+import { useTagsStore, type Tag } from '../../stores/tags'
+import TagBadge from '../../components/ui/TagBadge.vue'
+import TagSelector from '../../components/ui/TagSelector.vue'
 import { Plus, ChevronRight, Layers, Edit, Trash2 } from '@lucide/vue'
 
 const decksStore = useDecksStore()
+const tagsStore = useTagsStore()
 const router = useRouter()
 
 const selectedDeck = ref<Deck | null>(null)
+const selectedTagId = ref<number | null>(null)
 
 // Deck Form Modal
 const showDeckModal = ref(false)
 const isEditingDeck = ref(false)
-const deckForm = ref({ id: 0, name: '', description: '' })
+const deckForm = ref<{ id: number; name: string; description: string; tags: Tag[] }>({ id: 0, name: '', description: '', tags: [] })
 
 // Card Form Modal
 const showCardModal = ref(false)
@@ -262,6 +297,15 @@ const currentCards = computed(() => {
   return decksStore.cards.filter(c => c.deck_id === selectedDeck.value!.id)
 })
 
+onMounted(async () => {
+  await Promise.all([tagsStore.fetchTags(), decksStore.fetchDecks()])
+})
+
+async function filterByTag(tagId: number | null) {
+  selectedTagId.value = tagId
+  await decksStore.fetchDecks(tagId)
+}
+
 function selectDeck(deck: Deck) {
   selectedDeck.value = deck
 }
@@ -269,23 +313,32 @@ function selectDeck(deck: Deck) {
 // Deck CRUD Methods
 function openCreateDeckModal() {
   isEditingDeck.value = false
-  deckForm.value = { id: 0, name: '', description: '' }
+  deckForm.value = { id: 0, name: '', description: '', tags: [] }
   showDeckModal.value = true
 }
 
 function openEditDeckModal(deck: Deck) {
   isEditingDeck.value = true
-  deckForm.value = { id: deck.id, name: deck.name, description: deck.description }
+  deckForm.value = { id: deck.id, name: deck.name, description: deck.description, tags: deck.tags || [] }
   showDeckModal.value = true
 }
 
 async function submitDeckForm() {
   if (isEditingDeck.value) {
     await decksStore.updateDeck(deckForm.value.id, deckForm.value.name, deckForm.value.description)
+    await saveDeckTags(deckForm.value.tags)
   } else {
     await decksStore.createDeck(deckForm.value.name, deckForm.value.description)
   }
   showDeckModal.value = false
+}
+
+async function saveDeckTags(tags: Tag[]) {
+  if (!isEditingDeck.value || deckForm.value.id === 0) return
+  const updatedTags = await tagsStore.setTagsForEntity('decks', deckForm.value.id, tags.map(tag => tag.id))
+  const deck = decksStore.decks.find(item => item.id === deckForm.value.id)
+  if (deck) deck.tags = updatedTags
+  deckForm.value.tags = updatedTags
 }
 
 async function deleteDeck(deck: Deck) {

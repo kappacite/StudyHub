@@ -42,6 +42,30 @@
       </div>
     </div>
 
+    <!-- Tag Filter Bar -->
+    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">Filtrer par tag</span>
+      <button
+        type="button"
+        class="rounded-xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+        :class="selectedTagId === null ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-700'"
+        @click="filterByTag(null)"
+      >
+        Tous
+      </button>
+      <button
+        v-for="tag in tagsStore.tags"
+        :key="tag.id"
+        type="button"
+        class="rounded-xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+        :style="selectedTagId === tag.id ? { backgroundColor: tag.color || '#4F46E5', color: '#fff' } : undefined"
+        :class="selectedTagId === tag.id ? '' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-700'"
+        @click="filterByTag(tag.id)"
+      >
+        {{ tag.name }}
+      </button>
+    </div>
+
     <!-- Loading State -->
     <div v-if="notesStore.loading" class="flex flex-col items-center justify-center py-20 gap-3">
       <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -79,6 +103,10 @@
           </div>
 
           <h3 class="font-bold text-lg text-slate-800 dark:text-white mt-4 line-clamp-1">{{ note.title || 'Note sans titre' }}</h3>
+          <!-- Tags list -->
+          <div v-if="note.tags?.length" class="mt-2 flex flex-wrap gap-1">
+            <TagBadge v-for="tag in note.tags" :key="tag.id" :tag="tag" />
+          </div>
           <!-- Strip HTML tags to show clean preview -->
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-3 leading-relaxed">
             {{ stripHtml(note.content) || 'Aucun contenu...' }}
@@ -133,19 +161,29 @@ import { useRouter } from 'vue-router'
 import { useNotesStore } from '../../stores/notes'
 import type { Note } from '../../stores/notes'
 import { useBindersStore } from '../../stores/binders'
+import { useTagsStore } from '../../stores/tags'
+import TagBadge from '../../components/ui/TagBadge.vue'
 import { Plus, Search, FileText, Trash2, Eye, Edit3 } from '@lucide/vue'
 
 const notesStore = useNotesStore()
 const bindersStore = useBindersStore()
+const tagsStore = useTagsStore()
 const router = useRouter()
 
 const searchQuery = ref('')
 const selectedBinderFilter = ref<number | null>(null)
+const selectedTagId = ref<number | null>(null)
 
 onMounted(async () => {
   await notesStore.fetchNotes()
   await bindersStore.fetchBinders()
+  await tagsStore.fetchTags()
 })
+
+async function filterByTag(tagId: number | null) {
+  selectedTagId.value = tagId
+  await notesStore.fetchNotes(tagId)
+}
 
 const filteredNotes = computed(() => {
   return notesStore.notes.filter(note => {

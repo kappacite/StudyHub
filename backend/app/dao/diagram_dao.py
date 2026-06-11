@@ -11,6 +11,7 @@ class DiagramDAO(BaseDAO[Diagram]):
         self, 
         user_id: int, 
         binder_id: Optional[int] = None, 
+        tag_id: Optional[int] = None,
         limit: int = 20, 
         offset: int = 0
     ) -> List[Diagram]:
@@ -18,17 +19,24 @@ class DiagramDAO(BaseDAO[Diagram]):
         
         if binder_id is not None:
             query = query.filter_by(binder_id=binder_id)
+
+        if tag_id is not None:
+            query = query.filter(self.model.tags.any(id=tag_id))
             
         return query.limit(limit).offset(offset).all()
 
     def count_by_binder(
         self, 
         user_id: int, 
-        binder_id: Optional[int] = None
+        binder_id: Optional[int] = None,
+        tag_id: Optional[int] = None
     ) -> int:
         query = self.db.query(self.model).filter_by(user_id=user_id)
         
         if binder_id is not None:
             query = query.filter_by(binder_id=binder_id)
+
+        if tag_id is not None:
+            query = query.filter(self.model.tags.any(id=tag_id))
             
         return query.count()

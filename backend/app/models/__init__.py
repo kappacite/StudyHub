@@ -6,6 +6,7 @@ from app.models.note import Note
 from app.models.diagram import Diagram
 from app.models.pdf_document import PDFDocument
 from app.models.study_session import StudySession
+from app.models.tag import Tag
 
 __all__ = [
     "User",
@@ -15,5 +16,6 @@ __all__ = [
     "Note",
     "Diagram",
     "PDFDocument",
-    "StudySession"
+    "StudySession",
+    "Tag"
 ]

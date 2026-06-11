@@ -28,6 +28,22 @@
       </div>
     </div>
 
+    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filtrer</span>
+      <button type="button" class="rounded-xl px-3 py-1.5 text-xs font-bold" :class="selectedTagId === null ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'" @click="filterByTag(null)">Tous</button>
+      <button
+        v-for="tag in tagsStore.tags"
+        :key="tag.id"
+        type="button"
+        class="rounded-xl px-3 py-1.5 text-xs font-bold"
+        :style="selectedTagId === tag.id ? { backgroundColor: tag.color || '#4F46E5', color: '#fff' } : undefined"
+        :class="selectedTagId === tag.id ? '' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+        @click="filterByTag(tag.id)"
+      >
+        {{ tag.name }}
+      </button>
+    </div>
+
     <!-- Layout principal en grille -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       <!-- 1. PANNEAU GAUCHE : LISTE DES DIAGRAMMES (3 colonnes) -->
@@ -115,6 +131,9 @@
                 class="flex-1 sm:w-64 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
                 placeholder="Nom du diagramme..."
               />
+            </div>
+            <div class="w-full sm:w-80">
+              <TagSelector v-model="selectedDiagram.tags" @change="saveDiagramTags" />
             </div>
 
             <!-- Intégration de l'ID du diagramme pour insertion dans les notes -->
@@ -486,6 +505,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import api from '../../services/api'
+import { useTagsStore, type Tag } from '../../stores/tags'
+import TagSelector from '../../components/ui/TagSelector.vue'
 import { 
   Plus, 
   Trash2, 
@@ -515,10 +536,13 @@ interface BackendDiagram {
   code: string
   binder_id: number | null
   created_at: string
+  tags: Tag[]
 }
 
 const diagrams = ref<BackendDiagram[]>([])
 const selectedDiagram = ref<BackendDiagram | null>(null)
+const tagsStore = useTagsStore()
+const selectedTagId = ref<number | null>(null)
 
 const activeTab = ref('visual')
 const selectedNodeId = ref<number | null>(null)
@@ -566,19 +590,26 @@ function getNode(id: number) {
 }
 
 onMounted(async () => {
-  await fetchDiagramsList()
+  await Promise.all([tagsStore.fetchTags(), fetchDiagramsList()])
 })
 
-async function fetchDiagramsList() {
+async function fetchDiagramsList(tagId: number | null = selectedTagId.value) {
   loadingList.value = true
   try {
-    const res = await api.get('/diagrams?per_page=1000')
+    const params = new URLSearchParams({ per_page: '1000' })
+    if (tagId !== null) params.set('tag_id', String(tagId))
+    const res = await api.get(`/diagrams?${params.toString()}`)
     diagrams.value = res.data.data
   } catch (err) {
     console.error('Erreur lors du chargement des diagrammes', err)
   } finally {
     loadingList.value = false
   }
+}
+
+async function filterByTag(tagId: number | null) {
+  selectedTagId.value = tagId
+  await fetchDiagramsList(tagId)
 }
 
 function selectDiagram(diag: BackendDiagram) {
@@ -613,6 +644,13 @@ function selectDiagram(diag: BackendDiagram) {
     masks.value = []
     activeTab.value = 'mermaid'
   }
+}
+
+async function saveDiagramTags(tags: Tag[]) {
+  if (!selectedDiagram.value) return
+  selectedDiagram.value.tags = await tagsStore.setTagsForEntity('diagrams', selectedDiagram.value.id, tags.map(tag => tag.id))
+  const diagram = diagrams.value.find(item => item.id === selectedDiagram.value?.id)
+  if (diagram) diagram.tags = selectedDiagram.value.tags
 }
 
 async function createNewDiagram() {

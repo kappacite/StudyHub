@@ -50,6 +50,29 @@
       </div>
     </div>
 
+    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filtrer</span>
+      <button
+        type="button"
+        class="rounded-xl px-3 py-1.5 text-xs font-bold"
+        :class="selectedTagId === null ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+        @click="filterByTag(null)"
+      >
+        Tous
+      </button>
+      <button
+        v-for="tag in tagsStore.tags"
+        :key="tag.id"
+        type="button"
+        class="rounded-xl px-3 py-1.5 text-xs font-bold"
+        :style="selectedTagId === tag.id ? { backgroundColor: tag.color || '#4F46E5', color: '#fff' } : undefined"
+        :class="selectedTagId === tag.id ? '' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+        @click="filterByTag(tag.id)"
+      >
+        {{ tag.name }}
+      </button>
+    </div>
+
     <!-- Loading state -->
     <div v-if="bindersStore.loading" class="flex flex-col items-center justify-center py-20 gap-3">
       <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -74,7 +97,12 @@
               <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                 <FolderClosed class="w-5 h-5 fill-indigo-100 dark:fill-indigo-950/20" />
               </div>
-              <span class="font-bold truncate text-sm text-slate-800 dark:text-slate-200">{{ folder.name }}</span>
+              <div class="min-w-0">
+                <span class="font-bold truncate text-sm text-slate-800 dark:text-slate-200">{{ folder.name }}</span>
+                <div v-if="folder.tags?.length" class="mt-1 flex flex-wrap gap-1">
+                  <TagBadge v-for="tag in folder.tags" :key="tag.id" :tag="tag" />
+                </div>
+              </div>
             </div>
             
             <button 
@@ -187,6 +215,10 @@
                 class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
               />
             </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tags</label>
+              <TagSelector v-model="folderTags" />
+            </div>
           </div>
 
           <div class="flex items-center justify-end gap-3 mt-6">
@@ -298,16 +330,22 @@ import { useBindersStore } from '../../stores/binders'
 import type { Binder } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
+import { useTagsStore, type Tag } from '../../stores/tags'
+import TagBadge from '../../components/ui/TagBadge.vue'
+import TagSelector from '../../components/ui/TagSelector.vue'
 import { FolderClosed, Plus, ChevronRight, FileText, Layers, Trash2, Globe } from '@lucide/vue'
 
 const bindersStore = useBindersStore()
 const notesStore = useNotesStore()
 const decksStore = useDecksStore()
+const tagsStore = useTagsStore()
 const router = useRouter()
 
 const currentBinderId = ref<number | null>(null)
 const showModal = ref(false)
 const newFolderName = ref('')
+const folderTags = ref<Tag[]>([])
+const selectedTagId = ref<number | null>(null)
 
 // Refs pour le partage du classeur
 const showShareModal = ref(false)
@@ -316,10 +354,18 @@ const shareDescription = ref('')
 const shareTags = ref('')
 
 onMounted(async () => {
-  await bindersStore.fetchBinders()
-  await notesStore.fetchNotes()
-  await decksStore.fetchDecks()
+  await Promise.all([
+    bindersStore.fetchBinders(),
+    notesStore.fetchNotes(),
+    decksStore.fetchDecks(),
+    tagsStore.fetchTags()
+  ])
 })
+
+async function filterByTag(tagId: number | null) {
+  selectedTagId.value = tagId
+  await bindersStore.fetchBinders(tagId)
+}
 
 // Subfolders of the current binder
 const currentSubBinders = computed(() => {
@@ -354,12 +400,17 @@ const breadcrumbs = computed(() => {
 
 function openCreateModal() {
   newFolderName.value = ''
+  folderTags.value = []
   showModal.value = true
 }
 
 async function createFolder() {
   if (newFolderName.value.trim()) {
-    await bindersStore.createBinder(newFolderName.value.trim(), currentBinderId.value)
+    const binder = await bindersStore.createBinder(newFolderName.value.trim(), currentBinderId.value)
+    if (folderTags.value.length > 0) {
+      const updatedTags = await tagsStore.setTagsForEntity('binders', binder.id, folderTags.value.map(tag => tag.id))
+      binder.tags = updatedTags
+    }
     showModal.value = false
   }
 }
@@ -379,7 +430,7 @@ function openShareModal() {
   if (!currentBinder.value) return
   shareIsPublic.value = currentBinder.value.is_public || false
   shareDescription.value = currentBinder.value.description || ''
-  shareTags.value = currentBinder.value.tags ? currentBinder.value.tags.join(', ') : ''
+  shareTags.value = currentBinder.value.tags ? currentBinder.value.tags.map(tag => tag.name).join(', ') : ''
   showShareModal.value = true
 }
 

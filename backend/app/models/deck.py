@@ -20,6 +20,7 @@ class Deck(db.Model):
     binder = relationship("Binder", back_populates="decks")
     note = relationship("Note", back_populates="deck", foreign_keys=[note_id])
     cards = relationship("Flashcard", back_populates="deck", cascade="all, delete-orphan")
+    tags = relationship("Tag", secondary="deck_tags", back_populates="decks")
 
     @property
     def card_count(self) -> int:

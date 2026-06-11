@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, JSON
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.extensions import db
@@ -14,7 +14,6 @@ class Binder(db.Model):
     # Espace Communautaire & Study Packages
     is_public = Column(Boolean, default=False, nullable=False)
     description = Column(Text, nullable=True)
-    tags = Column(JSON, nullable=True)  # Stocke une liste de tags
     fork_count = Column(Integer, default=0, nullable=False)
     original_author_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
@@ -31,3 +30,4 @@ class Binder(db.Model):
     notes = relationship("Note", back_populates="binder", cascade="all, delete-orphan")
     diagrams = relationship("Diagram", back_populates="binder", cascade="all, delete-orphan")
     pdfs = relationship("PDFDocument", back_populates="binder", cascade="all, delete-orphan")
+    tags = relationship("Tag", secondary="binder_tags", back_populates="binders")

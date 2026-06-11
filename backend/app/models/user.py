@@ -21,6 +21,7 @@ class User(db.Model):
     notes = relationship("Note", back_populates="user", cascade="all, delete-orphan")
     diagrams = relationship("Diagram", back_populates="user", cascade="all, delete-orphan")
     pdfs = relationship("PDFDocument", back_populates="user", cascade="all, delete-orphan")
+    tags = relationship("Tag", back_populates="user", cascade="all, delete-orphan")
     study_sessions = relationship("StudySession", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password):

@@ -71,6 +71,10 @@
                 <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">{{ b.name }}</option>
               </select>
 
+              <div class="w-72">
+                <TagSelector v-model="noteTags" @change="saveNoteTags" />
+              </div>
+
               <!-- Collapsible Settings Toggle (Context & Links) -->
               <button 
                 @click="showSettings = !showSettings"
@@ -442,6 +446,7 @@
               <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 uppercase tracking-wider">
                 {{ getBinderName(binderId) }}
               </span>
+              <TagBadge v-for="tag in noteTags" :key="tag.id" :tag="tag" />
             </div>
           </div>
 
@@ -943,6 +948,9 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '../../services/api'
 import { useNotesStore } from '../../stores/notes'
 import { useBindersStore } from '../../stores/binders'
+import { useTagsStore, type Tag } from '../../stores/tags'
+import TagBadge from '../../components/ui/TagBadge.vue'
+import TagSelector from '../../components/ui/TagSelector.vue'
 import { 
   ChevronLeft, 
   Eye, 
@@ -986,6 +994,7 @@ marked.use({
 
 const notesStore = useNotesStore()
 const bindersStore = useBindersStore()
+const tagsStore = useTagsStore()
 
 const placeholderStates = ref<Record<string, any>>({})
 const noteFlashcards = ref<any[]>([])
@@ -1118,6 +1127,7 @@ function openModal(config: Omit<ModalConfig, 'visible' | 'onConfirm' | 'onCancel
 
 const title = ref('')
 const binderId = ref<number | null>(null)
+const noteTags = ref<Tag[]>([])
 const isPublic = ref(false)
 const shareToken = ref<string | null>(null)
 const sharePopupVisible = ref(false)
@@ -1163,8 +1173,11 @@ watch(() => route.params.id, async (newVal) => {
 })
 
 onMounted(async () => {
-  await notesStore.fetchNotes()
-  await bindersStore.fetchBinders()
+  await Promise.all([
+    notesStore.fetchNotes(),
+    bindersStore.fetchBinders(),
+    tagsStore.fetchTags()
+  ])
   await loadUserDiagrams()
   await loadNoteDetails()
 })
@@ -1222,6 +1235,7 @@ async function loadNoteDetails() {
     isPublic.value = (note as any).is_public || false
     shareToken.value = (note as any).share_token || null
     noteFlashcards.value = (note as any).flashcards || []
+    noteTags.value = (note as any).tags || []
     
     // Parse structured divisions
     const parsed = parseStructuredNote(note.content)
@@ -2405,6 +2419,13 @@ async function saveNote() {
   } finally {
     isSaving.value = false
   }
+}
+
+async function saveNoteTags(tags: Tag[]) {
+  if (!noteId.value) return
+  noteTags.value = await tagsStore.setTagsForEntity('notes', noteId.value, tags.map(tag => tag.id))
+  const note = notesStore.notes.find(item => item.id === noteId.value)
+  if (note) note.tags = noteTags.value
 }
 
 function printNote() {

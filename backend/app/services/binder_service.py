@@ -1,12 +1,16 @@
 from typing import List, Tuple, Optional
 from app.dao.binder_dao import BinderDAO
+from app.dao.tag_dao import TagDAO
 from app.models.binder import Binder
+from app.schemas.tag_schema import TagCreateSchema
 from app.schemas.binder_schema import BinderCreate, BinderUpdate, BinderResponse
+from app.services.tag_service import TagService
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError, ValidationError
 
 class BinderService:
     def __init__(self, binder_dao: BinderDAO):
         self._binder_dao = binder_dao
+        self._tag_service = TagService(TagDAO(binder_dao.db))
 
     def _get_binder_or_404(self, binder_id: int, user_id: int) -> Binder:
         binder = self._binder_dao.get_by_id(binder_id)
@@ -27,8 +31,9 @@ class BinderService:
             parent_id=data.parent_id,
             is_public=data.is_public or False,
             description=data.description,
-            tags=data.tags
         )
+        if data.tags:
+            binder.tags = self._get_or_create_tags(user_id, data.tags)
         created = self._binder_dao.create(binder)
         return BinderResponse.model_validate(created)
 
@@ -36,10 +41,17 @@ class BinderService:
         binder = self._get_binder_or_404(binder_id, user_id)
         return BinderResponse.model_validate(binder)
 
-    def get_binders(self, user_id: int, parent_id: Optional[int], page: int = 1, per_page: int = 20) -> Tuple[List[BinderResponse], int]:
+    def get_binders(
+        self,
+        user_id: int,
+        parent_id: Optional[int],
+        tag_id: Optional[int] = None,
+        page: int = 1,
+        per_page: int = 20,
+    ) -> Tuple[List[BinderResponse], int]:
         offset = (page - 1) * per_page
-        binders = self._binder_dao.get_by_parent(user_id, parent_id, limit=per_page, offset=offset)
-        total = self._binder_dao.count_by_parent(user_id, parent_id)
+        binders = self._binder_dao.get_by_parent(user_id, parent_id, tag_id, limit=per_page, offset=offset)
+        total = self._binder_dao.count_by_parent(user_id, parent_id, tag_id)
         
         return [BinderResponse.model_validate(b) for b in binders], total
 
@@ -62,8 +74,7 @@ class BinderService:
         if data.description is not None:
             binder.description = data.description
         if data.tags is not None:
-            binder.tags = data.tags
-            
+            binder.tags = self._get_or_create_tags(user_id, data.tags)
         updated = self._binder_dao.update(binder)
         return BinderResponse.model_validate(updated)
 
@@ -75,4 +86,18 @@ class BinderService:
         binders = self._binder_dao.get_all(user_id, limit=1000)
         return [BinderResponse.model_validate(b) for b in binders]
 
-
+    def _get_or_create_tags(self, user_id: int, names: List[str]):
+        tags = []
+        seen = set()
+        tag_dao = self._tag_service._tag_dao
+        for raw_name in names:
+            name = " ".join(raw_name.strip().split())
+            if not name or name.lower() in seen:
+                continue
+            seen.add(name.lower())
+            tag = tag_dao.get_by_name(user_id, name)
+            if not tag:
+                tag = self._tag_service.create_tag(user_id, TagCreateSchema(name=name, color=None))
+                tag = tag_dao.get_by_id(tag.id)
+            tags.append(tag)
+        return tags

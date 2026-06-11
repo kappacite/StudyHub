@@ -9,6 +9,7 @@ from app.models.deck import Deck
 from app.models.flashcard import Flashcard
 from app.models.diagram import Diagram
 from app.models.pdf_document import PDFDocument
+from app.models.tag import Tag
 from app.schemas.binder_schema import BinderResponse
 from app.middlewares.error_handler import ResourceNotFoundError
 
@@ -23,13 +24,11 @@ class CommunityService:
         
         if search:
             search_pattern = f"%{search}%"
-            # Recherche dans name, description ou tags
-            # tags étant stocké en JSON, on peut le caster en texte ou utiliser une recherche simple.
             query = query.filter(
                 or_(
                     Binder.name.ilike(search_pattern),
                     Binder.description.ilike(search_pattern),
-                    func.cast(Binder.tags, db.String).ilike(search_pattern)
+                    Binder.tags.any(Tag.name.ilike(search_pattern))
                 )
             )
             
@@ -65,10 +64,13 @@ class CommunityService:
                 parent_id=new_parent_id,
                 is_public=False,  # Un package cloné est privé par défaut dans l'espace de l'utilisateur
                 description=old_binder.description,
-                tags=old_binder.tags,
                 original_author_id=old_binder.original_author_id or old_binder.user_id,
                 fork_count=0
             )
+            new_binder.tags = [
+                get_or_create_user_tag(old_tag.name, old_tag.color)
+                for old_tag in old_binder.tags
+            ]
             db.session.add(new_binder)
             db.session.flush()  # Pour obtenir le nouvel ID
             
@@ -162,6 +164,15 @@ class CommunityService:
                 clone_binder_recursive(child, new_binder.id)
 
             return new_binder
+
+        def get_or_create_user_tag(name: str, color: str | None):
+            tag = db.session.query(Tag).filter_by(user_id=user_id, name=name).first()
+            if tag:
+                return tag
+            tag = Tag(user_id=user_id, name=name, color=color)
+            db.session.add(tag)
+            db.session.flush()
+            return tag
 
         # 3. Exécuter le clonage à partir du classeur racine
         cloned_binder = clone_binder_recursive(parent_binder, parent_binder.parent_id)

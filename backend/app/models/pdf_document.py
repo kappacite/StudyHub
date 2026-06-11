@@ -17,3 +17,4 @@ class PDFDocument(db.Model):
     # Relations
     user = relationship("User", back_populates="pdfs")
     binder = relationship("Binder", back_populates="pdfs")
+    tags = relationship("Tag", secondary="pdf_tags", back_populates="pdfs")

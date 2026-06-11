@@ -8,6 +8,7 @@ from app.dao.flashcard_dao import FlashcardDAO
 from app.services.note_service import NoteService
 from app.schemas.note_schema import NoteCreate, NoteUpdate
 from app.middlewares.auth_middleware import jwt_required_middleware
+from app.api.v1.tags import remove_entity_tag, set_entity_tags
 import math
 
 notes_bp = Blueprint("notes", __name__)
@@ -30,8 +31,9 @@ def get_notes():
     binder_id = int(binder_id_str) if binder_id_str is not None and binder_id_str != "" else None
     
     search = request.args.get("search")
+    tag_id = request.args.get("tag_id", type=int)
     
-    notes, total = note_service.get_notes(user_id, binder_id, search, page, per_page)
+    notes, total = note_service.get_notes(user_id, binder_id, search, tag_id, page, per_page)
     pages = math.ceil(total / per_page) if total > 0 else 0
     
     return jsonify({
@@ -79,6 +81,18 @@ def delete_note(note_id):
     user_id = int(get_jwt_identity())
     note_service.delete_note(user_id, note_id)
     return "", 204
+
+
+@notes_bp.route("/<int:note_id>/tags", methods=["POST"])
+@jwt_required_middleware
+def set_note_tags(note_id):
+    return set_entity_tags("notes", note_id)
+
+
+@notes_bp.route("/<int:note_id>/tags/<int:tag_id>", methods=["DELETE"])
+@jwt_required_middleware
+def remove_note_tag(note_id, tag_id):
+    return remove_entity_tag("notes", note_id, tag_id)
 
 
 # -------------------------------------------------------

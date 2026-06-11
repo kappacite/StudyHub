@@ -39,12 +39,13 @@ class DeckService:
         user_id: int, 
         binder_id: Optional[int] = None, 
         search: Optional[str] = None, 
+        tag_id: Optional[int] = None,
         page: int = 1, 
         per_page: int = 20
     ) -> Tuple[List[DeckResponse], int]:
         offset = (page - 1) * per_page
-        decks = self._deck_dao.search_decks(user_id, binder_id, search, limit=per_page, offset=offset)
-        total = self._deck_dao.count_decks(user_id, binder_id, search)
+        decks = self._deck_dao.search_decks(user_id, binder_id, search, tag_id, limit=per_page, offset=offset)
+        total = self._deck_dao.count_decks(user_id, binder_id, search, tag_id)
         
         return [DeckResponse.model_validate(d) for d in decks], total
 

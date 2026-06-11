@@ -9,6 +9,7 @@ from app.services.flashcard_service import FlashcardService
 from app.schemas.deck_schema import DeckCreate, DeckUpdate
 from app.schemas.flashcard_schema import FlashcardAnswer
 from app.middlewares.auth_middleware import jwt_required_middleware
+from app.api.v1.tags import remove_entity_tag, set_entity_tags
 import math
 
 decks_bp = Blueprint("decks", __name__)
@@ -32,8 +33,9 @@ def get_decks():
     binder_id = int(binder_id_str) if binder_id_str is not None and binder_id_str != "" else None
     
     search = request.args.get("search")
+    tag_id = request.args.get("tag_id", type=int)
     
-    decks, total = deck_service.get_decks(user_id, binder_id, search, page, per_page)
+    decks, total = deck_service.get_decks(user_id, binder_id, search, tag_id, page, per_page)
     pages = math.ceil(total / per_page) if total > 0 else 0
     
     return jsonify({
@@ -81,6 +83,18 @@ def delete_deck(deck_id):
     user_id = int(get_jwt_identity())
     deck_service.delete_deck(user_id, deck_id)
     return "", 204
+
+
+@decks_bp.route("/<int:deck_id>/tags", methods=["POST"])
+@jwt_required_middleware
+def set_deck_tags(deck_id):
+    return set_entity_tags("decks", deck_id)
+
+
+@decks_bp.route("/<int:deck_id>/tags/<int:tag_id>", methods=["DELETE"])
+@jwt_required_middleware
+def remove_deck_tag(deck_id, tag_id):
+    return remove_entity_tag("decks", deck_id, tag_id)
 
 # --- Endpoints de révision SM-2 ---
 

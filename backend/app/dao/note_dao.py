@@ -12,7 +12,8 @@ class NoteDAO(BaseDAO[Note]):
         self, 
         user_id: int, 
         binder_id: Optional[int] = None, 
-        search_query: Optional[str] = None, 
+        search_query: Optional[str] = None,
+        tag_id: Optional[int] = None,
         limit: int = 20, 
         offset: int = 0
     ) -> List[Note]:
@@ -28,6 +29,9 @@ class NoteDAO(BaseDAO[Note]):
                     self.model.content.ilike(f"%{search_query}%")
                 )
             )
+
+        if tag_id is not None:
+            query = query.filter(self.model.tags.any(id=tag_id))
             
         return query.limit(limit).offset(offset).all()
 
@@ -35,7 +39,8 @@ class NoteDAO(BaseDAO[Note]):
         self, 
         user_id: int, 
         binder_id: Optional[int] = None, 
-        search_query: Optional[str] = None
+        search_query: Optional[str] = None,
+        tag_id: Optional[int] = None
     ) -> int:
         query = self.db.query(self.model).filter_by(user_id=user_id)
         
@@ -49,5 +54,8 @@ class NoteDAO(BaseDAO[Note]):
                     self.model.content.ilike(f"%{search_query}%")
                 )
             )
+
+        if tag_id is not None:
+            query = query.filter(self.model.tags.any(id=tag_id))
             
         return query.count()

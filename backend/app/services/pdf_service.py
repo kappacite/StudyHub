@@ -63,12 +63,13 @@ class PDFService:
         self, 
         user_id: int, 
         binder_id: Optional[int] = None, 
+        tag_id: Optional[int] = None,
         page: int = 1, 
         per_page: int = 20
     ) -> Tuple[List[PDFResponse], int]:
         offset = (page - 1) * per_page
-        pdfs = self._pdf_dao.get_by_binder(user_id, binder_id, limit=per_page, offset=offset)
-        total = self._pdf_dao.count_by_binder(user_id, binder_id)
+        pdfs = self._pdf_dao.get_by_binder(user_id, binder_id, tag_id, limit=per_page, offset=offset)
+        total = self._pdf_dao.count_by_binder(user_id, binder_id, tag_id)
         
         return [PDFResponse.model_validate(p) for p in pdfs], total
 
