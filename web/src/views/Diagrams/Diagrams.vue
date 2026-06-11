@@ -503,7 +503,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '../../services/api'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagSelector from '../../components/ui/TagSelector.vue'
@@ -589,8 +590,30 @@ function getNode(id: number) {
   return nodes.value.find(n => n.id === id)
 }
 
+const route = useRoute()
+
 onMounted(async () => {
   await Promise.all([tagsStore.fetchTags(), fetchDiagramsList()])
+  const diagIdQuery = route.query.id
+  if (diagIdQuery) {
+    const diagId = parseInt(diagIdQuery as string)
+    const diag = diagrams.value.find(d => d.id === diagId)
+    if (diag) {
+      selectDiagram(diag)
+    }
+  }
+})
+
+watch(() => route.query.id, (newId) => {
+  if (newId) {
+    const diagId = parseInt(newId as string)
+    const diag = diagrams.value.find(d => d.id === diagId)
+    if (diag) {
+      selectDiagram(diag)
+    }
+  } else {
+    selectedDiagram.value = null
+  }
 })
 
 async function fetchDiagramsList(tagId: number | null = selectedTagId.value) {

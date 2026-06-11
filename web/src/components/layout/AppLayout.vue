@@ -150,6 +150,17 @@
         </div>
 
         <div class="flex items-center gap-4">
+          <!-- Global Search Button -->
+          <button 
+            @click="isSearchOpen = true" 
+            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100 dark:bg-slate-800/40 dark:border-slate-800 dark:hover:bg-slate-800/80 text-xs font-semibold text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+            title="Recherche globale (Ctrl+K)"
+          >
+            <Search class="w-4 h-4 text-indigo-500" />
+            <span class="hidden md:inline">Rechercher...</span>
+            <kbd class="hidden sm:inline-block px-1.5 py-0.5 ml-1 text-[10px] font-bold text-slate-400 bg-slate-200/50 rounded dark:bg-slate-700/50 dark:text-slate-500">⌘K</kbd>
+          </button>
+
           <!-- Calendar shortcut or current date -->
           <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-xs font-semibold text-slate-500 dark:bg-slate-800/40 dark:border-slate-800 dark:text-slate-400">
             <Calendar class="w-4 h-4 text-indigo-500" />
@@ -177,13 +188,21 @@
         </router-view>
       </main>
     </div>
+
+    <!-- Universal Search Modal -->
+    <SearchModal :is-open="isSearchOpen" @close="isSearchOpen = false" />
+
+    <!-- Pomodoro Timer Floating Widget -->
+    <PomodoroTimer />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import SearchModal from '../ui/SearchModal.vue'
+import PomodoroTimer from '../ui/PomodoroTimer.vue'
 import { 
   LayoutDashboard, 
   FolderClosed, 
@@ -197,8 +216,10 @@ import {
   Menu, 
   Calendar,
   Brain,
-  Flame
+  Flame,
+  Search
 } from '@lucide/vue'
+
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -206,6 +227,7 @@ const route = useRoute()
 
 const isMobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
+const isSearchOpen = ref(false)
 
 const isSidebarHovered = ref(false)
 const isHeaderHovered = ref(false)
@@ -266,7 +288,16 @@ function handleLogout() {
   router.push('/login')
 }
 
+function handleKeyDown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    isSearchOpen.value = !isSearchOpen.value
+  }
+}
+
 onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+
   const savedTheme = localStorage.getItem('sh_theme')
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   
@@ -277,6 +308,10 @@ onMounted(() => {
     isDarkMode.value = false
     document.documentElement.classList.remove('dark')
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 

@@ -438,7 +438,7 @@ def test_sm2_interval_not_inflated_by_advance()
 
 ## 4. Recherche globale full-text
 
-**Statut :** `[ ] Non démarré`
+**Statut :** `[x] Terminé`
 
 **Dépendances :** Feature 1 (Tags transversaux) pour inclure les tags dans les résultats
 
@@ -551,7 +551,7 @@ def test_search_sqlite_fallback_works()
 
 ## 5. Minuteur Pomodoro
 
-**Statut :** `[ ] Non démarré`
+**Statut :** `[x] Terminé`
 
 **Dépendances :** Aucune
 
@@ -1160,7 +1160,10 @@ def test_teacher_progress_view_forbidden_for_student()
 | Date | Fonctionnalité | Étapes complétées | Notes / Blocages |
 |------|---------------|-------------------|-----------------|
 | 2026-06-11 | Tags transversaux | 1.2.1 à 1.2.13 | Backend CRUD/liaisons/filtres livré et testé. Frontend livré pour store, badges, sélecteur, notes, decks, classeurs, diagrammes et PDFs avec filtre par tag sur toutes les listes. Tests exécutés avec succès. |
-| —    | —             | —                 | —               |
+| 2026-06-11 | Espace Focus | 2.2.1 à 2.2.13 | Backend /focus/today, /focus/forecast et /focus/retention implémentés et testés. Vues frontend FocusPage, Forecast et Heatmap créées. Intégration du composable usePlatform. |
+| 2026-06-11 | Planning des révisions | 3.2.1 à 3.2.13 | Backend /planning/calendar et /planning/advance implémentés et testés (SM-2, anticipation). Vue frontend PlanningPage avec sélection de deck et intégration de calendrier. |
+| 2026-06-11 | Recherche globale full-text | 4.2.1 à 4.2.7 | Backend SearchDAO/SearchService (multi-dialecte PostgreSQL/SQLite) et endpoint de recherche implémentés. Composable useSearch et composant SearchModal créés avec raccourci Ctrl+K / Cmd+K et auto-sélection de deck/diagramme par ID. |
+| 2026-06-11 | Minuteur Pomodoro | 5.2.1 à 5.2.5 | Composable usePomodoro et Pinia store pomodoro créés. Notification push natives (Capacitor) et web. Bips sonores auto-générés. Composant flottant PomodoroTimer avec panneau de paramètres. Logs de sessions. |
 
 ---
 

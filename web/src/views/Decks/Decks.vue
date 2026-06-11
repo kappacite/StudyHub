@@ -265,8 +265,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useDecksStore } from '../../stores/decks'
 import type { Deck, Flashcard } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
@@ -277,6 +277,7 @@ import { Plus, ChevronRight, Layers, Edit, Trash2 } from '@lucide/vue'
 const decksStore = useDecksStore()
 const tagsStore = useTagsStore()
 const router = useRouter()
+const route = useRoute()
 
 const selectedDeck = ref<Deck | null>(null)
 const selectedTagId = ref<number | null>(null)
@@ -299,6 +300,26 @@ const currentCards = computed(() => {
 
 onMounted(async () => {
   await Promise.all([tagsStore.fetchTags(), decksStore.fetchDecks()])
+  const deckIdQuery = route.query.id
+  if (deckIdQuery) {
+    const deckId = parseInt(deckIdQuery as string)
+    const deck = decksStore.decks.find(d => d.id === deckId)
+    if (deck) {
+      selectDeck(deck)
+    }
+  }
+})
+
+watch(() => route.query.id, (newId) => {
+  if (newId) {
+    const deckId = parseInt(newId as string)
+    const deck = decksStore.decks.find(d => d.id === deckId)
+    if (deck) {
+      selectDeck(deck)
+    }
+  } else {
+    selectedDeck.value = null
+  }
 })
 
 async function filterByTag(tagId: number | null) {

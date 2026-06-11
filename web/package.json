@@ -12,6 +12,7 @@
     "@capacitor/core": "^8.3.4",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/haptics": "^8.0.2",
+    "@capacitor/local-notifications": "^8.2.0",
     "@capacitor/preferences": "^8.0.1",
     "@headlessui/vue": "^1.7.23",
     "axios": "^1.16.1",
