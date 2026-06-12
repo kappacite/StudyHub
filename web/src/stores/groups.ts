@@ -60,14 +60,14 @@ export const useGroupsStore = defineStore('groups', () => {
     membersProgress.value = data
   }
 
-  async function shareBinder(groupId: number, binderId: number, permission: 'read' | 'write') {
+  async function shareBinder(groupId: number, binderId: string, permission: 'read' | 'write') {
     await groupService.shareBinder(groupId, binderId, permission)
     if (currentGroup.value?.id === groupId) {
       await fetchGroupDetail(groupId)
     }
   }
 
-  async function unshareBinder(groupId: number, binderId: number) {
+  async function unshareBinder(groupId: number, binderId: string) {
     await groupService.unshareBinder(groupId, binderId)
     if (currentGroup.value) {
       currentGroup.value.binders = currentGroup.value.binders.filter(b => b.binder_id !== binderId)

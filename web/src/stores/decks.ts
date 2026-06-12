@@ -16,7 +16,7 @@ export interface Flashcard {
 
 export interface Deck {
   id: number
-  binder_id: number | null
+  binder_id: string | null
   name: string
   description: string
   card_count: number
@@ -70,7 +70,7 @@ export const useDecksStore = defineStore('decks', () => {
     }
   }
 
-  async function createDeck(name: string, description: string, binderId: number | null = null) {
+  async function createDeck(name: string, description: string, binderId: string | null = null) {
     loading.value = true
     try {
       const response = await api.post<Deck>('/decks', {
@@ -208,13 +208,13 @@ export const useDecksStore = defineStore('decks', () => {
     }
   }
 
-  async function importAnki(file: File, binderId: number | null = null) {
+  async function importAnki(file: File, binderId: string | null = null) {
     loading.value = true
     try {
       const formData = new FormData()
       formData.append('file', file)
       if (binderId !== null) {
-        formData.append('binder_id', String(binderId))
+        formData.append('binder_id', binderId)
       }
       
       const response = await api.post<{

@@ -826,8 +826,8 @@ const decksWithStats = computed(() => {
 // Blank Sheet logic
 const blankSheetStep = ref<'config' | 'work' | 'results'>('config')
 const blankSheetSourceType = ref<'note' | 'binder'>('note')
-const selectedNoteId = ref<number | null>(null)
-const selectedBinderId = ref<number | null>(null)
+const selectedNoteId = ref<string | null>(null)
+const selectedBinderId = ref<string | null>(null)
 const blankSheetDraft = ref('')
 const blankSheetTimer = ref(0)
 let timerInterval: any = null
@@ -1296,8 +1296,8 @@ async function fetchDecksStats() {
 // Flashcard Generation state variables and functions
 const showGenerateModal = ref(false)
 const genSourceType = ref<'note' | 'binder'>('note')
-const genNoteId = ref<number | null>(null)
-const genBinderId = ref<number | null>(null)
+const genNoteId = ref<string | null>(null)
+const genBinderId = ref<string | null>(null)
 const genDeckTarget = ref<'new' | 'existing'>('new')
 const genNewDeckName = ref('')
 const genExistingDeckId = ref<number | null>(null)

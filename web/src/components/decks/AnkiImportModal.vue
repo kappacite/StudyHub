@@ -153,7 +153,7 @@ const decksStore = useDecksStore()
 const fileInput = ref<HTMLInputElement | null>(null)
 const file = ref<File | null>(null)
 const isDragOver = ref(false)
-const selectedBinderId = ref<number | null>(null)
+const selectedBinderId = ref<string | null>(null)
 const isUploading = ref(false)
 const error = ref<string | null>(null)
 

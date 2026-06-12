@@ -12,7 +12,7 @@ export interface GroupMember {
 
 export interface GroupBinder {
   group_id: number
-  binder_id: number
+  binder_id: string
   binder_name: string
   permission: 'read' | 'write'
   pinned: boolean
@@ -91,7 +91,7 @@ const groupService = {
     return response.data
   },
 
-  async shareBinder(groupId: number, binderId: number, permission: 'read' | 'write') {
+  async shareBinder(groupId: number, binderId: string, permission: 'read' | 'write') {
     const response = await api.post<GroupBinder>(`/groups/${groupId}/binders`, {
       binder_id: binderId,
       permission
@@ -99,7 +99,7 @@ const groupService = {
     return response.data
   },
 
-  async unshareBinder(groupId: number, binderId: number) {
+  async unshareBinder(groupId: number, binderId: string) {
     await api.delete(`/groups/${groupId}/binders/${binderId}`)
   },
 

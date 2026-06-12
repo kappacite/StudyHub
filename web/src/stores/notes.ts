@@ -4,8 +4,8 @@ import api from '../services/api'
 import type { Tag } from './tags'
 
 export interface Note {
-  id: number
-  binder_id: number | null
+  id: string
+  binder_id: string | null
   title: string
   content: string
   created_at: string
@@ -38,7 +38,7 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  async function fetchNoteById(id: number) {
+  async function fetchNoteById(id: string) {
     loading.value = true
     try {
       const response = await api.get<Note>(`/notes/${id}`)
@@ -58,7 +58,7 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  async function createNote(title: string, content: string = '', binderId: number | null = null) {
+  async function createNote(title: string, content: string = '', binderId: string | null = null) {
     loading.value = true
     try {
       const response = await api.post<Note>('/notes', {
@@ -77,7 +77,7 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  async function updateNote(id: number, title: string, content: string) {
+  async function updateNote(id: string, title: string, content: string) {
     try {
       const note = notes.value.find(n => n.id === id)
       const binder_id = note ? note.binder_id : null
@@ -99,7 +99,7 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  async function deleteNote(id: number) {
+  async function deleteNote(id: string) {
     try {
       await api.delete(`/notes/${id}`)
       notes.value = notes.value.filter(n => n.id !== id)

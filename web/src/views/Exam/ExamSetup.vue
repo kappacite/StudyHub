@@ -8,7 +8,7 @@ import { ShieldAlert, Clock, Settings, Sparkles } from 'lucide-vue-next'
 const router = useRouter()
 const bindersStore = useBindersStore()
 
-const binderId = ref<number | null>(null)
+const binderId = ref<string | null>(null)
 const durationMinutes = ref(30)
 const includeFlashcards = ref(true)
 const includeQcm = ref(true)

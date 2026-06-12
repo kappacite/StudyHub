@@ -36,7 +36,7 @@
           class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium transition-all"
         >
           <option :value="null">Tous les classeurs</option>
-          <option :value="-1">Sans classeur</option>
+          <option value="none">Sans classeur</option>
           <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">{{ b.name }}</option>
         </select>
       </div>
@@ -171,7 +171,7 @@ const tagsStore = useTagsStore()
 const router = useRouter()
 
 const searchQuery = ref('')
-const selectedBinderFilter = ref<number | null>(null)
+const selectedBinderFilter = ref<string | null>(null)
 const selectedTagId = ref<number | null>(null)
 
 onMounted(async () => {
@@ -193,7 +193,7 @@ const filteredNotes = computed(() => {
     
     // Filter by binder
     let matchesBinder = true
-    if (selectedBinderFilter.value === -1) {
+    if (selectedBinderFilter.value === 'none') {
       matchesBinder = note.binder_id === null
     } else if (selectedBinderFilter.value !== null) {
       matchesBinder = note.binder_id === selectedBinderFilter.value
@@ -203,24 +203,25 @@ const filteredNotes = computed(() => {
   })
 })
 
-function getBinderName(binderId: number | null): string {
+function getBinderName(binderId: string | null): string {
   if (binderId === null) return 'Général'
   const binder = bindersStore.binders.find(b => b.id === binderId)
   return binder ? binder.name : 'Général'
 }
 
-function getBinderBadgeClass(binderId: number | null): string {
+function getBinderBadgeClass(binderId: string | null): string {
   if (binderId === null) {
     return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
   }
-  // Alternate styles based on ID
+  // Alternate styles based on ID hash/length
   const styles = [
     'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400',
     'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
     'bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400',
     'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
   ]
-  return styles[binderId % styles.length]
+  const code = binderId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  return styles[code % styles.length]
 }
 
 function stripHtml(html: string): string {

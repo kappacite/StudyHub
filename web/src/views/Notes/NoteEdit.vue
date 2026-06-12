@@ -1012,7 +1012,7 @@ const noteFlashcards = ref<any[]>([])
 const route = useRoute()
 const router = useRouter()
 
-const noteId = ref(Number(route.params.id))
+const noteId = ref(route.params.id as string)
 const allUserDiagrams = ref<any[]>([])
 const loadedDiagrams = ref<Record<number, any>>({})
 const loading = ref(true)
@@ -1141,7 +1141,7 @@ function openModal(config: Omit<ModalConfig, 'visible' | 'onConfirm' | 'onCancel
 }
 
 const title = ref('')
-const binderId = ref<number | null>(null)
+const binderId = ref<string | null>(null)
 const noteTags = ref<Tag[]>([])
 const isPublic = ref(false)
 const shareToken = ref<string | null>(null)
@@ -1153,9 +1153,9 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const noteContext = ref('')
 const noteDefinition = ref('')
 const noteBody = ref('')
-const noteLinks = ref<number[]>([])
+const noteLinks = ref<string[]>([])
 
-const selectedLinkTarget = ref<number | null>(null)
+const selectedLinkTarget = ref<string | null>(null)
 
 let autoSaveTimer: any = null
 
@@ -1182,7 +1182,7 @@ const codeButtons = [
 // Reload components when route parameter changes (for linked notes navigation)
 watch(() => route.params.id, async (newVal) => {
   if (newVal) {
-    noteId.value = Number(newVal)
+    noteId.value = newVal as string
     await loadNoteDetails()
   }
 })
@@ -1310,14 +1310,14 @@ function parseStructuredNote(rawContent: string) {
   let contextVal = ''
   let definitionVal = ''
   let bodyVal = rawContent
-  let linkedIdsVal: number[] = []
+  let linkedIdsVal: string[] = []
 
   // Extraire les liens
-  const linksMatch = rawContent.match(/<!-- LINKED_NOTES: ([\d,\s]*) -->/)
+  const linksMatch = rawContent.match(/<!-- LINKED_NOTES: ([a-fA-F0-9-,\s]*) -->/)
   if (linksMatch) {
     linkedIdsVal = linksMatch[1].split(',')
-      .map(id => Number(id.trim()))
-      .filter(id => !isNaN(id) && id > 0)
+      .map(id => id.trim())
+      .filter(id => id.length > 0)
   }
 
   // Extraire le contexte
@@ -2284,7 +2284,7 @@ async function toggleMode() {
   isEditMode.value = !isEditMode.value
 }
 
-function getBinderName(bId: number | null): string {
+function getBinderName(bId: string | null): string {
   if (bId === null) return 'Général (Aucun)'
   const b = bindersStore.binders.find(x => x.id === bId)
   return b ? b.name : 'Général (Aucun)'
@@ -2303,17 +2303,17 @@ function addNoteLink() {
   }
 }
 
-function removeNoteLink(id: number) {
+function removeNoteLink(id: string) {
   noteLinks.value = noteLinks.value.filter(linkedId => linkedId !== id)
   triggerAutoSave()
 }
 
-function getNoteTitle(id: number): string {
+function getNoteTitle(id: string): string {
   const n = notesStore.notes.find(x => x.id === id)
   return n ? n.title : 'Note inconnue'
 }
 
-function navigateToNote(id: number) {
+function navigateToNote(id: string) {
   router.push(`/notes/${id}`)
 }
 

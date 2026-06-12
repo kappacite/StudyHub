@@ -21,7 +21,7 @@ const groupId = computed(() => Number(route.params.id))
 const activeTab = ref<'binders' | 'activity' | 'members' | 'progress'>('binders')
 const codeCopied = ref(false)
 const showShareModal = ref(false)
-const shareBinderId = ref<number | null>(null)
+const shareBinderId = ref<string | null>(null)
 const sharePermission = ref<'read' | 'write'>('read')
 const sharing = ref(false)
 const shareError = ref('')
@@ -73,7 +73,7 @@ async function shareBinder() {
   }
 }
 
-async function removeBinder(binderId: number) {
+async function removeBinder(binderId: string) {
   if (!confirm('Retirer ce classeur du groupe ?')) return
   await groupsStore.unshareBinder(groupId.value, binderId)
 }

@@ -4,8 +4,8 @@ import api from '../services/api'
 import type { Tag } from './tags'
 
 export interface Binder {
-  id: number
-  parent_id: number | null
+  id: string
+  parent_id: string | null
   name: string
   created_at: string
   is_public?: boolean
@@ -38,7 +38,7 @@ export const useBindersStore = defineStore('binders', () => {
     }
   }
 
-  async function createBinder(name: string, parentId: number | null = null) {
+  async function createBinder(name: string, parentId: string | null = null) {
     loading.value = true
     try {
       const response = await api.post<Binder>('/binders', {
@@ -56,7 +56,7 @@ export const useBindersStore = defineStore('binders', () => {
     }
   }
 
-  async function updateBinder(id: number, data: Record<string, unknown>) {
+  async function updateBinder(id: string, data: Record<string, unknown>) {
     try {
       const response = await api.put<Binder>(`/binders/${id}`, data)
       const updatedBinder = response.data
@@ -71,12 +71,12 @@ export const useBindersStore = defineStore('binders', () => {
     }
   }
 
-  async function deleteBinder(id: number) {
+  async function deleteBinder(id: string) {
     try {
       await api.delete(`/binders/${id}`)
       // Supprimer localement le classeur et tous ses enfants récursivement
       const idsToDelete = [id]
-      const findChildren = (parentId: number) => {
+      const findChildren = (parentId: string) => {
         binders.value.forEach(b => {
           if (b.parent_id === parentId) {
             idsToDelete.push(b.id)

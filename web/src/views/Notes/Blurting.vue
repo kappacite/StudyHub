@@ -298,7 +298,7 @@ const router = useRouter()
 const decksStore = useDecksStore()
 const focusStore = useFocusStore()
 
-const noteId = ref(Number(route.params.id))
+const noteId = ref(route.params.id as string)
 const noteTitle = ref('')
 const noteContent = ref('')
 
@@ -431,7 +431,7 @@ onMounted(async () => {
 
 watch(() => route.params.id, (newId) => {
   if (route.name === 'Blurting') {
-    noteId.value = Number(newId)
+    noteId.value = newId as string
     resetSession()
     loadNote()
   }
@@ -457,7 +457,7 @@ function handleNextFocusItem() {
     if (nextItem.type === 'deck') {
       router.push(`/decks/${nextItem.id}/study?focus=true`)
     } else if (nextItem.type === 'note') {
-      noteId.value = nextItem.id
+      noteId.value = String(nextItem.id)
       resetSession()
       loadNote()
     }

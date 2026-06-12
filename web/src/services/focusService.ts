@@ -2,7 +2,7 @@ import api from './api'
 
 export interface FocusItem {
   type: 'deck' | 'note' | 'assignment'
-  id: number
+  id: number | string
   title: string
   count: number
   is_late: boolean
@@ -31,7 +31,7 @@ export interface FocusForecast {
 }
 
 export interface RetentionSubject {
-  binder_id: number
+  binder_id: string
   binder_name: string
   retention_pct: number
   overdue_count: number

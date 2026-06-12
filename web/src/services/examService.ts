@@ -19,7 +19,7 @@ export interface ExamItem {
 
 export interface ExamSession {
   id: number
-  binder_id: number | null
+  binder_id: string | null
   user_id: number
   duration_seconds: number
   started_at: string
@@ -33,7 +33,7 @@ export interface ExamSession {
 
 const examService = {
   async startExam(
-    binderId: number,
+    binderId: string,
     durationMinutes = 30,
     includeFlashcards = true,
     includeQcm = true,

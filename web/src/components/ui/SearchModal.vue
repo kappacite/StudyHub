@@ -267,7 +267,7 @@ const getAbsoluteIndex = (type: 'notes' | 'decks' | 'flashcards' | 'diagrams', r
 
 // Flat list computed helper for selection logic
 const flatList = computed(() => {
-  const items: Array<{ id: number; type: string; route: string; item: any }> = []
+  const items: Array<{ id: number | string; type: string; route: string; item: any }> = []
   
   results.value.notes.forEach(note => {
     items.push({ id: note.id, type: 'note', route: `/notes/${note.id}`, item: note })

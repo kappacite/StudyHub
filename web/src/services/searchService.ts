@@ -7,10 +7,10 @@ export interface SearchTag {
 }
 
 export interface SearchNoteResult {
-  id: number
+  id: string
   title: string
   excerpt: string
-  binder_id: number | null
+  binder_id: string | null
   tags: SearchTag[]
   score: number
 }
@@ -19,7 +19,7 @@ export interface SearchDeckResult {
   id: number
   name: string
   excerpt: string
-  binder_id: number | null
+  binder_id: string | null
   tags: SearchTag[]
   score: number
 }
@@ -35,7 +35,7 @@ export interface SearchFlashcardResult {
 export interface SearchDiagramResult {
   id: number
   title: string
-  binder_id: number | null
+  binder_id: string | null
   score: number
 }
 

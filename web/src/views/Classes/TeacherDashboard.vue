@@ -40,13 +40,13 @@ const newClassIsPublic = ref(false)
 // Create assignment form
 const newAsgTitle = ref('')
 const newAsgDesc = ref('')
-const newAsgBinderId = ref<number | null>(null)
+const newAsgBinderId = ref<string | null>(null)
 const newAsgDueDate = ref('')
 
 // Associate binder state
 const showAssociateModal = ref(false)
 const associateClassId = ref<number | null>(null)
-const associateBinderId = ref<number | null>(null)
+const associateBinderId = ref<string | null>(null)
 
 // Extra class details state
 const classDetails = ref<Record<number, {
@@ -111,7 +111,7 @@ async function associateBinder() {
   }
 }
 
-async function dissociateBinder(classId: number, binderId: number) {
+async function dissociateBinder(classId: number, binderId: string) {
   if (!confirm("Retirer ce classeur de la classe ? Les élèves n'y auront plus accès.")) return
   try {
     await groupService.unshareBinder(classId, binderId)
@@ -129,7 +129,7 @@ function openAssociateBinder(classId: number) {
   associateBinderId.value = null
 }
 
-function getBinderStats(binderId: number) {
+function getBinderStats(binderId: string) {
   const directNotes = notesStore.notes.filter(n => n.binder_id === binderId).length
   const directDecks = decksStore.decks.filter(d => d.binder_id === binderId).length
   return { notes: directNotes, decks: directDecks }

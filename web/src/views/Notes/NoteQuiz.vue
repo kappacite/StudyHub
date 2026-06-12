@@ -25,7 +25,7 @@ const router = useRouter()
 const notesStore = useNotesStore()
 const decksStore = useDecksStore()
 
-const noteId = Number(route.params.id)
+const noteId = route.params.id as string
 
 // États généraux
 const noteTitle = ref('')

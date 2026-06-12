@@ -16,7 +16,7 @@ export interface QuizQuestion {
 
 export interface Quiz {
   id: number
-  note_id: number
+  note_id: string
   user_id: number
   score_pct: number | null
   created_at: string
@@ -25,7 +25,7 @@ export interface Quiz {
 }
 
 const quizService = {
-  async generateQuiz(noteId: number, questionCount = 7) {
+  async generateQuiz(noteId: string, questionCount = 7) {
     const response = await api.post<Quiz>('/quizzes/generate', {
       note_id: noteId,
       question_count: questionCount
@@ -33,7 +33,7 @@ const quizService = {
     return response.data
   },
 
-  async getQuizzesByNote(noteId: number) {
+  async getQuizzesByNote(noteId: string) {
     const response = await api.get<Quiz[]>(`/quizzes/note/${noteId}`)
     return response.data
   },

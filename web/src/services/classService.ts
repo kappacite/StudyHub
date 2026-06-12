@@ -26,7 +26,7 @@ export interface AssignmentProgress {
 export interface Assignment {
   id: number
   group_id: number
-  binder_id: number
+  binder_id: string
   binder_name: string
   title: string
   description: string | null
@@ -40,7 +40,7 @@ export interface AssignmentSummary {
   id: number
   group_id: number
   group_name: string
-  binder_id: number
+  binder_id: string
   binder_name: string
   title: string
   description: string | null
@@ -72,7 +72,7 @@ const classService = {
 
   async createAssignment(
     classId: number,
-    payload: { binder_id: number; title: string; description?: string; due_date?: string }
+    payload: { binder_id: string; title: string; description?: string; due_date?: string }
   ): Promise<Assignment> {
     const resp = await api.post<Assignment>(`/classes/${classId}/assignments`, payload)
     return resp.data
@@ -116,7 +116,7 @@ const classService = {
 }
 
 export interface BinderProgress {
-  binder_id: number
+  binder_id: string
   binder_name: string
   cards_reviewed: number
   total_cards: number

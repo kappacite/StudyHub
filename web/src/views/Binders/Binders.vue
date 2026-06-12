@@ -374,9 +374,9 @@ const tagsStore = useTagsStore()
 const router = useRouter()
 const route = useRoute()
 
-const currentBinderId = ref<number | null>(null)
+const currentBinderId = ref<string | null>(null)
 
-async function fetchMissingBinder(binderId: number) {
+async function fetchMissingBinder(binderId: string) {
   try {
     const response = await api.get(`/binders/${binderId}`)
     const fetchedBinder = response.data
@@ -389,7 +389,7 @@ async function fetchMissingBinder(binderId: number) {
 }
 
 watch(() => route.params.id, (newId) => {
-  currentBinderId.value = newId ? Number(newId) : null
+  currentBinderId.value = (newId as string) || null
 }, { immediate: true })
 
 watch(currentBinderId, async (newVal) => {

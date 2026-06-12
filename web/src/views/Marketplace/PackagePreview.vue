@@ -213,7 +213,7 @@ const loading = ref(true)
 const importing = ref(false)
 const packageData = ref<any>(null)
 
-const packageId = Number(route.params.id)
+const packageId = route.params.id as string
 
 async function fetchPackagePreview() {
   loading.value = true

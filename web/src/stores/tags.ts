@@ -48,7 +48,7 @@ export const useTagsStore = defineStore('tags', () => {
     tags.value = tags.value.filter(tag => tag.id !== id)
   }
 
-  async function setTagsForEntity(entity: TaggableEntity, id: number, tagIds: number[]) {
+  async function setTagsForEntity(entity: TaggableEntity, id: number | string, tagIds: number[]) {
     const response = await api.post<TagsResponse>(`/${entity}/${id}/tags`, { tag_ids: tagIds })
     return response.data.data
   }
