@@ -1,3 +1,4 @@
+import os
 import pytest
 from app import create_app
 from app.extensions import db
@@ -6,13 +7,15 @@ from app.models.user import User
 @pytest.fixture(scope="session")
 def app():
     app = create_app("testing")
-    
-    # Utiliser SQLite en mémoire pour les tests pour plus de rapidité et d'isolation
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
-    
+
+    # SQLite en mémoire par défaut (rapide, isolé). Si TEST_DATABASE_URL est défini
+    # (job CI "Backend · tests (PostgreSQL)"), on tourne sur PostgreSQL pour attraper
+    # les divergences SQLite/PG invisibles autrement (ex. func.date() -> date vs str).
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("TEST_DATABASE_URL", "sqlite://")
+
     # Désactiver le rate limiting pour les tests
     app.config["RATELIMIT_ENABLED"] = False
-    
+
     return app
 
 @pytest.fixture(scope="function", autouse=True)
