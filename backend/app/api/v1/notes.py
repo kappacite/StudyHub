@@ -107,6 +107,16 @@ def get_public_note(token):
     note = _db.session.query(Note).filter_by(share_token=token, is_public=True).first()
     if not note:
         return jsonify({"error": {"code": "NOT_FOUND", "message": "Note introuvable ou non publique."}}), 404
+        
+    # Négociation de contenu Markdown pour les agents
+    if "text/markdown" in request.headers.get("Accept", ""):
+        from flask import make_response
+        content = f"# {note.title}\n\n{note.content}"
+        response = make_response(content)
+        response.headers["Content-Type"] = "text/markdown; charset=utf-8"
+        response.headers["x-markdown-tokens"] = str(len(content) // 4)
+        return response
+
     from app.schemas.note_schema import NoteResponse
     return jsonify(NoteResponse.model_validate(note).model_dump()), 200
 
