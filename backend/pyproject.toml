@@ -1,0 +1,20 @@
+# Configuration de l'outillage de tests backend.
+# Ce fichier ne déclare PAS de [build-system] : pip continue d'utiliser
+# requirements.txt / requirements-dev.txt. Seuls pytest et coverage le lisent.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Rend le package `app` importable que l'on lance `pytest` ou `python -m pytest`.
+pythonpath = ["."]
+addopts = "-q"
+# Les options de couverture (--cov, --cov-fail-under) sont passées par la CI,
+# pour garder `pytest` rapide et simple en local. Voir .github/workflows/ci.yml.
+
+[tool.coverage.run]
+source = ["app"]
+# Pas de `omit` : on mesure la couverture réelle de tout le package `app`.
+# Baseline au moment de l'ajout : 79 % (seuil CI plancher : 78 %, cible : 80 %+).
+
+[tool.coverage.report]
+show_missing = true
+precision = 1
