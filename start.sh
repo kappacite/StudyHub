@@ -90,7 +90,8 @@ fi
 
 # Configuration des variables par défaut
 export FLASK_ENV=${FLASK_ENV:-development}
-export FLASK_APP=${FLASK_APP:-app}
+# wsgi:app applique automatiquement les migrations en attente au démarrage.
+export FLASK_APP=${FLASK_APP:-wsgi:app}
 export GEMINI_MODEL=${GEMINI_MODEL:-"gemini-2.0-flash"}
 
 # Démarrage avec le Python du venv ou le Python global

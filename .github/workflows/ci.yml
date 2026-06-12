@@ -83,6 +83,25 @@ jobs:
           JWT_SECRET_KEY: ci_jwt_secret_not_used_in_prod
         run: flask db upgrade
 
+      - name: Guard against model/migration drift
+        env:
+          FLASK_APP: app
+          FLASK_ENV: development
+          DATABASE_URL: postgresql://studyhub:studyhub@localhost:5432/studyhub
+          SECRET_KEY: ci_secret_key_not_used_in_prod
+          JWT_SECRET_KEY: ci_jwt_secret_not_used_in_prod
+        # La base est au head ; si autogenerate produit une migration, c'est qu'un
+        # modèle a changé sans migration correspondante -> on bloque la PR.
+        run: |
+          flask db migrate -m "ci_drift_check"
+          if ls migrations/versions/*ci_drift_check*.py >/dev/null 2>&1; then
+            echo "::error::Drift détecté : un modèle a changé sans migration Alembic correspondante."
+            echo '----- migration auto-générée (à committer après revue) -----'
+            cat migrations/versions/*ci_drift_check*.py
+            exit 1
+          fi
+          echo "✓ Aucun drift : modèles et migrations sont synchronisés."
+
   frontend-build:
     name: Frontend · typecheck & build
     runs-on: ubuntu-latest

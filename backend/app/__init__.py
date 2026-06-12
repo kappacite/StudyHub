@@ -173,7 +173,10 @@ def create_app(config_name=None):
         import app.tasks
 
 
-        # La création et la migration des tables sont déléguées à deploy.sh ou gérées par les tests unitaires.
+        # La factory reste pure : pas de migration ici (pour ne pas interférer avec
+        # les commandes `flask db ...`). L'auto-migration au démarrage est gérée par
+        # l'entrypoint serveur wsgi.py (run_auto_migrations). Les tests gèrent leur
+        # schéma via db.create_all().
         pass
             
         @flask_app.route("/sitemap.xml", methods=["GET"])
