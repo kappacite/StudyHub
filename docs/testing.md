@@ -45,7 +45,10 @@ pytest                                        # tous les tests
 pytest --cov=app --cov-report=term-missing    # avec couverture
 ```
 Les tests tournent sur **SQLite en mémoire** (cf. `tests/conftest.py`) : rapides et
-isolés, aucune base externe requise.
+isolés, aucune base externe requise. La CI rejoue aussi la suite sur **PostgreSQL**
+(`TEST_DATABASE_URL`) pour attraper les divergences de dialecte qui ne cassent qu'en
+prod (ex. `func.date()` renvoie un `date` sous PG, une `str` sous SQLite). Pour
+reproduire en local : `TEST_DATABASE_URL=postgresql://... pytest`.
 
 ### Gate de couverture
 Plancher CI : **80 %** (couverture actuelle : 80,7 %). La CI échoue sous le plancher
@@ -81,6 +84,7 @@ extension possible ultérieure.
 | Job | Rôle |
 |---|---|
 | `Backend · tests & coverage` | pytest + gate de couverture (SQLite mémoire) |
+| `Backend · tests (PostgreSQL)` | même suite sur PostgreSQL — attrape les divergences SQLite/PG (prod) |
 | `Backend · migrations (PostgreSQL)` | applique toutes les migrations sur une base Postgres vierge — attrape les régressions de migration |
 | `Frontend · typecheck & build` | `vue-tsc` (typecheck) + build de production |
 | `Frontend · unit tests (Vitest)` | tests unitaires/composants frontend |
