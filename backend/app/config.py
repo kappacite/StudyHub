@@ -28,9 +28,13 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", 
+        "DATABASE_URL",
         "sqlite://"
     )
+    # Désactive le rate limiting de façon déterministe pour les tests.
+    # Lu par limiter.init_app() (contrairement au réglage post-création du conftest),
+    # ce qui évite des 429 en cours de suite selon FLASK_ENV / l'ordre des tests.
+    RATELIMIT_ENABLED = False
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(seconds=5)  # Court pour les tests
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(seconds=10)
     CELERY_TASK_ALWAYS_EAGER = True
