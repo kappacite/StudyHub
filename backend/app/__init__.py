@@ -25,6 +25,10 @@ def create_app(config_name=None):
         
     flask_app.config.from_object(config_by_name[config_name])
     
+    # Faire confiance aux en-têtes du proxy inverse (Nginx / Cloudflare)
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    
     # Initialisation des extensions
     db.init_app(flask_app)
     jwt.init_app(flask_app)
