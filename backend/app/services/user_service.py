@@ -37,3 +37,9 @@ class UserService:
             
         updated = self._user_dao.update(user)
         return UserResponse.model_validate(updated)
+
+    def delete_account(self, user_id: int) -> None:
+        user = self._user_dao.get_by_id(user_id)
+        if not user:
+            raise ResourceNotFoundError("Utilisateur introuvable.")
+        self._user_dao.delete(user)
