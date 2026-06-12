@@ -8,4 +8,6 @@ COPY . .
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
 USER appuser
 EXPOSE 5000
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--worker-class", "gevent", "--timeout", "120", "app:create_app()"]
+# Entrypoint wsgi:app -> applique automatiquement les migrations en attente au
+# démarrage (run_auto_migrations), sérialisé entre workers par un verrou Postgres.
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--worker-class", "gevent", "--timeout", "120", "wsgi:app"]
