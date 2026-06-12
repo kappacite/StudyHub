@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 class StudySessionCreate(BaseModel):
     module: str = Field(..., description="Le module étudié : 'flashcard', 'note', 'diagram'")
@@ -25,6 +25,13 @@ class HeatmapItem(BaseModel):
     date: str = Field(..., description="Date au format YYYY-MM-DD")
     duration: int = Field(..., description="Durée cumulée en secondes pour ce jour")
     count: int = Field(..., description="Nombre de sessions pour ce jour")
+
+    @field_validator("date", mode="before")
+    @classmethod
+    def _coerce_date_to_iso(cls, v):
+        # PostgreSQL renvoie un datetime.date pour func.date() (SQLite une str).
+        # On normalise en "YYYY-MM-DD" pour éviter un 400 de validation en prod.
+        return v.isoformat() if hasattr(v, "isoformat") else v
 
 class DeckStatsResponse(BaseModel):
     deck_id: int
