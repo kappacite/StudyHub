@@ -64,7 +64,8 @@ class StudySessionDAO(BaseDAO[StudySession]):
         
         return [
             {
-                "date": r.date,
+                # PostgreSQL renvoie un datetime.date, SQLite une str : on normalise.
+                "date": r.date if isinstance(r.date, str) else r.date.isoformat(),
                 "duration": int(r.duration),
                 "count": r.sessions_count
             }
