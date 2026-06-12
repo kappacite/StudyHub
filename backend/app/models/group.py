@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Foreign
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.extensions import db
+from typing import Optional
 
 class Group(db.Model):
     __tablename__ = "groups"

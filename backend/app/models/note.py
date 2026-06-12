@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 import uuid
 from app.models.search_type import TSVectorType
 from app.extensions import db
+from typing import Optional
 
 class Note(db.Model):
     __tablename__ = "notes"

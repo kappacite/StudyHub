@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, Float, String, Text, DateTime, ForeignKe
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.extensions import db
+from typing import Optional
 
 class Quiz(db.Model):
     __tablename__ = "quizzes"

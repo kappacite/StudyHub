@@ -3,6 +3,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.models.search_type import TSVectorType
 from app.extensions import db
+from typing import Optional
 
 class Diagram(db.Model):
     __tablename__ = "diagrams"

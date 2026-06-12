@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, T
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.extensions import db
+from typing import Optional
 import uuid
 
 class Binder(db.Model):

@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.extensions import db
+from typing import Optional
 import uuid
 
 class PDFDocument(db.Model):
