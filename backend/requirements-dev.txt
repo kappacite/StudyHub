@@ -1,0 +1,11 @@
+# Dépendances de développement et de test — NE PAS installer en production.
+# Inclut les dépendances applicatives + l'outillage de tests.
+-r requirements.txt
+
+# Couverture de code (gate CI : --cov-fail-under)
+pytest-cov==7.1.0
+
+# Fabriques de données de test et utilitaires (utilisés à partir de la phase 4)
+factory-boy==3.3.1
+Faker==30.8.2
+freezegun==1.5.1
