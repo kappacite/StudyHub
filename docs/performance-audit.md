@@ -8,6 +8,11 @@ Lecture du chemin `route → service → DAO → modèle → schéma` à partir 
 (decks lents), puis recherche des **mêmes patterns** sur tout le backend :
 sur-récupération ORM, index, agrégations en Python, cache, concurrence, observabilité.
 
+Une **passe approfondie service par service** a ensuite été menée (search, classes,
+groupes, community/marketplace, notes/occlusions, diagrammes, quiz, planning, focus,
+stats) via un détecteur de boucles contenant des requêtes (N+1) + lecture des points
+chauds. Les constats ci-dessous couvrent l'ensemble des services de lecture.
+
 ---
 
 ## Bilan — constats par thème
@@ -20,6 +25,10 @@ sur-récupération ORM, index, agrégations en Python, cache, concurrence, obser
 | **A2** | `focus_service` : `decks = ...all()` puis **boucle** avec une requête `due_cards` **par deck** (N+1), puis filtrage Python par parsing de `original_text` (`{{vf::}}`, `{{qcm::}}`…). | `services/focus_service.py:23,36,177` |
 | **A3** | `class_service` (progression d'un classeur) : descente récursive de l'arbre des binders avec, par binder, une requête decks puis **par deck** une requête cartes (N+1 récursif). | `services/class_service.py:470-475` |
 | **A4** | **Frontend** : les stores demandent `per_page=1000` (notes, binders, tags, diagrammes). `NoteEdit` charge **4 listes complètes** au montage. | `web/src/stores/*`, `views/Notes/NoteEdit.vue:1190` |
+| **A5** | **Recherche** : `search_dao.search_all` ne fait **aucun eager loading**, mais `search_service` accède à `note.tags`, `deck.tags`, `card.deck.name` dans des boucles → **N+1** par résultat (tags + deck). Fonctionnalité sensible à la latence. | `dao/search_dao.py`, `services/search_service.py:93-127` |
+| **A6** | **Dashboards classes (prof/élève)** : `for p in asgn.progresses: db.session.get(User, …)` et `for asgn: db.session.get(AssignmentProgress, …)` (parfois imbriqués) → **N+1** par étudiant/devoir. Impact réel pour un prof avec beaucoup d'élèves. | `services/class_service.py:85-90,246-285` |
+| **A7** | **Marketplace** : `list_public_packages` fait `BinderResponse.model_validate(b)` par package ; `BinderResponse.tags` est chargé en lazy → **N+1** sur les tags (borné à `per_page`). | `services/community_service.py:42` |
+| **A8** | **Occlusions de note** : à la construction des flashcards d'une note, les diagrammes référencés (`[diagram:N]`) sont chargés **un par un** (`filter_by(id=…).first()` en boucle). N+1 borné par le nb de diagrammes intégrés. | `services/note_service.py:162-163` |
 
 ### 🔴 B. Index manquants — dégradation qui empire avec la croissance des données
 Seuls **3 index applicatifs** existent (`users.email`, `notes.share_token`,
@@ -54,6 +63,17 @@ de `selectinload` scanne la table. Masqué aujourd'hui par le faible volume.
 Aucune instrumentation : pas de timing par requête, pas de log « requête lente », pas de
 compteur SQL. On audite à l'aveugle ; impossible de prioriser/prouver un gain.
 
+### 🟠 G. Recherches `LIKE '%…%'` non-indexables
+- `diagram_service` (mise à jour d'un diagramme) : `Note.content.like("%[diagram:N]%")`
+  → **scan full-content de toutes les notes** (wildcard en tête = aucun index utilisable),
+  puis `_sync_phantom_deck` par note trouvée (N+1). Empire avec le volume de notes.
+- `community`/`decks`/`binders` : filtres `ilike("%search%")` sur `name`/`description`
+  → *seq scan* (le wildcard en tête empêche l'usage d'un index btree).
+- Un `tsvector` full-text existe déjà sur notes/decks/flashcards/diagrammes (index GIN)
+  mais **n'est pas utilisé** par ces chemins — la recherche full-text devrait s'appuyer
+  dessus plutôt que sur des `LIKE`.
+- Détail : `print(...)` au lieu du logger dans `diagram_service`/`community_service`.
+
 ---
 
 ## Synthèse : « decks = 1s »
@@ -83,10 +103,13 @@ trop de cartes, et via un scan. Deux premiers chantiers à fort ROI.
 - **3.2** Étendre aux autres listes (vérifier `notes`, `binders`, `pdfs`). → *commit*
 - **3.3** Test « budget de requêtes » : la liste de N decks tient en un nombre **borné et constant** de requêtes (compteur 1.2). → *commit*
 
-### Thématique 4 — Éliminer les N+1 dans `focus` et `classes`
-- **4.1** `focus_service` : une **requête agrégée** (`GROUP BY deck_id`, `COUNT` des dues) au lieu de la boucle. → *commit*
-- **4.2** Filtrage `original_text` : le pousser en SQL ou précalculer un flag/type de carte en colonne. → *commit*
-- **4.3** `class_service` : remplacer la récursion N+1 par une **CTE récursive** / agrégat. → *commit*
+### Thématique 4 — Éliminer les N+1 (search, focus, classes, marketplace, notes)
+- **4.1** **Recherche** (A5) : eager-load `tags`/`deck` dans `search_dao` (`selectinload`) — gain immédiat et sûr. → *commit*
+- **4.2** `focus_service` (A2) : une **requête agrégée** (`GROUP BY deck_id`, `COUNT` des dues) au lieu de la boucle. → *commit*
+- **4.3** Filtrage `original_text` (A2) : le pousser en SQL ou précalculer un flag/type de carte en colonne. → *commit*
+- **4.4** **Classes** (A6) : précharger `User`/`AssignmentProgress` en lot (`in_(...)` ou `selectinload(asgn.progresses)` + jointure) au lieu des `db.session.get` en boucle. → *commit*
+- **4.5** `class_service` progression classeur (A3) : récursion N+1 → **CTE récursive** / agrégat unique. → *commit*
+- **4.6** **Marketplace** (A7) : eager-load `tags` dans `list_public_packages`. **Occlusions** (A8) : charger les diagrammes référencés en un seul `id IN (...)`. → *commit*
 
 ### Thématique 5 — Cache
 - **5.1** Garantir **Redis partagé** entre les 4 workers en prod (sinon cache par-process inutile). → *commit*
@@ -100,9 +123,15 @@ trop de cartes, et via un scan. Deux premiers chantiers à fort ROI.
 - **7.1** Supprimer les `per_page=1000` : paginer / charger à la demande. → *commit*
 - **7.2** `NoteEdit` : ne plus charger 4 listes complètes au montage. → *commit*
 
+### Thématique 8 — Recherche full-text & LIKE non-indexables (G)
+- **8.1** `diagram_service` : remplacer `Note.content.like("%[diagram:N]%")` par une relation/colonne dédiée (ou requête sur un lien structuré), pour éviter le scan full-content à chaque màj de diagramme. → *commit*
+- **8.2** Faire passer la recherche `name/description` par le `tsvector`/index GIN existant au lieu des `ilike("%…%")`. → *commit*
+- **8.3** Remplacer les `print(...)` par le logger (`diagram_service`, `community_service`). → *commit*
+
 ---
 
 ## Ordonnancement recommandé (par ROI)
-**1 (mesurer) → 2 (index) → 3 (over-fetch decks) → 4 (N+1) → 6 (concurrence) → 5 (cache) → 7 (frontend).**
-Les thématiques 2 et 3 devraient régler le « decks 1s » ; la 1 conditionne tout (elle
+**1 (mesurer) → 2 (index) → 3 (over-fetch decks) → 4 (N+1 : search/focus/classes/marketplace) → 6 (concurrence) → 5 (cache) → 8 (full-text) → 7 (frontend).**
+Les thématiques 2 et 3 règlent le « decks 1s » ; **4.1 (recherche)** et **4.4 (classes)**
+sont des gains rapides à fort impact perçu ; la thématique 1 conditionne tout (elle
 permet de **prouver** chaque gain).
