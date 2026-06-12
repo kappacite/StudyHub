@@ -1,18 +1,17 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
-from app.extensions import db
+from app.extensions import db, limiter
 from app.dao.note_dao import NoteDAO
 from app.dao.deck_dao import DeckDAO
 from app.dao.flashcard_dao import FlashcardDAO
 from app.dao.study_session_dao import StudySessionDAO
-from app.services.ai_service import AIService
 from app.services.flashcard_service import FlashcardService
-from app.services.stats_service import StatsService
 from app.schemas.flashcard_schema import FlashcardCreate
-from app.schemas.stats_schema import StudySessionCreate
 from app.middlewares.auth_middleware import jwt_required_middleware
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
+from app.tasks import run_blurting_analysis
+from celery.result import AsyncResult
 
 blurting_bp = Blueprint("blurting", __name__)
 
@@ -21,12 +20,21 @@ deck_dao = DeckDAO(db.session)
 flashcard_dao = FlashcardDAO(db.session)
 study_session_dao = StudySessionDAO(db.session)
 
-ai_service = AIService()
 flashcard_service = FlashcardService(flashcard_dao, deck_dao)
-stats_service = StatsService(study_session_dao, deck_dao, flashcard_dao)
+
+def get_user_identity_or_ip():
+    try:
+        identity = get_jwt_identity()
+        if identity:
+            return str(identity)
+    except Exception:
+        pass
+    from flask_limiter.util import get_remote_address
+    return get_remote_address()
 
 @blurting_bp.route("/analyze", methods=["POST"])
 @jwt_required_middleware
+@limiter.limit("10 per hour", key_func=get_user_identity_or_ip)
 def analyze():
     user_id = int(get_jwt_identity())
     data = request.get_json() or {}
@@ -50,24 +58,36 @@ def analyze():
     if note.user_id != user_id:
         raise ForbiddenError("Accès interdit à cette note.")
         
-    # Lancement de l'analyse IA
-    analysis_result = ai_service.analyze_blurting(note.title, note.content, user_blurting)
+    # Lancement de l'analyse IA de manière asynchrone via Celery
+    task = run_blurting_analysis.delay(user_id, note_id, user_blurting, duration_seconds)
     
-    # Enregistrement de la session d'étude si la durée est valide
-    if duration_seconds > 0:
-        session_data = StudySessionCreate(
-            module="note",
-            duration_seconds=duration_seconds,
-            cards_reviewed=0,
-            cards_correct=0
-        )
-        stats_service.create_session(user_id, session_data)
-        
-    # Enregistrer la date du blurting
-    note.last_blurting_at = datetime.utcnow()
-    note_dao.update(note)
-        
-    return jsonify(analysis_result), 200
+    return jsonify({
+        "task_id": task.id,
+        "status": task.status
+    }), 202
+
+@blurting_bp.route("/tasks/<task_id>", methods=["GET"])
+@jwt_required_middleware
+def get_task_status(task_id):
+    result = AsyncResult(task_id)
+    
+    response = {
+        "task_id": task_id,
+        "status": result.status
+    }
+    
+    if result.ready():
+        if result.successful():
+            response["result"] = result.result
+        else:
+            response["error"] = {
+                "code": "TASK_FAILED",
+                "message": str(result.result) or "Une erreur est survenue lors de l'analyse.",
+                "details": {}
+            }
+            
+    return jsonify(response), 200
+
 
 @blurting_bp.route("/create-flashcards", methods=["POST"])
 @jwt_required_middleware

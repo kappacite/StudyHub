@@ -84,6 +84,14 @@ def test_blurting_analyze_endpoint(mock_analyze_blurting, client, auth_headers, 
         "duration_seconds": 120
     }, headers=auth_headers)
     
-    assert resp.status_code == 200
-    assert resp.json["retention_score"] == 90
-    assert resp.json["general_feedback"] == "Excellent."
+    assert resp.status_code == 202
+    assert "task_id" in resp.json
+    task_id = resp.json["task_id"]
+    
+    # Polling de l'état de la tâche
+    poll_resp = client.get(f"/api/v1/blurting/tasks/{task_id}", headers=auth_headers)
+    assert poll_resp.status_code == 200
+    assert poll_resp.json["status"] == "SUCCESS"
+    assert poll_resp.json["result"]["retention_score"] == 90
+    assert poll_resp.json["result"]["general_feedback"] == "Excellent."
+

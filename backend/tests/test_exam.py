@@ -16,14 +16,14 @@ def test_exam_flow(client, auth_headers, test_user, app):
         binder_id = binder.id
 
         # Création d'une note et d'un quiz associé avec 1 question
-        note = Note(user_id=test_user["id"], binder_id=binder_id, title="Note Pharmacopée", content="L'aspirine est un anti-inflammatoire.")
+        note = Note(user_id=test_user["id"], binder=binder, title="Note Pharmacopée", content="L'aspirine est un anti-inflammatoire.")
         db.session.add(note)
         db.session.commit()
-        
-        quiz = Quiz(note_id=note.id, user_id=test_user["id"])
+
+        quiz = Quiz(note=note, user_id=test_user["id"])
         db.session.add(quiz)
         db.session.commit()
-        
+
         q1 = QuizQuestion(
             quiz_id=quiz.id,
             question_text="Quelle est la classe thérapeutique de l'aspirine ?",
@@ -35,16 +35,16 @@ def test_exam_flow(client, auth_headers, test_user, app):
             ]
         )
         db.session.add(q1)
-        
+
         # Création d'un deck et d'une flashcard
-        deck = Deck(user_id=test_user["id"], name="Deck Aspirine", binder_id=binder_id)
+        deck = Deck(user_id=test_user["id"], name="Deck Aspirine", binder=binder)
         db.session.add(deck)
         db.session.commit()
-        
+
         fc = Flashcard(deck_id=deck.id, front="Formule de l'aspirine", back="C9H8O4")
         db.session.add(fc)
         db.session.commit()
-        
+
         fc_id = fc.id
         q1_id = q1.id
 
@@ -123,7 +123,7 @@ def test_exam_snapshot_immutability(client, auth_headers, test_user, app):
         db.session.commit()
         binder_id = binder.id
 
-        deck = Deck(user_id=test_user["id"], name="Deck Immuable", binder_id=binder_id)
+        deck = Deck(user_id=test_user["id"], name="Deck Immuable", binder=binder)
         db.session.add(deck)
         db.session.commit()
 

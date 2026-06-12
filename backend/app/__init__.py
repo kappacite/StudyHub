@@ -2,41 +2,20 @@ import os
 from flask import Flask, request
 from flask_cors import CORS
 from app.config import config_by_name
-from app.extensions import db, jwt, migrate, limiter
-
-def _ensure_sqlite_dev_schema(flask_app):
-    """Additive schema sync for existing SQLite dev/test databases."""
-    if db.engine.dialect.name != "sqlite":
-        return
-
-    from sqlalchemy import inspect, text
-
-    inspector = inspect(db.engine)
-    search_vector_tables = ("notes", "decks", "flashcards", "diagrams")
-    for table_name in search_vector_tables:
-        if not inspector.has_table(table_name):
-            continue
-
-        columns = {column["name"] for column in inspector.get_columns(table_name)}
-        if "search_vector" not in columns:
-            db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN search_vector TEXT"))
-            flask_app.logger.info("Colonne SQLite manquante ajoutée: %s.search_vector", table_name)
-
-    db.session.commit()
-
-    # Ensure is_public column exists in groups table for SQLite
-    if inspector.has_table("groups"):
-        columns = {column["name"] for column in inspector.get_columns("groups")}
-        if "is_public" not in columns:
-            db.session.execute(text("ALTER TABLE groups ADD COLUMN is_public BOOLEAN DEFAULT 0 NOT NULL"))
-            db.session.commit()
-            flask_app.logger.info("Colonne SQLite manquante ajoutée: groups.is_public")
-
+from app.extensions import db, jwt, migrate, limiter, redis_client, celery_app
 
 def create_app(config_name=None):
     flask_app = Flask(__name__)
+    
+    # Whitelist CORS stricte ciblant l'URL du frontend
+    allowed_origins = os.environ.get(
+        "CORS_ALLOWED_ORIGINS", 
+        "https://study.leshen.cloud,http://localhost:5173,http://localhost:3000"
+    )
+    origins_list = [o.strip() for o in allowed_origins.split(",") if o.strip()]
+    
     CORS(flask_app, resources={r"/api/.*": {
-        "origins": "*",
+        "origins": origins_list,
         "allow_headers": ["Content-Type", "Authorization", "Signature-Agent", "Signature", "Signature-Input", "X-Requested-With", "Accept", "Origin"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
     }})
@@ -49,8 +28,64 @@ def create_app(config_name=None):
     # Initialisation des extensions
     db.init_app(flask_app)
     jwt.init_app(flask_app)
+    redis_client.init_app(flask_app)
     migrate.init_app(flask_app, db)
     limiter.init_app(flask_app)
+    
+    # Configuration de Celery
+    celery_app.config_from_object(flask_app.config, namespace="CELERY")
+
+    class ContextTask(celery_app.Task):
+        def __call__(self, *args, **kwargs):
+            with flask_app.app_context():
+                return self.run(*args, **kwargs)
+    celery_app.Task = ContextTask
+
+    
+    # Configuration de Talisman pour les en-têtes de sécurité
+    from flask_talisman import Talisman
+    csp = {
+        'default-src': '\'self\'',
+        'script-src': [
+            '\'self\'',
+            '\'unsafe-inline\'',
+            '\'unsafe-eval\'',
+            'https://static.cloudflareinsights.com'
+        ],
+        'style-src': [
+            '\'self\'',
+            '\'unsafe-inline\'',
+            'https://fonts.googleapis.com'
+        ],
+        'font-src': [
+            '\'self\'',
+            'https://fonts.gstatic.com',
+            'data:'
+        ],
+        'img-src': [
+            '\'self\'',
+            'data:',
+            'blob:'
+        ],
+        'connect-src': [
+            '\'self\'',
+            'https://static.cloudflareinsights.com'
+        ],
+        'worker-src': [
+            '\'self\'',
+            'blob:'
+        ],
+        'frame-src': '\'self\''
+    }
+    Talisman(flask_app,
+             content_security_policy=csp,
+             force_https=(config_name == "production"),
+             strict_transport_security=True,
+             strict_transport_security_max_age=31536000,
+             strict_transport_security_include_subdomains=True,
+             strict_transport_security_preload=True,
+             frame_options="SAMEORIGIN",
+             referrer_policy="strict-origin-when-cross-origin")
     
     # Assurer que le dossier d'upload existe
     os.makedirs(flask_app.config["UPLOAD_FOLDER"], exist_ok=True)
@@ -129,32 +164,13 @@ def create_app(config_name=None):
         import app.models.exam
         import app.models.group
         import app.models.assignment
+        
+        # Import celery tasks
+        import app.tasks
 
-        # En dev/test : créer les tables directement sans migrations
-        if flask_app.config.get("DEBUG") or flask_app.config.get("TESTING"):
-            db.create_all()
-            _ensure_sqlite_dev_schema(flask_app)
-        else:
-            # En production : auto-migration au démarrage
-            from flask_migrate import upgrade as flask_db_upgrade, stamp as flask_db_stamp
-            from sqlalchemy import inspect
-            try:
-                inspector = inspect(db.engine)
-                tables = inspector.get_table_names()
-                
-                if tables:
-                    # La base de données existe et contient des tables
-                    if "alembic_version" not in tables:
-                        # Cas où la base a été créée sans Alembic (avant les migrations)
-                        # On la tamponne sur la version initiale de référence
-                        flask_app.logger.info("Base de données existante sans Alembic. Tamponnage sur la version 06f0ddaea360...")
-                        flask_db_stamp(revision="06f0ddaea360")
-                
-                # Exécuter les migrations en attente
-                flask_db_upgrade()
-                flask_app.logger.info("Migrations de base de données appliquées automatiquement avec succès.")
-            except Exception as e:
-                flask_app.logger.error(f"Erreur lors de l'exécution automatique des migrations: {e}")
+
+        # La création et la migration des tables sont déléguées à deploy.sh ou gérées par les tests unitaires.
+        pass
             
         @flask_app.route("/sitemap.xml", methods=["GET"])
         def sitemap():
@@ -371,24 +387,8 @@ def create_app(config_name=None):
 
         @flask_app.after_request
         def add_security_headers(response):
-            # En-têtes de sécurité fondamentaux
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
-            response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com; "
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                "font-src 'self' https://fonts.gstatic.com data:; "
-                "img-src 'self' data: blob:; "
-                "connect-src 'self' https://static.cloudflareinsights.com; "
-                "worker-src 'self' blob:; "
-                "frame-src 'self';"
-            )
-            response.headers["X-Content-Type-Options"] = "nosniff"
-            response.headers["X-Frame-Options"] = "SAMEORIGIN"
-            response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+            # En-têtes additionnels non gérés par Talisman
             response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
-
-            # En-têtes de contrôle des données et accès moderne
             response.headers["Permissions-Policy"] = "camera=(self), microphone=(), geolocation=(), interest-cohort=()"
             response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
             response.headers["Cross-Origin-Opener-Policy"] = "same-origin"

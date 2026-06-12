@@ -8,6 +8,21 @@ class DeckDAO(BaseDAO[Deck]):
     def __init__(self, db: Session):
         super().__init__(Deck, db)
 
+    def get_all(self, user_id: int, limit: int = 20, offset: int = 0) -> List[Deck]:
+        from sqlalchemy.orm import selectinload
+        return (
+            self.db.query(self.model)
+            .filter_by(user_id=user_id)
+            .options(
+                selectinload(self.model.cards),
+                selectinload(self.model.tags),
+                selectinload(self.model.binder)
+            )
+            .limit(limit)
+            .offset(offset)
+            .all()
+        )
+
     def search_decks(
         self, 
         user_id: int, 
@@ -21,7 +36,11 @@ class DeckDAO(BaseDAO[Deck]):
         
         # Filtrer par binder
         if binder_id is not None:
-            query = query.filter_by(binder_id=binder_id)
+            if isinstance(binder_id, int) or (isinstance(binder_id, str) and binder_id.isdigit()):
+                query = query.filter_by(binder_id=int(binder_id))
+            else:
+                from app.models.binder import Binder
+                query = query.join(Binder).filter(Binder.id == str(binder_id))
             
         # Filtrer par recherche
         if search_query:
@@ -35,7 +54,12 @@ class DeckDAO(BaseDAO[Deck]):
         if tag_id is not None:
             query = query.filter(self.model.tags.any(id=tag_id))
             
-        return query.limit(limit).offset(offset).all()
+        from sqlalchemy.orm import selectinload
+        return query.options(
+            selectinload(self.model.cards),
+            selectinload(self.model.tags),
+            selectinload(self.model.binder)
+        ).limit(limit).offset(offset).all()
 
     def count_decks(
         self, 
@@ -47,7 +71,11 @@ class DeckDAO(BaseDAO[Deck]):
         query = self.db.query(self.model).filter_by(user_id=user_id)
         
         if binder_id is not None:
-            query = query.filter_by(binder_id=binder_id)
+            if isinstance(binder_id, int) or (isinstance(binder_id, str) and binder_id.isdigit()):
+                query = query.filter_by(binder_id=int(binder_id))
+            else:
+                from app.models.binder import Binder
+                query = query.join(Binder).filter(Binder.id == str(binder_id))
             
         if search_query:
             query = query.filter(

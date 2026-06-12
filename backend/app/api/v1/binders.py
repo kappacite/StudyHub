@@ -30,8 +30,9 @@ def get_binders():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
     
-    parent_id_str = request.args.get("parent_id")
-    parent_id = int(parent_id_str) if parent_id_str is not None and parent_id_str != "" else None
+    parent_id = request.args.get("parent_id")
+    if parent_id == "":
+        parent_id = None
     tag_id = request.args.get("tag_id", type=int)
     
     # Appel service
@@ -60,14 +61,14 @@ def create_binder():
     result = binder_service.create_binder(user_id, binder_create)
     return jsonify(result.model_dump()), 201
 
-@binders_bp.route("/<int:binder_id>", methods=["GET"])
+@binders_bp.route("/<binder_id>", methods=["GET"])
 @jwt_required_middleware
 def get_binder(binder_id):
     user_id = int(get_jwt_identity())
     result = binder_service.get_binder(user_id, binder_id)
     return jsonify(result.model_dump()), 200
 
-@binders_bp.route("/<int:binder_id>", methods=["PUT"])
+@binders_bp.route("/<binder_id>", methods=["PUT"])
 @jwt_required_middleware
 def update_binder(binder_id):
     user_id = int(get_jwt_identity())
@@ -79,7 +80,7 @@ def update_binder(binder_id):
     result = binder_service.update_binder(user_id, binder_id, binder_update)
     return jsonify(result.model_dump()), 200
 
-@binders_bp.route("/<int:binder_id>", methods=["DELETE"])
+@binders_bp.route("/<binder_id>", methods=["DELETE"])
 @jwt_required_middleware
 def delete_binder(binder_id):
     user_id = int(get_jwt_identity())
@@ -87,13 +88,13 @@ def delete_binder(binder_id):
     return "", 204
 
 
-@binders_bp.route("/<int:binder_id>/tags", methods=["POST"])
+@binders_bp.route("/<binder_id>/tags", methods=["POST"])
 @jwt_required_middleware
 def set_binder_tags(binder_id):
     return set_entity_tags("binders", binder_id)
 
 
-@binders_bp.route("/<int:binder_id>/tags/<int:tag_id>", methods=["DELETE"])
+@binders_bp.route("/<binder_id>/tags/<int:tag_id>", methods=["DELETE"])
 @jwt_required_middleware
 def remove_binder_tag(binder_id, tag_id):
     return remove_entity_tag("binders", binder_id, tag_id)
@@ -103,12 +104,12 @@ def remove_binder_tag(binder_id, tag_id):
 # Endpoints PUBLICS (sans JWT)
 # -------------------------------------------------------
 
-@binders_bp.route("/public/<int:binder_id>", methods=["GET"])
-def get_public_binder(binder_id):
+@binders_bp.route("/public/<binder_id>", methods=["GET"])
+def get_public_package_binder(binder_id):
     """Accès public à un classeur (is_public=True)."""
     from app.models.binder import Binder
     from app.extensions import db as _db
-    binder = _db.session.query(Binder).filter_by(id=binder_id, is_public=True).first()
+    binder = _db.session.query(Binder).filter_by(id=str(binder_id), is_public=True).first()
     if not binder:
         return jsonify({"error": {"code": "NOT_FOUND", "message": "Classeur introuvable ou non public."}}), 404
     from app.schemas.binder_schema import BinderResponse
@@ -119,7 +120,7 @@ def get_public_binder(binder_id):
 # Toggle visibilité
 # -------------------------------------------------------
 
-@binders_bp.route("/<int:binder_id>/visibility", methods=["PATCH"])
+@binders_bp.route("/<binder_id>/visibility", methods=["PATCH"])
 @jwt_required_middleware
 def toggle_binder_visibility(binder_id):
     """Passe un classeur en public ou privé."""

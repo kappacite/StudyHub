@@ -41,21 +41,20 @@ class CommunityService:
         
         return [BinderResponse.model_validate(b) for b in binders], total
 
-    def clone_package(self, user_id: int, binder_id: int) -> BinderResponse:
+    def clone_package(self, user_id: int, binder_id) -> BinderResponse:
         # 1. Récupérer le classeur source
         # Il doit être public, appartenir à l'utilisateur, ou être partagé dans un de ses groupes/classes
-        parent_binder = db.session.query(Binder).filter(Binder.id == binder_id).first()
+        parent_binder = db.session.query(Binder).filter(Binder.id == str(binder_id)).first()
         if not parent_binder:
             raise ResourceNotFoundError("Package/Classeur introuvable.")
             
         if parent_binder.user_id != user_id and not parent_binder.is_public:
             from app.models.group import GroupBinder, GroupMember
-            curr_id = binder_id
+            curr_binder = parent_binder
             binder_ids = []
-            while curr_id:
-                binder_ids.append(curr_id)
-                b = db.session.get(Binder, curr_id)
-                curr_id = b.parent_id if b else None
+            while curr_binder:
+                binder_ids.append(curr_binder._id)
+                curr_binder = curr_binder.parent
                 
             membership = (
                 db.session.query(GroupMember)
@@ -69,8 +68,7 @@ class CommunityService:
             if not membership:
                 raise ResourceNotFoundError("Package/Classeur public introuvable.")
 
-            
-        # 2. Fonction récursive de clonage profond
+              # 2. Fonction récursive de clonage profond
         def clone_binder_recursive(old_binder: Binder, new_parent_id: Optional[int] = None) -> Binder:
             new_binder = Binder(
                 name=old_binder.name,
@@ -94,20 +92,20 @@ class CommunityService:
                     title=old_note.title,
                     content=old_note.content,
                     user_id=user_id,
-                    binder_id=new_binder.id
+                    binder_id=new_binder._id
                 )
                 db.session.add(new_note)
                 db.session.flush()
                 
                 # Vérifier s'il y a un deck fantôme associé à l'ancienne note
-                old_deck = db.session.query(Deck).filter_by(note_id=old_note.id).first()
+                old_deck = db.session.query(Deck).filter_by(note_id=old_note._id).first()
                 if old_deck:
                     new_deck = Deck(
                         name=old_deck.name,
                         description=old_deck.description,
                         user_id=user_id,
-                        binder_id=new_binder.id,
-                        note_id=new_note.id
+                        binder_id=new_binder._id,
+                        note_id=new_note._id
                     )
                     db.session.add(new_deck)
                     db.session.flush()
@@ -126,7 +124,7 @@ class CommunityService:
                             next_review=func.now()
                         )
                         db.session.add(new_card)
-
+ 
             # --- Cloner les Decks classiques (non liés à des notes) ---
             for old_deck in old_binder.decks:
                 if old_deck.note_id is None:
@@ -134,7 +132,7 @@ class CommunityService:
                         name=old_deck.name,
                         description=old_deck.description,
                         user_id=user_id,
-                        binder_id=new_binder.id
+                        binder_id=new_binder._id
                     )
                     db.session.add(new_deck)
                     db.session.flush()
@@ -152,30 +150,30 @@ class CommunityService:
                             next_review=func.now()
                         )
                         db.session.add(new_card)
-
+ 
             # --- Cloner les Diagrammes ---
             for old_diag in old_binder.diagrams:
                 new_diag = Diagram(
                     title=old_diag.title,
                     code=old_diag.code,
                     user_id=user_id,
-                    binder_id=new_binder.id
+                    binder_id=new_binder._id
                 )
                 db.session.add(new_diag)
-
+ 
             # --- Cloner les Documents PDF ---
             for old_pdf in old_binder.pdfs:
                 new_pdf = PDFDocument(
                     filename=old_pdf.filename,
-                    filepath=old_pdf.filepath,
+                    name=old_pdf.name,
                     user_id=user_id,
-                    binder_id=new_binder.id
+                    binder_id=new_binder._id
                 )
                 db.session.add(new_pdf)
-
+ 
             # --- Cloner les classeurs enfants ---
             for child in old_binder.children:
-                clone_binder_recursive(child, new_binder.id)
+                clone_binder_recursive(child, new_binder._id)
 
             return new_binder
 

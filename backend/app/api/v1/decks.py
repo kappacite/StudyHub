@@ -29,8 +29,9 @@ def get_decks():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
     
-    binder_id_str = request.args.get("binder_id")
-    binder_id = int(binder_id_str) if binder_id_str is not None and binder_id_str != "" else None
+    binder_id = request.args.get("binder_id")
+    if binder_id == "":
+        binder_id = None
     
     search = request.args.get("search")
     tag_id = request.args.get("tag_id", type=int)

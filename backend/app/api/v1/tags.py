@@ -46,14 +46,14 @@ def delete_tag(tag_id):
     return "", 204
 
 
-def set_entity_tags(entity_type: str, entity_id: int):
+def set_entity_tags(entity_type: str, entity_id):
     user_id = int(get_jwt_identity())
     data = TagSetSchema.model_validate(request.get_json() or {})
     tags = tag_service.set_tags_for_entity(user_id, entity_type, entity_id, data.tag_ids)
     return jsonify({"data": [tag.model_dump() for tag in tags]}), 200
 
 
-def remove_entity_tag(entity_type: str, entity_id: int, tag_id: int):
+def remove_entity_tag(entity_type: str, entity_id, tag_id: int):
     user_id = int(get_jwt_identity())
     tag_service.remove_tag_from_entity(user_id, entity_type, entity_id, tag_id)
     return "", 204

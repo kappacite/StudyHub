@@ -14,7 +14,7 @@ class ClassCreateSchema(BaseModel):
 
 
 class AssignmentCreateSchema(BaseModel):
-    binder_id: int
+    binder_id: str
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     due_date: Optional[datetime] = None
@@ -35,7 +35,7 @@ class AssignmentProgressResponseSchema(BaseModel):
 class AssignmentResponseSchema(BaseModel):
     id: int
     group_id: int
-    binder_id: int
+    binder_id: str
     binder_name: str
     title: str
     description: Optional[str] = None
@@ -52,7 +52,7 @@ class AssignmentSummarySchema(BaseModel):
     id: int
     group_id: int
     group_name: str
-    binder_id: int
+    binder_id: str
     binder_name: str
     title: str
     description: Optional[str] = None
@@ -83,7 +83,7 @@ class ClassResponseSchema(BaseModel):
 
 
 class BinderProgressResponseSchema(BaseModel):
-    binder_id: int
+    binder_id: str
     binder_name: str
     cards_reviewed: int
     total_cards: int

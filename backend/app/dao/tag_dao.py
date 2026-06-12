@@ -45,10 +45,12 @@ class TagDAO(BaseDAO[Tag]):
             .all()
         )
 
-    def get_entity(self, entity_type: str, entity_id: int):
+    def get_entity(self, entity_type: str, entity_id):
         model = ENTITY_MODELS.get(entity_type)
         if model is None:
             return None
+        if isinstance(entity_id, str):
+            return self.db.query(model).filter_by(id=entity_id).first()
         return self.db.get(model, entity_id)
 
     def get_tags_for_entity(self, entity_type: str, entity_id: int) -> List[Tag]:

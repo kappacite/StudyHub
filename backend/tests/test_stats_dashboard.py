@@ -61,3 +61,39 @@ def test_dashboard_stats(client, auth_headers, app):
     
     # Vérifier la prévision
     assert len(json_data["forecast_7_days"]) == 7
+
+def test_stats_cache_and_invalidation(client, auth_headers, app):
+    # Clear cache key from previous tests to ensure isolation
+    from app.extensions import redis_client
+    from flask_jwt_extended import decode_token
+    token = auth_headers["Authorization"].split(" ")[1]
+    decoded = decode_token(token)
+    user_id = int(decoded["sub"])
+    redis_client.delete(f"route_cache:/api/v1/stats/overview::{user_id}")
+
+    # 1. Get overview (should return 0 study time initially, since it's a new test run/transaction isolation)
+    overview_resp = client.get("/api/v1/stats/overview", headers=auth_headers)
+    assert overview_resp.status_code == 200
+    initial_time = overview_resp.json["total_time_seconds"]
+
+    # 2. Add study session directly via DB (which triggers SQLAlchemy event listeners)
+    with app.app_context():
+        session = StudySession(
+            user_id=user_id,
+            module="flashcard",
+            duration_seconds=500,
+            cards_reviewed=5,
+            cards_correct=4
+        )
+        db.session.add(session)
+        db.session.commit()
+
+    # 3. Retrieve overview again. It should be invalidated by the DB insert trigger and fetch updated data
+    overview_resp2 = client.get("/api/v1/stats/overview", headers=auth_headers)
+    assert overview_resp2.status_code == 200
+    assert overview_resp2.json["total_time_seconds"] == initial_time + 500
+
+    # 4. Verify that the cache has been populated
+    from app.extensions import redis_client
+    cache_key = f"route_cache:/api/v1/stats/overview::{user_id}"
+    assert redis_client.get(cache_key) is not None

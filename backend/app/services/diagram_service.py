@@ -19,16 +19,18 @@ class DiagramService:
         return diagram
 
     def create_diagram(self, user_id: int, data: DiagramCreate) -> DiagramResponse:
+        binder_id_internal = None
         if data.binder_id is not None:
             binder = self._binder_dao.get_by_id(data.binder_id)
             if not binder or binder.user_id != user_id:
                 raise ForbiddenError("Accès interdit à ce classeur.")
+            binder_id_internal = binder._id
                 
         diagram = Diagram(
             title=data.title,
             code=data.code,
             user_id=user_id,
-            binder_id=data.binder_id
+            binder_id=binder_id_internal
         )
         created = self._diagram_dao.create(diagram)
         return DiagramResponse.model_validate(created)
@@ -64,7 +66,7 @@ class DiagramService:
             binder = self._binder_dao.get_by_id(data.binder_id)
             if not binder or binder.user_id != user_id:
                 raise ForbiddenError("Accès interdit à ce classeur.")
-            diagram.binder_id = data.binder_id
+            diagram.binder_id = binder._id
         elif "binder_id" in data.model_fields_set and data.binder_id is None:
             diagram.binder_id = None
             

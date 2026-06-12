@@ -2,8 +2,11 @@ from app.models.binder import Binder
 from app.models.group import GroupBinder, GroupMember
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 
-def check_binder_access(db_session, binder_id: int, user_id: int, write_required: bool = False) -> Binder:
-    binder = db_session.get(Binder, binder_id)
+def check_binder_access(db_session, binder_id, user_id: int, write_required: bool = False) -> Binder:
+    if isinstance(binder_id, str):
+        binder = db_session.query(Binder).filter_by(id=binder_id).first()
+    else:
+        binder = db_session.get(Binder, binder_id)
     if not binder:
         raise ResourceNotFoundError("Classeur introuvable.")
         
@@ -11,12 +14,11 @@ def check_binder_access(db_session, binder_id: int, user_id: int, write_required
         return binder
         
     # Walk up parent chain to see if any parent binder is shared in a group the user is in
-    curr_id = binder_id
+    curr = binder
     binder_ids = []
-    while curr_id:
-        binder_ids.append(curr_id)
-        b = db_session.get(Binder, curr_id)
-        curr_id = b.parent_id if b else None
+    while curr:
+        binder_ids.append(curr._id)
+        curr = curr.parent if curr.parent_id else None
         
     # Check if shared in a group where the user is a member/follower
     membership = (

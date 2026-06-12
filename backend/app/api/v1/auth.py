@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.extensions import db
 from app.dao.user_dao import UserDAO
 from app.services.auth_service import AuthService
@@ -48,17 +48,33 @@ def refresh():
     return jsonify(result.model_dump()), 200
 
 @auth_bp.route("/logout", methods=["POST"])
+@jwt_required(verify_type=False)
 def logout():
-    # Version simple : pas d'état sur le serveur.
-    # Pour révoquer, il faudrait enregistrer le token dans un cache Redis ou DB.
-    # Renvoyer 204 suffit à indiquer le succès côté client.
+    import time
+    from app.extensions import redis_client
+    jwt_data = get_jwt()
+    jti = jwt_data["jti"]
+    exp_timestamp = jwt_data["exp"]
+    ttl = int(exp_timestamp - time.time())
+    if ttl > 0:
+        redis_client.setex(jti, ttl, "true")
     return "", 204
 
 @auth_bp.route("/account", methods=["DELETE"])
 @jwt_required_middleware
 def delete_account():
+    import time
+    from app.extensions import redis_client
     # Obtenir l'identité de l'utilisateur connecté (ID de l'utilisateur)
     user_id = int(get_jwt_identity())
     
+    # Révoquer le token actuel
+    jwt_data = get_jwt()
+    jti = jwt_data["jti"]
+    exp_timestamp = jwt_data["exp"]
+    ttl = int(exp_timestamp - time.time())
+    if ttl > 0:
+        redis_client.setex(jti, ttl, "true")
+        
     auth_service.delete_account(user_id)
     return "", 204

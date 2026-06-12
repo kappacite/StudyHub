@@ -6,7 +6,7 @@ from app.schemas.tag_schema import TagResponseSchema
 class DeckBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
-    binder_id: Optional[int] = None
+    binder_id: Optional[str] = None
 
 class DeckCreate(DeckBase):
     pass
@@ -14,10 +14,11 @@ class DeckCreate(DeckBase):
 class DeckUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
-    binder_id: Optional[int] = None
+    binder_id: Optional[str] = None
 
 class DeckResponse(DeckBase):
     id: int
+    binder_id: Optional[str] = Field(None, validation_alias="binder_uuid")
     user_id: int
     card_count: int
     tags: List[TagResponseSchema] = []

@@ -5,8 +5,14 @@ import { useAuthStore } from './stores/auth'
 import './style.css'
 import App from './App.vue'
 
+import DOMPurify from 'dompurify'
+
 const app = createApp(App)
 const pinia = createPinia()
+
+app.directive('dompurify-html', (el, binding) => {
+  el.innerHTML = DOMPurify.sanitize(binding.value || '')
+})
 
 app.use(pinia)
 

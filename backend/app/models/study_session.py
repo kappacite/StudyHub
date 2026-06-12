@@ -22,3 +22,18 @@ class StudySession(db.Model):
     # Relations
     user = relationship("User", back_populates="study_sessions")
     flashcard = relationship("Flashcard")
+
+from sqlalchemy import event
+from app.utils.cache import invalidate_stats_cache
+
+@event.listens_for(StudySession, 'after_insert')
+def after_insert_session(mapper, connection, target):
+    invalidate_stats_cache(target.user_id)
+
+@event.listens_for(StudySession, 'after_update')
+def after_update_session(mapper, connection, target):
+    invalidate_stats_cache(target.user_id)
+
+@event.listens_for(StudySession, 'after_delete')
+def after_delete_session(mapper, connection, target):
+    invalidate_stats_cache(target.user_id)

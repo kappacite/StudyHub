@@ -26,16 +26,18 @@ class DeckService:
         return deck
 
     def create_deck(self, user_id: int, data: DeckCreate) -> DeckResponse:
+        binder_id_internal = None
         # Si un binder_id est spécifié, vérifier qu'il appartient bien à l'utilisateur
         if data.binder_id is not None:
             from app.utils.security import check_binder_access
-            check_binder_access(self._deck_dao.db, data.binder_id, user_id, write_required=True)
+            binder = check_binder_access(self._deck_dao.db, data.binder_id, user_id, write_required=True)
+            binder_id_internal = binder._id
                 
         deck = Deck(
             name=data.name,
             description=data.description,
             user_id=user_id,
-            binder_id=data.binder_id
+            binder_id=binder_id_internal
         )
         created = self._deck_dao.create(deck)
         return DeckResponse.model_validate(created)
@@ -70,8 +72,8 @@ class DeckService:
             
         if data.binder_id is not None:
             from app.utils.security import check_binder_access
-            check_binder_access(self._deck_dao.db, data.binder_id, user_id, write_required=True)
-            deck.binder_id = data.binder_id
+            binder = check_binder_access(self._deck_dao.db, data.binder_id, user_id, write_required=True)
+            deck.binder_id = binder._id
         elif "binder_id" in data.model_fields_set and data.binder_id is None:
             deck.binder_id = None
             

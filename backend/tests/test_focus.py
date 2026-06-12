@@ -42,7 +42,7 @@ def test_today_items_returns_only_due_cards(app, focus_service, test_user):
         # Verify
         assert result.flashcard_count == 1
         assert len(result.items) == 1
-        assert result.items[0].id == deck.id
+        assert result.items[0].id == str(deck.id)
         assert result.items[0].type == "deck"
         assert result.items[0].count == 1
 
@@ -109,7 +109,7 @@ def test_retention_calculation_30_days(app, focus_service, test_user):
         db.session.add(binder)
         db.session.commit()
 
-        deck = Deck(name="Optique", binder_id=binder.id, user_id=test_user["id"])
+        deck = Deck(name="Optique", binder=binder, user_id=test_user["id"])
         db.session.add(deck)
         db.session.commit()
 
@@ -156,7 +156,7 @@ def test_retention_trend_positive_negative(app, focus_service, test_user):
         db.session.add(binder)
         db.session.commit()
 
-        deck = Deck(name="Algèbre", binder_id=binder.id, user_id=test_user["id"])
+        deck = Deck(name="Algèbre", binder=binder, user_id=test_user["id"])
         db.session.add(deck)
         db.session.commit()
 

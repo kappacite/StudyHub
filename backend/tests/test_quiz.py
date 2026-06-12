@@ -36,7 +36,7 @@ def test_quiz_flow(mock_generate_quiz, client, auth_headers, test_user, app):
         db.session.add(binder)
         db.session.commit()
         
-        note = Note(user_id=test_user["id"], binder_id=binder.id, title="Note Géographie", content="La capitale de la France est Paris. Deux plus deux font quatre.")
+        note = Note(user_id=test_user["id"], binder=binder, title="Note Géographie", content="La capitale de la France est Paris. Deux plus deux font quatre.")
         db.session.add(note)
         db.session.commit()
         
@@ -129,7 +129,7 @@ def test_quiz_unauthorized_access(client, auth_headers, test_user, app):
         db.session.add(other_binder)
         db.session.commit()
         
-        other_note = Note(user_id=999, binder_id=other_binder.id, title="Note Secrète", content="Top secret")
+        other_note = Note(user_id=999, binder=other_binder, title="Note Secrète", content="Top secret")
         db.session.add(other_note)
         db.session.commit()
         other_note_id = other_note.id

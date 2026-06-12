@@ -7,6 +7,7 @@ from app.dao.flashcard_dao import FlashcardDAO
 from app.services.stats_service import StatsService
 from app.schemas.stats_schema import StudySessionCreate
 from app.middlewares.auth_middleware import jwt_required_middleware
+from app.utils.cache import cache_route
 
 stats_bp = Blueprint("stats", __name__)
 
@@ -18,6 +19,7 @@ stats_service = StatsService(study_session_dao, deck_dao, flashcard_dao)
 
 @stats_bp.route("/overview", methods=["GET"])
 @jwt_required_middleware
+@cache_route(timeout=300)
 def get_overview():
     user_id = int(get_jwt_identity())
     result = stats_service.get_overview(user_id)
@@ -48,6 +50,7 @@ def create_session():
 
 @stats_bp.route("/heatmap", methods=["GET"])
 @jwt_required_middleware
+@cache_route(timeout=300)
 def get_heatmap():
     user_id = int(get_jwt_identity())
     result = stats_service.get_heatmap(user_id)
@@ -55,6 +58,7 @@ def get_heatmap():
 
 @stats_bp.route("/decks/<int:deck_id>", methods=["GET"])
 @jwt_required_middleware
+@cache_route(timeout=300)
 def get_deck_stats(deck_id):
     user_id = int(get_jwt_identity())
     result = stats_service.get_deck_stats(user_id, deck_id)
@@ -62,6 +66,7 @@ def get_deck_stats(deck_id):
 
 @stats_bp.route("/dashboard", methods=["GET"])
 @jwt_required_middleware
+@cache_route(timeout=300)
 def get_dashboard():
     user_id = int(get_jwt_identity())
     result = stats_service.get_dashboard_stats(user_id)

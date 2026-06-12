@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
@@ -7,8 +7,12 @@ from app.extensions import db
 
 class Note(db.Model):
     __tablename__ = "notes"
+    __table_args__ = (
+        Index('notes_search_idx', 'search_vector', postgresql_using='gin'),
+    )
 
-    id = Column(Integer, primary_key=True)
+    _id = Column("id", Integer, primary_key=True)
+    id = Column("uuid", String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     title = Column(String(200), nullable=False)
     content = Column(Text, default="", nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -29,3 +33,7 @@ class Note(db.Model):
     @property
     def flashcards(self):
         return self.deck.cards if self.deck else []
+
+    @property
+    def binder_uuid(self) -> Optional[str]:
+        return self.binder.id if self.binder else None

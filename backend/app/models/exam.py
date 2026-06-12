@@ -21,3 +21,7 @@ class ExamSession(db.Model):
     # Relations
     user = relationship("User")
     binder = relationship("Binder")
+
+    @property
+    def binder_uuid(self) -> Optional[str]:
+        return self.binder.id if self.binder else None

@@ -12,7 +12,7 @@ class PDFService:
         self._pdf_dao = pdf_dao
         self._binder_dao = binder_dao
 
-    def _get_pdf_or_404(self, pdf_id: int, user_id: int) -> PDFDocument:
+    def _get_pdf_or_404(self, pdf_id, user_id: int) -> PDFDocument:
         pdf = self._pdf_dao.get_by_id(pdf_id)
         if not pdf:
             raise ResourceNotFoundError("Document PDF introuvable.")
@@ -28,10 +28,29 @@ class PDFService:
         file_data, 
         upload_folder: str
     ) -> PDFResponse:
+        binder_id_internal = None
         if binder_id is not None:
             binder = self._binder_dao.get_by_id(binder_id)
             if not binder or binder.user_id != user_id:
                 raise ForbiddenError("Accès interdit à ce classeur.")
+            binder_id_internal = binder._id
+                
+        # Validation du type MIME réel avec python-magic
+        try:
+            import magic
+            header = file_data.stream.read(2048)
+            file_data.stream.seek(0)
+            mime_type = magic.from_buffer(header, mime=True)
+            if mime_type != "application/pdf":
+                raise ValidationError(f"Le fichier envoyé n'est pas un document PDF valide (Type MIME détecté : {mime_type}).")
+        except ValidationError as e:
+            raise e
+        except Exception as e:
+            # Fallback si libmagic n'est pas disponible ou s'il y a un souci système
+            filename = getattr(file_data, "filename", "")
+            ext = os.path.splitext(filename)[1].lower() if filename else ""
+            if ext != ".pdf":
+                raise ValidationError("Le fichier envoyé n'est pas un document PDF.")
                 
         # Générer un nom de fichier unique sécurisé
         unique_filename = f"{uuid.uuid4().hex}.pdf"
@@ -47,7 +66,7 @@ class PDFService:
             name=name,
             filename=unique_filename,
             user_id=user_id,
-            binder_id=binder_id
+            binder_id=binder_id_internal
         )
         
         try:
@@ -62,7 +81,7 @@ class PDFService:
     def get_pdfs(
         self, 
         user_id: int, 
-        binder_id: Optional[int] = None, 
+        binder_id = None, 
         tag_id: Optional[int] = None,
         page: int = 1, 
         per_page: int = 20
@@ -73,11 +92,11 @@ class PDFService:
         
         return [PDFResponse.model_validate(p) for p in pdfs], total
 
-    def get_pdf(self, user_id: int, pdf_id: int) -> PDFResponse:
+    def get_pdf(self, user_id: int, pdf_id) -> PDFResponse:
         pdf = self._get_pdf_or_404(pdf_id, user_id)
         return PDFResponse.model_validate(pdf)
 
-    def get_pdf_file_path(self, user_id: int, pdf_id: int, upload_folder: str) -> str:
+    def get_pdf_file_path(self, user_id: int, pdf_id, upload_folder: str) -> str:
         pdf = self._get_pdf_or_404(pdf_id, user_id)
         file_path = os.path.join(upload_folder, pdf.filename)
         
@@ -86,7 +105,7 @@ class PDFService:
             
         return file_path
 
-    def delete_pdf(self, user_id: int, pdf_id: int, upload_folder: str) -> None:
+    def delete_pdf(self, user_id: int, pdf_id, upload_folder: str) -> None:
         pdf = self._get_pdf_or_404(pdf_id, user_id)
         file_path = os.path.join(upload_folder, pdf.filename)
         

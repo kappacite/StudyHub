@@ -123,7 +123,7 @@ class GroupService:
             binders.append(
                 GroupBinderResponseSchema(
                     group_id=assoc.group_id,
-                    binder_id=assoc.binder_id,
+                    binder_id=binder.id,
                     binder_name=binder.name,
                     permission=assoc.permission,
                     pinned=assoc.pinned,
@@ -245,7 +245,7 @@ class GroupService:
             joined_at=updated.joined_at
         )
 
-    def share_binder(self, group_id: int, user_id: int, binder_id: int, permission: str) -> GroupBinderResponseSchema:
+    def share_binder(self, group_id: int, user_id: int, binder_id: str, permission: str) -> GroupBinderResponseSchema:
         group = self._group_dao.get_by_id(group_id)
         if not group:
             raise ResourceNotFoundError("Groupe introuvable.")
@@ -258,23 +258,23 @@ class GroupService:
             raise ForbiddenError("Vous ne pouvez partager que vos propres classeurs.")
 
         # Vérifier si déjà partagé
-        existing = self._group_dao.get_group_binder(group_id, binder_id)
+        existing = self._group_dao.get_group_binder(group_id, binder._id)
         if existing:
             raise ConflictError("Ce classeur est déjà partagé dans ce groupe.")
 
-        created = self._group_dao.add_group_binder(group_id, binder_id, permission, user_id)
+        created = self._group_dao.add_group_binder(group_id, binder._id, permission, user_id)
 
         # Enregistrer l'activité
         self._group_dao.add_group_activity(
             group_id,
             user_id,
             "shared_binder",
-            payload={"binder_id": binder_id, "binder_name": binder.name}
+            payload={"binder_id": binder.id, "binder_name": binder.name}
         )
 
         return GroupBinderResponseSchema(
             group_id=created.group_id,
-            binder_id=created.binder_id,
+            binder_id=binder.id,
             binder_name=binder.name,
             permission=created.permission,
             pinned=created.pinned,
@@ -282,13 +282,17 @@ class GroupService:
             added_at=created.added_at
         )
 
-    def unshare_binder(self, group_id: int, user_id: int, binder_id: int) -> None:
+    def unshare_binder(self, group_id: int, user_id: int, binder_id: str) -> None:
         group = self._group_dao.get_by_id(group_id)
         if not group:
             raise ResourceNotFoundError("Groupe introuvable.")
 
+        binder = self._binder_dao.get_by_id(binder_id)
+        if not binder:
+            raise ResourceNotFoundError("Classeur introuvable.")
+
         req_member = self._check_membership(group_id, user_id)
-        group_binder = self._group_dao.get_group_binder(group_id, binder_id)
+        group_binder = self._group_dao.get_group_binder(group_id, binder._id)
         if not group_binder:
             raise ResourceNotFoundError("Ce classeur n'est pas partagé dans ce groupe.")
 
@@ -297,7 +301,7 @@ class GroupService:
         # - Le propriétaire du classeur d'origine (binder.user_id == user_id)
         # - Le propriétaire ou admin du groupe
         is_creator = group_binder.added_by == user_id
-        is_binder_owner = group_binder.binder.user_id == user_id
+        is_binder_owner = binder.user_id == user_id
         is_group_admin = req_member.role in ("owner", "admin")
 
         if not (is_creator or is_binder_owner or is_group_admin):

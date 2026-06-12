@@ -51,6 +51,10 @@ class GroupBinder(db.Model):
     binder = relationship("Binder")
     added_by_user = relationship("User", foreign_keys=[added_by])
 
+    @property
+    def binder_uuid(self) -> Optional[str]:
+        return self.binder.id if self.binder else None
+
 class GroupActivity(db.Model):
     __tablename__ = "group_activities"
 

@@ -95,8 +95,8 @@ class ClassService:
         return AssignmentResponseSchema(
             id=asgn.id,
             group_id=asgn.group_id,
-            binder_id=asgn.binder_id,
-            binder_name=self._binder_name(asgn.binder_id),
+            binder_id=asgn.binder.id if asgn.binder else "",
+            binder_name=asgn.binder.name if asgn.binder else "",
             title=asgn.title,
             description=asgn.description,
             due_date=asgn.due_date,
@@ -179,13 +179,13 @@ class ClassService:
         self._get_class_or_404(class_id)
         self._require_teacher(class_id, user_id)
 
-        binder = db.session.get(Binder, data.binder_id)
+        binder = self._binder_dao.get_by_id(data.binder_id)
         if not binder:
             raise ResourceNotFoundError("Classeur introuvable.")
 
         asgn = Assignment(
             group_id=class_id,
-            binder_id=data.binder_id,
+            binder_id=binder._id,
             title=data.title,
             description=data.description,
             due_date=data.due_date,
@@ -294,8 +294,8 @@ class ClassService:
                     id=asgn.id,
                     group_id=asgn.group_id,
                     group_name=group.name if group else "",
-                    binder_id=asgn.binder_id,
-                    binder_name=self._binder_name(asgn.binder_id),
+                    binder_id=asgn.binder.id if asgn.binder else "",
+                    binder_name=asgn.binder.name if asgn.binder else "",
                     title=asgn.title,
                     description=asgn.description,
                     due_date=asgn.due_date,
@@ -397,7 +397,7 @@ class ClassService:
         for student in students:
             binders_progress = []
             for binder in shared_binders:
-                card_ids = get_all_card_ids_in_binder(db.session, binder.id)
+                card_ids = get_all_card_ids_in_binder(db.session, binder._id)
                 total_cards = len(card_ids)
 
                 if total_cards == 0:
@@ -472,7 +472,7 @@ def get_all_card_ids_in_binder(db_session, binder_id: int) -> List[int]:
             cards = db_session.query(Flashcard.id).filter_by(deck_id=d.id).all()
             card_ids.extend([c[0] for c in cards])
             
-        children = db_session.query(Binder.id).filter_by(parent_id=b_id).all()
+        children = db_session.query(Binder._id).filter_by(parent_id=b_id).all()
         for child_id_tup in children:
             collect_cards(child_id_tup[0])
             

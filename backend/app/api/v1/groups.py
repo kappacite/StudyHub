@@ -109,7 +109,7 @@ def share_binder(group_id):
     
     return jsonify(shared_binder.model_dump()), 200
 
-@groups_bp.route("/<int:group_id>/binders/<int:binder_id>", methods=["DELETE"])
+@groups_bp.route("/<int:group_id>/binders/<string:binder_id>", methods=["DELETE"])
 @jwt_required_middleware
 def unshare_binder(group_id, binder_id):
     user_id = int(get_jwt_identity())

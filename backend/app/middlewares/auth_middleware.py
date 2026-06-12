@@ -1,7 +1,14 @@
 from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
-from app.extensions import jwt
+from app.extensions import jwt, redis_client
+
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload: dict):
+    jti = jwt_payload["jti"]
+    token_in_redis = redis_client.get(jti)
+    return token_in_redis is not None
+
 
 def jwt_required_middleware(f):
     @wraps(f)

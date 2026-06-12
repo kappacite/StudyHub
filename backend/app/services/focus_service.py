@@ -76,7 +76,7 @@ class FocusService:
                 
                 deck_items.append(FocusItemSchema(
                     type="deck",
-                    id=deck.id,
+                    id=str(deck.id),
                     title=deck.name,
                     count=count,
                     is_late=is_late,
@@ -219,7 +219,7 @@ class FocusService:
                 .join(Flashcard, StudySession.flashcard_id == Flashcard.id)
                 .join(Deck, Flashcard.deck_id == Deck.id)
                 .filter(
-                    Deck.binder_id == binder.id,
+                    Deck.binder_id == binder._id,
                     StudySession.user_id == user_id,
                     StudySession.module == "flashcard",
                     StudySession.created_at >= now - timedelta(days=30)
@@ -256,7 +256,7 @@ class FocusService:
                 db.session.query(Flashcard)
                 .join(Deck)
                 .filter(
-                    Deck.binder_id == binder.id,
+                    Deck.binder_id == binder._id,
                     Flashcard.next_review <= now
                 )
                 .all()

@@ -55,7 +55,8 @@ def test_community_marketplace_and_cloning(client, auth_headers, other_auth_head
     
     # Simuler une révision de la carte pour changer son SM-2
     with client.application.app_context():
-        deck = db.session.query(Deck).filter_by(binder_id=binder_id).first()
+        binder_obj = db.session.query(Binder).filter_by(id=binder_id).first()
+        deck = db.session.query(Deck).filter_by(binder_id=binder_obj._id).first()
         card = db.session.query(Flashcard).filter_by(deck_id=deck.id).first()
         card.interval = 15
         card.repetitions = 3
@@ -83,13 +84,13 @@ def test_community_marketplace_and_cloning(client, auth_headers, other_auth_head
         assert cloned_binder.original_author_id == test_user["id"]
         
         # Vérifier la note clonée
-        cloned_note = db.session.query(Note).filter_by(binder_id=cloned_binder_id).first()
+        cloned_note = db.session.query(Note).filter_by(binder_id=cloned_binder._id).first()
         assert cloned_note is not None
         assert cloned_note.user_id == other_user["id"]
         assert "double liaison C=C" in cloned_note.content
         
         # Vérifier le deck et la carte clonée
-        cloned_deck = db.session.query(Deck).filter_by(binder_id=cloned_binder_id).first()
+        cloned_deck = db.session.query(Deck).filter_by(binder_id=cloned_binder._id).first()
         assert cloned_deck is not None
         assert cloned_deck.user_id == other_user["id"]
         

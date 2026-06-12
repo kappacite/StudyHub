@@ -61,17 +61,7 @@ def import_anki():
 
     # Récupération de binder_id (optionnel)
     binder_id = request.form.get("binder_id")
-    if binder_id:
-        try:
-            binder_id = int(binder_id)
-        except ValueError:
-            return jsonify({
-                "error": {
-                    "code": "BAD_REQUEST",
-                    "message": "Le paramètre binder_id doit être un nombre entier."
-                }
-            }), 400
-    else:
+    if binder_id == "":
         binder_id = None
         
     try:

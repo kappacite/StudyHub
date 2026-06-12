@@ -14,7 +14,7 @@ class ImportService:
         self._flashcard_dao = flashcard_dao
         self._tag_dao = tag_dao
 
-    def import_anki(self, user_id: int, file_bytes: bytes, binder_id: Optional[int] = None) -> Dict[str, Any]:
+    def import_anki(self, user_id: int, file_bytes: bytes, binder_id = None) -> Dict[str, Any]:
         """
         Importe les cartes d'une archive Anki (.apkg) dans un nouveau Deck de l'utilisateur.
         """
@@ -27,12 +27,19 @@ class ImportService:
         # Récupération du nom du deck principal (le premier trouvé)
         main_deck_name = decks_data[0]["name"]
         
+        binder_id_internal = None
+        if binder_id is not None:
+            from app.dao.binder_dao import BinderDAO
+            binder = BinderDAO(self._deck_dao.db).get_by_id(binder_id)
+            if binder:
+                binder_id_internal = binder._id
+
         # Création du Deck StudyHub
         deck = Deck(
             user_id=user_id,
             name=main_deck_name,
             description="Importé depuis Anki",
-            binder_id=binder_id
+            binder_id=binder_id_internal
         )
         
         # Enregistrement du Deck (récupération de l'id)

@@ -3,7 +3,7 @@ from typing import List, Optional
 
 class FocusItemSchema(BaseModel):
     type: str  # "deck" | "note" | "assignment"
-    id: int
+    id: str
     title: str
     count: int
     is_late: bool
@@ -40,7 +40,7 @@ class FocusForecastResponse(BaseModel):
         from_attributes = True
 
 class RetentionSubjectSchema(BaseModel):
-    binder_id: int
+    binder_id: str
     binder_name: str
     retention_pct: float
     overdue_count: int

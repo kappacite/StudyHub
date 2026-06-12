@@ -54,10 +54,10 @@ def test_public_class_flow(client, auth_headers, test_user, app):
         db.session.add(binder)
         db.session.commit()
         
-        note = Note(user_id=test_user["id"], binder_id=binder.id, title="Cours 1: La Cellule", content="Contenu important")
+        note = Note(user_id=test_user["id"], binder=binder, title="Cours 1: La Cellule", content="Contenu important")
         db.session.add(note)
         
-        deck = Deck(user_id=test_user["id"], binder_id=binder.id, name="Questions Biologie")
+        deck = Deck(user_id=test_user["id"], binder=binder, name="Questions Biologie")
         db.session.add(deck)
         db.session.commit()
 

@@ -27,8 +27,9 @@ def get_notes():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
     
-    binder_id_str = request.args.get("binder_id")
-    binder_id = int(binder_id_str) if binder_id_str is not None and binder_id_str != "" else None
+    binder_id = request.args.get("binder_id")
+    if binder_id == "":
+        binder_id = None
     
     search = request.args.get("search")
     tag_id = request.args.get("tag_id", type=int)
@@ -57,14 +58,14 @@ def create_note():
     result = note_service.create_note(user_id, note_create)
     return jsonify(result.model_dump()), 201
 
-@notes_bp.route("/<int:note_id>", methods=["GET"])
+@notes_bp.route("/<string:note_id>", methods=["GET"])
 @jwt_required_middleware
 def get_note(note_id):
     user_id = int(get_jwt_identity())
     result = note_service.get_note(user_id, note_id)
     return jsonify(result.model_dump()), 200
 
-@notes_bp.route("/<int:note_id>", methods=["PUT"])
+@notes_bp.route("/<string:note_id>", methods=["PUT"])
 @jwt_required_middleware
 def update_note(note_id):
     user_id = int(get_jwt_identity())
@@ -75,7 +76,7 @@ def update_note(note_id):
     result = note_service.update_note(user_id, note_id, note_update)
     return jsonify(result.model_dump()), 200
 
-@notes_bp.route("/<int:note_id>", methods=["DELETE"])
+@notes_bp.route("/<string:note_id>", methods=["DELETE"])
 @jwt_required_middleware
 def delete_note(note_id):
     user_id = int(get_jwt_identity())
@@ -83,13 +84,13 @@ def delete_note(note_id):
     return "", 204
 
 
-@notes_bp.route("/<int:note_id>/tags", methods=["POST"])
+@notes_bp.route("/<string:note_id>/tags", methods=["POST"])
 @jwt_required_middleware
 def set_note_tags(note_id):
     return set_entity_tags("notes", note_id)
 
 
-@notes_bp.route("/<int:note_id>/tags/<int:tag_id>", methods=["DELETE"])
+@notes_bp.route("/<string:note_id>/tags/<int:tag_id>", methods=["DELETE"])
 @jwt_required_middleware
 def remove_note_tag(note_id, tag_id):
     return remove_entity_tag("notes", note_id, tag_id)
@@ -125,7 +126,7 @@ def get_public_note(token):
 # Toggle visibilité
 # -------------------------------------------------------
 
-@notes_bp.route("/<int:note_id>/visibility", methods=["PATCH"])
+@notes_bp.route("/<string:note_id>/visibility", methods=["PATCH"])
 @jwt_required_middleware
 def toggle_note_visibility(note_id):
     """Passe une note en public ou privé et retourne le lien de partage."""

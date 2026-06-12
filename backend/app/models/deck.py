@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.models.search_type import TSVectorType
@@ -6,6 +6,9 @@ from app.extensions import db
 
 class Deck(db.Model):
     __tablename__ = "decks"
+    __table_args__ = (
+        Index('decks_search_idx', 'search_vector', postgresql_using='gin'),
+    )
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)

@@ -23,8 +23,9 @@ def get_diagrams():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
     
-    binder_id_str = request.args.get("binder_id")
-    binder_id = int(binder_id_str) if binder_id_str is not None and binder_id_str != "" else None
+    binder_id = request.args.get("binder_id")
+    if binder_id == "":
+        binder_id = None
     tag_id = request.args.get("tag_id", type=int)
     
     diagrams, total = diagram_service.get_diagrams(user_id, binder_id, tag_id, page, per_page)

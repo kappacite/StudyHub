@@ -61,7 +61,7 @@
             {{ activePageContent.title }}
           </h2>
           <div 
-            v-html="activePageContent.body" 
+            v-dompurify-html="activePageContent.body" 
             class="text-xs leading-relaxed space-y-3 pdf-text-select"
           ></div>
         </div>

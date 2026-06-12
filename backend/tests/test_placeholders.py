@@ -1,6 +1,7 @@
 import pytest
 from app.utils.placeholder_parser import extract_placeholders_from_text
 from app.models.deck import Deck
+from app.models.note import Note
 from app.models.flashcard import Flashcard
 from app.models.study_session import StudySession
 from app.extensions import db
@@ -63,7 +64,7 @@ def test_note_phantom_deck_sync(client, auth_headers):
     
     # 2. Vérifier que le deck fantôme est créé
     with client.application.app_context():
-        deck = db.session.query(Deck).filter_by(note_id=note_id).first()
+        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
         assert deck is not None
         assert deck.name == f"[Phantom] Note: {note_data['title']}"
         
@@ -85,7 +86,7 @@ def test_note_phantom_deck_sync(client, auth_headers):
     assert response.status_code == 200
     
     with client.application.app_context():
-        deck = db.session.query(Deck).filter_by(note_id=note_id).first()
+        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
         cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
         # Devrait avoir 2 cartes maintenant
         assert len(cards) == 2
@@ -100,7 +101,7 @@ def test_note_phantom_deck_sync(client, auth_headers):
     assert response.status_code == 200
     
     with client.application.app_context():
-        deck = db.session.query(Deck).filter_by(note_id=note_id).first()
+        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
         cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
         # Devrait redevenir 1 seule carte
         assert len(cards) == 1
@@ -117,7 +118,7 @@ def test_review_card_direct_api(client, auth_headers):
     note_id = response.json["id"]
     
     with client.application.app_context():
-        deck = db.session.query(Deck).filter_by(note_id=note_id).first()
+        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
         card = db.session.query(Flashcard).filter_by(deck_id=deck.id).first()
         card_id = card.id
         
@@ -164,7 +165,7 @@ def test_diagram_occlusion_sync(client, auth_headers):
     
     # 3. Vérifier que la flashcard d'occlusion est créée dans le deck fantôme
     with client.application.app_context():
-        deck = db.session.query(Deck).filter_by(note_id=note_id).first()
+        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
         assert deck is not None
         cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
         assert len(cards) == 1
@@ -189,7 +190,7 @@ def test_diagram_occlusion_sync(client, auth_headers):
     
     # 5. Vérifier que la note s'est synchronisée automatiquement
     with client.application.app_context():
-        deck = db.session.query(Deck).filter_by(note_id=note_id).first()
+        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
         cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
         # Devrait maintenant avoir 2 cartes
         assert len(cards) == 2

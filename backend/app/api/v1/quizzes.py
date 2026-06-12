@@ -53,7 +53,7 @@ def generate_quiz():
     
     return jsonify(QuizResponse.model_validate(quiz).model_dump()), 201
 
-@quizzes_bp.route("/note/<int:note_id>", methods=["GET"])
+@quizzes_bp.route("/note/<string:note_id>", methods=["GET"])
 @jwt_required_middleware
 def get_quizzes_by_note(note_id):
     user_id = int(get_jwt_identity())

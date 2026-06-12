@@ -18,6 +18,10 @@ class Quiz(db.Model):
     user = relationship("User")
     questions = relationship("QuizQuestion", back_populates="quiz", cascade="all, delete-orphan")
 
+    @property
+    def note_uuid(self) -> Optional[str]:
+        return self.note.id if self.note else None
+
 class QuizQuestion(db.Model):
     __tablename__ = "quiz_questions"
     

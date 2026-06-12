@@ -39,7 +39,7 @@ class ExamService:
 
     def _get_all_binder_ids(self, binder_id: int) -> List[int]:
         ids = [binder_id]
-        children = self._binder_dao.db.query(Binder.id).filter_by(parent_id=binder_id).all()
+        children = self._binder_dao.db.query(Binder._id).filter_by(parent_id=binder_id).all()
         for child in children:
             ids.extend(self._get_all_binder_ids(child[0]))
         return ids
@@ -47,7 +47,7 @@ class ExamService:
     def start_exam(
         self,
         user_id: int,
-        binder_id: int,
+        binder_id: str,
         duration_minutes: int = 30,
         include_flashcards: bool = True,
         include_qcm: bool = True,
@@ -61,7 +61,7 @@ class ExamService:
             raise ForbiddenError("Accès interdit à ce classeur.")
 
         # Récupération récursive des sous-classeurs
-        binder_ids = self._get_all_binder_ids(binder_id)
+        binder_ids = self._get_all_binder_ids(binder._id)
 
         # 1. Récupération des Flashcards
         flashcards = []
@@ -75,7 +75,7 @@ class ExamService:
         qcm_questions = []
         if include_qcm:
             notes = self._note_dao.db.query(Note).filter(Note.binder_id.in_(binder_ids)).all()
-            note_ids = [n.id for n in notes]
+            note_ids = [n._id for n in notes]
             if note_ids:
                 quizzes = self._quiz_dao.db.query(Quiz).filter(Quiz.note_id.in_(note_ids)).all()
                 quiz_ids = [q.id for q in quizzes]
@@ -121,7 +121,7 @@ class ExamService:
         # Création de la session
         session = ExamSession(
             user_id=user_id,
-            binder_id=binder_id,
+            binder_id=binder._id,
             duration_seconds=duration_minutes * 60,
             items_snapshot=selected_items
         )

@@ -62,3 +62,26 @@ def test_delete_account(client, auth_headers):
         "password": "password123"
     })
     assert login_resp.status_code == 401
+
+def test_logout_revocation(client, test_user):
+    # Connecter l'utilisateur pour obtenir le token
+    login_resp = client.post("/api/v1/auth/login", json={
+        "email": test_user["email"],
+        "password": test_user["password"]
+    })
+    token = login_resp.json["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Valider que l'accès à un endpoint protégé fonctionne
+    protected_resp = client.get("/api/v1/binders", headers=headers)
+    assert protected_resp.status_code == 200
+    
+    # Effectuer la déconnexion
+    logout_resp = client.post("/api/v1/auth/logout", headers=headers)
+    assert logout_resp.status_code == 204
+    
+    # Vérifier que le token est révoqué et l'accès refusé
+    revoked_resp = client.get("/api/v1/binders", headers=headers)
+    assert revoked_resp.status_code == 401
+    assert revoked_resp.json["error"]["code"] == "UNAUTHORIZED"
+

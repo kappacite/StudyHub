@@ -303,7 +303,7 @@
             
             <div 
               class="w-full p-6 bg-slate-50 dark:bg-slate-850/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm leading-relaxed whitespace-pre-line font-sans"
-              v-html="blankSheetResult.highlightedText"
+              v-dompurify-html="blankSheetResult.highlightedText"
             ></div>
           </div>
 

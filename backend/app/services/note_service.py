@@ -41,15 +41,20 @@ class NoteService:
 
 
     def create_note(self, user_id: int, data: NoteCreate) -> NoteResponse:
+        binder_id_internal = None
         if data.binder_id is not None:
             from app.utils.security import check_binder_access
-            check_binder_access(self._note_dao.db, data.binder_id, user_id, write_required=True)
+            binder = check_binder_access(self._note_dao.db, data.binder_id, user_id, write_required=True)
+            binder_id_internal = binder._id
                 
+        from app.utils.html_sanitizer import sanitize_html
+        sanitized_content = sanitize_html(data.content)
+
         note = Note(
             title=data.title,
-            content=data.content,
+            content=sanitized_content,
             user_id=user_id,
-            binder_id=data.binder_id
+            binder_id=binder_id_internal
         )
         created = self._note_dao.create(note)
         
@@ -87,12 +92,13 @@ class NoteService:
             note.title = data.title
             
         if data.content is not None:
-            note.content = data.content
+            from app.utils.html_sanitizer import sanitize_html
+            note.content = sanitize_html(data.content)
             
         if data.binder_id is not None:
             from app.utils.security import check_binder_access
-            check_binder_access(self._note_dao.db, data.binder_id, user_id, write_required=True)
-            note.binder_id = data.binder_id
+            binder = check_binder_access(self._note_dao.db, data.binder_id, user_id, write_required=True)
+            note.binder_id = binder._id
         elif "binder_id" in data.model_fields_set and data.binder_id is None:
             note.binder_id = None
 
@@ -121,7 +127,7 @@ class NoteService:
             return
             
         # 1. Trouver ou créer le deck fantôme pour cette note
-        deck = self._deck_dao.db.query(Deck).filter_by(note_id=note.id).first()
+        deck = self._deck_dao.db.query(Deck).filter_by(note_id=note._id).first()
         
         deck_name = f"[Phantom] Note: {note.title}"
         deck_desc = f"Deck de révision active pour la note: {note.title}"
@@ -131,7 +137,7 @@ class NoteService:
                 name=deck_name,
                 description=deck_desc,
                 user_id=note.user_id,
-                note_id=note.id,
+                note_id=note._id,
                 binder_id=note.binder_id
             )
             deck = self._deck_dao.create(deck)

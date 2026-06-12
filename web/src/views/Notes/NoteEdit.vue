@@ -352,7 +352,7 @@
             <div class="border-b border-slate-100 dark:border-slate-800/60 pb-3 mb-6 no-print">
               <span class="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 px-2.5 py-1 rounded-lg uppercase tracking-wider">Aperçu en temps réel</span>
             </div>
-            <div v-html="renderMarkup(noteBody)"></div>
+            <div v-dompurify-html="renderMarkup(noteBody)"></div>
           </div>
         </div>
 
@@ -470,7 +470,7 @@
               Contexte de la note
             </h3>
             <div 
-              v-html="renderMarkup(noteContext)"
+              v-dompurify-html="renderMarkup(noteContext)"
               class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
             ></div>
           </div>
@@ -485,7 +485,7 @@
               Définitions clés (Legacy)
             </h3>
             <div 
-              v-html="renderMarkup(noteDefinition)"
+              v-dompurify-html="renderMarkup(noteDefinition)"
               class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
             ></div>
           </div>
@@ -495,7 +495,7 @@
             class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-slate-300 print:text-black markdown-body"
             @click="handleMarkdownClick"
           >
-            <div v-html="renderMarkup(noteBody)"></div>
+            <div v-dompurify-html="renderMarkup(noteBody)"></div>
           </div>
 
           <!-- 3. Linked Notes Block (Integrated at the bottom of the sheet) -->

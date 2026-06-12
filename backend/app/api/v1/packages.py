@@ -27,7 +27,7 @@ def get_public_packages():
         }
     }), 200
 
-@packages_bp.route("/<int:binder_id>", methods=["GET"])
+@packages_bp.route("/<binder_id>", methods=["GET"])
 def get_public_package(binder_id):
     from app.models.binder import Binder
     from app.schemas.binder_schema import BinderResponse
@@ -71,7 +71,7 @@ def get_public_package(binder_id):
         "pdfs": pdfs
     }), 200
 
-@packages_bp.route("/<int:binder_id>/clone", methods=["POST"])
+@packages_bp.route("/<binder_id>/clone", methods=["POST"])
 @jwt_required_middleware
 def clone_package(binder_id):
     user_id = int(get_jwt_identity())

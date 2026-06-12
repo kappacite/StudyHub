@@ -65,7 +65,7 @@ class TagService:
         self,
         user_id: int,
         entity_type: str,
-        entity_id: int,
+        entity_id,
         tag_ids: list[int],
     ) -> List[TagResponseSchema]:
         entity = self._get_owned_entity_or_404(user_id, entity_type, entity_id)
@@ -80,7 +80,7 @@ class TagService:
         self._tag_dao.db.refresh(entity)
         return [TagResponseSchema.model_validate(tag) for tag in entity.tags]
 
-    def remove_tag_from_entity(self, user_id: int, entity_type: str, entity_id: int, tag_id: int) -> None:
+    def remove_tag_from_entity(self, user_id: int, entity_type: str, entity_id, tag_id: int) -> None:
         entity = self._get_owned_entity_or_404(user_id, entity_type, entity_id)
         tag = self._get_tag_or_404(tag_id, user_id)
         if tag in entity.tags:
@@ -95,7 +95,7 @@ class TagService:
             raise ForbiddenError("Accès interdit à ce tag.")
         return tag
 
-    def _get_owned_entity_or_404(self, user_id: int, entity_type: str, entity_id: int):
+    def _get_owned_entity_or_404(self, user_id: int, entity_type: str, entity_id):
         if entity_type not in ENTITY_MODELS:
             raise ResourceNotFoundError("Type de ressource introuvable.")
         entity = self._tag_dao.get_entity(entity_type, entity_id)

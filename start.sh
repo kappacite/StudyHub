@@ -18,7 +18,9 @@ mkdir -p "$LOG_DIR"
 # Chargement d'un éventuel fichier .env
 if [ -f ".env" ]; then
     echo -e "Chargement des variables d'environnement depuis le fichier .env..."
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    source .env
+    set +a
 fi
 
 # Variables pour suivre les processus
@@ -89,7 +91,7 @@ fi
 # Configuration des variables par défaut
 export FLASK_ENV=${FLASK_ENV:-development}
 export FLASK_APP=${FLASK_APP:-app}
-export GEMINI_MODEL=${GEMINI_MODEL:-"gemini-3.5-flash"}
+export GEMINI_MODEL=${GEMINI_MODEL:-"gemini-2.0-flash"}
 
 # Démarrage avec le Python du venv ou le Python global
 if [ -f "backend/venv/bin/python" ]; then

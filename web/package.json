@@ -16,6 +16,7 @@
     "@capacitor/preferences": "^8.0.1",
     "@headlessui/vue": "^1.7.23",
     "axios": "^1.16.1",
+    "dompurify": "^3.4.10",
     "highlight.js": "^11.11.1",
     "katex": "^0.17.0",
     "lucide-vue-next": "^1.0.0",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@lucide/vue": "^1.17.0",
+    "@types/dompurify": "^3.0.5",
     "@types/katex": "^0.16.8",
     "@types/marked": "^5.0.2",
     "@types/node": "^24.12.3",

@@ -3,7 +3,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 
 class QuizGenerateRequest(BaseModel):
-    note_id: int
+    note_id: str
     question_count: Optional[int] = Field(7, ge=1, le=20)
 
 class QuizAnswerRequest(BaseModel):
@@ -29,7 +29,7 @@ class QuizQuestionResponse(BaseModel):
 
 class QuizResponse(BaseModel):
     id: int
-    note_id: int
+    note_id: str = Field(..., validation_alias="note_uuid")
     user_id: int
     score_pct: Optional[float] = None
     created_at: datetime

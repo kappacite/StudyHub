@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, send_file, current_app
+from flask import Blueprint, request, jsonify, send_file, current_app, make_response
 from flask_jwt_extended import get_jwt_identity
 from app.extensions import db
 from app.dao.pdf_dao import PDFDAO
@@ -23,8 +23,9 @@ def get_pdfs():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
     
-    binder_id_str = request.args.get("binder_id")
-    binder_id = int(binder_id_str) if binder_id_str is not None and binder_id_str != "" else None
+    binder_id = request.args.get("binder_id")
+    if binder_id == "":
+        binder_id = None
     tag_id = request.args.get("tag_id", type=int)
     
     pdfs, total = pdf_service.get_pdfs(user_id, binder_id, tag_id, page, per_page)
@@ -61,24 +62,26 @@ def upload_pdf():
     if not name:
         name = file.filename
         
-    binder_id_str = request.form.get("binder_id")
-    binder_id = int(binder_id_str) if binder_id_str is not None and binder_id_str != "" else None
+    binder_id = request.form.get("binder_id")
+    if binder_id == "":
+        binder_id = None
     
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     
     result = pdf_service.create_pdf(user_id, name, binder_id, file, upload_folder)
     return jsonify(result.model_dump()), 201
 
-@pdfs_bp.route("/<int:pdf_id>", methods=["GET"])
+@pdfs_bp.route("/<pdf_id>", methods=["GET"])
 @jwt_required_middleware
 def get_pdf_metadata(pdf_id):
     user_id = int(get_jwt_identity())
     result = pdf_service.get_pdf(user_id, pdf_id)
     return jsonify(result.model_dump()), 200
 
-@pdfs_bp.route("/<int:pdf_id>/file", methods=["GET"])
+@pdfs_bp.route("/<pdf_id>/file", methods=["GET"])
 @jwt_required_middleware
 def get_pdf_file(pdf_id):
+    import os
     user_id = int(get_jwt_identity())
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     
@@ -87,14 +90,38 @@ def get_pdf_file(pdf_id):
     # Récupérer l'entité pour avoir le nom original
     pdf_meta = pdf_service.get_pdf(user_id, pdf_id)
     
-    return send_file(
-        file_path, 
-        mimetype="application/pdf",
-        as_attachment=False,
-        download_name=pdf_meta.name
-    )
+    # Si on est en production, on utilise X-Accel-Redirect pour déléguer à Nginx
+    if current_app.config.get("ENV") == "production" or os.environ.get("FLASK_ENV") == "production":
+        response = make_response("")
+        # Utiliser l'id dans la DB pour retrouver le fichier (pdf.filename)
+        # Mais wait, pdf_meta a pdf.filename ?
+        # Dans le modèle PDFDocument, le nom du fichier stocké est pdf.filename.
+        # pdf_meta a le champ `filename` ? Let's check pdf_service.py or PDFResponse schema.
+        # Wait, let's look at get_pdf_file_path: it uses `pdf.filename`.
+        # Let's verify what fields are in PDFResponse.
+        # Wait, let's look at pdf_meta. It has `filename`?
+        # Let's search for `filename` or `PDFResponse` to check its schema fields.
+        # But we can get it from the file_path basename! That is extremely safe and doesn't depend on the Pydantic schema structure.
+        filename = os.path.basename(file_path)
+        response.headers["X-Accel-Redirect"] = f"/internal_uploads/{filename}"
+        response.headers["Content-Type"] = "application/pdf"
+        
+        from urllib.parse import quote
+        try:
+            filename_utf8 = quote(pdf_meta.name)
+            response.headers["Content-Disposition"] = f"inline; filename*=UTF-8''{filename_utf8}"
+        except Exception:
+            response.headers["Content-Disposition"] = f"inline; filename={pdf_meta.name}"
+        return response
+    else:
+        return send_file(
+            file_path, 
+            mimetype="application/pdf",
+            as_attachment=False,
+            download_name=pdf_meta.name
+        )
 
-@pdfs_bp.route("/<int:pdf_id>", methods=["DELETE"])
+@pdfs_bp.route("/<pdf_id>", methods=["DELETE"])
 @jwt_required_middleware
 def delete_pdf(pdf_id):
     user_id = int(get_jwt_identity())
@@ -104,13 +131,13 @@ def delete_pdf(pdf_id):
     return "", 204
 
 
-@pdfs_bp.route("/<int:pdf_id>/tags", methods=["POST"])
+@pdfs_bp.route("/<pdf_id>/tags", methods=["POST"])
 @jwt_required_middleware
 def set_pdf_tags(pdf_id):
     return set_entity_tags("pdfs", pdf_id)
 
 
-@pdfs_bp.route("/<int:pdf_id>/tags/<int:tag_id>", methods=["DELETE"])
+@pdfs_bp.route("/<pdf_id>/tags/<int:tag_id>", methods=["DELETE"])
 @jwt_required_middleware
 def remove_pdf_tag(pdf_id, tag_id):
     return remove_entity_tag("pdfs", pdf_id, tag_id)

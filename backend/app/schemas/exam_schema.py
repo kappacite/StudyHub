@@ -3,7 +3,7 @@ from typing import Optional, List, Any
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 class ExamStartRequest(BaseModel):
-    binder_id: int
+    binder_id: str
     duration_minutes: Optional[int] = Field(30, ge=15, le=120)
     include_flashcards: Optional[bool] = True
     include_qcm: Optional[bool] = True
@@ -29,7 +29,7 @@ class ExamItemResponse(BaseModel):
 
 class ExamResponse(BaseModel):
     id: int
-    binder_id: Optional[int] = None
+    binder_id: Optional[str] = Field(None, validation_alias="binder_uuid")
     user_id: int
     duration_seconds: int
     started_at: datetime

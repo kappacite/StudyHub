@@ -36,7 +36,7 @@ class QuizService:
         raw_questions = self._ai_service.generate_quiz(note.content, count=question_count)
 
         # Création du Quiz
-        quiz = Quiz(note_id=note_id, user_id=user_id)
+        quiz = Quiz(note_id=note._id, user_id=user_id)
         created_quiz = self._quiz_dao.create(quiz)
 
         # Création des questions associées
@@ -67,7 +67,7 @@ class QuizService:
         if note.user_id != user_id:
             raise ForbiddenError("Accès interdit à cette note.")
         
-        return self._quiz_dao.get_by_note(note_id)
+        return self._quiz_dao.get_by_note(note._id)
 
     def answer_question(self, user_id: int, quiz_id: int, question_id: int, answer_id: str) -> QuizQuestion:
         # Vérification du quiz

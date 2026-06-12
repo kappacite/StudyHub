@@ -60,7 +60,7 @@
           Contexte de la note
         </h3>
         <div 
-          v-html="renderMarkup(parsedNote.context)"
+          v-dompurify-html="renderMarkup(parsedNote.context)"
           class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert"
         ></div>
       </div>
@@ -75,7 +75,7 @@
           Définitions clés
         </h3>
         <div 
-          v-html="renderMarkup(parsedNote.definition)"
+          v-dompurify-html="renderMarkup(parsedNote.definition)"
           class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert"
         ></div>
       </div>
@@ -83,7 +83,7 @@
       <!-- Note body rendered as markdown -->
       <article 
         class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-slate-300 markdown-body bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 shadow-sm"
-        v-html="renderMarkup(parsedNote.body)"
+        v-dompurify-html="renderMarkup(parsedNote.body)"
       ></article>
 
       <!-- CTA footer -->

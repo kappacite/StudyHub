@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, Float, DateTime, ForeignKey, String
+from sqlalchemy import Column, Integer, Text, Float, DateTime, ForeignKey, String, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.models.search_type import TSVectorType
@@ -6,6 +6,9 @@ from app.extensions import db
 
 class Flashcard(db.Model):
     __tablename__ = "flashcards"
+    __table_args__ = (
+        Index('flashcards_search_idx', 'search_vector', postgresql_using='gin'),
+    )
 
     id = Column(Integer, primary_key=True)
     deck_id = Column(Integer, ForeignKey("decks.id", ondelete="CASCADE"), nullable=False)

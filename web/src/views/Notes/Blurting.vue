@@ -478,19 +478,48 @@ async function submitForAnalysis() {
       note_id: noteId.value,
       user_blurting: blurtingText.value,
       duration_seconds: timerSeconds.value
-    }, {
-      timeout: 120000 // Permettre à l'IA de prendre jusqu'à 120 secondes (2 minutes) pour répondre
     })
     
-    resultData.value = response.data
+    const { task_id } = response.data
+    if (!task_id) {
+      throw new Error("L'API n'a pas retourné de identifiant de tâche (task_id).")
+    }
     
-    // Sélectionner toutes les cartes générées par défaut
-    selectedCards.value = {}
-    resultData.value.suggested_flashcards.forEach((_, idx) => {
-      selectedCards.value[idx] = true
-    })
+    // Polling loop
+    let finished = false
+    let attempts = 0
+    const maxAttempts = 60 // 2 minutes max (60 * 2 secondes)
     
-    step.value = 'results'
+    while (!finished && attempts < maxAttempts) {
+      attempts++
+      // Attendre 2 secondes avant la prochaine requête
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      const pollResponse = await api.get(`/blurting/tasks/${task_id}`)
+      const status = pollResponse.data.status
+      
+      if (status === 'SUCCESS') {
+        finished = true
+        resultData.value = pollResponse.data.result
+        
+        // Sélectionner toutes les cartes générées par défaut
+        selectedCards.value = {}
+        resultData.value.suggested_flashcards.forEach((_, idx) => {
+          selectedCards.value[idx] = true
+        })
+        
+        step.value = 'results'
+      } else if (status === 'FAILURE' || pollResponse.data.error) {
+        finished = true
+        const errorMsg = pollResponse.data.error?.message || "L'analyse a échoué."
+        throw new Error(errorMsg)
+      }
+    }
+    
+    if (!finished) {
+      throw new Error("L'analyse a mis trop de temps à s'exécuter. Veuillez réessayer.")
+    }
+    
   } catch (err: any) {
     console.error('Erreur lors de l\'analyse par l\'IA', err)
     const errMsg = err.response?.data?.error?.message || err.message || 'Une erreur inconnue est survenue.'
@@ -502,6 +531,7 @@ async function submitForAnalysis() {
     stopTipRotation()
   }
 }
+
 
 function resetSession() {
   blurtingText.value = ''

@@ -20,17 +20,17 @@ class GroupMemberResponseSchema(BaseModel):
 
 class GroupBinderResponseSchema(BaseModel):
     group_id: int
-    binder_id: int
+    binder_id: str = Field(..., validation_alias="binder_uuid")
     binder_name: str
     permission: str
     pinned: bool
     added_by: Optional[int] = None
     added_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class GroupBinderShareSchema(BaseModel):
-    binder_id: int
+    binder_id: str
     permission: str = Field("read", pattern="^(read|write)$")
 
 class GroupActivityResponseSchema(BaseModel):

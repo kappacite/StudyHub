@@ -94,7 +94,7 @@
                     </div>
                     <p 
                       class="text-xs mt-1.5 text-slate-500 dark:text-slate-400 line-clamp-2 search-excerpt"
-                      v-html="note.excerpt"
+                      v-dompurify-html="note.excerpt"
                     ></p>
                   </div>
                 </div>
@@ -133,7 +133,7 @@
                     <p 
                       v-if="deck.excerpt" 
                       class="text-xs mt-1.5 text-slate-500 dark:text-slate-400 line-clamp-2 search-excerpt"
-                      v-html="deck.excerpt"
+                      v-dompurify-html="deck.excerpt"
                     ></p>
                   </div>
                 </div>
