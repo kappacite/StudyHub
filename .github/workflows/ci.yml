@@ -38,7 +38,7 @@ jobs:
           FLASK_ENV: testing
         # Les tests utilisent SQLite en mémoire (cf. tests/conftest.py).
         # Le build échoue si la couverture passe sous le plancher.
-        run: pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=78
+        run: pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=80
 
   migrations:
     name: Backend · migrations (PostgreSQL)

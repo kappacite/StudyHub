@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Hook pre-push : feedback local rapide avant d'envoyer vers le dépôt.
+# Active-le une fois avec :  git config core.hooksPath .githooks
+#
+# Il lance les tests rapides (frontend Vitest + backend pytest). Le gate complet
+# et autoritaire (E2E, couverture, migrations) reste la CI GitHub Actions.
+# Contournement ponctuel possible avec :  git push --no-verify
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+echo "▶ pre-push : tests frontend (Vitest)"
+if [ -d "$ROOT/web/node_modules" ]; then
+  ( cd "$ROOT/web" && npm run test:run --silent )
+else
+  echo "  ⚠ web/node_modules absent — exécute 'npm ci' dans web/. Étape ignorée."
+fi
+
+echo "▶ pre-push : tests backend (pytest)"
+cd "$ROOT/backend"
+if [ -d venv ]; then
+  # shellcheck disable=SC1091
+  source venv/bin/activate
+fi
+python -m pytest -q
+
+echo "✓ pre-push OK"

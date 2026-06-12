@@ -16,6 +16,14 @@ feature/* ──PR──▶ develop ──PR──▶ main
 La CI (`.github/workflows/ci.yml`) s'exécute sur chaque PR et push vers
 `main`/`develop`. Les checks doivent être **verts** pour fusionner.
 
+### Hook pre-push (optionnel, feedback local)
+Pour lancer les tests rapides avant chaque push (active-le une fois) :
+```bash
+git config core.hooksPath .githooks
+```
+Le hook (`.githooks/pre-push`) exécute Vitest + pytest. Le gate autoritaire reste la
+CI. Contournement ponctuel : `git push --no-verify`.
+
 ## Pyramide de tests
 
 | Niveau | Outil | Portée | État |
@@ -40,9 +48,8 @@ Les tests tournent sur **SQLite en mémoire** (cf. `tests/conftest.py`) : rapide
 isolés, aucune base externe requise.
 
 ### Gate de couverture
-Plancher CI actuel : **78 %** (baseline mesurée : 79 %, cible : **80 %+**).
-La CI échoue sous le plancher (`pytest --cov-fail-under=78`). Configuration dans
-`backend/pyproject.toml`.
+Plancher CI : **80 %** (couverture actuelle : 80,7 %). La CI échoue sous le plancher
+(`pytest --cov-fail-under=80`). Configuration dans `backend/pyproject.toml`.
 
 ### Frontend
 ```bash
@@ -85,4 +92,4 @@ extension possible ultérieure.
 - **Phase 1** ✅ — CI (backend + migrations + build front) + protection de branche / flux PR.
 - **Phase 2** ✅ — Outillage frontend (Vitest + @vue/test-utils + happy-dom) + premiers tests (composable, composant, store). ESLint/MSW reportés en phase 4.
 - **Phase 3** ✅ — E2E Playwright (API mockée) : garde d'auth + régression navigation IA NoteEdit.
-- **Phase 4** ⏳ — Durcissement : couverture front, hook `pre-push`, fabriques backend, montée du plancher à 80 %+.
+- **Phase 4** ✅ (partiel) — Plancher backend relevé à **80 %** (tests users + binders CRUD + SM-2, + correctif `delete_account`), hook `pre-push`. Reste : ESLint (60 `any` → mode warn / nettoyage dédié ; compat parsers TS 6 à valider), MSW, plancher de couverture frontend, E2E full-stack.

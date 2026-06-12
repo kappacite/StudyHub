@@ -13,7 +13,7 @@ addopts = "-q"
 [tool.coverage.run]
 source = ["app"]
 # Pas de `omit` : on mesure la couverture réelle de tout le package `app`.
-# Baseline au moment de l'ajout : 79 % (seuil CI plancher : 78 %, cible : 80 %+).
+# Couverture : 80,7 % (seuil CI plancher : 80 %, relevé depuis 78 % en phase 4).
 
 [tool.coverage.report]
 show_missing = true
