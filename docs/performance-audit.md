@@ -29,6 +29,9 @@ chauds. Les constats ci-dessous couvrent l'ensemble des services de lecture.
 | **A6** | **Dashboards classes (prof/élève)** : `for p in asgn.progresses: db.session.get(User, …)` et `for asgn: db.session.get(AssignmentProgress, …)` (parfois imbriqués) → **N+1** par étudiant/devoir. Impact réel pour un prof avec beaucoup d'élèves. | `services/class_service.py:85-90,246-285` |
 | **A7** | **Marketplace** : `list_public_packages` fait `BinderResponse.model_validate(b)` par package ; `BinderResponse.tags` est chargé en lazy → **N+1** sur les tags (borné à `per_page`). | `services/community_service.py:42` |
 | **A8** | **Occlusions de note** : à la construction des flashcards d'une note, les diagrammes référencés (`[diagram:N]`) sont chargés **un par un** (`filter_by(id=…).first()` en boucle). N+1 borné par le nb de diagrammes intégrés. | `services/note_service.py:162-163` |
+| **A9** | **Groupes / classes** : `len(g.members_assoc)` et `len(g.binders_assoc)` **par groupe** (listes et détails) → **même sur-récupération que `card_count`** mais côté service (charge toutes les associations pour les compter). | `services/group_service.py:82-83,166-167`, `services/class_service.py:118,335,365` |
+| **A10** | **Détail de groupe** : `for assoc in group.members_assoc: assoc.user` et `… assoc.binder` → N+1. **Leaderboard de groupe** : une requête agrégée `StudySession` **par membre** (`group_service.py:348`). | `services/group_service.py:107-129,348` |
+| **A11** | **Planning** : la calendrier charge toutes les cartes dues puis accède à `card.deck.name` **par carte** → N+1 sur le deck si non eager-loadé. | `services/planning_service.py:36-47` |
 
 ### 🔴 B. Index manquants — dégradation qui empire avec la croissance des données
 Seuls **3 index applicatifs** existent (`users.email`, `notes.share_token`,
@@ -82,6 +85,20 @@ trop de cartes, et via un scan. Deux premiers chantiers à fort ROI.
 
 ---
 
+## Couverture & limites de l'audit
+- **Exhaustif** (balayage de *tous* les modèles/services) :
+  - index déclarés (Thème B) ;
+  - propriétés `len(...)` **modèles ET services** (A1, A9) — le sweep initial ne couvrait
+    que les modèles, étendu ensuite aux services ;
+  - boucles `for` contenant une requête (détecteur N+1) sur tous les `services/*.py`.
+- **Lu en profondeur** : deck, flashcard, focus, stats, search, note, community,
+  diagram, class, group, planning.
+- **Résiduel non garanti** : le lazy-loading déclenché **à la sérialisation Pydantic**
+  (champs-relations des schémas de réponse) n'est confirmé que là où le code a été lu ;
+  des schémas de réponse non tracés finement (`exam`, `quiz`, `pdf`) pourraient cacher
+  des accès lazy similaires. **La validation définitive passe par la Thématique 1
+  (instrumentation)** : le compteur de requêtes SQL révélera tout N+1 résiduel à l'exécution.
+
 ## Plan de remédiation
 
 > Transverse : `main` protégée → chaque thématique = **une branche + PR**, **commit à
@@ -100,7 +117,7 @@ trop de cartes, et via un scan. Deux premiers chantiers à fort ROI.
 
 ### Thématique 3 — Supprimer l'over-fetch sur les listes (decks d'abord)
 - **3.1** `card_count` via `COUNT()` SQL (sous-requête / `GROUP BY`), **retirer `selectinload(cards)`** de la liste. → *commit*
-- **3.2** Étendre aux autres listes (vérifier `notes`, `binders`, `pdfs`). → *commit*
+- **3.2** Même traitement pour les compteurs `len(g.members_assoc)`/`len(g.binders_assoc)` (groupes/classes, A9) → `COUNT()` SQL. Vérifier aussi `notes`, `binders`, `pdfs`. → *commit*
 - **3.3** Test « budget de requêtes » : la liste de N decks tient en un nombre **borné et constant** de requêtes (compteur 1.2). → *commit*
 
 ### Thématique 4 — Éliminer les N+1 (search, focus, classes, marketplace, notes)
@@ -110,6 +127,8 @@ trop de cartes, et via un scan. Deux premiers chantiers à fort ROI.
 - **4.4** **Classes** (A6) : précharger `User`/`AssignmentProgress` en lot (`in_(...)` ou `selectinload(asgn.progresses)` + jointure) au lieu des `db.session.get` en boucle. → *commit*
 - **4.5** `class_service` progression classeur (A3) : récursion N+1 → **CTE récursive** / agrégat unique. → *commit*
 - **4.6** **Marketplace** (A7) : eager-load `tags` dans `list_public_packages`. **Occlusions** (A8) : charger les diagrammes référencés en un seul `id IN (...)`. → *commit*
+- **4.7** **Groupes** (A10) : eager-load `members_assoc.user`/`binders_assoc.binder` ; leaderboard via **une** requête agrégée `GROUP BY user_id` au lieu d'une par membre. → *commit*
+- **4.8** **Planning** (A11) : eager-load `card.deck` (ou sélectionner `deck_name` en jointure) pour la calendrier. → *commit*
 
 ### Thématique 5 — Cache
 - **5.1** Garantir **Redis partagé** entre les 4 workers en prod (sinon cache par-process inutile). → *commit*
