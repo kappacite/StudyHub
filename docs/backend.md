@@ -197,6 +197,11 @@ Tous les endpoints sont préfixés par `/api/v1` et sont sécurisés par JWT (sa
 | | `POST` | `/packages/<binder_id>/clone` | Cloner un package public |
 | **Blurting (Feuille Blanche IA)** | `POST` | `/blurting/analyze` | Analyser la restitution écrite par l'IA |
 | | `POST` | `/blurting/create-flashcards` | Créer les flashcards suggérées |
+| **Évaluations (Feuille IA)** | `POST` | `/evaluations/generate` | Générer une feuille d'évaluation mixte (async, IA) |
+| | `GET` | `/evaluations/tasks/<task_id>` | Sonder la tâche de génération |
+| | `GET` | `/evaluations/<id>` | Récupérer une évaluation |
+| | `POST` | `/evaluations/<id>/items/<item_id>/answer` | Répondre à un item (correction par type) |
+| | `POST` | `/evaluations/<id>/complete` | Compléter, scorer et alimenter le SM-2 |
 | **Diagrammes** | `GET` | `/diagrams` | Liste paginée des diagrammes |
 | | `POST` | `/diagrams` | Création d'un diagramme Mermaid |
 | | `GET` | `/diagrams/<id>` | Détails d'un diagramme |
