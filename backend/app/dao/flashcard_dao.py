@@ -50,9 +50,12 @@ class FlashcardDAO(BaseDAO[Flashcard]):
 
     def get_cards_due_between(self, user_id: int, date_from: datetime, date_to: datetime) -> List[Flashcard]:
         from app.models.deck import Deck
+        from sqlalchemy.orm import joinedload
         return (
             self.db.query(self.model)
             .join(Deck)
+            # Le planning lit card.deck.name : on charge le deck pour éviter le N+1.
+            .options(joinedload(self.model.deck))
             .filter(
                 Deck.user_id == user_id,
                 self.model.next_review >= date_from,

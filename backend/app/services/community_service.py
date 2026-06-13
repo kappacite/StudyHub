@@ -34,10 +34,12 @@ class CommunityService:
             
         # Tri par fork_count desc et date de création desc
         query = query.order_by(Binder.fork_count.desc(), Binder.created_at.desc())
-        
+
         total = query.count()
         offset = (page - 1) * per_page
-        binders = query.limit(per_page).offset(offset).all()
+        # Préchargement des tags : BinderResponse.tags sinon chargé en lazy par package (N+1).
+        from sqlalchemy.orm import selectinload
+        binders = query.options(selectinload(Binder.tags)).limit(per_page).offset(offset).all()
         
         return [BinderResponse.model_validate(b) for b in binders], total
 

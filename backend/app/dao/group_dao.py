@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from app.models.group import Group, GroupMember, GroupBinder, GroupActivity
 from app.dao.base_dao import BaseDAO
 
@@ -11,12 +11,30 @@ class GroupDAO(BaseDAO[Group]):
         return self.db.query(self.model).filter_by(invite_code=invite_code).first()
 
     def get_user_groups(self, user_id: int) -> List[Group]:
-        # Récupère tous les groupes dont l'utilisateur est membre
+        # Récupère tous les groupes dont l'utilisateur est membre.
+        # On précharge les associations : le service compte len(members_assoc) /
+        # len(binders_assoc) -> sinon une requête par groupe (N+1).
         return (
             self.db.query(self.model)
             .join(GroupMember, GroupMember.group_id == self.model.id)
             .filter(GroupMember.user_id == user_id)
+            .options(
+                selectinload(self.model.members_assoc),
+                selectinload(self.model.binders_assoc),
+            )
             .all()
+        )
+
+    def get_with_associations(self, group_id: int) -> Optional[Group]:
+        """Groupe avec membres (+ user) et classeurs (+ binder) préchargés."""
+        return (
+            self.db.query(self.model)
+            .filter(self.model.id == group_id)
+            .options(
+                selectinload(self.model.members_assoc).selectinload(GroupMember.user),
+                selectinload(self.model.binders_assoc).selectinload(GroupBinder.binder),
+            )
+            .first()
         )
 
     def count_user_created_groups(self, user_id: int) -> int:
