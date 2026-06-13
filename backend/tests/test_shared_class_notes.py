@@ -84,6 +84,28 @@ def test_get_single_shared_note_is_read_only_for_student(client, auth_headers, t
     assert as_teacher.json["read_only"] is False
 
 
+def test_student_can_copy_shared_note_into_personal_space(client, auth_headers, test_user, app):
+    _binder, note_uuid, invite_code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+
+    _other_user(app, "copieur@example.com", "copieur")
+    student = _login(client, "copieur@example.com")
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student)
+
+    copy = client.post(f"/api/v1/notes/{note_uuid}/copy", headers=student)
+    assert copy.status_code == 201
+    data = copy.json
+    assert data["id"] != note_uuid
+    assert "copie" in data["title"].lower()
+    assert data["read_only"] is False  # la copie appartient à l'élève -> éditable
+    assert data["binder_id"] is None
+
+    # La copie est éditable (PUT réussit).
+    put = client.put(f"/api/v1/notes/{data['id']}",
+                     json={"title": "Ma version", "content": "modifié"}, headers=student)
+    assert put.status_code == 200
+    assert put.json["title"] == "Ma version"
+
+
 def test_non_member_does_not_see_shared_notes(client, auth_headers, test_user, app):
     _binder, note_uuid, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
 

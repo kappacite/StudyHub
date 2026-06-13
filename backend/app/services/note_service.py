@@ -112,6 +112,22 @@ class NoteService:
         resp.read_only = not is_owner
         return resp
 
+    def copy_note(self, user_id: int, note_id: int) -> NoteResponse:
+        """Crée une copie personnelle et éditable d'une note accessible (ex. note de
+        cours partagée en lecture seule). La copie appartient à l'utilisateur."""
+        source = self._get_note_or_404(note_id, user_id, write_required=False)
+        from app.utils.html_sanitizer import sanitize_html
+        copy = Note(
+            title=f"{source.title} (copie)",
+            content=sanitize_html(source.content or ""),
+            user_id=user_id,
+            binder_id=None,  # copie perso, placée à la racine de l'élève
+        )
+        created = self._note_dao.create(copy)
+        if self._deck_dao and self._flashcard_dao:
+            self._sync_phantom_deck(created)
+        return NoteResponse.model_validate(created)
+
     def update_note(self, user_id: int, note_id: int, data: NoteUpdate) -> NoteResponse:
         note = self._get_note_or_404(note_id, user_id, write_required=True)
         
