@@ -26,7 +26,5 @@ class Deck(db.Model):
     note = relationship("Note", back_populates="deck", foreign_keys=[note_id])
     cards = relationship("Flashcard", back_populates="deck", cascade="all, delete-orphan")
     tags = relationship("Tag", secondary="deck_tags", back_populates="decks")
-
-    @property
-    def card_count(self) -> int:
-        return len(self.cards)
+    # NB : le nombre de cartes (`card_count` de DeckResponse) est injecté par le
+    # service via un COUNT groupé — pas de propriété `len(self.cards)` ici (over-fetch).

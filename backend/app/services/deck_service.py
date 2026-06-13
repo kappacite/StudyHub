@@ -6,9 +6,15 @@ from app.schemas.deck_schema import DeckCreate, DeckUpdate, DeckResponse
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 
 class DeckService:
-    def __init__(self, deck_dao: DeckDAO, binder_dao: BinderDAO):
+    def __init__(self, deck_dao: DeckDAO, binder_dao: BinderDAO, flashcard_dao=None):
         self._deck_dao = deck_dao
         self._binder_dao = binder_dao
+        self._flashcard_dao = flashcard_dao
+
+    def _to_response(self, deck: Deck, card_count: int) -> DeckResponse:
+        resp = DeckResponse.model_validate(deck)
+        resp.card_count = card_count
+        return resp
 
     def _get_deck_or_404(self, deck_id: int, user_id: int, write_required: bool = False) -> Deck:
         deck = self._deck_dao.get_by_id(deck_id)
@@ -40,7 +46,7 @@ class DeckService:
             binder_id=binder_id_internal
         )
         created = self._deck_dao.create(deck)
-        return DeckResponse.model_validate(created)
+        return self._to_response(created, 0)
 
     def get_decks(
         self, 
@@ -54,12 +60,14 @@ class DeckService:
         offset = (page - 1) * per_page
         decks = self._deck_dao.search_decks(user_id, binder_id, search, tag_id, limit=per_page, offset=offset)
         total = self._deck_dao.count_decks(user_id, binder_id, search, tag_id)
-        
-        return [DeckResponse.model_validate(d) for d in decks], total
+
+        counts = self._flashcard_dao.count_by_decks([d.id for d in decks])
+        return [self._to_response(d, counts.get(d.id, 0)) for d in decks], total
 
     def get_deck(self, user_id: int, deck_id: int) -> DeckResponse:
         deck = self._get_deck_or_404(deck_id, user_id, write_required=False)
-        return DeckResponse.model_validate(deck)
+        counts = self._flashcard_dao.count_by_decks([deck.id])
+        return self._to_response(deck, counts.get(deck.id, 0))
 
     def update_deck(self, user_id: int, deck_id: int, data: DeckUpdate) -> DeckResponse:
         deck = self._get_deck_or_404(deck_id, user_id, write_required=True)
@@ -78,7 +86,8 @@ class DeckService:
             deck.binder_id = None
             
         updated = self._deck_dao.update(deck)
-        return DeckResponse.model_validate(updated)
+        counts = self._flashcard_dao.count_by_decks([updated.id])
+        return self._to_response(updated, counts.get(updated.id, 0))
 
     def delete_deck(self, user_id: int, deck_id: int) -> None:
         deck = self._get_deck_or_404(deck_id, user_id, write_required=True)

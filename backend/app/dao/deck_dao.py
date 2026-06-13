@@ -10,11 +10,12 @@ class DeckDAO(BaseDAO[Deck]):
 
     def get_all(self, user_id: int, limit: int = 20, offset: int = 0) -> List[Deck]:
         from sqlalchemy.orm import selectinload
+        # On NE charge PAS les cartes : le nombre de cartes est calculé via un
+        # COUNT groupé (cf. FlashcardDAO.count_by_decks) pour éviter l'over-fetch.
         return (
             self.db.query(self.model)
             .filter_by(user_id=user_id)
             .options(
-                selectinload(self.model.cards),
                 selectinload(self.model.tags),
                 selectinload(self.model.binder)
             )
@@ -55,8 +56,8 @@ class DeckDAO(BaseDAO[Deck]):
             query = query.filter(self.model.tags.any(id=tag_id))
             
         from sqlalchemy.orm import selectinload
+        # Pas de selectinload(cards) : compte des cartes via COUNT groupé côté service.
         return query.options(
-            selectinload(self.model.cards),
             selectinload(self.model.tags),
             selectinload(self.model.binder)
         ).limit(limit).offset(offset).all()

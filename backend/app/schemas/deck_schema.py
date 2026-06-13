@@ -20,7 +20,8 @@ class DeckResponse(DeckBase):
     id: int
     binder_id: Optional[str] = Field(None, validation_alias="binder_uuid")
     user_id: int
-    card_count: int
+    # Injecté par le service (COUNT groupé) ; 0 par défaut si non fourni.
+    card_count: int = 0
     tags: List[TagResponseSchema] = []
     created_at: datetime
     updated_at: datetime
