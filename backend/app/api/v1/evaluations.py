@@ -3,6 +3,8 @@ from flask_jwt_extended import get_jwt_identity
 from app.extensions import db, limiter
 from app.dao.evaluation_dao import EvaluationDAO
 from app.dao.note_dao import NoteDAO
+from app.dao.deck_dao import DeckDAO
+from app.dao.flashcard_dao import FlashcardDAO
 from app.services.evaluation_service import EvaluationService
 from app.services.ai_service import AIService
 from app.schemas.evaluation_schema import (
@@ -19,8 +21,12 @@ evaluations_bp = Blueprint("evaluations", __name__)
 # Initialisation des DAOs / Services
 evaluation_dao = EvaluationDAO(db.session)
 note_dao = NoteDAO(db.session)
+deck_dao = DeckDAO(db.session)
+flashcard_dao = FlashcardDAO(db.session)
 ai_service = AIService()
-evaluation_service = EvaluationService(evaluation_dao, note_dao, ai_service)
+evaluation_service = EvaluationService(
+    evaluation_dao, note_dao, ai_service, deck_dao=deck_dao, flashcard_dao=flashcard_dao
+)
 
 
 def get_user_identity_or_ip():
