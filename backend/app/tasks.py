@@ -59,3 +59,32 @@ def run_blurting_analysis(self, user_id: int, note_id: int, user_blurting: str, 
         db.session.rollback()
         logger.exception(f"Error executing blurting analysis task: {e}")
         raise
+
+
+@celery_app.task(bind=True)
+def run_evaluation_generation(
+    self, user_id: int, note_id, item_count: int = 8, force: bool = False
+) -> dict:
+    """Génère (ou réutilise via cache) une feuille d'évaluation pour une note.
+    Asynchrone car l'appel Gemini est lent — calqué sur run_blurting_analysis."""
+    logger.info(f"Starting async evaluation generation for user_id={user_id}, note_id={note_id}")
+    try:
+        from app.dao.evaluation_dao import EvaluationDAO
+        from app.services.evaluation_service import EvaluationService
+
+        note_dao = NoteDAO(db.session)
+        evaluation_dao = EvaluationDAO(db.session)
+        ai_service = AIService()
+        service = EvaluationService(evaluation_dao, note_dao, ai_service)
+
+        response = service.generate_evaluation(
+            user_id=user_id, note_id=note_id, item_count=item_count, force=force
+        )
+        db.session.commit()
+
+        logger.info(f"Finished async evaluation generation for user_id={user_id}, note_id={note_id}")
+        return response.model_dump(mode="json")
+    except Exception as e:
+        db.session.rollback()
+        logger.exception(f"Error executing evaluation generation task: {e}")
+        raise

@@ -41,6 +41,12 @@ def create_app(config_name=None):
 
     class ContextTask(celery_app.Task):
         def __call__(self, *args, **kwargs):
+            from flask import has_app_context
+            # En exécution eager (tests) ou inline pendant une requête, un contexte
+            # applicatif est déjà actif : on le réutilise pour rester sur la bonne
+            # base. Sinon (worker Celery réel), on pousse le contexte de l'app.
+            if has_app_context():
+                return self.run(*args, **kwargs)
             with flask_app.app_context():
                 return self.run(*args, **kwargs)
     celery_app.Task = ContextTask
@@ -126,6 +132,7 @@ def create_app(config_name=None):
         from app.api.v1.search import search_bp
         from app.api.v1.imports import imports_bp
         from app.api.v1.quizzes import quizzes_bp
+        from app.api.v1.evaluations import evaluations_bp
         from app.api.v1.exam import exam_bp
         from app.api.v1.groups import groups_bp
         from app.api.v1.classes import classes_bp, assignments_mine_bp
@@ -149,6 +156,7 @@ def create_app(config_name=None):
         flask_app.register_blueprint(search_bp, url_prefix="/api/v1/search")
         flask_app.register_blueprint(imports_bp, url_prefix="/api/v1/import")
         flask_app.register_blueprint(quizzes_bp, url_prefix="/api/v1/quizzes")
+        flask_app.register_blueprint(evaluations_bp, url_prefix="/api/v1/evaluations")
         flask_app.register_blueprint(exam_bp, url_prefix="/api/v1/exam")
         flask_app.register_blueprint(groups_bp, url_prefix="/api/v1/groups")
         flask_app.register_blueprint(classes_bp, url_prefix="/api/v1/classes")
