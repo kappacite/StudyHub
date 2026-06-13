@@ -2425,7 +2425,7 @@ async function saveNote() {
   const rawContent = compileStructuredNote()
   
   try {
-    const updated = await notesStore.updateNote(noteId.value, title.value, rawContent)
+    const updated = await notesStore.updateNote(noteId.value, title.value, rawContent, binderId.value)
     if (updated) {
       noteFlashcards.value = (updated as any).flashcards || []
     }
