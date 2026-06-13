@@ -28,5 +28,8 @@ class BinderResponse(BinderBase):
     tags: List[TagResponseSchema] = []
     created_at: datetime
     updated_at: datetime
+    # True quand le classeur est partagé par un cours/groupe : lecture seule pour l'élève.
+    read_only: bool = False
+    owner_username: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

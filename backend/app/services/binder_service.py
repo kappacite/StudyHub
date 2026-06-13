@@ -82,7 +82,24 @@ class BinderService:
 
     def get_all_binders_flat(self, user_id: int) -> List[BinderResponse]:
         binders = self._binder_dao.get_all(user_id, limit=1000)
-        return [BinderResponse.model_validate(b) for b in binders]
+        responses = [BinderResponse.model_validate(b) for b in binders]
+        seen = {r.id for r in responses}
+
+        # Classeurs partagés par un cours/groupe : on ajoute le sous-arbre en lecture
+        # seule. La racine partagée est détachée (parent_id=None) pour apparaître à la
+        # racine de l'arbre de l'élève ; les descendants gardent leur parent.
+        for root in self._binder_dao.get_shared_root_binders(user_id):
+            subtree = [(root, True)] + [(d, False) for d in self._binder_dao.get_descendants(root._id)]
+            for binder, is_root in subtree:
+                if binder.id in seen:
+                    continue
+                resp = BinderResponse.model_validate(binder)
+                resp.read_only = True
+                if is_root:
+                    resp.parent_id = None
+                responses.append(resp)
+                seen.add(binder.id)
+        return responses
 
     def _get_or_create_tags(self, user_id: int, names: List[str]):
         tags = []

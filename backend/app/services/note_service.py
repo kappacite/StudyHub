@@ -79,8 +79,27 @@ class NoteService:
         offset = (page - 1) * per_page
         notes = self._note_dao.search_notes(user_id, binder_id, search, tag_id, limit=per_page, offset=offset)
         total = self._note_dao.count_notes(user_id, binder_id, search, tag_id)
-        
-        return [NoteResponse.model_validate(n) for n in notes], total
+
+        responses = [NoteResponse.model_validate(n) for n in notes]
+
+        # Lors d'un listing global (sans binder précis), inclure les notes des
+        # classeurs partagés par un cours/groupe, en LECTURE SEULE.
+        if binder_id is None and search is None and tag_id is None:
+            shared_binder_ids: list = []
+            for root in self._binder_dao.get_shared_root_binders(user_id):
+                shared_binder_ids.append(root._id)
+                shared_binder_ids.extend(d._id for d in self._binder_dao.get_descendants(root._id))
+            if shared_binder_ids:
+                hidden = self._note_dao.get_hidden_note_ids(user_id) if hasattr(self._note_dao, "get_hidden_note_ids") else set()
+                for n in self._note_dao.get_by_binder_internal_ids(shared_binder_ids):
+                    if n._id in hidden:
+                        continue
+                    resp = NoteResponse.model_validate(n)
+                    resp.read_only = True
+                    responses.append(resp)
+                total = len(responses)
+
+        return responses, total
 
     def get_note(self, user_id: int, note_id: int) -> NoteResponse:
         note = self._get_note_or_404(note_id, user_id, write_required=False)

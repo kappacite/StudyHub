@@ -13,6 +13,19 @@ class NoteDAO(BaseDAO[Note]):
             return self.db.query(self.model).filter(or_(self.model._id == int(entity_id), self.model.id == str(entity_id))).first()
         return self.db.query(self.model).filter_by(id=str(entity_id)).first()
 
+    def get_by_binder_internal_ids(self, binder_internal_ids: List[int]) -> List[Note]:
+        """Notes (tous propriétaires) appartenant aux classeurs donnés — pour le
+        contenu en lecture seule des classeurs partagés."""
+        if not binder_internal_ids:
+            return []
+        from sqlalchemy.orm import selectinload
+        return (
+            self.db.query(self.model)
+            .filter(self.model.binder_id.in_(binder_internal_ids))
+            .options(selectinload(self.model.tags), selectinload(self.model.binder))
+            .all()
+        )
+
     def get_all(self, user_id: int, limit: int = 20, offset: int = 0) -> List[Note]:
         from sqlalchemy.orm import selectinload
         return (
