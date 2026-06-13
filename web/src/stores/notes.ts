@@ -102,6 +102,14 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
+  async function copyNote(id: string) {
+    // Crée une copie personnelle éditable d'une note (ex. note de cours partagée).
+    const response = await api.post<Note>(`/notes/${id}/copy`)
+    const newNote = response.data
+    notes.value.push(newNote)
+    return newNote
+  }
+
   async function deleteNote(id: string) {
     try {
       await api.delete(`/notes/${id}`)
@@ -120,6 +128,7 @@ export const useNotesStore = defineStore('notes', () => {
     fetchNoteById,
     createNote,
     updateNote,
+    copyNote,
     deleteNote
   }
 })

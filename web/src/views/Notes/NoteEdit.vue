@@ -16,9 +16,19 @@
     <div v-else class="flex-1 flex flex-col w-full animate-fade-in print:h-auto print:overflow-visible" :class="[isEditMode ? 'overflow-hidden' : '']">
 
       <!-- Bannière lecture seule : note partagée par un cours -->
-      <div v-if="isReadOnly" class="flex items-center gap-2 px-6 py-2 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400 text-xs font-semibold no-print">
-        <Eye class="w-4 h-4" />
-        Note partagée par un cours — lecture seule. Copiez-la pour pouvoir la modifier.
+      <div v-if="isReadOnly" class="flex items-center justify-between gap-2 px-6 py-2 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400 text-xs font-semibold no-print">
+        <span class="flex items-center gap-2">
+          <Eye class="w-4 h-4" />
+          Note partagée par un cours — lecture seule.
+        </span>
+        <button
+          @click="copyForEditing"
+          :disabled="isCopying"
+          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 active:scale-95 transition-all disabled:opacity-50"
+        >
+          <Copy class="w-3.5 h-3.5" />
+          {{ isCopying ? 'Copie…' : 'Copier pour modifier' }}
+        </button>
       </div>
 
       <!-- Split-Screen Outer Container -->
@@ -970,8 +980,9 @@ import TagSelector from '../../components/ui/TagSelector.vue'
 import { 
   ChevronLeft,
   Menu,
-  Eye, 
-  Edit3, 
+  Eye,
+  Copy,
+  Edit3,
   FileDown,
   BookOpen,
   Compass,
@@ -1026,6 +1037,7 @@ const isSaving = ref(false)
 const saveStatus = ref('Enregistré')
 // Note partagée par un cours (lecture seule) : aucune édition possible.
 const isReadOnly = ref(false)
+const isCopying = ref(false)
 const isEditMode = computed({
   get: () => !isReadOnly.value && route.query.edit === 'true',
   set: (val) => {
@@ -2415,6 +2427,20 @@ async function insertDefinitionTooltip() {
     textarea.setSelectionRange(newCursorPos, newCursorPos)
     triggerAutoSave()
   }, 50)
+}
+
+async function copyForEditing() {
+  if (isCopying.value) return
+  isCopying.value = true
+  try {
+    const newNote = await notesStore.copyNote(noteId.value)
+    // Ouvre la copie perso en mode édition.
+    router.push(`/notes/${newNote.id}?edit=true`)
+  } catch (e) {
+    console.error('Erreur lors de la copie de la note', e)
+  } finally {
+    isCopying.value = false
+  }
 }
 
 function triggerAutoSave() {

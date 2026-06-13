@@ -84,6 +84,14 @@ def delete_note(note_id):
     return "", 204
 
 
+@notes_bp.route("/<string:note_id>/copy", methods=["POST"])
+@jwt_required_middleware
+def copy_note(note_id):
+    user_id = int(get_jwt_identity())
+    result = note_service.copy_note(user_id, note_id)
+    return jsonify(result.model_dump()), 201
+
+
 @notes_bp.route("/<string:note_id>/tags", methods=["POST"])
 @jwt_required_middleware
 def set_note_tags(note_id):
