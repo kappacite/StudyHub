@@ -335,7 +335,7 @@ class GroupService:
         return response
 
     def get_group_members_progress(self, group_id: int, user_id: int) -> List[GroupMemberProgressSchema]:
-        group = self._group_dao.get_by_id(group_id)
+        group = self._group_dao.get_with_associations(group_id)
         if not group:
             raise ResourceNotFoundError("Groupe introuvable.")
 
@@ -344,31 +344,37 @@ class GroupService:
         # Plage des 7 derniers jours
         start_date = datetime.utcnow() - timedelta(days=7)
 
-        progress_list = []
-        for assoc in group.members_assoc:
-            member_user = assoc.user
-            
-            # Requête agrégée sur StudySession
-            sessions = (
+        member_ids = [assoc.user_id for assoc in group.members_assoc]
+
+        # UNE requête agrégée pour tous les membres (au lieu d'une par membre).
+        agg = {}
+        if member_ids:
+            rows = (
                 self._group_dao.db.query(
-                    func.sum(StudySession.duration_seconds).label("total_time"),
-                    func.sum(StudySession.cards_reviewed).label("reviewed"),
-                    func.sum(StudySession.cards_correct).label("correct")
+                    StudySession.user_id,
+                    func.sum(StudySession.duration_seconds),
+                    func.sum(StudySession.cards_reviewed),
+                    func.sum(StudySession.cards_correct),
                 )
                 .filter(
-                    StudySession.user_id == member_user.id,
-                    StudySession.created_at >= start_date
+                    StudySession.user_id.in_(member_ids),
+                    StudySession.created_at >= start_date,
                 )
-                .first()
+                .group_by(StudySession.user_id)
+                .all()
             )
+            agg = {uid: (total, reviewed, correct) for uid, total, reviewed, correct in rows}
 
+        progress_list = []
+        for assoc in group.members_assoc:
+            total, reviewed, correct = agg.get(assoc.user_id, (0, 0, 0))
             progress_list.append(
                 GroupMemberProgressSchema(
-                    user_id=member_user.id,
-                    username=member_user.username,
-                    total_time_seconds=int(sessions.total_time or 0),
-                    cards_reviewed=int(sessions.reviewed or 0),
-                    cards_correct=int(sessions.correct or 0)
+                    user_id=assoc.user_id,
+                    username=assoc.user.username,
+                    total_time_seconds=int(total or 0),
+                    cards_reviewed=int(reviewed or 0),
+                    cards_correct=int(correct or 0)
                 )
             )
 

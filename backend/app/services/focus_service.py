@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from app.extensions import db
 from app.models.flashcard import Flashcard
 from app.models.deck import Deck
@@ -19,69 +20,65 @@ class FocusService:
         today = now.date()
         one_day_ago = now - timedelta(days=1)
         
-        # 1. Fetch due flashcards grouped by deck
-        decks = db.session.query(Deck).filter(Deck.user_id == user_id).all()
+        # 1. Cartes dues : UNE requête (au lieu d'une par deck), deck eager-loadé,
+        #    + dernier passage par deck en UNE requête groupée.
+        due_cards_all = (
+            db.session.query(Flashcard)
+            .join(Deck)
+            .options(joinedload(Flashcard.deck))
+            .filter(Deck.user_id == user_id, Flashcard.next_review <= now)
+            .all()
+        )
+        last_sessions = dict(
+            db.session.query(Flashcard.deck_id, func.max(StudySession.created_at))
+            .join(StudySession, StudySession.flashcard_id == Flashcard.id)
+            .join(Deck, Flashcard.deck_id == Deck.id)
+            .filter(
+                StudySession.user_id == user_id,
+                StudySession.module == "flashcard",
+            )
+            .group_by(Flashcard.deck_id)
+            .all()
+        )
+
+        # Regroupement par deck + filtrage des types de cartes valides (en Python,
+        # car cela dépend du parsing de original_text).
+        cards_by_deck: Dict[int, list] = {}
+        for c in due_cards_all:
+            if c.original_text:
+                is_def = c.original_text.startswith('[') and ']{def:' in c.original_text
+                is_vf = '{{vf::' in c.original_text
+                is_qcm = '{{qcm::' in c.original_text
+                is_occl = c.original_text.startswith('[diagram:') and 'mask:' in c.original_text
+                if not (is_def or is_vf or is_qcm or is_occl):
+                    continue
+            cards_by_deck.setdefault(c.deck_id, []).append(c)
+
         deck_items = []
         flashcard_count = 0
         total_late_cards = 0
 
-        for deck in decks:
-            # Count due cards in deck
-            due_cards = (
-                db.session.query(Flashcard)
-                .filter(
-                    Flashcard.deck_id == deck.id,
-                    Flashcard.next_review <= now
-                )
-                .all()
-            )
-            
-            # Filter due cards to only keep valid ones (definitions, true/false, QCM, diagram occlusions, and normal cards)
-            valid_due_cards = []
-            for c in due_cards:
-                if c.original_text:
-                    is_def = c.original_text.startswith('[') and ']{def:' in c.original_text
-                    is_vf = '{{vf::' in c.original_text
-                    is_qcm = '{{qcm::' in c.original_text
-                    is_occl = c.original_text.startswith('[diagram:') and 'mask:' in c.original_text
-                    if is_def or is_vf or is_qcm or is_occl:
-                        valid_due_cards.append(c)
-                else:
-                    valid_due_cards.append(c)
-            
-            due_cards = valid_due_cards
+        for deck_id, due_cards in cards_by_deck.items():
             count = len(due_cards)
-            if count > 0:
-                flashcard_count += count
-                # Check if any due card is late (next_review < today - 1 day)
-                is_late = any(c.next_review < one_day_ago for c in due_cards)
-                if is_late:
-                    total_late_cards += sum(1 for c in due_cards if c.next_review < one_day_ago)
-                
-                # Fetch last study session for this deck
-                last_session_time = (
-                    db.session.query(func.max(StudySession.created_at))
-                    .join(Flashcard, StudySession.flashcard_id == Flashcard.id)
-                    .filter(
-                        StudySession.user_id == user_id,
-                        StudySession.module == "flashcard",
-                        Flashcard.deck_id == deck.id
-                    )
-                    .scalar()
-                )
-                
-                last_session_ago_days = None
-                if last_session_time:
-                    last_session_ago_days = (now - last_session_time).days
-                
-                deck_items.append(FocusItemSchema(
-                    type="deck",
-                    id=str(deck.id),
-                    title=deck.name,
-                    count=count,
-                    is_late=is_late,
-                    last_session_ago_days=last_session_ago_days
-                ))
+            if count == 0:
+                continue
+            flashcard_count += count
+            late_cards = [c for c in due_cards if c.next_review < one_day_ago]
+            is_late = len(late_cards) > 0
+            total_late_cards += len(late_cards)
+
+            last_session_time = last_sessions.get(deck_id)
+            last_session_ago_days = (now - last_session_time).days if last_session_time else None
+
+            deck = due_cards[0].deck  # eager-loadé, pas de requête supplémentaire
+            deck_items.append(FocusItemSchema(
+                type="deck",
+                id=str(deck_id),
+                title=deck.name,
+                count=count,
+                is_late=is_late,
+                last_session_ago_days=last_session_ago_days
+            ))
 
         # 2. Fetch due notes for blurting
         notes = db.session.query(Note).filter(Note.user_id == user_id).all()
