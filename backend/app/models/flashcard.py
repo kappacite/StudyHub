@@ -8,6 +8,8 @@ class Flashcard(db.Model):
     __tablename__ = "flashcards"
     __table_args__ = (
         Index('flashcards_search_idx', 'search_vector', postgresql_using='gin'),
+        # Couvre le filtrage par deck (selectinload) ET les cartes dues (next_review).
+        Index('ix_flashcards_deck_id_next_review', 'deck_id', 'next_review'),
     )
 
     id = Column(Integer, primary_key=True)
