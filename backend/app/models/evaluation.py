@@ -3,6 +3,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from typing import Optional
 from app.extensions import db
 
 
@@ -36,6 +37,10 @@ class Evaluation(db.Model):
         cascade="all, delete-orphan",
         order_by="EvaluationItem.id",
     )
+
+    @property
+    def note_uuid(self) -> Optional[str]:
+        return self.note.id if self.note else None
 
 
 class EvaluationItem(db.Model):
