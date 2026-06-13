@@ -94,6 +94,37 @@ describe('notes store', () => {
     expect(store.notes[0].title).toBe('V2')
   })
 
+  it('updateNote envoie le NOUVEAU binder_id quand il est fourni (changement de classeur)', async () => {
+    const existing = makeNote({ id: 'm-uuid', binder_id: 'ancien-binder' })
+    api.put.mockResolvedValue({ data: makeNote({ id: 'm-uuid', binder_id: 'nouveau-binder' }) })
+    const store = useNotesStore()
+    store.notes.push(existing)
+
+    await store.updateNote('m-uuid', 'T', 'c', 'nouveau-binder')
+
+    // Régression : le classeur fourni doit être envoyé, pas l'ancien du cache.
+    expect(api.put).toHaveBeenCalledWith('/notes/m-uuid', {
+      title: 'T',
+      content: 'c',
+      binder_id: 'nouveau-binder',
+    })
+  })
+
+  it('updateNote envoie binder_id=null (déplacement vers « Général »)', async () => {
+    const existing = makeNote({ id: 'n-uuid', binder_id: 'un-binder' })
+    api.put.mockResolvedValue({ data: makeNote({ id: 'n-uuid', binder_id: null }) })
+    const store = useNotesStore()
+    store.notes.push(existing)
+
+    await store.updateNote('n-uuid', 'T', 'c', null)
+
+    expect(api.put).toHaveBeenCalledWith('/notes/n-uuid', {
+      title: 'T',
+      content: 'c',
+      binder_id: null,
+    })
+  })
+
   it('deleteNote retire la note du cache par son id', async () => {
     api.delete.mockResolvedValue({})
     const store = useNotesStore()

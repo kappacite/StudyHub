@@ -77,11 +77,13 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  async function updateNote(id: string, title: string, content: string) {
+  async function updateNote(id: string, title: string, content: string, binderId?: string | null) {
     try {
       const note = notes.value.find(n => n.id === id)
-      const binder_id = note ? note.binder_id : null
-      
+      // Si un binderId est fourni (string ou null explicite), on l'utilise ;
+      // sinon on conserve le classeur actuel de la note.
+      const binder_id = binderId !== undefined ? binderId : (note ? note.binder_id : null)
+
       const response = await api.put<Note>(`/notes/${id}`, {
         title,
         content,
