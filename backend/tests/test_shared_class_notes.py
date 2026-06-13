@@ -106,6 +106,39 @@ def test_student_can_copy_shared_note_into_personal_space(client, auth_headers, 
     assert put.json["title"] == "Ma version"
 
 
+def test_student_can_hide_shared_note(client, auth_headers, test_user, app):
+    _binder, note_uuid, invite_code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+
+    _other_user(app, "masqueur@example.com", "masqueur")
+    student = _login(client, "masqueur@example.com")
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student)
+
+    # Visible au départ.
+    notes = client.get("/api/v1/notes", headers=student).get_json()["data"]
+    assert any(n["id"] == note_uuid for n in notes)
+
+    # Masquer la note.
+    hide = client.post(f"/api/v1/notes/{note_uuid}/hide", headers=student)
+    assert hide.status_code == 204
+
+    # Elle disparaît de la liste de l'élève.
+    notes_after = client.get("/api/v1/notes", headers=student).get_json()["data"]
+    assert all(n["id"] != note_uuid for n in notes_after)
+
+    # Réafficher.
+    unhide = client.delete(f"/api/v1/notes/{note_uuid}/hide", headers=student)
+    assert unhide.status_code == 204
+    notes_restored = client.get("/api/v1/notes", headers=student).get_json()["data"]
+    assert any(n["id"] == note_uuid for n in notes_restored)
+
+
+def test_user_cannot_hide_own_note(client, auth_headers, test_user, app):
+    # Le prof (propriétaire) ne peut pas masquer sa propre note.
+    _binder, note_uuid, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+    resp = client.post(f"/api/v1/notes/{note_uuid}/hide", headers=auth_headers)
+    assert resp.status_code == 403
+
+
 def test_non_member_does_not_see_shared_notes(client, auth_headers, test_user, app):
     _binder, note_uuid, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
 

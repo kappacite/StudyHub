@@ -21,14 +21,23 @@
           <Eye class="w-4 h-4" />
           Note partagée par un cours — lecture seule.
         </span>
-        <button
-          @click="copyForEditing"
-          :disabled="isCopying"
-          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 active:scale-95 transition-all disabled:opacity-50"
-        >
-          <Copy class="w-3.5 h-3.5" />
-          {{ isCopying ? 'Copie…' : 'Copier pour modifier' }}
-        </button>
+        <span class="flex items-center gap-2">
+          <button
+            @click="hideFromView"
+            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-amber-300 dark:border-amber-800 font-semibold hover:bg-amber-100 dark:hover:bg-amber-950/40 active:scale-95 transition-all"
+          >
+            <EyeOff class="w-3.5 h-3.5" />
+            Cacher
+          </button>
+          <button
+            @click="copyForEditing"
+            :disabled="isCopying"
+            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 active:scale-95 transition-all disabled:opacity-50"
+          >
+            <Copy class="w-3.5 h-3.5" />
+            {{ isCopying ? 'Copie…' : 'Copier pour modifier' }}
+          </button>
+        </span>
       </div>
 
       <!-- Split-Screen Outer Container -->
@@ -981,6 +990,7 @@ import {
   ChevronLeft,
   Menu,
   Eye,
+  EyeOff,
   Copy,
   Edit3,
   FileDown,
@@ -2440,6 +2450,15 @@ async function copyForEditing() {
     console.error('Erreur lors de la copie de la note', e)
   } finally {
     isCopying.value = false
+  }
+}
+
+async function hideFromView() {
+  try {
+    await notesStore.hideNote(noteId.value)
+    router.push('/notes')
+  } catch (e) {
+    console.error('Erreur lors du masquage de la note', e)
   }
 }
 
