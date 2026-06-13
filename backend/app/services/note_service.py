@@ -1,3 +1,4 @@
+import logging
 from typing import List, Tuple, Optional
 import uuid
 from app.dao.note_dao import NoteDAO
@@ -10,6 +11,8 @@ from app.models.flashcard import Flashcard
 from app.schemas.note_schema import NoteCreate, NoteUpdate, NoteResponse
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 from app.utils.placeholder_parser import extract_placeholders_from_text
+
+logger = logging.getLogger(__name__)
 
 class NoteService:
     def __init__(
@@ -187,7 +190,7 @@ class NoteService:
                                 "hash": p_hash
                             })
                 except Exception as e:
-                    print(f"Error parsing diagram {diag_id} masks: {e}")
+                    logger.warning("Error parsing diagram %s masks: %s", diag_id, e)
         
         # 3. Récupérer les flashcards existantes pour ce deck
         existing_cards = self._flashcard_dao.db.query(Flashcard).filter_by(deck_id=deck.id).all()
