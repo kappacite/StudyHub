@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload, joinedload
 from typing import Dict, Any, List
 
 class SearchDAO:
@@ -33,6 +33,7 @@ class SearchDAO:
         if "note" in types:
             notes = (
                 self.db.query(Note)
+                .options(selectinload(Note.tags))
                 .filter(
                     Note.user_id == user_id,
                     (Note.title.ilike(search_pattern) | Note.content.ilike(search_pattern))
@@ -47,6 +48,7 @@ class SearchDAO:
         if "deck" in types:
             decks = (
                 self.db.query(Deck)
+                .options(selectinload(Deck.tags))
                 .filter(
                     Deck.user_id == user_id,
                     (Deck.name.ilike(search_pattern) | Deck.description.ilike(search_pattern))
@@ -62,6 +64,7 @@ class SearchDAO:
             flashcards = (
                 self.db.query(Flashcard)
                 .join(Deck)
+                .options(joinedload(Flashcard.deck))
                 .filter(
                     Deck.user_id == user_id,
                     (Flashcard.front.ilike(search_pattern) | Flashcard.back.ilike(search_pattern))
@@ -108,6 +111,7 @@ class SearchDAO:
         if "note" in types:
             notes = (
                 self.db.query(Note, func.ts_rank(Note.search_vector, query_ts).label("rank"))
+                .options(selectinload(Note.tags))
                 .filter(
                     Note.user_id == user_id,
                     Note.search_vector.op("@@")(query_ts)
@@ -121,6 +125,7 @@ class SearchDAO:
         if "deck" in types:
             decks = (
                 self.db.query(Deck, func.ts_rank(Deck.search_vector, query_ts).label("rank"))
+                .options(selectinload(Deck.tags))
                 .filter(
                     Deck.user_id == user_id,
                     Deck.search_vector.op("@@")(query_ts)
@@ -135,6 +140,7 @@ class SearchDAO:
             flashcards = (
                 self.db.query(Flashcard, func.ts_rank(Flashcard.search_vector, query_ts).label("rank"))
                 .join(Deck)
+                .options(joinedload(Flashcard.deck))
                 .filter(
                     Deck.user_id == user_id,
                     Flashcard.search_vector.op("@@")(query_ts)

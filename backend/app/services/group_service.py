@@ -96,7 +96,7 @@ class GroupService:
         return response
 
     def get_group_detail(self, group_id: int, user_id: int) -> GroupDetailResponseSchema:
-        group = self._group_dao.get_by_id(group_id)
+        group = self._group_dao.get_with_associations(group_id)
         if not group:
             raise ResourceNotFoundError("Groupe introuvable.")
         
