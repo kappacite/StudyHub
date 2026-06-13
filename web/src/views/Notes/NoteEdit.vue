@@ -14,7 +14,13 @@
 
     <!-- Main Content -->
     <div v-else class="flex-1 flex flex-col w-full animate-fade-in print:h-auto print:overflow-visible" :class="[isEditMode ? 'overflow-hidden' : '']">
-      
+
+      <!-- Bannière lecture seule : note partagée par un cours -->
+      <div v-if="isReadOnly" class="flex items-center gap-2 px-6 py-2 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400 text-xs font-semibold no-print">
+        <Eye class="w-4 h-4" />
+        Note partagée par un cours — lecture seule. Copiez-la pour pouvoir la modifier.
+      </div>
+
       <!-- Split-Screen Outer Container -->
       <div class="flex-1 flex w-full h-full overflow-hidden print:h-auto print:overflow-visible">
         
@@ -1018,9 +1024,12 @@ const loadedDiagrams = ref<Record<number, any>>({})
 const loading = ref(true)
 const isSaving = ref(false)
 const saveStatus = ref('Enregistré')
+// Note partagée par un cours (lecture seule) : aucune édition possible.
+const isReadOnly = ref(false)
 const isEditMode = computed({
-  get: () => route.query.edit === 'true',
+  get: () => !isReadOnly.value && route.query.edit === 'true',
   set: (val) => {
+    if (isReadOnly.value) return
     router.replace({ query: { ...route.query, edit: val ? 'true' : undefined } })
   }
 })
@@ -1252,6 +1261,7 @@ async function loadNoteDetails() {
   if (note) {
     title.value = note.title
     binderId.value = note.binder_id
+    isReadOnly.value = !!(note as any).read_only
     isPublic.value = (note as any).is_public || false
     shareToken.value = (note as any).share_token || null
     noteFlashcards.value = (note as any).flashcards || []
@@ -2408,9 +2418,10 @@ async function insertDefinitionTooltip() {
 }
 
 function triggerAutoSave() {
+  if (isReadOnly.value) return  // note partagée en lecture seule : pas de sauvegarde
   saveStatus.value = 'Modifications...'
   isSaving.value = true
-  
+
   if (autoSaveTimer) clearTimeout(autoSaveTimer)
   autoSaveTimer = setTimeout(() => {
     saveNote()

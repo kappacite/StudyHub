@@ -12,6 +12,7 @@ export interface Binder {
   description?: string | null
   tags?: Tag[]
   user_id?: number
+  read_only?: boolean
 }
 
 interface BindersResponse {

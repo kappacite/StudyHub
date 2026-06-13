@@ -103,9 +103,14 @@ class NoteService:
 
     def get_note(self, user_id: int, note_id: int) -> NoteResponse:
         note = self._get_note_or_404(note_id, user_id, write_required=False)
-        if self._deck_dao and self._flashcard_dao:
+        is_owner = note.user_id == user_id
+        # Ne synchroniser le deck fantôme que pour le propriétaire : un élève qui
+        # LIT une note partagée ne doit pas déclencher d'écriture sur le deck du prof.
+        if is_owner and self._deck_dao and self._flashcard_dao:
             self._sync_phantom_deck(note)
-        return NoteResponse.model_validate(note)
+        resp = NoteResponse.model_validate(note)
+        resp.read_only = not is_owner
+        return resp
 
     def update_note(self, user_id: int, note_id: int, data: NoteUpdate) -> NoteResponse:
         note = self._get_note_or_404(note_id, user_id, write_required=True)

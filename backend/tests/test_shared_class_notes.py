@@ -67,6 +67,23 @@ def test_student_sees_shared_binder_notes_read_only(client, auth_headers, test_u
     assert note["title"] == "Chapitre 1"
 
 
+def test_get_single_shared_note_is_read_only_for_student(client, auth_headers, test_user, app):
+    _binder, note_uuid, invite_code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+
+    _other_user(app, "eleve2@example.com", "eleve2")
+    student = _login(client, "eleve2@example.com")
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student)
+
+    # L'élève peut ouvrir la note, marquée lecture seule.
+    as_student = client.get(f"/api/v1/notes/{note_uuid}", headers=student)
+    assert as_student.status_code == 200
+    assert as_student.json["read_only"] is True
+
+    # Le prop (prof) la voit en écriture (read_only False).
+    as_teacher = client.get(f"/api/v1/notes/{note_uuid}", headers=auth_headers)
+    assert as_teacher.json["read_only"] is False
+
+
 def test_non_member_does_not_see_shared_notes(client, auth_headers, test_user, app):
     _binder, note_uuid, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
 

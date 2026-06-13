@@ -129,6 +129,7 @@
               </div>
               <div class="min-w-0">
                 <span class="font-bold truncate text-sm text-slate-800 dark:text-slate-200">{{ folder.name }}</span>
+                <span v-if="folder.read_only" class="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">Cours</span>
                 <div v-if="folder.tags?.length" class="mt-1 flex flex-wrap gap-1">
                   <TagBadge v-for="tag in folder.tags" :key="tag.id" :tag="tag" />
                 </div>
@@ -172,7 +173,10 @@
               @click="router.push(`/notes/${note.id}`)"
             >
               <div class="min-w-0">
-                <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">{{ note.title }}</p>
+                <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">
+                  {{ note.title }}
+                  <span v-if="note.read_only" class="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">Cours · lecture seule</span>
+                </p>
                 <p class="text-[10px] text-slate-400 mt-0.5">Mis à jour il y a 2h</p>
               </div>
               <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />

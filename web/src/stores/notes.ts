@@ -11,6 +11,7 @@ export interface Note {
   created_at: string
   updated_at: string
   tags: Tag[]
+  read_only?: boolean
 }
 
 interface NotesResponse {
