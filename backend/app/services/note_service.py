@@ -256,8 +256,13 @@ class NoteService:
                 except Exception as e:
                     logger.warning("Error parsing diagram %s masks: %s", diag_id, e)
         
-        # 3. Récupérer les flashcards existantes pour ce deck
-        existing_cards = self._flashcard_dao.db.query(Flashcard).filter_by(deck_id=deck.id).all()
+        # 3. Récupérer les flashcards existantes pour ce deck.
+        # On ne gère QUE les cartes 'manual' (issues des balises) : les cartes 'ai'
+        # (générées par les évaluations) vivent dans le même deck mais ne doivent
+        # jamais être mises à jour ni supprimées par cette sync déterministe.
+        existing_cards = self._flashcard_dao.db.query(Flashcard).filter_by(
+            deck_id=deck.id, source="manual"
+        ).all()
         existing_cards_by_hash = {c.placeholder_hash: c for c in existing_cards if c.placeholder_hash}
         
         hashes_in_note = set()
@@ -280,7 +285,8 @@ class NoteService:
                     front=p["front"],
                     back=p["back"],
                     placeholder_hash=p_hash,
-                    original_text=p["raw_tag"]
+                    original_text=p["raw_tag"],
+                    source="manual",
                 )
                 self._flashcard_dao.create(card)
                 

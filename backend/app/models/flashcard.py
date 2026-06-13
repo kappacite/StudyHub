@@ -20,6 +20,11 @@ class Flashcard(db.Model):
     # Placeholders de révision (Active Reading)
     placeholder_hash = Column(String(64), index=True, nullable=True)
     original_text = Column(Text, nullable=True)
+
+    # Provenance de la carte : 'manual' = balises de note / création utilisateur
+    # (gérée par la sync déterministe du deck fantôme), 'ai' = générée par l'IA
+    # (évaluations) et protégée de la sync déterministe.
+    source = Column(String(10), default="manual", server_default="manual", nullable=False)
     
     # Paramètres de l'algorithme SM-2
     ease_factor = Column(Float, default=2.5, nullable=False)
