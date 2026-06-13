@@ -4,8 +4,12 @@ from unittest.mock import MagicMock
 from app.extensions import db
 from app.models.user import User
 from app.models.note import Note
+from app.models.deck import Deck
+from app.models.flashcard import Flashcard
 from app.dao.evaluation_dao import EvaluationDAO
 from app.dao.note_dao import NoteDAO
+from app.dao.deck_dao import DeckDAO
+from app.dao.flashcard_dao import FlashcardDAO
 from app.services.evaluation_service import EvaluationService
 from app.middlewares.error_handler import ForbiddenError
 
@@ -52,6 +56,28 @@ def _service(ai_return=AI_ITEMS):
     ai = MagicMock()
     ai.generate_evaluation.return_value = ai_return
     return EvaluationService(EvaluationDAO(db.session), NoteDAO(db.session), ai), ai
+
+
+def _service_full(ai_return=AI_ITEMS):
+    """Service avec deck/flashcard DAOs : active le bouclage SM-2."""
+    ai = MagicMock()
+    ai.generate_evaluation.return_value = ai_return
+    service = EvaluationService(
+        EvaluationDAO(db.session),
+        NoteDAO(db.session),
+        ai,
+        deck_dao=DeckDAO(db.session),
+        flashcard_dao=FlashcardDAO(db.session),
+    )
+    return service, ai
+
+
+def _phantom_cards(note_uuid):
+    note = NoteDAO(db.session).get_by_id(note_uuid)
+    deck = db.session.query(Deck).filter_by(note_id=note._id).first()
+    if not deck:
+        return []
+    return db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
 
 
 def test_generate_merges_ai_and_manual_items_sanitized(app):
@@ -147,6 +173,52 @@ def test_trou_wrong_answer_is_incorrect(app):
         a = service.answer_item(user_id, resp.id, trou.id, value="noyau", self_grade=None)
         assert a.is_correct is False
         assert a.correction["answer"] == "Mitochondrie"
+
+
+def test_completion_reinforces_missed_items_as_ai_cards(app):
+    user_id, note_uuid = _make_user_note(app)
+    with app.app_context():
+        service, _ = _service_full()
+        resp = service.generate_evaluation(user_id, note_uuid)
+        qcm = next(i for i in resp.items if i.type == "qcm" and i.source == "ai")
+        open_ai = next(i for i in resp.items if i.type == "open" and i.source == "ai")
+
+        # QCM raté (mauvaise option), open auto-évalué 'acquired' (réussi)
+        service.answer_item(user_id, resp.id, qcm.id, value="a", self_grade=None)
+        service.answer_item(user_id, resp.id, open_ai.id, value="x", self_grade="acquired")
+        service.complete_evaluation(user_id, resp.id)
+
+        cards = _phantom_cards(note_uuid)
+        ai_cards = [c for c in cards if c.source == "ai"]
+        # Le QCM raté génère une carte ; l'item open réussi n'en génère pas.
+        fronts = [c.front for c in ai_cards]
+        assert "Capitale de la France ?" in fronts
+        backs = {c.front: c.back for c in ai_cards}
+        assert backs["Capitale de la France ?"] == "Paris"  # bonne réponse
+        assert all(c.source == "ai" for c in ai_cards)
+        assert "Expliquez la photosynthèse." not in fronts  # réussi -> pas de carte
+
+
+def test_reinforcement_is_idempotent_across_attempts(app):
+    user_id, note_uuid = _make_user_note(app)
+    with app.app_context():
+        service, _ = _service_full()
+
+        # Tentative 1 : QCM raté -> 1 carte
+        r1 = service.generate_evaluation(user_id, note_uuid)
+        qcm1 = next(i for i in r1.items if i.type == "qcm" and i.source == "ai")
+        service.answer_item(user_id, r1.id, qcm1.id, value="a", self_grade=None)
+        service.complete_evaluation(user_id, r1.id)
+        count1 = len([c for c in _phantom_cards(note_uuid) if c.front == "Capitale de la France ?"])
+        assert count1 == 1
+
+        # Tentative 2 (cache/clone) : même QCM raté -> pas de doublon
+        r2 = service.generate_evaluation(user_id, note_uuid)
+        qcm2 = next(i for i in r2.items if i.type == "qcm" and i.source == "ai")
+        service.answer_item(user_id, r2.id, qcm2.id, value="a", self_grade=None)
+        service.complete_evaluation(user_id, r2.id)
+        count2 = len([c for c in _phantom_cards(note_uuid) if c.front == "Capitale de la France ?"])
+        assert count2 == 1
 
 
 def test_user_isolation_on_get(app):

@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional, Tuple
 from app.dao.evaluation_dao import EvaluationDAO
 from app.dao.note_dao import NoteDAO
 from app.models.evaluation import Evaluation, EvaluationItem
+from app.models.deck import Deck
+from app.models.flashcard import Flashcard
 from app.services.ai_service import AIService
 from app.schemas.evaluation_schema import (
     EvaluationResponse,
@@ -29,10 +31,20 @@ def _normalize(text: str) -> str:
 
 
 class EvaluationService:
-    def __init__(self, evaluation_dao: EvaluationDAO, note_dao: NoteDAO, ai_service: AIService):
+    def __init__(
+        self,
+        evaluation_dao: EvaluationDAO,
+        note_dao: NoteDAO,
+        ai_service: AIService,
+        deck_dao=None,
+        flashcard_dao=None,
+    ):
         self._evaluation_dao = evaluation_dao
         self._note_dao = note_dao
         self._ai_service = ai_service
+        # Optionnels : requis seulement pour le bouclage SM-2 à la complétion.
+        self._deck_dao = deck_dao
+        self._flashcard_dao = flashcard_dao
 
     # --- Accès / sécurité ---
 
@@ -139,7 +151,85 @@ class EvaluationService:
             evaluation.score_pct = (correct / total * 100) if total else 0.0
             evaluation.completed_at = datetime.utcnow()
             self._evaluation_dao.update(evaluation)
+            # Bouclage SM-2 : les items ratés deviennent des flashcards révisables.
+            self._reinforce_missed_items(evaluation)
         return self._serialize(evaluation, reveal=True)
+
+    # --- Bouclage SM-2 ---
+
+    def _reinforce_missed_items(self, evaluation: Evaluation) -> int:
+        """Crée des flashcards (source='ai') dans le deck fantôme de la note pour
+        chaque item raté, afin de les réviser en répétition espacée. Idempotent
+        via un hash de contenu : pas de doublon entre tentatives."""
+        if not self._deck_dao or not self._flashcard_dao:
+            return 0
+
+        note = self._note_dao.get_by_id(evaluation.note_id)
+        if not note:
+            return 0
+
+        deck = self._find_or_create_phantom_deck(note)
+        existing_hashes = {
+            c.placeholder_hash
+            for c in self._flashcard_dao.db.query(Flashcard)
+            .filter_by(deck_id=deck.id)
+            .all()
+            if c.placeholder_hash
+        }
+
+        created = 0
+        for it in evaluation.items:
+            if it.is_correct is not False:  # on ne renforce que les items ratés
+                continue
+            front, back = self._card_front_back(it.type, it.payload)
+            if not front or not back:
+                continue
+            p_hash = hashlib.sha256(
+                f"eval:{note._id}:{it.type}:{front}".encode("utf-8")
+            ).hexdigest()
+            if p_hash in existing_hashes:
+                continue
+            self._flashcard_dao.create(
+                Flashcard(
+                    deck_id=deck.id,
+                    front=front,
+                    back=back,
+                    source="ai",
+                    placeholder_hash=p_hash,
+                    original_text=f"[eval:{evaluation.id}]",
+                )
+            )
+            existing_hashes.add(p_hash)
+            created += 1
+        return created
+
+    def _find_or_create_phantom_deck(self, note) -> Deck:
+        deck = self._deck_dao.db.query(Deck).filter_by(note_id=note._id).first()
+        if deck:
+            return deck
+        deck = Deck(
+            name=f"[Phantom] Note: {note.title}",
+            description=f"Deck de révision active pour la note: {note.title}",
+            user_id=note.user_id,
+            note_id=note._id,
+            binder_id=note.binder_id,
+        )
+        return self._deck_dao.create(deck)
+
+    def _card_front_back(self, item_type: str, payload: Dict[str, Any]):
+        if item_type == "qcm":
+            correct = next((o for o in payload.get("options", []) if o.get("correct")), None)
+            return payload.get("question"), (correct.get("text") if correct else None)
+        if item_type == "vf":
+            verdict = "Vrai" if payload.get("correct") else "Faux"
+            justification = payload.get("justification") or ""
+            back = f"{verdict} — {justification}".strip(" —")
+            return f"Vrai ou Faux : {payload.get('assertion')}", back
+        if item_type == "trou":
+            return payload.get("text_with_blank"), payload.get("answer")
+        if item_type == "open":
+            return payload.get("question"), payload.get("model_answer")
+        return None, None
 
     # --- Correction (par type) ---
 
