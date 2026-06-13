@@ -121,6 +121,42 @@
         </div>
       </div>
 
+      <!-- TAB: ÉVALUATION IA -->
+      <div v-if="activeTab === 'evaluation'" class="space-y-6">
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm max-w-2xl mx-auto">
+          <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-2">
+            <Sparkles class="w-5 h-5 text-amber-400" />
+            Feuille d'évaluation IA
+          </h2>
+          <p class="text-xs text-slate-400 mb-6">
+            L'IA génère, à partir d'une note, une évaluation variée (QCM, vrai/faux, textes à trous, questions ouvertes). Les questions ratées sont automatiquement ajoutées à vos révisions en répétition espacée.
+          </p>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sélectionnez la note</label>
+              <select
+                v-model="selectedNoteId"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold transition-all"
+              >
+                <option :value="null" disabled>Choisir une note...</option>
+                <option v-for="note in notesStore.notes" :key="note.id" :value="note.id">
+                  {{ note.title }}
+                </option>
+              </select>
+            </div>
+
+            <button
+              @click="startEvaluation"
+              :disabled="selectedNoteId === null"
+              class="w-full py-3 mt-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-[0.98]"
+            >
+              Générer l'évaluation
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- TAB 2: FEUILLE BLANCHE -->
       <div v-if="activeTab === 'blank-sheet'" class="space-y-6">
         <!-- Step 1: Configuration -->
@@ -801,10 +837,16 @@ const bindersStore = useBindersStore()
 
 const tabs = [
   { id: 'flashcards', name: 'Flashcards' },
+  { id: 'evaluation', name: 'Évaluation IA' },
   { id: 'blank-sheet', name: 'Feuille Blanche' },
   { id: 'feynman', name: 'Méthode Feynman' },
   { id: 'quiz', name: 'Quiz Auto-QCM' }
 ]
+
+function startEvaluation() {
+  if (selectedNoteId.value === null) return
+  router.push(`/notes/${selectedNoteId.value}/evaluation`)
+}
 
 const activeTab = ref('flashcards')
 

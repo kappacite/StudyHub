@@ -438,6 +438,15 @@
               QCM (IA)
             </button>
 
+            <!-- Évaluation (IA) -->
+            <button
+              @click="router.push(`/notes/${noteId}/evaluation`)"
+              class="inline-flex items-center gap-2 px-4 py-2 border border-amber-250 dark:border-amber-900 rounded-xl text-sm font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 active:scale-95 transition-all"
+            >
+              <Sparkles class="w-4 h-4 text-amber-500" />
+              Évaluation (IA)
+            </button>
+
             <!-- View Mode Toggler -->
             <button 
               @click="toggleMode"
