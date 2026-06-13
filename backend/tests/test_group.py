@@ -201,6 +201,51 @@ def test_progress_endpoint_returns_only_aggregated_data(client, auth_headers, te
     assert "cards" not in data[0]
     assert "answers" not in data[0]
 
+def test_activity_recorded_on_join(client, auth_headers, app):
+    # Test nommé de FEATURES.md (9.3) : rejoindre un groupe enregistre une activité.
+    resp = client.post("/api/v1/groups", json={"name": "Groupe Join"}, headers=auth_headers)
+    group_id = resp.json["id"]
+    invite_code = resp.json["invite_code"]
+
+    _create_other_user(app, "joiner@example.com", "joiner")
+    joiner_headers = _get_auth_headers(client, "joiner@example.com")
+    join_resp = client.post(
+        "/api/v1/groups/join", json={"invite_code": invite_code}, headers=joiner_headers
+    )
+    assert join_resp.status_code == 200
+
+    act_resp = client.get(f"/api/v1/groups/{group_id}/activity", headers=auth_headers)
+    assert act_resp.status_code == 200
+    joined = [a for a in act_resp.json if a["type"] == "joined"]
+    # Le créateur + le membre qui vient de rejoindre.
+    assert len(joined) >= 2
+
+
+def test_member_cannot_access_other_member_flashcards(client, auth_headers, test_user, app):
+    # Test nommé de FEATURES.md (9.3) : être dans le même groupe ne donne PAS
+    # accès aux flashcards privées (non partagées) d'un autre membre.
+    grp = client.post("/api/v1/groups", json={"name": "Groupe Iso"}, headers=auth_headers)
+    invite_code = grp.json["invite_code"]
+
+    # User A crée un deck PRIVÉ (sans classeur partagé) avec une carte.
+    deck = client.post("/api/v1/decks", json={"name": "Deck privé A"}, headers=auth_headers).json
+    card = client.post(
+        f"/api/v1/decks/{deck['id']}/cards",
+        json={"front": "secret", "back": "réponse secrète"},
+        headers=auth_headers,
+    )
+    assert card.status_code == 201
+
+    # User B rejoint le même groupe.
+    _create_other_user(app, "memberb@example.com", "memberb")
+    b_headers = _get_auth_headers(client, "memberb@example.com")
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=b_headers)
+
+    # B ne peut accéder NI au deck NI aux cartes de A (deck non partagé).
+    assert client.get(f"/api/v1/decks/{deck['id']}", headers=b_headers).status_code in (403, 404)
+    assert client.get(f"/api/v1/decks/{deck['id']}/cards", headers=b_headers).status_code in (403, 404)
+
+
 def test_activity_recorded_on_events(client, auth_headers, test_user, app):
     # 1. Créer le groupe (génère une activité 'joined' du créateur)
     resp = client.post("/api/v1/groups", json={
