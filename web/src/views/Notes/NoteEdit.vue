@@ -1188,13 +1188,18 @@ watch(() => route.params.id, async (newVal) => {
 })
 
 onMounted(async () => {
-  await Promise.all([
+  // Afficher la note d'abord : on n'attend plus le chargement des listes
+  // auxiliaires (jusqu'à 1000 notes/classeurs/tags/diagrammes) avant le rendu.
+  await loadNoteDetails()
+
+  // Listes auxiliaires en arrière-plan (sélecteurs de liens, classeurs, tags,
+  // diagrammes). Les libellés se remplissent réactivement à leur arrivée.
+  Promise.all([
     notesStore.fetchNotes(),
     bindersStore.fetchBinders(),
-    tagsStore.fetchTags()
-  ])
-  await loadUserDiagrams()
-  await loadNoteDetails()
+    tagsStore.fetchTags(),
+    loadUserDiagrams(),
+  ]).catch(() => { /* non bloquant : l'éditeur reste utilisable */ })
 })
 
 onBeforeUnmount(() => {
