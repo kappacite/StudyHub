@@ -86,8 +86,13 @@ def answer_question(quiz_id, question_id):
         question_id=question_id,
         answer_id=req_data.answer_id
     )
-    
-    return jsonify(QuizQuestionResponse.model_validate(question).model_dump()), 200
+
+    # Contrat FEATURES.md (7.1) : exposer is_correct + correct_answer_id en plus de la question.
+    correct_answer_id = next((o["id"] for o in question.options if o.get("correct")), None)
+    payload = QuizQuestionResponse.model_validate(question).model_dump()
+    payload["is_correct"] = question.user_answer_id == correct_answer_id
+    payload["correct_answer_id"] = correct_answer_id
+    return jsonify(payload), 200
 
 @quizzes_bp.route("/<int:quiz_id>/complete", methods=["POST"])
 @jwt_required_middleware
