@@ -1,10 +1,14 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.extensions import db
 
 class StudySession(db.Model):
     __tablename__ = "study_sessions"
+    __table_args__ = (
+        # Couvre le filtrage par user ET les plages de dates (heatmap, streak).
+        Index('ix_study_sessions_user_id_created_at', 'user_id', 'created_at'),
+    )
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)

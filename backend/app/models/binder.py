@@ -11,8 +11,8 @@ class Binder(db.Model):
     _id = Column("id", Integer, primary_key=True)
     id = Column("uuid", String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     name = Column(String(100), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    parent_id = Column(Integer, ForeignKey("binders.id", ondelete="CASCADE"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    parent_id = Column(Integer, ForeignKey("binders.id", ondelete="CASCADE"), nullable=True, index=True)
     
     # Espace Communautaire & Study Packages
     is_public = Column(Boolean, default=False, nullable=False)
