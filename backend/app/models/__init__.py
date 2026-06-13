@@ -8,6 +8,7 @@ from app.models.pdf_document import PDFDocument
 from app.models.study_session import StudySession
 from app.models.tag import Tag
 from app.models.group import Group, GroupMember, GroupBinder, GroupActivity
+from app.models.evaluation import Evaluation, EvaluationItem
 
 __all__ = [
     "User",
@@ -22,5 +23,7 @@ __all__ = [
     "Group",
     "GroupMember",
     "GroupBinder",
-    "GroupActivity"
+    "GroupActivity",
+    "Evaluation",
+    "EvaluationItem"
 ]
