@@ -18,7 +18,7 @@ deck_dao = DeckDAO(db.session)
 binder_dao = BinderDAO(db.session)
 flashcard_dao = FlashcardDAO(db.session)
 
-deck_service = DeckService(deck_dao, binder_dao)
+deck_service = DeckService(deck_dao, binder_dao, flashcard_dao)
 flashcard_service = FlashcardService(flashcard_dao, deck_dao)
 
 @decks_bp.route("", methods=["GET"])
