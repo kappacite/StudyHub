@@ -168,6 +168,7 @@ def create_app(config_name=None):
         import app.models.exam
         import app.models.group
         import app.models.assignment
+        import app.models.hidden_note
         
         # Import celery tasks
         import app.tasks

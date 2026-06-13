@@ -13,6 +13,12 @@ class NoteDAO(BaseDAO[Note]):
             return self.db.query(self.model).filter(or_(self.model._id == int(entity_id), self.model.id == str(entity_id))).first()
         return self.db.query(self.model).filter_by(id=str(entity_id)).first()
 
+    def get_hidden_note_ids(self, user_id: int) -> set:
+        """Ids internes des notes masquées par l'utilisateur."""
+        from app.models.hidden_note import HiddenNote
+        rows = self.db.query(HiddenNote.note_id).filter_by(user_id=user_id).all()
+        return {r[0] for r in rows}
+
     def get_by_binder_internal_ids(self, binder_internal_ids: List[int]) -> List[Note]:
         """Notes (tous propriétaires) appartenant aux classeurs donnés — pour le
         contenu en lecture seule des classeurs partagés."""

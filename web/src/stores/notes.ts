@@ -110,6 +110,12 @@ export const useNotesStore = defineStore('notes', () => {
     return newNote
   }
 
+  async function hideNote(id: string) {
+    // Masque une note de cours partagée dans la vue de l'élève.
+    await api.post(`/notes/${id}/hide`)
+    notes.value = notes.value.filter(n => n.id !== id)
+  }
+
   async function deleteNote(id: string) {
     try {
       await api.delete(`/notes/${id}`)
@@ -129,6 +135,7 @@ export const useNotesStore = defineStore('notes', () => {
     createNote,
     updateNote,
     copyNote,
+    hideNote,
     deleteNote
   }
 })

@@ -128,6 +128,30 @@ class NoteService:
             self._sync_phantom_deck(created)
         return NoteResponse.model_validate(created)
 
+    def hide_note(self, user_id: int, note_id: int) -> None:
+        """Masque une note partagée (de cours) dans la vue de l'utilisateur."""
+        note = self._get_note_or_404(note_id, user_id, write_required=False)
+        if note.user_id == user_id:
+            raise ForbiddenError("Vous ne pouvez masquer qu'une note partagée, pas la vôtre.")
+        from app.models.hidden_note import HiddenNote
+        db = self._note_dao.db
+        existing = db.query(HiddenNote).filter_by(user_id=user_id, note_id=note._id).first()
+        if not existing:
+            db.add(HiddenNote(user_id=user_id, note_id=note._id))
+            db.commit()
+
+    def unhide_note(self, user_id: int, note_id: int) -> None:
+        """Réaffiche une note précédemment masquée."""
+        note = self._note_dao.get_by_id(note_id)
+        if not note:
+            raise ResourceNotFoundError("Note introuvable.")
+        from app.models.hidden_note import HiddenNote
+        db = self._note_dao.db
+        existing = db.query(HiddenNote).filter_by(user_id=user_id, note_id=note._id).first()
+        if existing:
+            db.delete(existing)
+            db.commit()
+
     def update_note(self, user_id: int, note_id: int, data: NoteUpdate) -> NoteResponse:
         note = self._get_note_or_404(note_id, user_id, write_required=True)
         
