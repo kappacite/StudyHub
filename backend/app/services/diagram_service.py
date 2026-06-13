@@ -1,9 +1,12 @@
+import logging
 from typing import List, Tuple, Optional
 from app.dao.diagram_dao import DiagramDAO
 from app.dao.binder_dao import BinderDAO
 from app.models.diagram import Diagram
 from app.schemas.diagram_schema import DiagramCreate, DiagramUpdate, DiagramResponse
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
+
+logger = logging.getLogger(__name__)
 
 class DiagramService:
     def __init__(self, diagram_dao: DiagramDAO, binder_dao: BinderDAO):
@@ -87,11 +90,17 @@ class DiagramService:
                 note_service = NoteService(note_dao, self._binder_dao, deck_dao, flashcard_dao)
                 
                 tag = f"[diagram:{diagram.id}]"
-                notes = self._diagram_dao.db.query(Note).filter(Note.content.like(f"%{tag}%")).all()
+                # Scopé au propriétaire du diagramme : évite de scanner les notes de
+                # TOUS les utilisateurs (perf + isolation des données).
+                notes = (
+                    self._diagram_dao.db.query(Note)
+                    .filter(Note.user_id == updated.user_id, Note.content.like(f"%{tag}%"))
+                    .all()
+                )
                 for note in notes:
                     note_service._sync_phantom_deck(note)
             except Exception as e:
-                print(f"Error syncing notes on diagram update: {e}")
+                logger.warning("Error syncing notes on diagram update: %s", e)
                 
         return DiagramResponse.model_validate(updated)
 
