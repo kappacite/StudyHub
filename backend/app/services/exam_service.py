@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm.attributes import flag_modified
 from app.dao.exam_dao import ExamDAO
 from app.dao.binder_dao import BinderDAO
@@ -143,9 +143,13 @@ class ExamService:
         answer: Any
     ) -> Dict[str, Any]:
         session = self.get_exam_session(user_id, session_id)
-        
+
         if session.completed_at is not None:
             raise ForbiddenError("Cet examen a déjà été finalisé.")
+
+        # Rejeter les réponses si la durée de l'examen est dépassée (session expirée).
+        if datetime.utcnow() > session.started_at + timedelta(seconds=session.duration_seconds):
+            raise ForbiddenError("Cet examen est expiré : le temps imparti est écoulé.")
 
         items = list(session.items_snapshot)
         target_item = next((item for item in items if item["id"] == item_id), None)
