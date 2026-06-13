@@ -58,6 +58,16 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+    # Pool dimensionné pour des workers gthread (4 workers x 4 threads).
+    # pool_size >= threads pour qu'un thread n'attende pas de connexion ;
+    # 4 workers x (5 + 5) = 40 connexions max (< max_connections Postgres par défaut).
+    # Réglages réservés à la prod : SQLite (dev/tests) n'accepte pas pool_size.
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_size": 5,
+        "max_overflow": 5,
+        "pool_recycle": 1800,
+    }
 
 config_by_name = {
     "development": DevelopmentConfig,
