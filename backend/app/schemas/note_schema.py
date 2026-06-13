@@ -30,5 +30,8 @@ class NoteResponse(NoteBase):
     tags: List[TagResponseSchema] = []
     created_at: datetime
     updated_at: datetime
+    # True quand la note provient d'un classeur partagé (cours) : lecture seule.
+    read_only: bool = False
+    owner_username: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

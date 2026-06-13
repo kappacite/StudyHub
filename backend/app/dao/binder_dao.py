@@ -47,6 +47,39 @@ class BinderDAO(BaseDAO[Binder]):
             query = query.filter(self.model.tags.any(id=tag_id))
         return query.options(selectinload(self.model.tags), selectinload(self.model.parent)).limit(limit).offset(offset).all()
         
+    def get_shared_root_binders(self, user_id: int) -> List[Binder]:
+        """Classeurs partagés avec l'utilisateur via un groupe/classe (qu'il ne possède pas).
+        Ce sont les racines, du point de vue de l'élève, des sous-arbres en lecture seule."""
+        from app.models.group import GroupBinder, GroupMember
+        from sqlalchemy.orm import selectinload
+        return (
+            self.db.query(self.model)
+            .join(GroupBinder, GroupBinder.binder_id == self.model._id)
+            .join(GroupMember, GroupMember.group_id == GroupBinder.group_id)
+            .filter(GroupMember.user_id == user_id, self.model.user_id != user_id)
+            .options(selectinload(self.model.tags))
+            .distinct()
+            .all()
+        )
+
+    def get_descendants(self, binder_internal_id: int) -> List[Binder]:
+        """Tous les descendants (récursifs) d'un classeur, par parent_id."""
+        from sqlalchemy.orm import selectinload
+        result: List[Binder] = []
+        stack = [binder_internal_id]
+        while stack:
+            pid = stack.pop()
+            children = (
+                self.db.query(self.model)
+                .filter(self.model.parent_id == pid)
+                .options(selectinload(self.model.tags))
+                .all()
+            )
+            for c in children:
+                result.append(c)
+                stack.append(c._id)
+        return result
+
     def count_by_parent(self, user_id: int, parent_id, tag_id: Optional[int] = None) -> int:
         if parent_id is not None:
             if isinstance(parent_id, int) or (isinstance(parent_id, str) and parent_id.isdigit()):
