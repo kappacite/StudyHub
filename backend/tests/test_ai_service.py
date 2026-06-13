@@ -53,6 +53,82 @@ def test_ai_service_success(mock_urlopen, monkeypatch):
     assert result["suggested_flashcards"][0]["front"] == "Question 1"
     assert result["general_feedback"] == "Bon travail global."
 
+def test_generate_evaluation_missing_api_key(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    service = AIService()
+    with pytest.raises(RuntimeError) as excinfo:
+        service.generate_evaluation("Contenu du cours")
+    assert "La clé d'API Gemini n'est pas configurée" in str(excinfo.value)
+
+
+@patch("urllib.request.urlopen")
+def test_generate_evaluation_success_mixed_items(mock_urlopen, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test_key")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash")
+
+    mock_response = MagicMock()
+    mock_response.read.return_value = json.dumps({
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {
+                            "text": json.dumps({
+                                "items": [
+                                    {
+                                        "type": "qcm",
+                                        "question": "Quelle est la capitale de la France ?",
+                                        "options": [
+                                            {"id": "a", "text": "Lyon", "correct": False},
+                                            {"id": "b", "text": "Paris", "correct": True},
+                                            {"id": "c", "text": "Nice", "correct": False},
+                                            {"id": "d", "text": "Lille", "correct": False},
+                                        ],
+                                    },
+                                    {"type": "vf", "assertion": "L'eau bout à 100°C.", "correct": True, "justification": "Au niveau de la mer."},
+                                    {"type": "trou", "text_with_blank": "La mitochondrie est le siège de la [...].", "answer": "respiration cellulaire"},
+                                    {"type": "open", "question": "Expliquez la photosynthèse.", "model_answer": "Conversion de lumière en énergie chimique.", "key_points": ["lumière", "chlorophylle", "glucose"]},
+                                ]
+                            })
+                        }
+                    ]
+                }
+            }
+        ]
+    }).encode("utf-8")
+    mock_urlopen.return_value.__enter__.return_value = mock_response
+
+    service = AIService()
+    result = service.generate_evaluation("Contenu de la note", item_count=4)
+
+    assert isinstance(result, dict)
+    items = result["items"]
+    assert len(items) == 4
+    types = [it["type"] for it in items]
+    assert types == ["qcm", "vf", "trou", "open"]
+    # La clé de correction est bien embarquée (un seul appel)
+    assert any(opt["correct"] for opt in items[0]["options"])
+    assert items[1]["correct"] is True
+    assert items[2]["answer"] == "respiration cellulaire"
+    assert items[3]["key_points"]
+
+
+@patch("urllib.request.urlopen")
+def test_generate_evaluation_invalid_shape_raises(mock_urlopen, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test_key")
+
+    mock_response = MagicMock()
+    # Gemini renvoie un tableau au lieu d'un objet {items: [...]}
+    mock_response.read.return_value = json.dumps({
+        "candidates": [{"content": {"parts": [{"text": json.dumps([{"type": "qcm"}])}]}}]
+    }).encode("utf-8")
+    mock_urlopen.return_value.__enter__.return_value = mock_response
+
+    service = AIService()
+    with pytest.raises(RuntimeError):
+        service.generate_evaluation("Contenu")
+
+
 @patch("app.services.ai_service.AIService.analyze_blurting")
 def test_blurting_analyze_endpoint(mock_analyze_blurting, client, auth_headers, test_user, app):
     # Mocking du service IA
