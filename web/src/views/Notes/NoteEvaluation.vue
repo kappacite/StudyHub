@@ -277,12 +277,16 @@ async function finish() {
   submitting.value = true
   try {
     const evalId = evaluation.value.id
-    // Soumettre les items fermés (les ouverts sont déjà enregistrés via l'auto-évaluation).
-    for (const item of evaluation.value.items) {
-      if (item.type === 'qcm') await evaluationService.answer(evalId, item.id, qcmAnswers.value[item.id])
-      else if (item.type === 'vf') await evaluationService.answer(evalId, item.id, vfAnswers.value[item.id])
-      else if (item.type === 'trou') await evaluationService.answer(evalId, item.id, trouAnswers.value[item.id])
-    }
+    // Soumettre les items fermés en parallèle (les ouverts sont déjà enregistrés
+    // via l'auto-évaluation pendant la phase de travail).
+    const submissions = evaluation.value.items
+      .filter((item) => item.type !== 'open')
+      .map((item) => {
+        if (item.type === 'qcm') return evaluationService.answer(evalId, item.id, qcmAnswers.value[item.id])
+        if (item.type === 'vf') return evaluationService.answer(evalId, item.id, vfAnswers.value[item.id])
+        return evaluationService.answer(evalId, item.id, trouAnswers.value[item.id])
+      })
+    await Promise.all(submissions)
     result.value = await evaluationService.complete(evalId)
     step.value = 'results'
 

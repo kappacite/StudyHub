@@ -40,9 +40,25 @@ def get_user_identity_or_ip():
     return get_remote_address()
 
 
+def _generate_is_cache_hit():
+    """Exempte du rate-limit Gemini les régénérations servies par le cache : une
+    nouvelle tentative sur une note inchangée ne déclenche aucun appel IA."""
+    try:
+        data = request.get_json(silent=True) or {}
+        if data.get("force"):
+            return False
+        note_id = data.get("note_id")
+        if not note_id:
+            return False
+        user_id = int(get_jwt_identity())
+        return evaluation_service.has_valid_cache(user_id, note_id)
+    except Exception:
+        return False
+
+
 @evaluations_bp.route("/generate", methods=["POST"])
 @jwt_required_middleware
-@limiter.limit("10 per hour", key_func=get_user_identity_or_ip)
+@limiter.limit("10 per hour", key_func=get_user_identity_or_ip, exempt_when=_generate_is_cache_hit)
 def generate():
     user_id = int(get_jwt_identity())
     req = EvaluationGenerateRequest.model_validate(request.get_json() or {})

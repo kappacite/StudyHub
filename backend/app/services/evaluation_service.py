@@ -69,6 +69,10 @@ class EvaluationService:
     def generate_evaluation(
         self, user_id: int, note_id, item_count: int = 8, force: bool = False
     ) -> EvaluationResponse:
+        # Robustesse : un appelant interne (ou un body avec item_count nul) ne doit
+        # pas propager une valeur invalide jusqu'au prompt IA.
+        if not isinstance(item_count, int) or not (4 <= item_count <= 20):
+            item_count = 8
         note = self._get_note_or_403(note_id, user_id)
         content_hash = hashlib.sha256((note.content or "").encode("utf-8")).hexdigest()
 
@@ -102,12 +106,27 @@ class EvaluationService:
         created = self._evaluation_dao.create(evaluation)
         return self._serialize(created, reveal=False)
 
+    def has_valid_cache(self, user_id: int, note_id) -> bool:
+        """Lecture seule : une évaluation réutilisable existe-t-elle pour le contenu
+        actuel de la note ? Sert à exempter les cache-hits du rate-limit Gemini."""
+        note = self._note_dao.get_by_id(note_id)
+        if not note or note.user_id != user_id:
+            return False
+        content_hash = hashlib.sha256((note.content or "").encode("utf-8")).hexdigest()
+        return (
+            self._evaluation_dao.get_latest_by_content_hash(note._id, user_id, content_hash)
+            is not None
+        )
+
     def _clone_as_new_attempt(self, prior: Evaluation) -> Evaluation:
         clone = Evaluation(
             note_id=prior.note_id, user_id=prior.user_id, content_hash=prior.content_hash
         )
         for it in prior.items:
-            clone.items.append(EvaluationItem(type=it.type, source=it.source, payload=it.payload))
+            # Copie du payload (pas de partage de référence entre items source et clone).
+            clone.items.append(
+                EvaluationItem(type=it.type, source=it.source, payload=dict(it.payload))
+            )
         return self._evaluation_dao.create(clone)
 
     # --- Lecture / réponse / complétion ---
