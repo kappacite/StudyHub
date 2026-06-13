@@ -1,7 +1,20 @@
 # Audit de performance de l'API — StudyHub
 
-> Statut : **bilan + plan de remédiation**. Aucune optimisation n'est encore
-> implémentée. Point de départ : « les decks mettent ~1s à charger ».
+> Statut : **plan implémenté** (PR #10→#18). Point de départ : « les decks ~1s ».
+>
+> | Thématique | Statut | Note |
+> |---|---|---|
+> | 1. Instrumentation | ✅ | compteur SQL, warning lent, `scripts/bench.py` |
+> | 2. Index DB | ✅ | FK + composites (migrations auto) |
+> | 3. Over-fetch decks | ✅ | **GET /decks 46,8ms → 3,3ms** (bench) |
+> | 4. N+1 | ✅ | search, focus, groupes, planning, marketplace, occlusions, leaderboard |
+> | 5. Cache | ✅ (partiel) | Redis partagé documenté ; caching des listes non fait (listes déjà ~3ms) |
+> | 6. Concurrence | ✅ | gthread + pool prod |
+> | 7. Frontend | ✅ (partiel) | NoteEdit affiche la note d'abord ; pagination complète = travail UX dédié |
+> | 8. Full-text/LIKE | ✅ | scan diagramme→notes scopé au propriétaire ; print→logger |
+>
+> **Reporté** (PR dédiées, plus risquées) : `class_service` progression de classeur
+> (CTE récursive), pagination frontend complète, caching des endpoints de liste.
 
 ## Méthode
 Lecture du chemin `route → service → DAO → modèle → schéma` à partir du cas concret
