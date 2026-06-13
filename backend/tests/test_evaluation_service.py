@@ -118,6 +118,18 @@ def test_cache_reuses_items_without_calling_ai_again(app):
         assert len(second.items) == len(first.items)
 
 
+def test_generate_clamps_invalid_item_count(app):
+    user_id, note_uuid = _make_user_note(app)
+    with app.app_context():
+        service, ai = _service()
+        # item_count nul/hors-bornes ne doit jamais atteindre le prompt IA tel quel.
+        service.generate_evaluation(user_id, note_uuid, item_count=None, force=True)  # type: ignore[arg-type]
+        assert ai.generate_evaluation.call_args.kwargs["item_count"] == 8
+
+        service.generate_evaluation(user_id, note_uuid, item_count=999, force=True)
+        assert ai.generate_evaluation.call_args.kwargs["item_count"] == 8
+
+
 def test_force_regenerates_calls_ai_again(app):
     user_id, note_uuid = _make_user_note(app)
     with app.app_context():

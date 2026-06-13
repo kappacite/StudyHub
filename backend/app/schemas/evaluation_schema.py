@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class EvaluationGenerateRequest(BaseModel):
     note_id: str
-    item_count: Optional[int] = Field(8, ge=4, le=20)
+    item_count: int = Field(8, ge=4, le=20)
     force: bool = False  # forcer une nouvelle génération IA même si le cache est valide
 
 
