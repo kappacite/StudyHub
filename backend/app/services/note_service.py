@@ -159,8 +159,13 @@ class NoteService:
         from app.models.diagram import Diagram
         
         diagram_ids = [int(x) for x in re.findall(r"\[diagram:(\d+)\]", note.content)]
+        # Chargement en UNE requête (au lieu d'une par diagramme référencé).
+        diagrams_by_id = {
+            d.id: d
+            for d in self._note_dao.db.query(Diagram).filter(Diagram.id.in_(diagram_ids)).all()
+        } if diagram_ids else {}
         for diag_id in diagram_ids:
-            diagram = self._note_dao.db.query(Diagram).filter_by(id=diag_id).first()
+            diagram = diagrams_by_id.get(diag_id)
             if diagram:
                 try:
                     data = json.loads(diagram.code)
