@@ -14,6 +14,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
+    # Seuil (ms) au-delà duquel une requête HTTP est loguée en WARNING.
+    SLOW_REQUEST_MS = int(os.environ.get("SLOW_REQUEST_MS", 500))
+
     # Celery Config
     CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     CELERY_RESULT_BACKEND = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
