@@ -37,7 +37,7 @@
     <div v-else-if="step === 'work' && evaluation" class="space-y-6">
       <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6">
         <h1 class="text-lg font-bold text-slate-800 dark:text-white">Répondez aux questions</h1>
-        <p class="text-xs text-slate-400 mt-1">{{ evaluation.items.length }} question(s). Les questions ratées seront ajoutées à vos révisions (répétition espacée).</p>
+        <p class="text-xs text-slate-400 mt-1">{{ evaluation.items.length }} question(s). À la fin, des flashcards vous seront proposées pour vos lacunes.</p>
       </div>
 
       <div
@@ -152,7 +152,7 @@
         <div>
           <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Résultats</span>
           <h1 class="text-lg font-bold text-slate-800 dark:text-white">Score : {{ Math.round(result.score_pct || 0) }}%</h1>
-          <p class="text-xs text-slate-400 mt-1">{{ correctCount }} / {{ result.items.length }} réussi(s). Les questions ratées ont été ajoutées à vos révisions.</p>
+          <p class="text-xs text-slate-400 mt-1">{{ correctCount }} / {{ result.items.length }} réussi(s).</p>
         </div>
         <div class="relative w-16 h-16 rounded-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-extrabold text-base border border-indigo-150/40">
           {{ Math.round(result.score_pct || 0) }}%
@@ -179,11 +179,85 @@
         </p>
       </div>
 
-      <div class="flex gap-4">
-        <button @click="goBack" class="px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700">Retour à la note</button>
-        <button @click="router.push('/reviews')" class="flex-1 py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md active:scale-95">
-          Réviser mes lacunes
+      <!-- Proposition opt-in de cartes pour les lacunes -->
+      <div
+        v-if="result.proposed_cards.length && !cardsAdded"
+        class="bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/30 rounded-3xl p-6 space-y-4"
+      >
+        <div>
+          <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Réviser vos lacunes</span>
+          <h2 class="text-base font-bold text-slate-800 dark:text-white">Créer des flashcards pour les thèmes ratés</h2>
+          <p class="text-xs text-slate-400 mt-1">Sélectionnez les cartes à ajouter, puis choisissez un deck. Rien n'est ajouté sans votre accord.</p>
+        </div>
+
+        <label
+          v-for="card in result.proposed_cards"
+          :key="card.item_id"
+          class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40"
+        >
+          <input
+            type="checkbox"
+            :value="card.item_id"
+            v-model="selectedItemIds"
+            class="mt-1 accent-indigo-600"
+          />
+          <div class="min-w-0">
+            <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">{{ card.front }}</p>
+            <p class="text-xs text-slate-400 mt-0.5">{{ card.back }}</p>
+          </div>
+        </label>
+
+        <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
+          <div class="flex-1">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Deck de destination</label>
+            <select
+              v-model="selectedDeckId"
+              class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+            >
+              <option :value="NEW_DECK">➕ Nouveau deck…</option>
+              <option v-for="d in decks" :key="d.id" :value="d.id">{{ d.name }}</option>
+            </select>
+          </div>
+          <input
+            v-if="selectedDeckId === NEW_DECK"
+            v-model="newDeckName"
+            type="text"
+            placeholder="Nom du nouveau deck"
+            class="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+          />
+        </div>
+
+        <p v-if="addError" class="text-xs text-rose-500">{{ addError }}</p>
+
+        <div class="flex gap-3">
+          <button @click="goBack" class="px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700">Non merci</button>
+          <button
+            @click="addSelectedCards"
+            :disabled="!canAddCards || addingCards"
+            class="flex-1 py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ addingCards ? 'Ajout…' : `Ajouter ${selectedItemIds.length} carte(s) au deck` }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Confirmation après ajout -->
+      <div
+        v-else-if="cardsAdded"
+        class="bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/30 rounded-3xl p-6 flex items-center justify-between gap-4"
+      >
+        <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{{ cardsAdded }} carte(s) ajoutée(s) à votre deck.</p>
+        <button
+          v-if="addedDeckId"
+          @click="router.push(`/decks/${addedDeckId}`)"
+          class="px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md active:scale-95"
+        >
+          Voir le deck
         </button>
+      </div>
+
+      <div class="flex gap-4">
+        <button @click="goBack" class="flex-1 py-3 text-xs font-bold text-slate-500 hover:text-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl">Retour à la note</button>
       </div>
     </div>
   </div>
@@ -196,10 +270,12 @@ import { Sparkles } from '@lucide/vue'
 import api from '../../services/api'
 import evaluationService from '../../services/evaluationService'
 import type { Evaluation, EvalItem, EvalCorrection, SelfGrade } from '../../services/evaluationService'
+import { useDecksStore } from '../../stores/decks'
 
 const route = useRoute()
 const router = useRouter()
 const noteId = route.params.id as string
+const decksStore = useDecksStore()
 
 type Step = 'generating' | 'work' | 'results' | 'error'
 const step = ref<Step>('generating')
@@ -215,6 +291,23 @@ const trouAnswers = ref<Record<number, string>>({})
 const openAnswers = ref<Record<number, string>>({})
 const openRevealed = ref<Record<number, EvalCorrection>>({})
 const openSelfGrade = ref<Record<number, SelfGrade>>({})
+
+// Ajout opt-in de flashcards pour les lacunes
+const NEW_DECK = '__new__' as const
+const decks = computed(() => decksStore.decks)
+const selectedItemIds = ref<number[]>([])
+const selectedDeckId = ref<number | typeof NEW_DECK>(NEW_DECK)
+const newDeckName = ref('')
+const addingCards = ref(false)
+const addError = ref('')
+const cardsAdded = ref(0)
+const addedDeckId = ref<number | null>(null)
+
+const canAddCards = computed(() => {
+  if (selectedItemIds.value.length === 0) return false
+  if (selectedDeckId.value === NEW_DECK) return newDeckName.value.trim().length > 0
+  return true
+})
 
 const selfGradeOptions: { value: SelfGrade; label: string; activeClass: string }[] = [
   { value: 'acquired', label: 'Acquis', activeClass: 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400' },
@@ -290,6 +383,17 @@ async function finish() {
     result.value = await evaluationService.complete(evalId)
     step.value = 'results'
 
+    // Préparer la proposition de cartes : tout coché par défaut, decks chargés.
+    if (result.value.proposed_cards.length) {
+      selectedItemIds.value = result.value.proposed_cards.map((c) => c.item_id)
+      try {
+        await decksStore.fetchDecks()
+        if (decks.value.length) selectedDeckId.value = decks.value[0].id
+      } catch {
+        // chargement non bloquant : l'option « Nouveau deck » reste disponible
+      }
+    }
+
     try {
       await api.post('/stats/sessions', {
         module: 'note',
@@ -314,6 +418,35 @@ function expectedAnswer(item: EvalItem): string {
   if (item.type === 'vf') return p.correct ? 'Vrai' : 'Faux'
   if (item.type === 'trou') return p.answer || ''
   return p.model_answer || ''
+}
+
+async function addSelectedCards() {
+  if (!result.value || !canAddCards.value || addingCards.value) return
+  addingCards.value = true
+  addError.value = ''
+  try {
+    let deckId: number
+    if (selectedDeckId.value === NEW_DECK) {
+      const deck = await decksStore.createDeck(
+        newDeckName.value.trim(),
+        `Révisions issues de l'évaluation de la note`,
+      )
+      deckId = deck.id
+    } else {
+      deckId = selectedDeckId.value
+    }
+    const created = await evaluationService.addFlashcards(
+      result.value.id,
+      deckId,
+      selectedItemIds.value,
+    )
+    cardsAdded.value = created
+    addedDeckId.value = deckId
+  } catch (err) {
+    addError.value = err instanceof Error ? err.message : "Impossible d'ajouter les cartes."
+  } finally {
+    addingCards.value = false
+  }
 }
 
 function goBack() {

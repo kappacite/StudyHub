@@ -129,7 +129,7 @@
             Feuille d'évaluation IA
           </h2>
           <p class="text-xs text-slate-400 mb-6">
-            L'IA génère, à partir d'une note, une évaluation variée (QCM, vrai/faux, textes à trous, questions ouvertes). Les questions ratées sont automatiquement ajoutées à vos révisions en répétition espacée.
+            L'IA génère, à partir d'une note, une évaluation variée (QCM, vrai/faux, textes à trous, questions ouvertes). À la fin, des flashcards sont proposées pour vos lacunes — vous choisissez de les ajouter (ou non) au deck de votre choix.
           </p>
 
           <div class="space-y-4">

@@ -276,3 +276,26 @@ Première étape du rework de la feature professeur (les 4 axes : devoirs riches
 * **Gestion des tabulations dans l'éditeur (NoteEdit.vue)** : Interception de la touche `Tab` sur le textarea de l'éditeur de notes pour insérer 2 espaces au niveau du curseur et préserver le focus, facilitant ainsi l'écriture de listes ou de codes indentés.
 * **Résolution du scroll automatique en haut de page (router/index.ts)** : Ajout d'un comportement de défilement personnalisé (`scrollBehavior`) dans la configuration de Vue Router. Si le chemin de la route reste identique lors d'une action (comme lors du passage du mode Visualiser au mode Modifier via la query string `?edit=true`), la position de défilement est préservée au lieu de scroller vers le haut de la page.
 * **Préservation des tabulations et espaces dans le rendu visuel (style.css)** : Ajout de la règle `white-space: pre-wrap;` sur le conteneur global `.markdown-body` pour s'assurer que les indentations, tabulations (les 2 espaces insérés via Tab) et multi-espaces manuels saisis par l'utilisateur soient fidèlement représentés dans la zone d'aperçu HTML et lors de la lecture/impression de la note.
+
+---
+
+## [2026-06-15] Suppression des decks fantômes — cartes d'évaluation proposées en opt-in
+
+### Contexte
+Le « deck fantôme » créait automatiquement des flashcards depuis une note, par deux voies : la synchronisation déterministe des balises (`[def:]`, `{{qcm:}}`…) et le bouclage SM-2 des évaluations IA (items ratés). Décision produit : **plus aucune flashcard ne doit être créée automatiquement depuis une note**. À la place, une évaluation IA *propose* des cartes pour les thèmes ratés, que l'utilisateur ajoute (ou non) à un deck réel de son choix.
+
+### Backend
+* **Modèles** : suppression de `Deck.note_id` (+ relations `Note.deck`/`Note.flashcards`). Champ `flashcards` retiré de `NoteResponse`.
+* **Migration `e1f2a3b4c5d6`** : drop de `decks.note_id`. Non destructif — les decks fantômes existants sont détachés et renommés (retrait du préfixe `[Phantom] Note: `), leurs cartes conservées comme decks normaux. Idempotente, compatible SQLite/PostgreSQL (batch).
+* **`note_service`** : suppression de `_sync_phantom_deck` et de tous ses appels ; le service ne dépend plus des DAO deck/flashcard.
+* **`diagram_service`** : suppression de la re-synchronisation des notes.
+* **`community_service`** : le clone d'un package clone les decks normaux (plus de cas fantôme).
+* **`evaluation_service`** : la complétion ne crée plus de cartes ; elle renvoie `proposed_cards` (items ratés). Nouvelle méthode `create_flashcards_from_missed(user_id, eval_id, item_ids, deck_id)` (idempotente par deck, appartenance du deck vérifiée), exposée par `POST /evaluations/:id/flashcards` — calquée sur le flux existant des QCM.
+* Les balises de note **restent** et continuent d'alimenter la génération des évaluations IA.
+
+### Frontend
+* **`NoteEvaluation.vue`** : à la complétion, liste des cartes proposées (cases à cocher) + sélecteur de deck (existant ou nouveau) + boutons « Ajouter au deck » / « Non merci », puis confirmation avec accès au deck. `evaluationService.ts` : type `ProposedCard`, champ `proposed_cards`, méthode `addFlashcards`.
+* **`NoteEdit.vue`** : retrait du sélecteur de mode « Révision Active » (lecture inline des cartes fantômes) ; les placeholders restent rendus en lecture. Guide mis à jour. Texte mis à jour dans `Reviews.vue`.
+
+### Tests
+* Suppression des tests fantômes (`test_note_phantom_deck_sync`, `test_ai_card_survives_phantom_deck_resync`, `test_diagram_occlusion_sync`, assertions de renforcement) ; ajout des tests de proposition à la complétion, d'ajout opt-in à un deck (idempotence) et d'isolation (deck d'un autre utilisateur). MAJ `test_community` / `test_regression` / `test_placeholders`. Backend, `vue-tsc` et Vitest verts.
