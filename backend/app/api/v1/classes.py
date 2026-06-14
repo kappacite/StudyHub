@@ -21,8 +21,10 @@ from app.schemas.class_schema import (
     ClassCreateSchema, AssignmentCreateSchema, TaskSubmitSchema, AssignmentGradeSchema,
 )
 from app.schemas.analytics_schema import ClassInsightSchema
+from app.schemas.engagement_schema import AnnouncementCreateSchema
 from app.services.class_service import ClassService
 from app.services.analytics_service import AnalyticsService
+from app.services.engagement_service import EngagementService
 from app.tasks import run_class_gap_analysis
 from app.utils.task_dispatch import dispatch_or_run
 from app.middlewares.error_handler import ValidationError
@@ -41,6 +43,10 @@ def _make_service() -> ClassService:
 
 def _make_analytics() -> AnalyticsService:
     return AnalyticsService(group_dao=GroupDAO(db.session))
+
+
+def _make_engagement() -> EngagementService:
+    return EngagementService(group_dao=GroupDAO(db.session))
 
 
 # ─── Lister/Créer une classe ───────────────────────────────────────────────────
@@ -194,6 +200,37 @@ def refresh_class_insights(class_id: int):
     if mode == "async":
         return jsonify({"task_id": payload.id, "status": payload.status}), 202
     return jsonify({"status": "SUCCESS", "result": payload}), 200
+
+
+# ─── Engagement : annonces, fil & classement ──────────────────────────────────
+
+@classes_bp.route("/<int:class_id>/announcements", methods=["POST"])
+@jwt_required()
+def post_announcement(class_id: int):
+    user_id = int(get_jwt_identity())
+    body = request.get_json() or {}
+    try:
+        data = AnnouncementCreateSchema(**body)
+    except Exception as e:
+        raise ValidationError(str(e))
+    result = _make_engagement().post_announcement(class_id, user_id, data)
+    return jsonify(result.model_dump(mode="json")), 201
+
+
+@classes_bp.route("/<int:class_id>/feed", methods=["GET"])
+@jwt_required()
+def get_feed(class_id: int):
+    user_id = int(get_jwt_identity())
+    result = _make_engagement().get_feed(class_id, user_id)
+    return jsonify([f.model_dump(mode="json") for f in result]), 200
+
+
+@classes_bp.route("/<int:class_id>/leaderboard", methods=["GET"])
+@jwt_required()
+def get_leaderboard(class_id: int):
+    user_id = int(get_jwt_identity())
+    result = _make_engagement().get_leaderboard(class_id, user_id)
+    return jsonify(result.model_dump(mode="json")), 200
 
 
 # ─── Progression élève ────────────────────────────────────────────────────────

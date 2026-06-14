@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import classService from '../../services/classService'
 import type { AssignmentSummary, AssignmentTask, TaskType } from '../../services/classService'
 import { taskLaunchRoute } from '../../services/assignmentTasks'
+import { useClassNotifications } from '../../composables/useClassNotifications'
 import {
   ClipboardList, Calendar, CheckCircle2, Clock, AlertTriangle,
   Loader2, BookOpen, ArrowRight, GraduationCap,
@@ -16,10 +17,14 @@ const assignments = ref<AssignmentSummary[]>([])
 const loading = ref(true)
 const filterStatus = ref<'all' | 'todo' | 'in_progress' | 'done' | 'late'>('all')
 
+const { scheduleDueReminders } = useClassNotifications()
+
 onMounted(async () => {
   loading.value = true
   assignments.value = await classService.getMyAssignments().catch(() => [])
   loading.value = false
+  // Programme des rappels locaux (mobile) pour les deadlines à venir.
+  scheduleDueReminders(assignments.value)
 })
 
 const filtered = computed(() => {

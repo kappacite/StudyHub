@@ -161,6 +161,9 @@
             <kbd class="hidden sm:inline-block px-1.5 py-0.5 ml-1 text-[10px] font-bold text-slate-400 bg-slate-200/50 rounded dark:bg-slate-700/50 dark:text-slate-500">⌘K</kbd>
           </button>
 
+          <!-- Notifications -->
+          <NotificationBell v-if="authStore.isAuthenticated" />
+
           <!-- Calendar shortcut or current date -->
           <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-xs font-semibold text-slate-500 dark:bg-slate-800/40 dark:border-slate-800 dark:text-slate-400">
             <Calendar class="w-4 h-4 text-indigo-500" />
@@ -205,6 +208,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import SearchModal from '../ui/SearchModal.vue'
 import PomodoroTimer from '../ui/PomodoroTimer.vue'
+import NotificationBell from '../ui/NotificationBell.vue'
 import { 
   LayoutDashboard, 
   FolderClosed, 

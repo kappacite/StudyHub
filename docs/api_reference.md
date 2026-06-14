@@ -1263,3 +1263,27 @@ Renvoie le dernier résultat en cache :
 Note/commente la soumission d'un élève.
 * **Body** : `{ "teacher_score": 17.5, "teacher_feedback": "Bon travail" }`
 * **Response** (`200 OK`) : la soumission mise à jour (`teacher_score`, `teacher_feedback`, `graded_at`).
+
+---
+
+## Espace Professeur — Engagement (PR 4)
+
+### `POST /classes/:id/announcements` (professeur)
+Publie une annonce (`{ "title": "...", "body": "..." }`) → enregistrée au fil d'actualité et **notifie** les élèves. `201`.
+
+### `GET /classes/:id/feed` (membre)
+Fil d'actualité de la classe (annonces + activités), le plus récent d'abord.
+
+### `GET /classes/:id/leaderboard` (membre)
+Classement opt-in (`leaderboard_enabled`) : par élève, `completed_assignments`, `avg_score`, `streak`, `badges[]`, `points`. `{ "enabled": false, "entries": [] }` si désactivé.
+
+## Notifications in-app
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| `GET` | `/notifications?unread=1` | Liste (option : non lues uniquement) |
+| `GET` | `/notifications/unread-count` | `{ "count": N }` |
+| `PATCH` | `/notifications/:id/read` | Marque comme lue (`204`) |
+| `POST` | `/notifications/read-all` | Tout marquer comme lu |
+
+Générées côté serveur (nouveau devoir, annonce). Sur mobile, des **rappels locaux** de deadline (J‑1) sont programmés côté client via `@capacitor/local-notifications` (aucune infra push serveur).

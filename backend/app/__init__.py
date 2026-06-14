@@ -141,7 +141,8 @@ def create_app(config_name=None):
         from app.api.v1.exam import exam_bp
         from app.api.v1.groups import groups_bp
         from app.api.v1.classes import classes_bp, assignments_mine_bp
-        
+        from app.api.v1.notifications import notifications_bp
+
         flask_app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
         flask_app.register_blueprint(users_bp, url_prefix="/api/v1/users")
         flask_app.register_blueprint(binders_bp, url_prefix="/api/v1/binders")
@@ -166,6 +167,7 @@ def create_app(config_name=None):
         flask_app.register_blueprint(groups_bp, url_prefix="/api/v1/groups")
         flask_app.register_blueprint(classes_bp, url_prefix="/api/v1/classes")
         flask_app.register_blueprint(assignments_mine_bp, url_prefix="/api/v1/assignments")
+        flask_app.register_blueprint(notifications_bp, url_prefix="/api/v1/notifications")
         
         # Import all models so Alembic can detect them and db.create_all() works
         import app.models.user
