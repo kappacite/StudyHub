@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
-from app.extensions import db, limiter
+from app.extensions import db, limiter, celery_app
 from app.dao.note_dao import NoteDAO
 from app.dao.deck_dao import DeckDAO
 from app.dao.flashcard_dao import FlashcardDAO
@@ -12,7 +12,6 @@ from app.middlewares.auth_middleware import jwt_required_middleware
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 from app.tasks import run_blurting_analysis
 from app.utils.task_dispatch import dispatch_or_run
-from celery.result import AsyncResult
 
 blurting_bp = Blueprint("blurting", __name__)
 
@@ -72,8 +71,11 @@ def analyze():
 @blurting_bp.route("/tasks/<task_id>", methods=["GET"])
 @jwt_required_middleware
 def get_task_status(task_id):
-    result = AsyncResult(task_id)
-    
+    # AsyncResult lié explicitement à celery_app (cf. evaluations.py) : l'AsyncResult
+    # nu se rattache au current_app thread-local -> DisabledBackend dans un thread
+    # worker gunicorn -> 500.
+    result = celery_app.AsyncResult(task_id)
+
     response = {
         "task_id": task_id,
         "status": result.status
