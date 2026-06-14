@@ -28,6 +28,19 @@ class EvaluationDAO(BaseDAO[Evaluation]):
             .first()
         )
 
+    def get_best_completed_for_note(self, note_internal_id: int, user_id: int) -> Optional[Evaluation]:
+        """Meilleure évaluation (blurting) complétée pour une note (score max)."""
+        return (
+            self.db.query(self.model)
+            .filter(
+                self.model.note_id == note_internal_id,
+                self.model.user_id == user_id,
+                self.model.completed_at.isnot(None),
+            )
+            .order_by(self.model.score_pct.desc().nullslast())
+            .first()
+        )
+
     def get_item(self, item_id: int) -> Optional[EvaluationItem]:
         return self.db.get(EvaluationItem, item_id)
 

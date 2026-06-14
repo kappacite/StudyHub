@@ -17,6 +17,19 @@ class ExamDAO(BaseDAO[ExamSession]):
             .all()
         )
 
+    def get_best_completed_for_binder(self, binder_id: int, user_id: int) -> Optional[ExamSession]:
+        """Meilleur examen complété par l'utilisateur pour un classeur (score max)."""
+        return (
+            self.db.query(self.model)
+            .filter(
+                self.model.binder_id == binder_id,
+                self.model.user_id == user_id,
+                self.model.completed_at.isnot(None),
+            )
+            .order_by(self.model.score_pct.desc().nullslast())
+            .first()
+        )
+
     def get_active_sessions(self, user_id: int) -> List[ExamSession]:
         return (
             self.db.query(self.model)
