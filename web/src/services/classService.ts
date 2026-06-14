@@ -206,6 +206,26 @@ const classService = {
   async getLeaderboard(classId: number): Promise<Leaderboard> {
     const resp = await api.get<Leaderboard>(`/classes/${classId}/leaderboard`)
     return resp.data
+  },
+
+  async getRoster(classId: number): Promise<RosterEntry[]> {
+    const resp = await api.get<RosterEntry[]>(`/classes/${classId}/members`)
+    return resp.data
+  },
+
+  async removeMember(classId: number, userId: number): Promise<void> {
+    // Réutilise l'endpoint groupes (les classes sont des groupes).
+    await api.delete(`/groups/${classId}/members/${userId}`)
+  },
+
+  async regenerateInvite(classId: number): Promise<{ invite_code: string }> {
+    const resp = await api.post<{ invite_code: string }>(`/classes/${classId}/invite/regenerate`)
+    return resp.data
+  },
+
+  async distributeBinder(classId: number, binderId: string): Promise<{ distributed: number; failed: number }> {
+    const resp = await api.post(`/classes/${classId}/distribute`, { binder_id: binderId })
+    return resp.data
   }
 }
 
@@ -242,6 +262,15 @@ export interface ClassInsight {
   summary: string
   ai: boolean
   created_at: string | null
+}
+
+export interface RosterEntry {
+  user_id: number
+  username: string
+  role: string
+  joined_at: string | null
+  completed_assignments: number
+  last_active: string | null
 }
 
 export interface FeedItem {

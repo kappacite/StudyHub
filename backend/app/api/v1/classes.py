@@ -22,9 +22,11 @@ from app.schemas.class_schema import (
 )
 from app.schemas.analytics_schema import ClassInsightSchema
 from app.schemas.engagement_schema import AnnouncementCreateSchema
+from app.schemas.management_schema import DistributeSchema
 from app.services.class_service import ClassService
 from app.services.analytics_service import AnalyticsService
 from app.services.engagement_service import EngagementService
+from app.services.class_management_service import ClassManagementService
 from app.tasks import run_class_gap_analysis
 from app.utils.task_dispatch import dispatch_or_run
 from app.middlewares.error_handler import ValidationError
@@ -47,6 +49,13 @@ def _make_analytics() -> AnalyticsService:
 
 def _make_engagement() -> EngagementService:
     return EngagementService(group_dao=GroupDAO(db.session))
+
+
+def _make_management() -> ClassManagementService:
+    return ClassManagementService(
+        group_dao=GroupDAO(db.session),
+        binder_dao=BinderDAO(db.session),
+    )
 
 
 # ─── Lister/Créer une classe ───────────────────────────────────────────────────
@@ -230,6 +239,37 @@ def get_feed(class_id: int):
 def get_leaderboard(class_id: int):
     user_id = int(get_jwt_identity())
     result = _make_engagement().get_leaderboard(class_id, user_id)
+    return jsonify(result.model_dump(mode="json")), 200
+
+
+# ─── Gestion de classe : roster, invitation, distribution ─────────────────────
+
+@classes_bp.route("/<int:class_id>/members", methods=["GET"])
+@jwt_required()
+def get_roster(class_id: int):
+    user_id = int(get_jwt_identity())
+    result = _make_management().get_roster(class_id, user_id)
+    return jsonify([r.model_dump(mode="json") for r in result]), 200
+
+
+@classes_bp.route("/<int:class_id>/invite/regenerate", methods=["POST"])
+@jwt_required()
+def regenerate_invite(class_id: int):
+    user_id = int(get_jwt_identity())
+    result = _make_management().regenerate_invite(class_id, user_id)
+    return jsonify(result.model_dump(mode="json")), 200
+
+
+@classes_bp.route("/<int:class_id>/distribute", methods=["POST"])
+@jwt_required()
+def distribute_binder(class_id: int):
+    user_id = int(get_jwt_identity())
+    body = request.get_json() or {}
+    try:
+        data = DistributeSchema(**body)
+    except Exception as e:
+        raise ValidationError(str(e))
+    result = _make_management().distribute_binder(class_id, user_id, data.binder_id)
     return jsonify(result.model_dump(mode="json")), 200
 
 
