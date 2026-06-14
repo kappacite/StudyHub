@@ -6,8 +6,36 @@ import type { Assignment, AssignmentProgress } from '../../services/classService
 import {
   ClipboardList, Calendar,
   BarChart3, Users, CheckCircle2, AlertCircle,
-  ChevronLeft, Loader2, BookOpen, Clock, Award
+  ChevronLeft, Loader2, BookOpen, Clock, Award, Check
 } from 'lucide-vue-next'
+
+// Notation par élève (saisie locale + sauvegarde)
+const grading = ref<Record<number, { score: number | null; feedback: string }>>({})
+const savingId = ref<number | null>(null)
+
+function gradeFor(userId: number) {
+  if (!grading.value[userId]) grading.value[userId] = { score: null, feedback: '' }
+  return grading.value[userId]
+}
+
+async function saveGrade(student: AssignmentProgress) {
+  const g = gradeFor(student.user_id)
+  savingId.value = student.user_id
+  try {
+    const updated = await classService.gradeSubmission(classId, assignmentId, student.user_id, {
+      teacher_score: g.score ?? undefined,
+      teacher_feedback: g.feedback || undefined,
+    })
+    // Refléter la note dans la ligne
+    student.teacher_score = updated.teacher_score
+    student.teacher_feedback = updated.teacher_feedback
+    student.graded_at = updated.graded_at
+  } catch (e) {
+    console.error(e)
+  } finally {
+    savingId.value = null
+  }
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -23,6 +51,12 @@ onMounted(async () => {
   loading.value = true
   try {
     assignment.value = await classService.getAssignment(classId, assignmentId)
+    for (const p of assignment.value?.progress || []) {
+      grading.value[p.user_id] = {
+        score: p.teacher_score ?? null,
+        feedback: p.teacher_feedback ?? '',
+      }
+    }
   } catch (e: any) {
     error.value = e?.response?.data?.error?.message || "Impossible de charger les détails du devoir."
   } finally {
@@ -222,6 +256,7 @@ function getScoreColorClass(score: number | null) {
                 <th class="py-3 px-4">Statut</th>
                 <th class="py-3 px-4">Cartes révisées</th>
                 <th class="py-3 px-4">Score</th>
+                <th class="py-3 px-4">Note (prof)</th>
                 <th class="py-3 px-4">Rendu le</th>
               </tr>
             </thead>
@@ -281,6 +316,30 @@ function getScoreColorClass(score: number | null) {
                         :style="{ width: student.score_pct + '%' }"
                       ></div>
                     </div>
+                  </div>
+                </td>
+
+                <!-- Teacher grade -->
+                <td class="py-4 px-4">
+                  <div class="flex items-center gap-1.5">
+                    <input
+                      v-model.number="gradeFor(student.user_id).score"
+                      type="number" min="0" max="100" placeholder="—"
+                      class="w-16 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <input
+                      v-model="gradeFor(student.user_id).feedback"
+                      type="text" placeholder="Commentaire…"
+                      class="w-28 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <button
+                      @click="saveGrade(student)" :disabled="savingId === student.user_id"
+                      class="p-1.5 rounded-lg text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition flex-shrink-0"
+                      :title="student.graded_at ? 'Note enregistrée' : 'Enregistrer la note'"
+                    >
+                      <Loader2 v-if="savingId === student.user_id" class="w-4 h-4 animate-spin" />
+                      <Check v-else class="w-4 h-4" :class="student.graded_at ? 'text-green-500' : ''" />
+                    </button>
                   </div>
                 </td>
 

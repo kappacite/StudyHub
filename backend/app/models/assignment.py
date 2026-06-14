@@ -94,7 +94,12 @@ class AssignmentProgress(db.Model):
     cards_reviewed = Column(Integer, default=0, nullable=False)
     score_pct      = Column(Float, nullable=True)
     completed_at   = Column(DateTime, nullable=True)
+    # Notation manuelle par le professeur (optionnelle, complète le score auto)
+    teacher_score    = Column(Float, nullable=True)
+    teacher_feedback = Column(Text, nullable=True)
+    graded_by        = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    graded_at        = Column(DateTime, nullable=True)
 
     # Relations
     assignment = relationship("Assignment", back_populates="progresses")
-    user       = relationship("User")
+    user       = relationship("User", foreign_keys=[user_id])

@@ -12,6 +12,7 @@ from app.models.evaluation import Evaluation, EvaluationItem
 from app.models.assignment import (
     Assignment, AssignmentTask, AssignmentTaskProgress, AssignmentProgress,
 )
+from app.models.class_insight import ClassInsight
 
 __all__ = [
     "User",
@@ -33,4 +34,5 @@ __all__ = [
     "AssignmentTask",
     "AssignmentTaskProgress",
     "AssignmentProgress",
+    "ClassInsight",
 ]

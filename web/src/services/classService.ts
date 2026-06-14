@@ -21,6 +21,9 @@ export interface AssignmentProgress {
   cards_reviewed: number
   score_pct: number | null
   completed_at: string | null
+  teacher_score?: number | null
+  teacher_feedback?: string | null
+  graded_at?: string | null
 }
 
 export type TaskType = 'flashcards' | 'quiz' | 'exam' | 'blurting' | 'read'
@@ -160,7 +163,70 @@ const classService = {
   async getClassMaterialsProgress(classId: number): Promise<StudentMaterialsProgress[]> {
     const resp = await api.get<StudentMaterialsProgress[]>(`/classes/${classId}/materials/progress`)
     return resp.data
+  },
+
+  async getClassAnalytics(classId: number): Promise<ClassOverview> {
+    const resp = await api.get<ClassOverview>(`/classes/${classId}/analytics`)
+    return resp.data
+  },
+
+  async getClassInsights(classId: number): Promise<ClassInsight> {
+    const resp = await api.get<ClassInsight>(`/classes/${classId}/insights`)
+    return resp.data
+  },
+
+  async refreshClassInsights(classId: number): Promise<{ status: string; task_id?: string }> {
+    const resp = await api.post(`/classes/${classId}/insights`)
+    return resp.data
+  },
+
+  async gradeSubmission(
+    classId: number,
+    assignmentId: number,
+    studentId: number,
+    payload: { teacher_score?: number; teacher_feedback?: string }
+  ): Promise<AssignmentProgress> {
+    const resp = await api.patch<AssignmentProgress>(
+      `/classes/${classId}/assignments/${assignmentId}/submissions/${studentId}`,
+      payload
+    )
+    return resp.data
   }
+}
+
+export interface AssignmentStat {
+  id: number
+  title: string
+  due_date: string | null
+  submissions_count: number
+  completed_count: number
+  completion_rate: number
+  avg_score: number | null
+}
+
+export interface ClassOverview {
+  class_id: number
+  students_count: number
+  assignments_count: number
+  completion_rate: number
+  avg_score: number | null
+  active_students_7d: number
+  assignments: AssignmentStat[]
+}
+
+export interface WeakTopic {
+  note_id: number
+  note_title: string
+  error_rate: number
+  sample: number
+}
+
+export interface ClassInsight {
+  class_id: number
+  weak_topics: WeakTopic[]
+  summary: string
+  ai: boolean
+  created_at: string | null
 }
 
 export interface BinderProgress {
