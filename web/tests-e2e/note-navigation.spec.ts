@@ -3,7 +3,8 @@ import { authenticate } from './helpers'
 
 // Régression directe du bug corrigé : dans le template de NoteEdit, `noteId.value`
 // (au lieu de `noteId`) produisait des URLs `/notes/undefined/...`. Ce test ouvre
-// une vraie note dans le navigateur, clique les boutons IA et vérifie l'URL.
+// une vraie note dans le navigateur, ouvre la modale « Réviser avec l'IA », clique
+// les activités IA et vérifie l'URL.
 const NOTE_ID = 'e2e-note-1234'
 
 const note = {
@@ -31,8 +32,10 @@ test.describe('NoteEdit — navigation vers les outils IA', () => {
     )
   })
 
-  test('« Page blanche (IA) » navigue vers /notes/<id>/blurting', async ({ page }) => {
+  test('« Page blanche » navigue vers /notes/<id>/blurting', async ({ page }) => {
     await page.goto(`/notes/${NOTE_ID}`)
+
+    await page.getByRole('button', { name: /Réviser avec l'IA/i }).click()
 
     const button = page.getByRole('button', { name: /Page blanche/i })
     await expect(button).toBeVisible()
@@ -42,8 +45,10 @@ test.describe('NoteEdit — navigation vers les outils IA', () => {
     expect(page.url()).not.toContain('undefined')
   })
 
-  test('« QCM (IA) » navigue vers /notes/<id>/quiz', async ({ page }) => {
+  test('« QCM » navigue vers /notes/<id>/quiz', async ({ page }) => {
     await page.goto(`/notes/${NOTE_ID}`)
+
+    await page.getByRole('button', { name: /Réviser avec l'IA/i }).click()
 
     const button = page.getByRole('button', { name: /QCM/i })
     await expect(button).toBeVisible()
