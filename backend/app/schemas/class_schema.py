@@ -48,6 +48,12 @@ class TaskSubmitSchema(BaseModel):
     payload: Optional[Dict[str, Any]] = None
 
 
+class AssignmentGradeSchema(BaseModel):
+    """Notation manuelle d'une soumission par le professeur."""
+    teacher_score: Optional[float] = Field(default=None, ge=0, le=100)
+    teacher_feedback: Optional[str] = None
+
+
 # ─── Output schemas ───────────────────────────────────────────────────────────
 
 class AssignmentProgressResponseSchema(BaseModel):
@@ -56,6 +62,9 @@ class AssignmentProgressResponseSchema(BaseModel):
     cards_reviewed: int
     score_pct: Optional[float] = None
     completed_at: Optional[datetime] = None
+    teacher_score: Optional[float] = None
+    teacher_feedback: Optional[str] = None
+    graded_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

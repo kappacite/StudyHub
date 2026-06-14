@@ -5,7 +5,7 @@ import { useBindersStore } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
 import classService from '../../services/classService'
-import type { Assignment, StudentMaterialsProgress } from '../../services/classService'
+import type { Assignment, StudentMaterialsProgress, ClassOverview, ClassInsight } from '../../services/classService'
 import groupService from '../../services/groupService'
 import type { GroupBinder } from '../../services/groupService'
 import AssignmentBuilder from '../../components/classes/AssignmentBuilder.vue'
@@ -51,8 +51,11 @@ const associateBinderId = ref<string | null>(null)
 const classDetails = ref<Record<number, {
   binders: GroupBinder[];
   progress: StudentMaterialsProgress[];
+  overview: ClassOverview | null;
+  insights: ClassInsight | null;
+  analyzing: boolean;
   loading: boolean;
-  activeTab: 'assignments' | 'resources' | 'progress';
+  activeTab: 'assignments' | 'resources' | 'progress' | 'analytics';
 }>>({})
 
 const availableBindersToAssociate = computed(() => {
@@ -61,16 +64,19 @@ const availableBindersToAssociate = computed(() => {
   return bindersStore.binders.filter(b => !sharedIds.includes(b.id))
 })
 
-async function selectClassTab(classId: number, tab: 'assignments' | 'resources' | 'progress') {
+async function selectClassTab(classId: number, tab: 'assignments' | 'resources' | 'progress' | 'analytics') {
   if (!classDetails.value[classId]) {
     classDetails.value[classId] = {
       binders: [],
       progress: [],
+      overview: null,
+      insights: null,
+      analyzing: false,
       loading: false,
       activeTab: 'assignments'
     }
   }
-  
+
   classDetails.value[classId].activeTab = tab
 
   if (tab === 'assignments') return
@@ -87,11 +93,33 @@ async function selectClassTab(classId: number, tab: 'assignments' | 'resources' 
       ])
       classDetails.value[classId].binders = detail.binders
       classDetails.value[classId].progress = prog
+    } else if (tab === 'analytics') {
+      const [overview, insights] = await Promise.all([
+        classService.getClassAnalytics(classId),
+        classService.getClassInsights(classId)
+      ])
+      classDetails.value[classId].overview = overview
+      classDetails.value[classId].insights = insights
     }
   } catch (e) {
     console.error(e)
   } finally {
     classDetails.value[classId].loading = false
+  }
+}
+
+async function analyzeGaps(classId: number) {
+  const d = classDetails.value[classId]
+  if (!d) return
+  d.analyzing = true
+  try {
+    await classService.refreshClassInsights(classId)
+    // En mode async, le résultat peut arriver après un court délai ; on relit le cache.
+    d.insights = await classService.getClassInsights(classId)
+  } catch (e) {
+    console.error(e)
+  } finally {
+    d.analyzing = false
   }
 }
 
@@ -324,7 +352,8 @@ function isPast(d: string | null): boolean {
               v-for="tab in [
                 { id: 'assignments', label: 'Devoirs' },
                 { id: 'resources', label: 'Cours & Classeurs' },
-                { id: 'progress', label: 'Suivi Révisions' }
+                { id: 'progress', label: 'Suivi Révisions' },
+                { id: 'analytics', label: 'Tableau de bord' }
               ]"
               :key="tab.id"
               @click="selectClassTab(cls.id, tab.id)"
@@ -506,6 +535,74 @@ function isPast(d: string | null): boolean {
                 </div>
               </div>
             </div>
+          </div>
+          <!-- TAB 4: Analytics dashboard -->
+          <div v-else-if="classDetails[cls.id]?.activeTab === 'analytics'">
+            <div v-if="classDetails[cls.id]?.loading" class="flex items-center justify-center py-8">
+              <Loader2 class="w-6 h-6 text-amber-500 animate-spin" />
+            </div>
+            <div v-else-if="classDetails[cls.id]?.overview">
+              <!-- KPI cards -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-3">
+                  <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Élèves</p>
+                  <p class="text-2xl font-bold text-slate-800 dark:text-white">{{ classDetails[cls.id].overview!.students_count }}</p>
+                </div>
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-3">
+                  <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Actifs (7j)</p>
+                  <p class="text-2xl font-bold text-slate-800 dark:text-white">{{ classDetails[cls.id].overview!.active_students_7d }}</p>
+                </div>
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-3">
+                  <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Complétion</p>
+                  <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ Math.round(classDetails[cls.id].overview!.completion_rate) }}%</p>
+                </div>
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-3">
+                  <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Score moyen</p>
+                  <p class="text-2xl font-bold text-slate-800 dark:text-white">
+                    {{ classDetails[cls.id].overview!.avg_score !== null ? Math.round(classDetails[cls.id].overview!.avg_score!) + '%' : '—' }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Per-assignment completion -->
+              <div v-if="classDetails[cls.id].overview!.assignments.length" class="space-y-2 mb-6">
+                <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Complétion par devoir</p>
+                <div v-for="a in classDetails[cls.id].overview!.assignments" :key="a.id" class="flex items-center gap-3">
+                  <span class="text-xs text-slate-600 dark:text-slate-300 w-40 truncate">{{ a.title }}</span>
+                  <div class="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                    <div class="h-full rounded-full bg-amber-500" :style="{ width: a.completion_rate + '%' }"></div>
+                  </div>
+                  <span class="text-[11px] text-slate-400 w-24 text-right">{{ a.completed_count }}/{{ a.submissions_count }} ({{ Math.round(a.completion_rate) }}%)</span>
+                </div>
+              </div>
+
+              <!-- AI gaps -->
+              <div class="rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/10 p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                    <BarChart3 class="w-4 h-4 text-amber-500" /> Lacunes de la classe
+                  </p>
+                  <button @click="analyzeGaps(cls.id)" :disabled="classDetails[cls.id].analyzing"
+                    class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white text-[11px] font-semibold transition">
+                    <Loader2 v-if="classDetails[cls.id].analyzing" class="w-3.5 h-3.5 animate-spin" />
+                    <BarChart3 v-else class="w-3.5 h-3.5" />
+                    Analyser
+                  </button>
+                </div>
+                <p v-if="classDetails[cls.id].insights?.summary" class="text-xs text-slate-600 dark:text-slate-300 mb-3">
+                  {{ classDetails[cls.id].insights!.summary }}
+                  <span v-if="classDetails[cls.id].insights!.ai" class="ml-1 text-[9px] uppercase tracking-wider text-amber-500 font-bold">IA</span>
+                </p>
+                <p v-else class="text-xs text-slate-400 mb-3">Aucune analyse pour l'instant. Lancez « Analyser » pour identifier les notions les plus ratées.</p>
+                <div v-if="classDetails[cls.id].insights?.weak_topics?.length" class="space-y-1.5">
+                  <div v-for="t in classDetails[cls.id].insights!.weak_topics" :key="t.note_id" class="flex items-center justify-between text-xs">
+                    <span class="text-slate-700 dark:text-slate-200 truncate">{{ t.note_title }}</span>
+                    <span class="font-bold" :class="t.error_rate >= 50 ? 'text-red-500' : 'text-amber-600'">{{ Math.round(t.error_rate) }}% d'erreurs</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-center py-8 text-slate-400 text-sm">Aucune donnée analytique disponible.</div>
           </div>
         </div>
       </div>

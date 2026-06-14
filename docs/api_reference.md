@@ -1218,3 +1218,48 @@ Soumet/valide une tâche : recalcule la progression depuis le module sous-jacent
 ### `GET /assignments/mine` (élève)
 
 Liste les devoirs assignés à l'élève (toutes classes), chacun avec ses `tasks[]` et la progression personnelle (`my_status`, `my_score_pct`) par tâche, plus le `status` agrégé du devoir (`todo`/`in_progress`/`late`/`done`).
+
+---
+
+## Espace Professeur — Tableau de bord & Notation (PR 3)
+
+### `GET /classes/:id/analytics` (professeur)
+
+Vue d'ensemble agrégée (requêtes bornées, sans N+1) :
+```json
+{
+  "class_id": 3,
+  "students_count": 24,
+  "assignments_count": 5,
+  "completion_rate": 62.5,
+  "avg_score": 78.0,
+  "active_students_7d": 18,
+  "assignments": [
+    { "id": 12, "title": "Chapitre 3", "due_date": "2026-06-20T18:00:00",
+      "submissions_count": 24, "completed_count": 15, "completion_rate": 62.5, "avg_score": 78.0 }
+  ]
+}
+```
+
+### `POST /classes/:id/insights` (professeur)
+
+Déclenche le calcul des **lacunes de la classe** (tâche Celery, repli synchrone) : agrège les items d'évaluation ratés par les élèves, classe les notions par taux d'erreur, et y ajoute un résumé (IA Gemini si configurée, sinon heuristique). `202` (async + `task_id`) ou `200` (sync).
+
+### `GET /classes/:id/insights` (professeur)
+
+Renvoie le dernier résultat en cache :
+```json
+{
+  "class_id": 3,
+  "weak_topics": [{ "note_id": 7, "note_title": "Mitose", "error_rate": 75.0, "sample": 40 }],
+  "summary": "La classe rencontre le plus de difficultés sur « Mitose »…",
+  "ai": false,
+  "created_at": "2026-06-15T09:00:00"
+}
+```
+
+### `PATCH /classes/:id/assignments/:assignment_id/submissions/:student_id` (professeur)
+
+Note/commente la soumission d'un élève.
+* **Body** : `{ "teacher_score": 17.5, "teacher_feedback": "Bon travail" }`
+* **Response** (`200 OK`) : la soumission mise à jour (`teacher_score`, `teacher_feedback`, `graded_at`).

@@ -443,3 +443,39 @@ class AIService:
             ) from e
         except Exception as e:
             raise RuntimeError(f"Une erreur est survenue lors de la génération de l'évaluation avec Gemini : {str(e)}") from e
+
+    def summarize_class_gaps(self, weak_topics: list) -> "str | None":
+        """Résumé pédagogique en langage naturel des lacunes d'une classe.
+
+        Enrichissement optionnel : renvoie None si la clé Gemini est absente ou en
+        cas d'erreur (l'appelant retombe alors sur un résumé heuristique). Ne lève
+        jamais — l'analyse de lacunes ne doit pas échouer à cause de l'IA.
+        """
+        if not self.api_key or not weak_topics:
+            return None
+
+        topics_desc = "\n".join(
+            f"- {t['note_title']} : {round(t['error_rate'])}% d'erreurs (sur {t['sample']} items)"
+            for t in weak_topics
+        )
+        system_prompt = (
+            "Tu es un assistant pédagogique. À partir des notions où une classe se trompe le plus, "
+            "rédige un court paragraphe (3 phrases max) à destination du professeur : priorités de "
+            "révision et conseil concret. Réponds en JSON {\"summary\": \"...\"}.\n\n"
+            f"<donnees>\n{topics_desc}\n</donnees>"
+        )
+        payload = {"contents": [{"parts": [{"text": system_prompt}]}]}
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
+        try:
+            req = urllib.request.Request(
+                url, data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}, method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=60) as response:
+                res_data = json.loads(response.read().decode("utf-8"))
+            content = res_data["candidates"][0]["content"]["parts"][0].get("text", "")
+            start, end = content.find("{"), content.rfind("}")
+            parsed = json.loads(content[start:end + 1] if start != -1 and end > start else content)
+            return parsed.get("summary") or None
+        except Exception:
+            return None
