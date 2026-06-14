@@ -66,6 +66,25 @@ class EvaluationService:
 
     # --- Génération ---
 
+    @staticmethod
+    def _dedup_key(item_type: str, payload: dict) -> str:
+        """Clé normalisée d'un item pour écarter les doublons (énoncé principal,
+        en minuscules, espaces compressés, ponctuation de fin retirée)."""
+        if item_type == "vf":
+            text = payload.get("assertion", "")
+        elif item_type == "trou":
+            text = payload.get("text_with_blank", "")
+        else:  # qcm / open
+            text = payload.get("question", "")
+        return re.sub(r"\s+", " ", (text or "").strip().lower()).rstrip(" ?.!:;,")
+
+    @staticmethod
+    def _content_hash(note) -> str:
+        """Empreinte de cache : titre + contenu. Inclure le titre garantit qu'un
+        renommage de la note régénère l'évaluation (le titre est passé au prompt)."""
+        material = f"{note.title or ''}\n{note.content or ''}"
+        return hashlib.sha256(material.encode("utf-8")).hexdigest()
+
     def generate_evaluation(
         self, user_id: int, note_id, item_count: int = 8, force: bool = False
     ) -> EvaluationResponse:
@@ -74,7 +93,7 @@ class EvaluationService:
         if not isinstance(item_count, int) or not (4 <= item_count <= 20):
             item_count = 8
         note = self._get_note_or_403(note_id, user_id)
-        content_hash = hashlib.sha256((note.content or "").encode("utf-8")).hexdigest()
+        content_hash = self._content_hash(note)
 
         # Cache : tant que le contenu de la note n'a pas changé, on réutilise les
         # items déjà générés (clone d'une nouvelle tentative) sans rappeler l'IA.
@@ -84,9 +103,23 @@ class EvaluationService:
                 cloned = self._clone_as_new_attempt(prior)
                 return self._serialize(cloned, reveal=False)
 
-        ai_result = self._ai_service.generate_evaluation(note.content or "", item_count=item_count)
+        ai_result = self._ai_service.generate_evaluation(
+            note.content or "", item_count=item_count, note_title=note.title or ""
+        )
 
         evaluation = Evaluation(note_id=note._id, user_id=user_id, content_hash=content_hash)
+
+        # Déduplication : l'IA répète parfois une question, ou recoupe une balise de
+        # la note. On écarte les items dont l'énoncé normalisé est déjà vu.
+        seen_keys: set = set()
+
+        def _add_item(item_type: str, payload: dict, source: str) -> None:
+            key = self._dedup_key(item_type, payload)
+            if key and key in seen_keys:
+                return
+            if key:
+                seen_keys.add(key)
+            evaluation.items.append(EvaluationItem(type=item_type, source=source, payload=payload))
 
         # Items IA (clé de correction embarquée dans le payload).
         for raw in ai_result.get("items", []):
@@ -94,14 +127,14 @@ class EvaluationService:
             if item_type not in _VALID_TYPES:
                 continue
             payload = {k: v for k, v in raw.items() if k != "type"}
-            evaluation.items.append(EvaluationItem(type=item_type, source="ai", payload=payload))
+            _add_item(item_type, payload, "ai")
 
         # Items issus des balises de la note (corrigés automatiquement, sans IA).
         for ph in extract_placeholders_from_text(note.content or "", note._id):
             converted = placeholder_to_eval_item(ph)
             if converted:
                 t, payload = converted
-                evaluation.items.append(EvaluationItem(type=t, source="manual", payload=payload))
+                _add_item(t, payload, "manual")
 
         created = self._evaluation_dao.create(evaluation)
         return self._serialize(created, reveal=False)
@@ -112,7 +145,7 @@ class EvaluationService:
         note = self._note_dao.get_by_id(note_id)
         if not note or note.user_id != user_id:
             return False
-        content_hash = hashlib.sha256((note.content or "").encode("utf-8")).hexdigest()
+        content_hash = self._content_hash(note)
         return (
             self._evaluation_dao.get_latest_by_content_hash(note._id, user_id, content_hash)
             is not None

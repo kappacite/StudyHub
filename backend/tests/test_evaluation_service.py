@@ -241,3 +241,40 @@ def test_user_isolation_on_get(app):
         resp = service.generate_evaluation(owner_id, note_uuid)
         with pytest.raises(ForbiddenError):
             service.get_evaluation(other_id, resp.id)
+
+
+def test_duplicate_items_are_deduplicated(app):
+    """L'IA répète parfois une question (variantes quasi-identiques) : on n'en garde qu'une."""
+    user_id, note_uuid = _make_user_note(app, content="Cours sans balise.", email="dup@example.com", username="dup")
+    dup_ai = {"items": [
+        {"type": "open", "question": "Expliquez la photosynthèse.", "model_answer": "x", "key_points": []},
+        {"type": "open", "question": "Expliquez la photosynthèse.", "model_answer": "y", "key_points": []},
+        {"type": "open", "question": "  expliquez la photosynthèse ?  ", "model_answer": "z", "key_points": []},
+        {"type": "vf", "assertion": "L'eau bout à 100°C.", "correct": True, "justification": "x"},
+    ]}
+    with app.app_context():
+        service, _ = _service(dup_ai)
+        resp = service.generate_evaluation(user_id, note_uuid, item_count=4)
+        opens = [i for i in resp.items if i.type == "open"]
+        assert len(opens) == 1  # les 3 variantes fusionnées
+        assert len(resp.items) == 2  # 1 open + 1 vf
+
+
+def test_ordre_and_assoc_open_questions_expose_elements(app):
+    """Les balises ordre/assoc deviennent des items 'open' dont l'ÉNONCÉ liste les
+    éléments (sinon l'étudiant ne voit qu'un titre sans rien à ordonner/associer)."""
+    content = (
+        "{{ordre::Cycle de l'eau::Évaporation > Condensation > Précipitation}}\n"
+        "{{assoc::Capitales::France=Paris | Espagne=Madrid}}"
+    )
+    user_id, note_uuid = _make_user_note(app, content=content, email="oa@example.com", username="oa")
+    with app.app_context():
+        service, _ = _service({"items": []})  # uniquement les items issus des balises
+        resp = service.generate_evaluation(user_id, note_uuid, item_count=4)
+        opens = [i for i in resp.items if i.type == "open"]
+        assert len(opens) == 2
+        joined = " ".join(i.payload["question"] for i in opens)
+        for step in ("Évaporation", "Condensation", "Précipitation"):
+            assert step in joined
+        for el in ("France", "Espagne", "Paris", "Madrid"):
+            assert el in joined
