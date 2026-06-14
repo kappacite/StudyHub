@@ -72,12 +72,15 @@ def _service_full(ai_return=AI_ITEMS):
     return service, ai
 
 
-def _phantom_cards(note_uuid):
-    note = NoteDAO(db.session).get_by_id(note_uuid)
-    deck = db.session.query(Deck).filter_by(note_id=note._id).first()
-    if not deck:
-        return []
-    return db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
+def _make_deck(user_id, name="Mes révisions"):
+    deck = Deck(user_id=user_id, name=name)
+    db.session.add(deck)
+    db.session.commit()
+    return deck.id
+
+
+def _deck_cards(deck_id):
+    return db.session.query(Flashcard).filter_by(deck_id=deck_id).all()
 
 
 def test_generate_merges_ai_and_manual_items_sanitized(app):
@@ -187,7 +190,7 @@ def test_trou_wrong_answer_is_incorrect(app):
         assert a.correction["answer"] == "Mitochondrie"
 
 
-def test_completion_reinforces_missed_items_as_ai_cards(app):
+def test_completion_proposes_missed_items_without_creating_cards(app):
     user_id, note_uuid = _make_user_note(app)
     with app.app_context():
         service, _ = _service_full()
@@ -198,39 +201,56 @@ def test_completion_reinforces_missed_items_as_ai_cards(app):
         # QCM raté (mauvaise option), open auto-évalué 'acquired' (réussi)
         service.answer_item(user_id, resp.id, qcm.id, value="a", self_grade=None)
         service.answer_item(user_id, resp.id, open_ai.id, value="x", self_grade="acquired")
-        service.complete_evaluation(user_id, resp.id)
+        result = service.complete_evaluation(user_id, resp.id)
 
-        cards = _phantom_cards(note_uuid)
-        ai_cards = [c for c in cards if c.source == "ai"]
-        # Le QCM raté génère une carte ; l'item open réussi n'en génère pas.
-        fronts = [c.front for c in ai_cards]
+        # On PROPOSE des cartes pour les items ratés ; rien n'est créé en base.
+        fronts = [c.front for c in result.proposed_cards]
         assert "Capitale de la France ?" in fronts
-        backs = {c.front: c.back for c in ai_cards}
+        backs = {c.front: c.back for c in result.proposed_cards}
         assert backs["Capitale de la France ?"] == "Paris"  # bonne réponse
-        assert all(c.source == "ai" for c in ai_cards)
-        assert "Expliquez la photosynthèse." not in fronts  # réussi -> pas de carte
+        assert "Expliquez la photosynthèse." not in fronts  # réussi -> pas de proposition
+
+        # Aucune flashcard n'a été persistée automatiquement.
+        assert db.session.query(Flashcard).count() == 0
 
 
-def test_reinforcement_is_idempotent_across_attempts(app):
+def test_create_flashcards_from_missed_adds_to_chosen_deck(app):
     user_id, note_uuid = _make_user_note(app)
     with app.app_context():
         service, _ = _service_full()
+        resp = service.generate_evaluation(user_id, note_uuid)
+        qcm = next(i for i in resp.items if i.type == "qcm" and i.source == "ai")
+        service.answer_item(user_id, resp.id, qcm.id, value="a", self_grade=None)
+        service.complete_evaluation(user_id, resp.id)
 
-        # Tentative 1 : QCM raté -> 1 carte
-        r1 = service.generate_evaluation(user_id, note_uuid)
-        qcm1 = next(i for i in r1.items if i.type == "qcm" and i.source == "ai")
-        service.answer_item(user_id, r1.id, qcm1.id, value="a", self_grade=None)
-        service.complete_evaluation(user_id, r1.id)
-        count1 = len([c for c in _phantom_cards(note_uuid) if c.front == "Capitale de la France ?"])
-        assert count1 == 1
+        deck_id = _make_deck(user_id)
+        created = service.create_flashcards_from_missed(user_id, resp.id, [qcm.id], deck_id)
+        assert created == 1
+        cards = _deck_cards(deck_id)
+        assert len(cards) == 1
+        assert cards[0].front == "Capitale de la France ?"
+        assert cards[0].back == "Paris"
+        assert cards[0].source == "ai"
 
-        # Tentative 2 (cache/clone) : même QCM raté -> pas de doublon
-        r2 = service.generate_evaluation(user_id, note_uuid)
-        qcm2 = next(i for i in r2.items if i.type == "qcm" and i.source == "ai")
-        service.answer_item(user_id, r2.id, qcm2.id, value="a", self_grade=None)
-        service.complete_evaluation(user_id, r2.id)
-        count2 = len([c for c in _phantom_cards(note_uuid) if c.front == "Capitale de la France ?"])
-        assert count2 == 1
+        # Idempotent : ré-ajouter les mêmes items au même deck ne duplique pas.
+        again = service.create_flashcards_from_missed(user_id, resp.id, [qcm.id], deck_id)
+        assert again == 0
+        assert len(_deck_cards(deck_id)) == 1
+
+
+def test_create_flashcards_rejects_foreign_deck(app):
+    user_id, note_uuid = _make_user_note(app)
+    other_id, _ = _make_user_note(app, email="other2@example.com", username="other2")
+    with app.app_context():
+        service, _ = _service_full()
+        resp = service.generate_evaluation(user_id, note_uuid)
+        qcm = next(i for i in resp.items if i.type == "qcm" and i.source == "ai")
+        service.answer_item(user_id, resp.id, qcm.id, value="a", self_grade=None)
+        service.complete_evaluation(user_id, resp.id)
+
+        foreign_deck_id = _make_deck(other_id)
+        with pytest.raises(ForbiddenError):
+            service.create_flashcards_from_missed(user_id, resp.id, [qcm.id], foreign_deck_id)
 
 
 def test_user_isolation_on_get(app):

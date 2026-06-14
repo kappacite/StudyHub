@@ -10,6 +10,7 @@ from app.services.ai_service import AIService
 from app.schemas.evaluation_schema import (
     EvaluationGenerateRequest,
     EvaluationAnswerRequest,
+    EvaluationFlashcardsRequest,
 )
 from app.middlewares.auth_middleware import jwt_required_middleware
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
@@ -127,3 +128,14 @@ def complete(evaluation_id):
     user_id = int(get_jwt_identity())
     resp = evaluation_service.complete_evaluation(user_id, evaluation_id)
     return jsonify(resp.model_dump(mode="json")), 200
+
+
+@evaluations_bp.route("/<int:evaluation_id>/flashcards", methods=["POST"])
+@jwt_required_middleware
+def create_flashcards(evaluation_id):
+    user_id = int(get_jwt_identity())
+    req = EvaluationFlashcardsRequest.model_validate(request.get_json() or {})
+    created = evaluation_service.create_flashcards_from_missed(
+        user_id, evaluation_id, req.item_ids, req.deck_id
+    )
+    return jsonify({"created": created}), 201

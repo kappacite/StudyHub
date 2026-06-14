@@ -1,8 +1,5 @@
 import pytest
 from app.utils.placeholder_parser import extract_placeholders_from_text
-from app.models.deck import Deck
-from app.models.note import Note
-from app.models.flashcard import Flashcard
 from app.models.study_session import StudySession
 from app.extensions import db
 
@@ -15,31 +12,31 @@ def test_placeholder_parsing_logic():
         "{{vf::La Terre est plate::Faux::La Terre est ronde.}}\n"
         "[La PVM]{def:Python Virtual Machine, exécute le bytecode.}"
     )
-    
+
     placeholders = extract_placeholders_from_text(content, note_id=1)
-    
+
     assert len(placeholders) == 6
-    
+
     # 1. Trou
     assert placeholders[0]["type"] == "trou"
     assert "Le chat [...] la souris." in placeholders[0]["front"]
     assert placeholders[0]["back"] == "mange"
-    
+
     # 2. QCM
     assert placeholders[1]["type"] == "qcm"
     assert "Qui a écrit Les Misérables ?" in placeholders[1]["front"]
     assert placeholders[1]["back"] == "Victor Hugo"
-    
+
     # 3. Ordre
     assert placeholders[2]["type"] == "ordre"
     assert "Cycle de l'eau" in placeholders[2]["front"]
     assert placeholders[2]["back"] == "Évaporation > Condensation > Précipitation"
-    
+
     # 4. Assoc
     assert placeholders[3]["type"] == "assoc"
     assert "Capitales" in placeholders[3]["front"]
     assert placeholders[3]["back"] == "France=Paris | Espagne=Madrid"
-    
+
     # 5. VF
     assert placeholders[4]["type"] == "vf"
     assert "La Terre est plate" in placeholders[4]["front"]
@@ -51,204 +48,28 @@ def test_placeholder_parsing_logic():
     assert "La PVM" in placeholders[5]["front"]
     assert "Python Virtual Machine" in placeholders[5]["back"]
 
-def test_note_phantom_deck_sync(client, auth_headers):
-    # 1. Créer une note avec des placeholders
-    note_data = {
-        "title": "Notes sur l'Histoire",
-        "content": "[Paris]{def:La capitale de la France}."
-    }
-    
-    response = client.post("/api/v1/notes", json=note_data, headers=auth_headers)
-    assert response.status_code == 201
-    note_id = response.json["id"]
-    
-    # 2. Vérifier que le deck fantôme est créé
-    with client.application.app_context():
-        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
-        assert deck is not None
-        assert deck.name == f"[Phantom] Note: {note_data['title']}"
-        
-        # Vérifier que la carte est créée
-        cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
-        assert len(cards) == 1
-        assert "Paris" in cards[0].front
-        assert cards[0].back == "La capitale de la France"
-        card_id = cards[0].id
-        placeholder_hash = cards[0].placeholder_hash
-
-    # 3. Mettre à jour la note : changer le placeholder
-    update_data = {
-        "title": "Notes sur l'Histoire",
-        "content": "[Paris]{def:La capitale de la France}.\n{{vf::Le ciel est bleu::Vrai::Le ciel est bleu.}}"
-    }
-    
-    response = client.put(f"/api/v1/notes/{note_id}", json=update_data, headers=auth_headers)
-    assert response.status_code == 200
-    
-    with client.application.app_context():
-        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
-        cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
-        # Devrait avoir 2 cartes maintenant
-        assert len(cards) == 2
-        
-    # 4. Retirer un placeholder
-    update_data_2 = {
-        "title": "Notes sur l'Histoire",
-        "content": "[Paris]{def:La capitale de la France}."
-    }
-    
-    response = client.put(f"/api/v1/notes/{note_id}", json=update_data_2, headers=auth_headers)
-    assert response.status_code == 200
-    
-    with client.application.app_context():
-        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
-        cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
-        # Devrait redevenir 1 seule carte
-        assert len(cards) == 1
-        assert cards[0].front == "Définition : Paris"
-
-def test_ai_card_survives_phantom_deck_resync(client, auth_headers):
-    """Non-régression : une carte source='ai' (générée par une évaluation) vivant
-    dans le deck fantôme ne doit JAMAIS être supprimée ni modifiée par la sync
-    déterministe déclenchée à chaque sauvegarde de note."""
-    # 1. Note avec un placeholder -> deck fantôme + 1 carte 'manual'
-    note_data = {
-        "title": "Cours de biologie",
-        "content": "[ADN]{def:Acide désoxyribonucléique}.",
-    }
-    response = client.post("/api/v1/notes", json=note_data, headers=auth_headers)
-    assert response.status_code == 201
-    note_id = response.json["id"]
-
-    # 2. Insérer une carte 'ai' directement dans le deck fantôme (simule l'évaluation)
-    with client.application.app_context():
-        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
-        manual_cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
-        assert len(manual_cards) == 1
-        assert manual_cards[0].source == "manual"
-
-        ai_card = Flashcard(
-            deck_id=deck.id,
-            front="Quel est le rôle de l'ARN messager ?",
-            back="Transporter l'information génétique vers les ribosomes.",
-            placeholder_hash="ai-hash-1",
-            source="ai",
-        )
-        db.session.add(ai_card)
-        db.session.commit()
-        ai_card_id = ai_card.id
-
-    # 3. Modifier la note (déclenche la sync déterministe : ajoute un placeholder)
-    update_data = {
-        "title": "Cours de biologie",
-        "content": "[ADN]{def:Acide désoxyribonucléique}.\n{{vf::L'ARN est simple brin::Vrai::En général oui.}}",
-    }
-    response = client.put(f"/api/v1/notes/{note_id}", json=update_data, headers=auth_headers)
-    assert response.status_code == 200
-
-    # 4. La carte 'ai' survit ; les cartes 'manual' suivent les placeholders.
-    with client.application.app_context():
-        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
-        ai_card = db.session.get(Flashcard, ai_card_id)
-        assert ai_card is not None, "La carte 'ai' a été supprimée par la sync !"
-        assert ai_card.front == "Quel est le rôle de l'ARN messager ?"
-
-        manual_cards = db.session.query(Flashcard).filter_by(
-            deck_id=deck.id, source="manual"
-        ).all()
-        assert len(manual_cards) == 2  # def ADN + nouveau vrai/faux
-
-        all_cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
-        assert len(all_cards) == 3  # 2 manual + 1 ai
-
 
 def test_review_card_direct_api(client, auth_headers):
-    # 1. Créer une note avec placeholder
-    note_data = {
-        "title": "Notes Physiques",
-        "content": "[F=ma]{def:La formule de la force}."
-    }
-    response = client.post("/api/v1/notes", json=note_data, headers=auth_headers)
-    assert response.status_code == 201
-    note_id = response.json["id"]
-    
-    with client.application.app_context():
-        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
-        card = db.session.query(Flashcard).filter_by(deck_id=deck.id).first()
-        card_id = card.id
-        
+    # 1. Créer un deck réel + une carte (plus de deck fantôme auto).
+    deck_resp = client.post("/api/v1/decks", json={
+        "name": "Notes Physiques", "description": "Formules"
+    }, headers=auth_headers)
+    deck_id = deck_resp.json["id"]
+    card_resp = client.post(f"/api/v1/decks/{deck_id}/cards", json={
+        "front": "Définition : F=ma", "back": "La formule de la force"
+    }, headers=auth_headers)
+    assert card_resp.status_code == 201
+    card_id = card_resp.json["id"]
+
     # 2. Réviser la carte via l'API globale PATCH
     review_data = {"score": 4}
     response = client.patch(f"/api/v1/flashcards/{card_id}/review", json=review_data, headers=auth_headers)
     assert response.status_code == 200
     assert response.json["interval"] > 0
-    
+
     # 3. Vérifier qu'une session d'étude a été enregistrée
     with client.application.app_context():
         session = db.session.query(StudySession).filter_by(flashcard_id=card_id).first()
         assert session is not None
         assert session.grade == 4
         assert session.module == "flashcard"
-
-def test_diagram_occlusion_sync(client, auth_headers):
-    # 1. Créer un diagramme avec des masques d'occlusion
-    import json
-    diag_data = {
-        "title": "Diagramme de biologie",
-        "code": json.dumps({
-            "type": "visual",
-            "backgroundImage": "data:image/png;base64,abc",
-            "nodes": [],
-            "connections": [],
-            "masks": [
-                {"id": "mask-1", "x": 10, "y": 20, "width": 50, "height": 30, "label": "Noyau"}
-            ]
-        })
-    }
-    response = client.post("/api/v1/diagrams", json=diag_data, headers=auth_headers)
-    assert response.status_code == 201
-    diag_id = response.json["id"]
-    
-    # 2. Créer une note qui inclut ce diagramme
-    note_data = {
-        "title": "Cours de biologie cellulaire",
-        "content": f"Voici le schéma de la cellule : [diagram:{diag_id}]."
-    }
-    response = client.post("/api/v1/notes", json=note_data, headers=auth_headers)
-    assert response.status_code == 201
-    note_id = response.json["id"]
-    
-    # 3. Vérifier que la flashcard d'occlusion est créée dans le deck fantôme
-    with client.application.app_context():
-        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
-        assert deck is not None
-        cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
-        assert len(cards) == 1
-        assert cards[0].back == "Noyau"
-        assert cards[0].original_text == f"[diagram:{diag_id}] mask:mask-1"
-        
-    # 4. Mettre à jour le diagramme : ajouter un masque
-    diag_update_data = {
-        "code": json.dumps({
-            "type": "visual",
-            "backgroundImage": "data:image/png;base64,abc",
-            "nodes": [],
-            "connections": [],
-            "masks": [
-                {"id": "mask-1", "x": 10, "y": 20, "width": 50, "height": 30, "label": "Noyau"},
-                {"id": "mask-2", "x": 100, "y": 120, "width": 60, "height": 40, "label": "Mitochondrie"}
-            ]
-        })
-    }
-    response = client.put(f"/api/v1/diagrams/{diag_id}", json=diag_update_data, headers=auth_headers)
-    assert response.status_code == 200
-    
-    # 5. Vérifier que la note s'est synchronisée automatiquement
-    with client.application.app_context():
-        deck = db.session.query(Deck).join(Note).filter(Note.id == note_id).first()
-        cards = db.session.query(Flashcard).filter_by(deck_id=deck.id).all()
-        # Devrait maintenant avoir 2 cartes
-        assert len(cards) == 2
-        backs = [c.back for c in cards]
-        assert "Noyau" in backs
-        assert "Mitochondrie" in backs
