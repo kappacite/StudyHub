@@ -11,6 +11,7 @@ from app.schemas.flashcard_schema import FlashcardCreate
 from app.middlewares.auth_middleware import jwt_required_middleware
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 from app.tasks import run_blurting_analysis
+from app.utils.task_dispatch import dispatch_or_run
 from celery.result import AsyncResult
 
 blurting_bp = Blueprint("blurting", __name__)
@@ -58,13 +59,15 @@ def analyze():
     if note.user_id != user_id:
         raise ForbiddenError("Accès interdit à cette note.")
         
-    # Lancement de l'analyse IA de manière asynchrone via Celery
-    task = run_blurting_analysis.delay(user_id, note_id, user_blurting, duration_seconds)
-    
-    return jsonify({
-        "task_id": task.id,
-        "status": task.status
-    }), 202
+    # Lancement de l'analyse IA via Celery, avec repli synchrone si le broker
+    # Redis est indisponible (dev sans worker).
+    mode, payload = dispatch_or_run(
+        run_blurting_analysis, user_id, note_id, user_blurting, duration_seconds
+    )
+    if mode == "async":
+        return jsonify({"task_id": payload.id, "status": payload.status}), 202
+    # Repli synchrone : résultat déjà prêt, le frontend court-circuite le polling.
+    return jsonify({"status": "SUCCESS", "result": payload}), 200
 
 @blurting_bp.route("/tasks/<task_id>", methods=["GET"])
 @jwt_required_middleware

@@ -480,11 +480,22 @@ async function submitForAnalysis() {
       duration_seconds: timerSeconds.value
     })
     
+    // Repli synchrone côté serveur (broker Redis indisponible) : résultat déjà prêt.
+    if (response.data.status === 'SUCCESS' && response.data.result) {
+      resultData.value = response.data.result
+      selectedCards.value = {}
+      resultData.value.suggested_flashcards.forEach((_, idx) => {
+        selectedCards.value[idx] = true
+      })
+      step.value = 'results'
+      return
+    }
+
     const { task_id } = response.data
     if (!task_id) {
       throw new Error("L'API n'a pas retourné de identifiant de tâche (task_id).")
     }
-    
+
     // Polling loop
     let finished = false
     let attempts = 0
