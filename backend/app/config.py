@@ -17,6 +17,9 @@ class Config:
     # Seuil (ms) au-delà duquel une requête HTTP est loguée en WARNING.
     SLOW_REQUEST_MS = int(os.environ.get("SLOW_REQUEST_MS", 500))
 
+    # Niveau du handler de logging racine posé au démarrage (cf. utils.logging_config).
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+
     # Redis (cache de routes partagé entre workers + broker Celery).
     # En prod, doit pointer vers un Redis accessible par TOUS les workers gunicorn,
     # sinon le cache retombe sur un dict en mémoire PAR PROCESSUS (non partagé) —

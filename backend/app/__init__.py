@@ -24,7 +24,12 @@ def create_app(config_name=None):
         config_name = os.environ.get("FLASK_ENV", "development")
         
     flask_app.config.from_object(config_by_name[config_name])
-    
+
+    # Rendre les logs applicatifs (et les tracebacks 500) visibles dans la sortie
+    # du conteneur — sinon logger.exception() n'émet rien sous gunicorn.
+    from app.utils.logging_config import configure_logging
+    configure_logging(flask_app)
+
     # Faire confiance aux en-têtes du proxy inverse (Nginx / Cloudflare)
     from werkzeug.middleware.proxy_fix import ProxyFix
     flask_app.wsgi_app = ProxyFix(flask_app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
