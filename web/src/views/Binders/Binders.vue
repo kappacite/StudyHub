@@ -41,13 +41,26 @@
             {{ currentBinder?.is_public ? 'Public' : 'Partager' }}
           </button>
 
-          <button 
-            @click="openCreateModal"
-            class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15"
-          >
-            <Plus class="w-4 h-4" />
-            Nouveau dossier
-          </button>
+          <div class="relative">
+            <button
+              @click="showAddMenu = !showAddMenu"
+              class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15"
+            >
+              <Plus class="w-4 h-4" />
+              Ajouter
+              <ChevronDown class="w-4 h-4" />
+            </button>
+
+            <template v-if="showAddMenu">
+              <div class="fixed inset-0 z-10" @click="showAddMenu = false"></div>
+              <div class="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl z-20 p-1.5 animate-scale-up">
+                <button v-for="item in addMenu" :key="item.label" @click="item.action" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
+                  <component :is="item.icon" class="w-4 h-4 text-indigo-500 shrink-0" />
+                  {{ item.label }}
+                </button>
+              </div>
+            </template>
+          </div>
         </template>
         <template v-else>
           <button 
@@ -191,34 +204,49 @@
           </div>
         </div>
 
-        <!-- Associated Decks -->
+        <!-- Jeux de révision -->
         <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2 mb-4">
-            <Layers class="w-4 h-4 text-indigo-500" />
-            Flashcards associées ({{ currentDecks.length }})
-          </h3>
-          
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+              <Layers class="w-4 h-4 text-indigo-500" />
+              Jeux de révision ({{ currentDecks.length }})
+            </h3>
+            <button v-if="isOwner" @click="openRevisionItem('basic')" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+              <Plus class="w-3.5 h-3.5" /> Item
+            </button>
+          </div>
+
           <div class="space-y-3">
-            <div 
-              v-for="deck in currentDecks" 
+            <div
+              v-for="deck in currentDecks"
               :key="deck.id"
               class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-slate-200 transition-colors cursor-pointer group"
-              @click="router.push(`/decks`)"
+              @click="router.push(`/decks/${deck.id}/study`)"
             >
               <div class="min-w-0">
                 <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">{{ deck.name }}</p>
                 <p class="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wider mt-0.5">
-                  {{ deck.card_count }} cartes
+                  {{ deck.card_count }} item(s)
                 </p>
               </div>
-              <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              <div class="flex items-center gap-1">
+                <button
+                  v-if="isOwner"
+                  @click.stop="openRevisionItemForDeck(deck.id)"
+                  class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all"
+                  title="Ajouter un item"
+                >
+                  <Plus class="w-4 h-4" />
+                </button>
+                <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              </div>
             </div>
 
-            <div 
-              v-if="currentDecks.length === 0" 
+            <div
+              v-if="currentDecks.length === 0"
               class="text-center py-8 text-slate-400 text-xs font-semibold uppercase tracking-wider"
             >
-              Aucun deck dans ce dossier
+              Aucun jeu de révision dans ce dossier
             </div>
           </div>
         </div>
@@ -355,6 +383,38 @@
         </form>
       </div>
     </div>
+
+    <!-- New "jeu de révision" (empty deck) Modal -->
+    <div v-if="showDeckModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showDeckModal = false"></div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
+        <h3 class="text-lg font-bold mb-4">Nouveau jeu de révision</h3>
+        <form @submit.prevent="createDeck">
+          <input
+            v-model="newDeckName"
+            type="text"
+            required
+            placeholder="Ex: Anatomie — chapitre 1"
+            class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+          />
+          <div class="flex items-center justify-end gap-3 mt-6">
+            <button type="button" @click="showDeckModal = false" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800">Annuler</button>
+            <button type="submit" class="px-4 py-2 text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700">Créer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Typed revision item Modal -->
+    <RevisionItemModal
+      v-if="showRevisionModal"
+      :binder-id="currentBinderId"
+      :decks="currentDecks"
+      :initial-type="revisionInitialType"
+      :initial-deck-id="revisionDeckId"
+      @close="showRevisionModal = false"
+      @created="onRevisionCreated"
+    />
   </div>
 </template>
 
@@ -369,7 +429,9 @@ import { useDecksStore } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
-import { FolderClosed, Plus, ChevronRight, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2 } from 'lucide-vue-next'
+import RevisionItemModal from '../../components/decks/RevisionItemModal.vue'
+import type { CardType } from '../../stores/decks'
+import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network } from 'lucide-vue-next'
 
 const bindersStore = useBindersStore()
 const notesStore = useNotesStore()
@@ -408,6 +470,63 @@ const showModal = ref(false)
 const newFolderName = ref('')
 const folderTags = ref<Tag[]>([])
 const selectedTagId = ref<number | null>(null)
+
+// Menu d'ajout unifié + modales de contenu
+const showAddMenu = ref(false)
+const showDeckModal = ref(false)
+const newDeckName = ref('')
+const showRevisionModal = ref(false)
+const revisionInitialType = ref<CardType>('basic')
+const revisionDeckId = ref<number | undefined>(undefined)
+
+const addMenu = [
+  { label: 'Sous-dossier', icon: FolderPlus, action: () => closeMenuThen(openCreateModal) },
+  { label: 'Note', icon: FileText, action: () => closeMenuThen(addNote) },
+  { label: 'Jeu de révision', icon: Layers, action: () => closeMenuThen(openNewDeck) },
+  { label: 'Carte', icon: Layers, action: () => closeMenuThen(() => openRevisionItem('basic')) },
+  { label: 'QCM', icon: FileQuestion, action: () => closeMenuThen(() => openRevisionItem('qcm')) },
+  { label: 'Vrai / Faux', icon: CheckSquare, action: () => closeMenuThen(() => openRevisionItem('vf')) },
+  { label: 'Ordre', icon: ListOrdered, action: () => closeMenuThen(() => openRevisionItem('ordre')) },
+  { label: 'Association', icon: Network, action: () => closeMenuThen(() => openRevisionItem('assoc')) },
+]
+
+function closeMenuThen(fn: () => void) {
+  showAddMenu.value = false
+  fn()
+}
+
+async function addNote() {
+  const note = await notesStore.createNote('Nouvelle note', '', currentBinderId.value)
+  router.push(`/notes/${note.id}?edit=true`)
+}
+
+function openNewDeck() {
+  newDeckName.value = ''
+  showDeckModal.value = true
+}
+
+async function createDeck() {
+  if (!newDeckName.value.trim()) return
+  await decksStore.createDeck(newDeckName.value.trim(), '', currentBinderId.value)
+  showDeckModal.value = false
+}
+
+function openRevisionItem(type: CardType) {
+  revisionInitialType.value = type
+  revisionDeckId.value = undefined
+  showRevisionModal.value = true
+}
+
+function openRevisionItemForDeck(deckId: number) {
+  revisionInitialType.value = 'basic'
+  revisionDeckId.value = deckId
+  showRevisionModal.value = true
+}
+
+async function onRevisionCreated() {
+  showRevisionModal.value = false
+  await decksStore.fetchDecks()
+}
 
 // Refs pour le partage du classeur
 const showShareModal = ref(false)

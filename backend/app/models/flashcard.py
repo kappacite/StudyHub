@@ -1,8 +1,11 @@
-from sqlalchemy import Column, Integer, Text, Float, DateTime, ForeignKey, String, Index
+from sqlalchemy import Column, Integer, Text, Float, DateTime, ForeignKey, String, Index, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.models.search_type import TSVectorType
 from app.extensions import db
+
+# Types de cartes de révision supportés par un jeu de révision (deck).
+CARD_TYPES = ("basic", "qcm", "vf", "ordre", "assoc")
 
 class Flashcard(db.Model):
     __tablename__ = "flashcards"
@@ -16,7 +19,19 @@ class Flashcard(db.Model):
     deck_id = Column(Integer, ForeignKey("decks.id", ondelete="CASCADE"), nullable=False)
     front = Column(Text, nullable=False)
     back = Column(Text, nullable=False)
-    
+
+    # Type de carte de révision : 'basic' = recto/verso classique ; 'qcm' | 'vf' |
+    # 'ordre' | 'assoc' = item interactif typé dont le contenu structuré vit dans
+    # `payload`. front/back restent renseignés (résumé énoncé/réponse) pour la
+    # recherche et le repli d'étude SM-2.
+    card_type = Column(String(12), default="basic", server_default="basic", nullable=False)
+    # Contenu structuré des cartes typées (cf. CARD_TYPES) :
+    #   qcm   -> {"question", "options": [{"id","text","correct"}]}
+    #   vf    -> {"assertion", "correct": bool, "justification"}
+    #   ordre -> {"title", "steps": [...]}  (ordre correct)
+    #   assoc -> {"title", "pairs": [{"left","right"}]}
+    payload = Column(JSON, nullable=True)
+
     # Placeholders de révision (Active Reading)
     placeholder_hash = Column(String(64), index=True, nullable=True)
     original_text = Column(Text, nullable=True)
