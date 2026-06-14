@@ -109,6 +109,31 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 2. **Double relation User-Binder** : Création d'une clé étrangère distincte `original_author_id` sur la table des classeurs pour préserver la paternité originale d'un cours même après de multiples clones successifs.
 3. **Mise à jour idempotente au démarrage** : L'auto-migration s'appuie sur le contexte applicatif et filtre les contextes CLI et tests unitaires pour éviter des conflits de verrous SQL ou des lenteurs de chargement.
 
+## [2026-06-14] Rework Espace Professeur — PR 1 : fondation « devoirs multi-tâches »
+
+Première étape du rework de la feature professeur (les 4 axes : devoirs riches, suivi/feedback, engagement, gestion de classe). Cette PR est **purement additive et rétro-compatible** : aucun changement d'UX ni d'API, on pose les fondations de données.
+
+### Ajouts et modifications
+
+#### 🗄️ Modèles (app/models/assignment.py)
+* **`AssignmentTask`** : tâche polymorphe d'un devoir (`task_type` ∈ flashcards | quiz | exam | blurting | read). Référence polymorphe vers la cible via `ref_id` (PK interne), `ref_uuid` (UUID public si applicable) et `ref_label` (nom dénormalisé pour l'affichage sans jointure). Objectif configurable via `goal` (JSON, ex. `{"min_cards": 20, "min_score": 80}`).
+* **`AssignmentTaskProgress`** : progression d'un élève par tâche (`status`, `score_pct`, `attempts`, `submitted_at`, `completed_at`, `payload`).
+* **`Assignment` étendu** : `instructions`, `publish_at` (publication programmée), `allow_late` ; `binder_id` devient **nullable** (un devoir peut n'avoir que des tâches typées). Les colonnes historiques de `AssignmentProgress` (agrégat = « soumission ») sont conservées pour la rétro-compatibilité du flux mono-classeur.
+
+#### 🏗️ DAO (app/dao/assignment_dao.py)
+* Nouveau **`AssignmentDAO`** centralisant tous les accès SQL aux tables de devoirs — qui étaient auparavant inline dans `ClassService`, en violation de la séparation des couches. Méthodes CRUD pour assignments, tâches, progression par tâche et agrégat de soumission.
+
+#### 🧱 Migration (b7d1a2c3e4f5_add_assignment_tasks)
+* Étend `assignments`, crée `assignment_tasks` et `assignment_task_progress`, et **backfill** : chaque devoir mono-classeur existant est converti en une tâche `flashcards` ciblant son `binder_id`. Idempotente (gardes via inspector) et multi-dialecte (batch nommé pour SQLite).
+
+#### 🧪 Tests (tests/test_assignment_tasks.py)
+* Migration : création des tables/colonnes + backfill d'un devoir legacy → tâche flashcards. Round-trip complet de `AssignmentDAO`.
+* *Découverte au passage* : `DevelopmentConfig.SQLALCHEMY_DATABASE_URI` est figé à l'import (attribut de classe), donc un override de config/env après `create_app` ne ré-isole pas la base. Les tests de migration patchent désormais l'attribut de classe avant `create_app` pour une base SQLite jetable réellement isolée.
+
+### Décisions d'architecture
+1. **Référence polymorphe sans FK** : `AssignmentTask.ref_id` ne porte pas de contrainte de clé étrangère (la cible appartient à plusieurs tables) ; la cohérence est garantie par la couche service, et `ref_uuid`/`ref_label` évitent les jointures à l'affichage.
+2. **Pas de renommage de table** : `assignment_progress` reste l'agrégat « soumission » (renommé seulement sémantiquement) pour ne pas casser le flux existant ; la refonte recalculera cet agrégat à partir des `AssignmentTaskProgress`.
+
 ## [2026-06-10] Intégration de l'édition et du rendu de blocs de code dans l'éditeur de notes
 
 ### Ajouts et modifications

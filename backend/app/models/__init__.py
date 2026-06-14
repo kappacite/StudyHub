@@ -9,6 +9,9 @@ from app.models.study_session import StudySession
 from app.models.tag import Tag
 from app.models.group import Group, GroupMember, GroupBinder, GroupActivity
 from app.models.evaluation import Evaluation, EvaluationItem
+from app.models.assignment import (
+    Assignment, AssignmentTask, AssignmentTaskProgress, AssignmentProgress,
+)
 
 __all__ = [
     "User",
@@ -25,5 +28,9 @@ __all__ = [
     "GroupBinder",
     "GroupActivity",
     "Evaluation",
-    "EvaluationItem"
+    "EvaluationItem",
+    "Assignment",
+    "AssignmentTask",
+    "AssignmentTaskProgress",
+    "AssignmentProgress",
 ]
