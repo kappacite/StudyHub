@@ -60,6 +60,32 @@ services:
     expose:
       - "5000"
 
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: studyhub_worker
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - FLASK_ENV=${FLASK_ENV}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - UPLOAD_FOLDER=${UPLOAD_FOLDER:-/app/uploads}
+      - MAX_CONTENT_LENGTH=${MAX_CONTENT_LENGTH:-52428800}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
+    volumes:
+      - uploads_data:/app/uploads
+    # Exécute les tâches async (blurting, génération d'évaluations IA).
+    command: celery -A celery_worker:celery_app worker --loglevel=info --concurrency=2
+
   frontend:
     build:
       context: ./web
