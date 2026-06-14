@@ -62,6 +62,39 @@ def run_blurting_analysis(self, user_id: int, note_id: int, user_blurting: str, 
 
 
 @celery_app.task(bind=True)
+def run_class_gap_analysis(self, class_id: int) -> dict:
+    """Calcule les lacunes d'une classe (data) + résumé IA optionnel, et met en cache.
+
+    L'agrégation est synchrone et bornée ; seul le résumé IA (lent) justifie Celery.
+    Tombe sur un résumé heuristique si l'IA est indisponible.
+    """
+    logger.info(f"Starting class gap analysis for class_id={class_id}")
+    try:
+        from app.dao.group_dao import GroupDAO
+        from app.services.analytics_service import AnalyticsService
+        from app.models.class_insight import ClassInsight
+
+        analytics = AnalyticsService(GroupDAO(db.session))
+        weak_topics = analytics.compute_weak_topics(class_id)
+        weak_dicts = [t.model_dump() for t in weak_topics]
+
+        ai_service = AIService()
+        ai_summary = ai_service.summarize_class_gaps(weak_dicts)
+        summary = ai_summary or AnalyticsService.heuristic_summary(weak_topics)
+
+        payload = {"weak_topics": weak_dicts, "summary": summary, "ai": bool(ai_summary)}
+        db.session.add(ClassInsight(group_id=class_id, payload=payload))
+        db.session.commit()
+
+        logger.info(f"Finished class gap analysis for class_id={class_id}")
+        return payload
+    except Exception as e:
+        db.session.rollback()
+        logger.exception(f"Error executing class gap analysis task: {e}")
+        raise
+
+
+@celery_app.task(bind=True)
 def run_evaluation_generation(
     self, user_id: int, note_id, item_count: int = 8, force: bool = False
 ) -> dict:

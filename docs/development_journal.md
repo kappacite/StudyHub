@@ -109,6 +109,37 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 2. **Double relation User-Binder** : Création d'une clé étrangère distincte `original_author_id` sur la table des classeurs pour préserver la paternité originale d'un cours même après de multiples clones successifs.
 3. **Mise à jour idempotente au démarrage** : L'auto-migration s'appuie sur le contexte applicatif et filtre les contextes CLI et tests unitaires pour éviter des conflits de verrous SQL ou des lenteurs de chargement.
 
+## [2026-06-14] Rework Espace Professeur — PR 3 : analytics, lacunes IA & notation
+
+Troisième étape : donner au professeur de la visibilité et une boucle de feedback.
+
+### Ajouts et modifications
+
+#### 📊 Analytics (analytics_service.py)
+* **`get_class_overview`** : vue d'ensemble agrégée (nb élèves, devoirs, taux de complétion, score moyen, élèves actifs 7j, complétion par devoir) — **entièrement en requêtes ensemblistes bornées** pour éliminer le N+1 de l'ancien `get_class_materials_progress`.
+* **`compute_weak_topics`** : classe les notes par taux d'erreur à partir des `EvaluationItem` ratés des élèves (data-driven, sans IA).
+
+#### 🧠 Lacunes IA (Celery)
+* **`AIService.summarize_class_gaps`** : résumé pédagogique en langage naturel (Gemini), best-effort — renvoie `None` sans clé/sur erreur (jamais bloquant).
+* **Tâche `run_class_gap_analysis`** : agrège les lacunes + résumé (IA ou heuristique) et met en cache dans la nouvelle table **`class_insights`**. Dispatch via `dispatch_or_run` (repli synchrone).
+
+#### ✍️ Notation
+* Champs `teacher_score` / `teacher_feedback` / `graded_by` / `graded_at` sur `assignment_progress` (migration `c8e2b3d4f6a7`). `ClassService.grade_submission` + endpoint `PATCH /classes/:id/assignments/:aid/submissions/:student_id`.
+
+#### 🌐 API (classes.py)
+* `GET /classes/:id/analytics`, `GET`/`POST /classes/:id/insights`, `PATCH …/submissions/:student_id`.
+
+#### 🖥️ Frontend
+* `TeacherDashboard` : nouvel onglet **« Tableau de bord »** (KPI, complétion par devoir, panneau « Lacunes de la classe » avec bouton d'analyse IA).
+* `AssignmentDetail` : colonne **Note (prof)** éditable (score + commentaire) par élève.
+
+#### 🧪 Tests
+* `test_teacher_analytics.py` : vue d'ensemble + accès réservé, notation (+ interdiction élève), lacunes (POST recalcule, GET renvoie le cache + résumé heuristique), et **budget de requêtes borné** (`assert_max_queries`, invariant au nombre d'élèves/devoirs).
+
+### Décisions d'architecture
+1. **Lacunes data-driven d'abord, IA en enrichissement** : le classement des notions ratées est déterministe et testable hors-ligne ; l'IA ne fait qu'ajouter un résumé, et son absence n'empêche jamais l'analyse.
+2. **Cache `class_insights`** : on conserve la dernière analyse pour éviter de rappeler l'IA à chaque ouverture du tableau de bord.
+
 ## [2026-06-14] Rework Espace Professeur — PR 2 : devoirs riches multi-supports + UX
 
 Deuxième étape : on branche la fondation de la PR 1 sur l'expérience réelle. Un devoir peut désormais combiner plusieurs activités de types variés, et l'élève les lance directement depuis ses devoirs.

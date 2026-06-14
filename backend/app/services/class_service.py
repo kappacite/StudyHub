@@ -155,7 +155,10 @@ class ClassService:
                     username=user.username if user else "?",
                     cards_reviewed=p.cards_reviewed,
                     score_pct=p.score_pct,
-                    completed_at=p.completed_at
+                    completed_at=p.completed_at,
+                    teacher_score=p.teacher_score,
+                    teacher_feedback=p.teacher_feedback,
+                    graded_at=p.graded_at,
                 ))
 
         binder_uuid, binder_name = self._display_binder(asgn)
@@ -336,6 +339,38 @@ class ClassService:
         asgn = self._get_assignment_or_404(class_id, assignment_id)
         db.session.delete(asgn)
         db.session.commit()
+
+    def grade_submission(
+        self, class_id: int, assignment_id: int, student_id: int, teacher_id: int, data
+    ) -> AssignmentProgressResponseSchema:
+        """Le professeur note/commente la soumission d'un élève."""
+        self._get_class_or_404(class_id)
+        self._require_teacher(class_id, teacher_id)
+        asgn = self._get_assignment_or_404(class_id, assignment_id)
+
+        if not self._group_dao.get_group_member(class_id, student_id):
+            raise ResourceNotFoundError("Cet élève n'est pas membre de la classe.")
+
+        sub = self._assignment_dao.upsert_submission(asgn.id, student_id, commit=False)
+        if data.teacher_score is not None:
+            sub.teacher_score = data.teacher_score
+        if data.teacher_feedback is not None:
+            sub.teacher_feedback = data.teacher_feedback
+        sub.graded_by = teacher_id
+        sub.graded_at = datetime.utcnow()
+        db.session.commit()
+
+        student = db.session.get(User, student_id)
+        return AssignmentProgressResponseSchema(
+            user_id=student_id,
+            username=student.username if student else "?",
+            cards_reviewed=sub.cards_reviewed,
+            score_pct=sub.score_pct,
+            completed_at=sub.completed_at,
+            teacher_score=sub.teacher_score,
+            teacher_feedback=sub.teacher_feedback,
+            graded_at=sub.graded_at,
+        )
 
     def submit_task(
         self, class_id: int, assignment_id: int, task_id: int, user_id: int, data=None
