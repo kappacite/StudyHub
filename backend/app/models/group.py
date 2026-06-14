@@ -16,6 +16,7 @@ class Group(db.Model):
     type = Column(String(10), default="study", nullable=False)       # "study" | "class"
     is_class = Column(Boolean, default=False, nullable=False)        # shortcut
     is_public = Column(Boolean, default=False, nullable=False)
+    leaderboard_enabled = Column(Boolean, default=True, nullable=False)
 
 
     # Relations

@@ -5,7 +5,7 @@ import { useBindersStore } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
 import classService from '../../services/classService'
-import type { Assignment, StudentMaterialsProgress, ClassOverview, ClassInsight } from '../../services/classService'
+import type { Assignment, StudentMaterialsProgress, ClassOverview, ClassInsight, Leaderboard } from '../../services/classService'
 import groupService from '../../services/groupService'
 import type { GroupBinder } from '../../services/groupService'
 import AssignmentBuilder from '../../components/classes/AssignmentBuilder.vue'
@@ -53,10 +53,40 @@ const classDetails = ref<Record<number, {
   progress: StudentMaterialsProgress[];
   overview: ClassOverview | null;
   insights: ClassInsight | null;
+  leaderboard: Leaderboard | null;
   analyzing: boolean;
   loading: boolean;
   activeTab: 'assignments' | 'resources' | 'progress' | 'analytics';
 }>>({})
+
+// Annonce
+const showAnnounceModal = ref(false)
+const announceClassId = ref<number | null>(null)
+const announceTitle = ref('')
+const announceBody = ref('')
+
+function openAnnounce(classId: number) {
+  announceClassId.value = classId
+  announceTitle.value = ''
+  announceBody.value = ''
+  showAnnounceModal.value = true
+}
+
+async function postAnnounce() {
+  if (!announceClassId.value || !announceTitle.value.trim()) return
+  creating.value = true
+  try {
+    await classService.postAnnouncement(announceClassId.value, {
+      title: announceTitle.value.trim(),
+      body: announceBody.value.trim() || undefined,
+    })
+    showAnnounceModal.value = false
+  } catch (e) {
+    console.error(e)
+  } finally {
+    creating.value = false
+  }
+}
 
 const availableBindersToAssociate = computed(() => {
   if (!associateClassId.value) return []
@@ -71,6 +101,7 @@ async function selectClassTab(classId: number, tab: 'assignments' | 'resources' 
       progress: [],
       overview: null,
       insights: null,
+      leaderboard: null,
       analyzing: false,
       loading: false,
       activeTab: 'assignments'
@@ -94,12 +125,14 @@ async function selectClassTab(classId: number, tab: 'assignments' | 'resources' 
       classDetails.value[classId].binders = detail.binders
       classDetails.value[classId].progress = prog
     } else if (tab === 'analytics') {
-      const [overview, insights] = await Promise.all([
+      const [overview, insights, leaderboard] = await Promise.all([
         classService.getClassAnalytics(classId),
-        classService.getClassInsights(classId)
+        classService.getClassInsights(classId),
+        classService.getLeaderboard(classId)
       ])
       classDetails.value[classId].overview = overview
       classDetails.value[classId].insights = insights
+      classDetails.value[classId].leaderboard = leaderboard
     }
   } catch (e) {
     console.error(e)
@@ -335,6 +368,13 @@ function isPast(d: string | null): boolean {
               >
                 <Eye class="w-3.5 h-3.5" />
                 Vue groupe
+              </button>
+              <button
+                @click="openAnnounce(cls.id)"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-medium transition"
+              >
+                <ClipboardList class="w-3.5 h-3.5" />
+                Annoncer
               </button>
               <button
                 @click="openCreateAssignment(cls.id)"
@@ -601,6 +641,21 @@ function isPast(d: string | null): boolean {
                   </div>
                 </div>
               </div>
+
+              <!-- Leaderboard -->
+              <div v-if="classDetails[cls.id].leaderboard?.enabled && classDetails[cls.id].leaderboard!.entries.length" class="mt-5 rounded-xl border border-slate-100 dark:border-slate-700/60 p-4">
+                <p class="text-sm font-bold text-slate-800 dark:text-slate-100 mb-3">Classement</p>
+                <div class="space-y-1.5">
+                  <div v-for="(e, i) in classDetails[cls.id].leaderboard!.entries.slice(0, 10)" :key="e.user_id"
+                    class="flex items-center gap-3 text-xs">
+                    <span class="w-5 text-center font-bold" :class="i === 0 ? 'text-amber-500' : 'text-slate-400'">{{ i + 1 }}</span>
+                    <span class="flex-1 truncate text-slate-700 dark:text-slate-200">{{ e.username }}</span>
+                    <span v-for="b in e.badges.slice(0, 2)" :key="b" class="hidden sm:inline px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[9px] font-bold">{{ b }}</span>
+                    <span v-if="e.streak > 0" class="text-orange-500 font-semibold">🔥{{ e.streak }}</span>
+                    <span class="font-bold text-slate-800 dark:text-white w-12 text-right">{{ e.points }} pts</span>
+                  </div>
+                </div>
+              </div>
             </div>
             <div v-else class="text-center py-8 text-slate-400 text-sm">Aucune donnée analytique disponible.</div>
           </div>
@@ -662,6 +717,35 @@ function isPast(d: string | null): boolean {
       @created="onAssignmentCreated"
       @close="showCreateAssignmentModal = false"
     />
+
+    <!-- Annonce -->
+    <Teleport to="body">
+      <div v-if="showAnnounceModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showAnnounceModal = false">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <ClipboardList class="w-5 h-5 text-amber-500" />
+              Publier une annonce
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Les élèves recevront une notification.</p>
+          </div>
+          <div class="p-6 space-y-4">
+            <input v-model="announceTitle" type="text" placeholder="Titre de l'annonce" maxlength="200"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition" />
+            <textarea v-model="announceBody" placeholder="Message (optionnel)…" rows="3"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition resize-none" />
+          </div>
+          <div class="p-6 pt-0 flex gap-3">
+            <button @click="showAnnounceModal = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition text-sm font-medium">Annuler</button>
+            <button @click="postAnnounce" :disabled="!announceTitle.trim() || creating"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white font-medium text-sm transition">
+              <Loader2 v-if="creating" class="w-4 h-4 animate-spin" />
+              Publier
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- Associate Binder Modal -->
     <Teleport to="body">
