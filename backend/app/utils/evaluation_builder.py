@@ -7,13 +7,32 @@ donc ces items sont corrigés automatiquement sans appel IA :
 - trou  -> item 'trou' (phrase avec [...] + réponse)
 - def / ordre / assoc -> item 'open' (question + réponse-modèle auto-évaluée)
 """
+import random
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 _QCM_RE = re.compile(r"\{\{qcm::(.*?)::(.*?)\}\}")
 _VF_RE = re.compile(r"\{\{vf::(.*?)::(.*?)::(.*?)\}\}")
 
 _OPTION_IDS = ["a", "b", "c", "d", "e", "f", "g", "h"]
+
+
+def _split_sequence(raw: str) -> List[str]:
+    """Découpe une séquence 'ordre' (séparateurs '>' ou '|')."""
+    return [p.strip() for p in re.split(r"\s*(?:>|\|)\s*", raw) if p.strip()]
+
+
+def _split_pairs(raw: str) -> List[Tuple[str, str]]:
+    """Découpe des paires 'assoc' ('A=1 | B=2' ou 'A: 1 | B: 2')."""
+    pairs: List[Tuple[str, str]] = []
+    for chunk in raw.split("|"):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        kv = re.split(r"\s*[:=]\s*", chunk, maxsplit=1)
+        if len(kv) == 2 and kv[0].strip() and kv[1].strip():
+            pairs.append((kv[0].strip(), kv[1].strip()))
+    return pairs
 
 
 def placeholder_to_eval_item(placeholder: Dict[str, Any]) -> Optional[Tuple[str, Dict[str, Any]]]:
@@ -53,7 +72,39 @@ def placeholder_to_eval_item(placeholder: Dict[str, Any]) -> Optional[Tuple[str,
         text = front.split("\n", 1)[-1].strip() if "\n" in front else front
         return "trou", {"text_with_blank": text, "answer": back}
 
-    if p_type in ("def", "ordre", "assoc"):
+    if p_type == "ordre":
+        # Présenter les éléments EN DÉSORDRE dans l'énoncé, sinon l'étudiant ne voit
+        # qu'un titre sans rien à ordonner. La correction (ordre exact) reste dans
+        # model_answer, révélée à la complétion.
+        steps = _split_sequence(back)
+        if len(steps) >= 2:
+            shuffled = steps[:]
+            random.shuffle(shuffled)
+            question = (
+                f"{front}\n\nÉléments à remettre dans l'ordre (présentés en désordre) :\n"
+                + "\n".join(f"- {s}" for s in shuffled)
+            )
+            model_answer = "\n".join(f"{i}. {s}" for i, s in enumerate(steps, 1))
+            return "open", {"question": question, "model_answer": model_answer, "key_points": steps}
+        return "open", {"question": front, "model_answer": back, "key_points": []}
+
+    if p_type == "assoc":
+        pairs = _split_pairs(back)
+        if pairs:
+            lefts = [l for l, _ in pairs]
+            rights = [r for _, r in pairs]
+            random.shuffle(rights)
+            question = (
+                f"{front}\n\nÉléments de gauche :\n"
+                + "\n".join(f"- {l}" for l in lefts)
+                + "\n\nÀ apparier avec (en désordre) :\n"
+                + "\n".join(f"- {r}" for r in rights)
+            )
+            model_answer = "\n".join(f"{l} → {r}" for l, r in pairs)
+            return "open", {"question": question, "model_answer": model_answer, "key_points": []}
+        return "open", {"question": front, "model_answer": back, "key_points": []}
+
+    if p_type == "def":
         return "open", {"question": front, "model_answer": back, "key_points": []}
 
     return None
