@@ -13,6 +13,7 @@ from app.models.assignment import (
     Assignment, AssignmentTask, AssignmentTaskProgress, AssignmentProgress,
 )
 from app.models.class_insight import ClassInsight
+from app.models.notification import Notification
 
 __all__ = [
     "User",
@@ -35,4 +36,5 @@ __all__ = [
     "AssignmentTaskProgress",
     "AssignmentProgress",
     "ClassInsight",
+    "Notification",
 ]

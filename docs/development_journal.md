@@ -109,6 +109,37 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 2. **Double relation User-Binder** : Création d'une clé étrangère distincte `original_author_id` sur la table des classeurs pour préserver la paternité originale d'un cours même après de multiples clones successifs.
 3. **Mise à jour idempotente au démarrage** : L'auto-migration s'appuie sur le contexte applicatif et filtre les contextes CLI et tests unitaires pour éviter des conflits de verrous SQL ou des lenteurs de chargement.
 
+## [2026-06-14] Rework Espace Professeur — PR 4 : engagement de classe
+
+Quatrième étape : rendre la classe vivante et motivante.
+
+### Ajouts et modifications
+
+#### 🗣️ Annonces & fil (engagement_service.py)
+* `post_announcement` : enregistre une annonce dans `GroupActivity` (type `announcement`) et notifie les élèves ; `get_feed` agrège annonces + activités (noms résolus en une requête).
+
+#### 🏆 Classement & badges
+* `get_leaderboard` (opt-in via `groups.leaderboard_enabled`) : par élève — devoirs complétés, score moyen, **streak** (jours consécutifs, calculé en une requête), **badges** (« Premier rendu », « Travailleur assidu », « Série de N jours », « Excellence ») et points. Tri par points.
+
+#### 🔔 Notifications in-app
+* Nouveau modèle **`Notification`** + blueprint `/api/v1/notifications` (liste, compteur non lues, marquer lue, tout marquer). Générées à la création d'un devoir et à la publication d'une annonce.
+
+#### 🧱 Migration
+* `d9a4c5e6b7f8` : table `notifications` + `groups.leaderboard_enabled`.
+
+#### 🖥️ Frontend
+* **`NotificationBell.vue`** (cloche dans le header global) + store Pinia `notifications` + `notificationService` : badge de non lues, dropdown, marquage lu, sondage léger du compteur.
+* `TeacherDashboard` : bouton **Annoncer** (modale) + **classement** dans l'onglet Tableau de bord.
+* **`useClassNotifications.ts`** : rappels **locaux** de deadline (J‑1) programmés côté client sur mobile (`@capacitor/local-notifications`), no-op sur le web.
+
+#### 🧪 Tests
+* Backend `test_engagement.py` : annonce → fil + notification, nouveau devoir → notification, marquage lu, classement (actif/désactivé), **isolation** des notifications entre élèves.
+* Frontend `notifications.spec.ts` : store (fetch, markRead, markAllRead).
+
+### Décisions d'architecture
+1. **Pas d'infra de push serveur** : notifications in-app persistées + rappels locaux mobiles côté client ; aucune dépendance FCM/APNs.
+2. **Réutilisation de `GroupActivity`** pour les annonces (pas de nouveau modèle pour le fil).
+
 ## [2026-06-14] Rework Espace Professeur — PR 3 : analytics, lacunes IA & notation
 
 Troisième étape : donner au professeur de la visibilité et une boucle de feedback.

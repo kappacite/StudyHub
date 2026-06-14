@@ -312,10 +312,17 @@ class ClassService:
         # Initialiser l'agrégat + la progression par tâche pour chaque élève.
         members = db.session.query(GroupMember).filter_by(group_id=class_id).all()
         student_ids = [m.user_id for m in members if m.user_id != user_id]
+        from app.models.notification import Notification
         for sid in student_ids:
             db.session.add(AssignmentProgress(assignment_id=asgn.id, user_id=sid))
             for task in asgn.tasks:
                 db.session.add(AssignmentTaskProgress(task_id=task.id, user_id=sid))
+            # Notifier l'élève du nouveau devoir.
+            db.session.add(Notification(
+                user_id=sid, type="new_assignment", group_id=class_id,
+                title=f"Nouveau devoir : {asgn.title}",
+                body=asgn.description, link="/classes/student",
+            ))
         db.session.commit()
         db.session.refresh(asgn)
 

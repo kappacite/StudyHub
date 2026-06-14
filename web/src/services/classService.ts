@@ -191,6 +191,21 @@ const classService = {
       payload
     )
     return resp.data
+  },
+
+  async postAnnouncement(classId: number, payload: { title: string; body?: string }): Promise<FeedItem> {
+    const resp = await api.post<FeedItem>(`/classes/${classId}/announcements`, payload)
+    return resp.data
+  },
+
+  async getFeed(classId: number): Promise<FeedItem[]> {
+    const resp = await api.get<FeedItem[]>(`/classes/${classId}/feed`)
+    return resp.data
+  },
+
+  async getLeaderboard(classId: number): Promise<Leaderboard> {
+    const resp = await api.get<Leaderboard>(`/classes/${classId}/leaderboard`)
+    return resp.data
   }
 }
 
@@ -227,6 +242,29 @@ export interface ClassInsight {
   summary: string
   ai: boolean
   created_at: string | null
+}
+
+export interface FeedItem {
+  id: number
+  type: string
+  username: string
+  payload: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface LeaderboardEntry {
+  user_id: number
+  username: string
+  completed_assignments: number
+  avg_score: number | null
+  streak: number
+  points: number
+  badges: string[]
+}
+
+export interface Leaderboard {
+  enabled: boolean
+  entries: LeaderboardEntry[]
 }
 
 export interface BinderProgress {
