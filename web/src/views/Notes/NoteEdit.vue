@@ -397,6 +397,26 @@
               Retour aux notes
             </button>
             
+            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
+
+            <!-- Mode Switcher: Lecture / Révision Active -->
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/50 dark:border-slate-700">
+              <button 
+                @click="notesStore.isReviewModeActive = false"
+                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
+                :class="[!notesStore.isReviewModeActive ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400']"
+              >
+                Lecture
+              </button>
+              <button 
+                @click="notesStore.isReviewModeActive = true"
+                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1"
+                :class="[notesStore.isReviewModeActive ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400']"
+              >
+                <Brain class="w-3.5 h-3.5" />
+                Révision Active
+              </button>
+            </div>
           </div>
 
           <div class="flex items-center gap-3">
@@ -552,8 +572,8 @@
               <div class="space-y-5 overflow-y-auto text-xs text-slate-600 dark:text-slate-350 leading-relaxed pr-1 max-h-[60vh]">
                 <!-- Section 1: Placeholders -->
                 <div class="space-y-2">
-                  <h4 class="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider font-semibold">1. Syntaxes de questions intégrées</h4>
-                  <p>Incorporez des questions dans vos notes Markdown. Elles enrichissent les évaluations IA générées depuis cette note (« Réviser avec l'IA ») :</p>
+                  <h4 class="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider font-semibold">1. Syntaxes de Révision Intégrée (Active Reading)</h4>
+                  <p>Incorporez des questions interactives de révision directe dans vos notes Markdown. Révisez-les en place via le mode « Révision Active » ; elles alimentent aussi les évaluations IA générées depuis la note :</p>
                   <ul class="list-disc pl-5 space-y-2.5 mt-1">
                     <li>
                       <strong class="text-indigo-600 dark:text-indigo-400">Texte à trous (Cloze) :</strong> 

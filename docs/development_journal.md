@@ -295,7 +295,7 @@ Le « deck fantôme » créait automatiquement des flashcards depuis une note, p
 
 ### Frontend
 * **`NoteEvaluation.vue`** : à la complétion, liste des cartes proposées (cases à cocher) + sélecteur de deck (existant ou nouveau) + boutons « Ajouter au deck » / « Non merci », puis confirmation avec accès au deck. `evaluationService.ts` : type `ProposedCard`, champ `proposed_cards`, méthode `addFlashcards`.
-* **`NoteEdit.vue`** : retrait du sélecteur de mode « Révision Active » (lecture inline des cartes fantômes) ; les placeholders restent rendus en lecture. Guide mis à jour. Texte mis à jour dans `Reviews.vue`.
+* **`NoteEdit.vue`** : le mode « Révision Active » (blocs de révision interactifs intégrés aux notes) est **conservé**. L'interactivité (révéler les trous, répondre aux QCM/VF/ordre/assoc) repose sur l'état client `placeholderStates`, indépendant des cartes fantômes. Comme la note ne porte plus de cartes (`note.flashcards` absent → `cardId` nul partout), les boutons de notation SM-2 (qui notaient les cartes fantômes) ne s'affichent plus et aucun `PATCH /flashcards/:id/review` n'est déclenché depuis une note. Guide mis à jour. Texte mis à jour dans `Reviews.vue`.
 
 ### Tests
 * Suppression des tests fantômes (`test_note_phantom_deck_sync`, `test_ai_card_survives_phantom_deck_resync`, `test_diagram_occlusion_sync`, assertions de renforcement) ; ajout des tests de proposition à la complétion, d'ajout opt-in à un deck (idempotence) et d'isolation (deck d'un autre utilisateur). MAJ `test_community` / `test_regression` / `test_placeholders`. Backend, `vue-tsc` et Vitest verts.
