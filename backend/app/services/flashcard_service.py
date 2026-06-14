@@ -39,7 +39,9 @@ class FlashcardService:
         card = Flashcard(
             deck_id=deck_id,
             front=data.front,
-            back=data.back
+            back=data.back,
+            card_type=data.card_type,
+            payload=data.payload if data.card_type != "basic" else None,
         )
         created = self._flashcard_dao.create(card)
         return FlashcardResponse.model_validate(created)
@@ -64,7 +66,11 @@ class FlashcardService:
             card.front = data.front
         if data.back is not None:
             card.back = data.back
-            
+        if data.card_type is not None:
+            card.card_type = data.card_type
+        if "payload" in data.model_fields_set:
+            card.payload = data.payload
+
         updated = self._flashcard_dao.update(card)
         return FlashcardResponse.model_validate(updated)
 
