@@ -17,7 +17,7 @@ from app.dao.group_dao import GroupDAO
 from app.dao.binder_dao import BinderDAO
 from app.dao.user_dao import UserDAO
 from app.extensions import db
-from app.schemas.class_schema import ClassCreateSchema, AssignmentCreateSchema
+from app.schemas.class_schema import ClassCreateSchema, AssignmentCreateSchema, TaskSubmitSchema
 from app.services.class_service import ClassService
 from app.middlewares.error_handler import ValidationError
 
@@ -101,6 +101,24 @@ def delete_assignment(class_id: int, asgn_id: int):
     service = _make_service()
     service.delete_assignment(class_id, asgn_id, user_id)
     return "", 204
+
+
+@classes_bp.route(
+    "/<int:class_id>/assignments/<int:asgn_id>/tasks/<int:task_id>/submit",
+    methods=["POST"],
+)
+@jwt_required()
+def submit_task(class_id: int, asgn_id: int, task_id: int):
+    user_id = int(get_jwt_identity())
+    body = request.get_json(silent=True) or {}
+    try:
+        data = TaskSubmitSchema(**body)
+    except Exception as e:
+        raise ValidationError(str(e))
+
+    service = _make_service()
+    result = service.submit_task(class_id, asgn_id, task_id, user_id, data)
+    return jsonify(result.model_dump(mode="json")), 200
 
 
 # ─── Progression élève ────────────────────────────────────────────────────────

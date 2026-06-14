@@ -1,6 +1,10 @@
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, List, Literal, Dict, Any
+from pydantic import BaseModel, Field, ConfigDict, model_validator
+
+
+# Types de tâches supportés par un devoir.
+TaskType = Literal["flashcards", "quiz", "exam", "blurting", "read"]
 
 
 # ─── Input schemas ────────────────────────────────────────────────────────────
@@ -12,12 +16,36 @@ class ClassCreateSchema(BaseModel):
     is_public: Optional[bool] = False
 
 
+class AssignmentTaskCreateSchema(BaseModel):
+    """Une tâche d'un devoir. `ref` est l'identifiant public de la cible
+    (UUID de classeur/note, ou id numérique) selon le type."""
+    task_type: TaskType
+    ref: str
+    goal: Optional[Dict[str, Any]] = None
+
 
 class AssignmentCreateSchema(BaseModel):
-    binder_id: str
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
+    instructions: Optional[str] = None
     due_date: Optional[datetime] = None
+    publish_at: Optional[datetime] = None
+    allow_late: bool = True
+    # Voie multi-tâches (préférée)
+    tasks: Optional[List[AssignmentTaskCreateSchema]] = None
+    # Voie historique mono-classeur (rétro-compatibilité) : synthétise une tâche flashcards.
+    binder_id: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _require_target(self):
+        if not self.tasks and not self.binder_id:
+            raise ValueError("Un devoir doit définir au moins une tâche (tasks) ou un binder_id.")
+        return self
+
+
+class TaskSubmitSchema(BaseModel):
+    """Soumission d'une tâche par un élève (recalcule la progression depuis le module)."""
+    payload: Optional[Dict[str, Any]] = None
 
 
 # ─── Output schemas ───────────────────────────────────────────────────────────
@@ -32,6 +60,22 @@ class AssignmentProgressResponseSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AssignmentTaskResponseSchema(BaseModel):
+    id: int
+    task_type: str
+    ref_id: Optional[int] = None
+    ref_uuid: Optional[str] = None
+    ref_label: Optional[str] = None
+    goal: Optional[Dict[str, Any]] = None
+    order: int = 0
+    # Progression personnelle (renseignée dans le contexte élève)
+    my_status: Optional[str] = None
+    my_score_pct: Optional[float] = None
+    my_completed_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class AssignmentResponseSchema(BaseModel):
     id: int
     group_id: int
@@ -39,9 +83,13 @@ class AssignmentResponseSchema(BaseModel):
     binder_name: str
     title: str
     description: Optional[str] = None
+    instructions: Optional[str] = None
     due_date: Optional[datetime] = None
+    publish_at: Optional[datetime] = None
+    allow_late: bool = True
     created_by: int
     created_at: datetime
+    tasks: List[AssignmentTaskResponseSchema] = []
     progress: List[AssignmentProgressResponseSchema] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -63,6 +111,7 @@ class AssignmentSummarySchema(BaseModel):
     my_score_pct: Optional[float] = None
     my_completed_at: Optional[datetime] = None
     status: str = "todo"   # "todo" | "in_progress" | "done" | "late"
+    tasks: List[AssignmentTaskResponseSchema] = []
 
     model_config = ConfigDict(from_attributes=True)
 

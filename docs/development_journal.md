@@ -109,6 +109,37 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 2. **Double relation User-Binder** : Création d'une clé étrangère distincte `original_author_id` sur la table des classeurs pour préserver la paternité originale d'un cours même après de multiples clones successifs.
 3. **Mise à jour idempotente au démarrage** : L'auto-migration s'appuie sur le contexte applicatif et filtre les contextes CLI et tests unitaires pour éviter des conflits de verrous SQL ou des lenteurs de chargement.
 
+## [2026-06-14] Rework Espace Professeur — PR 2 : devoirs riches multi-supports + UX
+
+Deuxième étape : on branche la fondation de la PR 1 sur l'expérience réelle. Un devoir peut désormais combiner plusieurs activités de types variés, et l'élève les lance directement depuis ses devoirs.
+
+### Ajouts et modifications
+
+#### 🧠 Backend — Service & complétion (class_service.py)
+* **Création multi-tâches** : `create_assignment` accepte une liste `tasks` (chaque tâche = `task_type` + `ref` cible + `goal` optionnel) ; la voie historique `binder_id` reste supportée (synthétise une tâche `flashcards`).
+* **Résolution des cibles** : `_resolve_task_target` mappe chaque type vers un classeur (flashcards/exam) ou une note (quiz/blurting/read), avec vérification d'appartenance au professeur.
+* **Recalcul de progression par type** : `recompute_task_for_user` dérive l'état de chaque tâche — flashcards depuis les `StudySession` du classeur (avec seuils `min_cards`/`min_score`), quiz/exam/blurting depuis la complétion du module sous-jacent (`Quiz`/`ExamSession`/`Evaluation`), `read` par validation manuelle. `recompute_assignment_for_user` recompose l'agrégat (soumission). Le hook flashcards (`trigger_assignment_progress_update`) cible désormais les tâches via `AssignmentTask`.
+* **Soumission** : `submit_task` (élève) recalcule depuis le module et marque les lectures comme faites.
+
+#### 🗄️ DAO
+* `quiz_dao` / `exam_dao` / `evaluation_dao` : ajout de `get_best_completed_for_note` / `get_best_completed_for_binder` (meilleur score complété).
+
+#### 🌐 API (classes.py)
+* Nouvel endpoint `POST /classes/:id/assignments/:assignment_id/tasks/:task_id/submit`.
+
+#### 🖥️ Frontend
+* **`AssignmentBuilder.vue`** (nouveau) : modale de composition d'un devoir multi-tâches (ajout/retrait d'activités, choix du type et de la cible, objectifs flashcards). Intégrée au `TeacherDashboard`.
+* **`StudentClassView.vue`** : chaque devoir affiche ses tâches avec un CTA de lancement dédié (Réviser / Passer le QCM / Examen / Blurting / Ouvrir) et un bouton de validation ; statut par tâche + agrégat.
+* **`assignmentTasks.ts`** : util pur `taskLaunchRoute` centralisant le routage des tâches (testé unitairement).
+
+#### 🧪 Tests
+* Backend `test_rich_assignments.py` : création multi-tâches, vue élève, soumission lecture, complétion quiz dérivée du module, validation (devoir sans cible → 400), isolation (cible d'un autre utilisateur → 404).
+* Frontend `assignmentTasks.spec.ts` : mapping des routes de lancement.
+
+### Décisions d'architecture
+1. **DAOs additionnels créés à la volée** : `ClassService` instancie les DAOs note/assignment/quiz/exam/evaluation depuis la session si non injectés, pour ne pas modifier les appelants existants (focus_service, routes).
+2. **Complétion dérivée, pas saisie** : les scores de quiz/exam/blurting proviennent des modules existants (source unique de vérité) ; l'élève « soumet » pour rafraîchir, il ne saisit jamais un score.
+
 ## [2026-06-14] Rework Espace Professeur — PR 1 : fondation « devoirs multi-tâches »
 
 Première étape du rework de la feature professeur (les 4 axes : devoirs riches, suivi/feedback, engagement, gestion de classe). Cette PR est **purement additive et rétro-compatible** : aucun changement d'UX ni d'API, on pose les fondations de données.

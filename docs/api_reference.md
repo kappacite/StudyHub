@@ -1170,3 +1170,51 @@ Crée en une fois les flashcards sélectionnées suite à l'analyse et les insè
     ]
   }
   ```
+
+---
+
+## Espace Professeur — Classes & Devoirs
+
+Une **classe** est un groupe de type `class` (rôles `owner`/`admin` = professeur, `member` = élève). Un **devoir** (`assignment`) est un conteneur de **tâches** polymorphes.
+
+### Types de tâches
+
+| `task_type` | Cible (`ref`) | Complétion |
+|---|---|---|
+| `flashcards` | classeur (UUID) | révision des cartes du classeur (objectif `goal.min_cards` / `goal.min_score`) |
+| `exam` | classeur (UUID) | examen blanc complété sur le classeur |
+| `quiz` | note (UUID) | QCM complété sur la note |
+| `blurting` | note (UUID) | feuille blanche (évaluation IA) complétée sur la note |
+| `read` | note (UUID) | validation manuelle de lecture |
+
+### `POST /classes/:id/assignments` (professeur)
+
+Crée un devoir multi-tâches. La voie historique `{"binder_id": "<uuid>", ...}` reste acceptée (synthétise une tâche `flashcards`).
+
+* **Body** :
+  ```json
+  {
+    "title": "Chapitre 3 — Mitose",
+    "description": "Réviser avant le contrôle",
+    "due_date": "2026-06-20T18:00:00",
+    "tasks": [
+      { "task_type": "flashcards", "ref": "<binder_uuid>", "goal": { "min_cards": 20, "min_score": 80 } },
+      { "task_type": "quiz", "ref": "<note_uuid>" },
+      { "task_type": "read", "ref": "<note_uuid>" }
+    ]
+  }
+  ```
+* **Response** (`201 Created`) : le devoir sérialisé, incluant `tasks[]` (avec `ref_uuid`, `ref_label`, `goal`).
+
+### `POST /classes/:id/assignments/:assignment_id/tasks/:task_id/submit` (élève)
+
+Soumet/valide une tâche : recalcule la progression depuis le module sous-jacent (quiz/exam/blurting/flashcards) ; pour `read`, marque la tâche comme faite.
+
+* **Response** (`200 OK`) :
+  ```json
+  { "id": 12, "task_type": "quiz", "my_status": "done", "my_score_pct": 88.0, "my_completed_at": "2026-06-15T10:00:00" }
+  ```
+
+### `GET /assignments/mine` (élève)
+
+Liste les devoirs assignés à l'élève (toutes classes), chacun avec ses `tasks[]` et la progression personnelle (`my_status`, `my_score_pct`) par tâche, plus le `status` agrégé du devoir (`todo`/`in_progress`/`late`/`done`).
