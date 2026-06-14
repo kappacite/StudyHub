@@ -43,7 +43,7 @@ class AssignmentTask(db.Model):
     __tablename__ = "assignment_tasks"
 
     id            = Column(Integer, primary_key=True)
-    assignment_id = Column(Integer, ForeignKey("assignments.id", ondelete="CASCADE"), nullable=False)
+    assignment_id = Column(Integer, ForeignKey("assignments.id", ondelete="CASCADE"), nullable=False, index=True)
     task_type     = Column(String(20), nullable=False)        # cf. TASK_TYPES
     # Référence polymorphe vers la cible (PK interne entier) — pas de FK car multi-tables.
     ref_id        = Column(Integer, nullable=True)            # deck.id / note._id / binder._id / pdf._id
