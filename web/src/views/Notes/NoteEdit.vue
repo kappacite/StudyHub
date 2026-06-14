@@ -420,31 +420,13 @@
           </div>
 
           <div class="flex items-center gap-3">
-            <!-- Page blanche / Blurting (IA) -->
-            <button 
-              @click="router.push(`/notes/${noteId}/blurting`)"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-emerald-250 dark:border-emerald-900 rounded-xl text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 active:scale-95 transition-all"
-            >
-              <Brain class="w-4 h-4 text-emerald-500" />
-              Page blanche (IA)
-            </button>
-
-            <!-- QCM (IA) -->
-            <button 
-              @click="router.push(`/notes/${noteId}/quiz`)"
+            <!-- Réviser avec l'IA (regroupe Page blanche / QCM / Évaluation) -->
+            <button
+              @click="showAiModal = true"
               class="inline-flex items-center gap-2 px-4 py-2 border border-indigo-250 dark:border-indigo-900 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 active:scale-95 transition-all"
             >
-              <HelpCircle class="w-4 h-4 text-indigo-500" />
-              QCM (IA)
-            </button>
-
-            <!-- Évaluation (IA) -->
-            <button
-              @click="router.push(`/notes/${noteId}/evaluation`)"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-amber-250 dark:border-amber-900 rounded-xl text-sm font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 active:scale-95 transition-all"
-            >
-              <Sparkles class="w-4 h-4 text-amber-500" />
-              Évaluation (IA)
+              <Sparkles class="w-4 h-4 text-indigo-500" />
+              Réviser avec l'IA
             </button>
 
             <!-- View Mode Toggler -->
@@ -656,6 +638,53 @@
                 class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md shadow-indigo-600/10"
               >
                 Compris !
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- AI Review Modal (choix de l'activité de révision IA) -->
+      <transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 scale-95"
+        enter-to-class="opacity-100 scale-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100 scale-100"
+        leave-to-class="opacity-0 scale-95"
+      >
+        <div
+          v-if="showAiModal"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
+          @click.self="showAiModal = false"
+        >
+          <div class="bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-5">
+              <div class="flex items-center gap-2">
+                <Sparkles class="w-5 h-5 text-indigo-500" />
+                <h3 class="font-extrabold text-base text-slate-850 dark:text-white">Réviser avec l'IA</h3>
+              </div>
+              <button
+                @click="showAiModal = false"
+                class="p-1.5 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl text-slate-400 dark:text-slate-500 transition-colors"
+              >
+                <X class="w-5 h-5" />
+              </button>
+            </div>
+
+            <!-- Activity cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                v-for="activity in aiActivities"
+                :key="activity.type"
+                @click="startAiActivity(activity.type)"
+                class="flex flex-col items-start text-left gap-2 p-4 border rounded-2xl transition-all active:scale-95"
+                :class="activity.cardClass"
+              >
+                <component :is="activity.icon" class="w-6 h-6" :class="activity.iconClass" />
+                <span class="font-bold text-sm text-slate-850 dark:text-white">{{ activity.label }}</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{{ activity.description }}</span>
               </button>
             </div>
           </div>
@@ -1066,6 +1095,40 @@ const isEditMode = computed({
 })
 const showSettings = ref(false)
 const showHelpModal = ref(false)
+const showAiModal = ref(false)
+
+// Activités de révision IA proposées dans la modale de choix.
+const aiActivities = [
+  {
+    type: 'blurting',
+    label: 'Page blanche',
+    description: 'Restituez le cours de mémoire, puis laissez l\'IA évaluer votre restitution.',
+    icon: Brain,
+    iconClass: 'text-emerald-500',
+    cardClass: 'border-emerald-250 dark:border-emerald-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/20',
+  },
+  {
+    type: 'quiz',
+    label: 'QCM',
+    description: 'Générez un questionnaire à choix multiples à partir de cette fiche.',
+    icon: HelpCircle,
+    iconClass: 'text-indigo-500',
+    cardClass: 'border-indigo-250 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/20',
+  },
+  {
+    type: 'evaluation',
+    label: 'Évaluation',
+    description: 'Obtenez une feuille d\'exercices corrigée pour vous tester en profondeur.',
+    icon: Sparkles,
+    iconClass: 'text-amber-500',
+    cardClass: 'border-amber-250 dark:border-amber-900 hover:bg-amber-50 dark:hover:bg-amber-950/20',
+  },
+] as const
+
+function startAiActivity(type: string) {
+  showAiModal.value = false
+  router.push(`/notes/${noteId.value}/${type}`)
+}
 const isLivePreviewActive = ref(false)
 
 function toggleShortcutSidebar() {
