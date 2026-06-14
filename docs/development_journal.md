@@ -299,3 +299,28 @@ Le « deck fantôme » créait automatiquement des flashcards depuis une note, p
 
 ### Tests
 * Suppression des tests fantômes (`test_note_phantom_deck_sync`, `test_ai_card_survives_phantom_deck_resync`, `test_diagram_occlusion_sync`, assertions de renforcement) ; ajout des tests de proposition à la complétion, d'ajout opt-in à un deck (idempotence) et d'isolation (deck d'un autre utilisateur). MAJ `test_community` / `test_regression` / `test_placeholders`. Backend, `vue-tsc` et Vitest verts.
+
+---
+
+## [2026-06-15] Classeur — dossier de révision thématique (items typés + ajout unifié)
+
+### Contexte
+Refonte de la fonction Classeur : la rendre plus instinctive pour y ajouter du contenu et permettre d'y mettre plus que des notes & flashcards. Décision validée : les QCM / Vrai-Faux / Ordre / Association sont des **items typés au sein d'un « jeu de révision »** (extension des decks/flashcards), planifiés en répétition espacée SM-2.
+
+### Backend
+* **`Flashcard`** : ajout de `card_type` (basic | qcm | vf | ordre | assoc) et `payload` (JSON structuré). `front`/`back` restent renseignés (résumé énoncé/réponse) pour la recherche et le repli d'étude. Migration additive `f2b3c4d5e6a7` (idempotente, SQLite/PostgreSQL).
+* Schémas (`FlashcardCreate`/`Update`/`Response`) + `FlashcardService` (création/màj) acceptent `card_type`/`payload`. Aucune modif du flux SM-2 (la planification est par carte). Tests : carte basic par défaut, création QCM typée listée + étudiable, rejet d'un type invalide.
+
+### Frontend
+* **`RevisionItemModal.vue`** : composition d'un item typé (carte/QCM/VF/ordre/assoc) avec choix ou création du jeu de révision cible ; construit `front`/`back` + `payload`.
+* **`TypedStudyCard.vue`** : étude interactive des items typés (sélection pour QCM/VF avec feedback de justesse ; « Révéler » pour ordre/assoc) ; déclenche l'auto-évaluation SM-2 du parent.
+* **`StudyDeck.vue`** : rend `TypedStudyCard` pour les items typés (sinon la carte recto/verso), réutilise les boutons de notation SM-2.
+* **`Binders.vue`** : menu unifié **« + Ajouter »** (sous-dossier, note, jeu de révision, carte, QCM, VF, ordre, association), section « Jeux de révision » (compteur d'items + ajout rapide), création directe depuis le classeur (note → éditeur, jeu de révision, items typés).
+* `stores/decks.ts` : types `CardType`/`CardPayload`, `Flashcard.card_type/payload`, `createCard` rétro-compatible (params type/payload optionnels).
+
+### Tests
+* Backend (cartes typées) verts ; `vue-tsc` clean ; Vitest 25/25 (ajout `tests/stores/decks.spec.ts`).
+
+### À suivre (hors périmètre de cette itération)
+* Surfacer diagrammes & PDFs dans le menu d'ajout / l'affichage du classeur (ils se rattachent déjà aux classeurs mais via leurs propres vues).
+* Permettre la création d'items typés aussi depuis la vue Decks.
