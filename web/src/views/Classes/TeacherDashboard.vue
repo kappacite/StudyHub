@@ -8,6 +8,7 @@ import classService from '../../services/classService'
 import type { Assignment, StudentMaterialsProgress } from '../../services/classService'
 import groupService from '../../services/groupService'
 import type { GroupBinder } from '../../services/groupService'
+import AssignmentBuilder from '../../components/classes/AssignmentBuilder.vue'
 import {
   GraduationCap, Plus, Users, ClipboardList,
   Loader2, AlertCircle, Calendar, BookOpen, Clock,
@@ -37,11 +38,9 @@ const newClassName = ref('')
 const newClassDesc = ref('')
 const newClassIsPublic = ref(false)
 
-// Create assignment form
-const newAsgTitle = ref('')
-const newAsgDesc = ref('')
-const newAsgBinderId = ref<string | null>(null)
-const newAsgDueDate = ref('')
+// Notes disponibles comme cibles de tâches (QCM, blurting, lecture)
+const noteOptions = computed(() => notesStore.notes.map(n => ({ id: n.id, title: n.title })))
+const binderOptions = computed(() => bindersStore.binders.map(b => ({ id: b.id, name: b.name })))
 
 // Associate binder state
 const showAssociateModal = ref(false)
@@ -185,35 +184,15 @@ async function createClass() {
   }
 }
 
-async function createAssignment() {
-  if (!selectedClassId.value || !newAsgTitle.value.trim() || !newAsgBinderId.value) return
-  creating.value = true
-  error.value = ''
-  try {
-    await classService.createAssignment(selectedClassId.value, {
-      binder_id: newAsgBinderId.value,
-      title: newAsgTitle.value.trim(),
-      description: newAsgDesc.value.trim() || undefined,
-      due_date: newAsgDueDate.value || undefined
-    })
-    // Refresh assignments for this class
-    const updated = [...classes.value]
-    const idx = updated.findIndex(c => c.id === selectedClassId.value)
-    if (idx !== -1) {
-      updated[idx].assignments = await classService.listAssignments(selectedClassId.value)
-    }
-    classes.value = updated
-    showCreateAssignmentModal.value = false
-    newAsgTitle.value = ''
-    newAsgDesc.value = ''
-    newAsgBinderId.value = null
-    newAsgDueDate.value = ''
-  } catch (e: unknown) {
-    const err = e as { response?: { data?: { error?: { message?: string } } } }
-    error.value = err?.response?.data?.error?.message || 'Erreur lors de la création du devoir.'
-  } finally {
-    creating.value = false
+async function onAssignmentCreated() {
+  if (!selectedClassId.value) return
+  const updated = [...classes.value]
+  const idx = updated.findIndex(c => c.id === selectedClassId.value)
+  if (idx !== -1) {
+    updated[idx].assignments = await classService.listAssignments(selectedClassId.value)
   }
+  classes.value = updated
+  showCreateAssignmentModal.value = false
 }
 
 async function deleteAssignment(classId: number, assignmentId: number) {
@@ -379,7 +358,10 @@ function isPast(d: string | null): boolean {
                   ]"></div>
                   <div class="min-w-0">
                     <p class="font-medium text-slate-800 dark:text-white text-sm truncate">{{ asgn.title }}</p>
-                    <p class="text-xs text-slate-400 mt-0.5">{{ asgn.binder_name }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                      <span v-if="asgn.tasks && asgn.tasks.length">{{ asgn.tasks.length }} activité{{ asgn.tasks.length > 1 ? 's' : '' }}</span>
+                      <span v-else>{{ asgn.binder_name }}</span>
+                    </p>
                   </div>
                 </div>
                 <div class="flex items-center gap-3 flex-shrink-0">
@@ -574,54 +556,15 @@ function isPast(d: string | null): boolean {
       </div>
     </Teleport>
 
-    <!-- Create Assignment Modal -->
-    <Teleport to="body">
-      <div v-if="showCreateAssignmentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showCreateAssignmentModal = false">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
-          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <ClipboardList class="w-5 h-5 text-amber-500" />
-              Nouveau devoir
-            </h2>
-          </div>
-          <div class="p-6 space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Titre <span class="text-red-500">*</span></label>
-              <input v-model="newAsgTitle" type="text" placeholder="Ex : Chapitre 3 — Mitose"
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Classeur associé <span class="text-red-500">*</span></label>
-              <select v-model="newAsgBinderId"
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 transition">
-                <option :value="null" disabled>Choisir un classeur…</option>
-                <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">{{ b.name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Description (optionnel)</label>
-              <textarea v-model="newAsgDesc" placeholder="Consignes, chapitres concernés…" rows="2"
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition resize-none" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Date limite (optionnel)</label>
-              <input v-model="newAsgDueDate" type="datetime-local"
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 transition" />
-            </div>
-            <div v-if="error" class="flex items-center gap-2 text-red-500 text-sm"><AlertCircle class="w-4 h-4 flex-shrink-0" />{{ error }}</div>
-          </div>
-          <div class="p-6 pt-0 flex gap-3">
-            <button @click="showCreateAssignmentModal = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition text-sm font-medium">Annuler</button>
-            <button @click="createAssignment" :disabled="!newAsgTitle.trim() || !newAsgBinderId || creating"
-              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white font-medium text-sm transition">
-              <Loader2 v-if="creating" class="w-4 h-4 animate-spin" />
-              <Plus v-else class="w-4 h-4" />
-              Créer le devoir
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <!-- Create Assignment (builder multi-tâches) -->
+    <AssignmentBuilder
+      v-if="showCreateAssignmentModal && selectedClassId"
+      :class-id="selectedClassId"
+      :binders="binderOptions"
+      :notes="noteOptions"
+      @created="onAssignmentCreated"
+      @close="showCreateAssignmentModal = false"
+    />
 
     <!-- Associate Binder Modal -->
     <Teleport to="body">

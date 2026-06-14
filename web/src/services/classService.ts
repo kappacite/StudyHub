@@ -23,6 +23,27 @@ export interface AssignmentProgress {
   completed_at: string | null
 }
 
+export type TaskType = 'flashcards' | 'quiz' | 'exam' | 'blurting' | 'read'
+
+export interface AssignmentTask {
+  id: number
+  task_type: TaskType
+  ref_id: number | null
+  ref_uuid: string | null
+  ref_label: string | null
+  goal: Record<string, unknown> | null
+  order: number
+  my_status: 'todo' | 'in_progress' | 'done' | null
+  my_score_pct: number | null
+  my_completed_at: string | null
+}
+
+export interface AssignmentTaskInput {
+  task_type: TaskType
+  ref: string
+  goal?: Record<string, unknown>
+}
+
 export interface Assignment {
   id: number
   group_id: number
@@ -30,9 +51,13 @@ export interface Assignment {
   binder_name: string
   title: string
   description: string | null
+  instructions?: string | null
   due_date: string | null
+  publish_at?: string | null
+  allow_late?: boolean
   created_by: number
   created_at: string
+  tasks: AssignmentTask[]
   progress?: AssignmentProgress[]
 }
 
@@ -50,6 +75,7 @@ export interface AssignmentSummary {
   my_score_pct: number | null
   my_completed_at: string | null
   status: 'todo' | 'in_progress' | 'done' | 'late'
+  tasks: AssignmentTask[]
 }
 
 // ─── Service ────────────────────────────────────────────────────────────────
@@ -72,9 +98,31 @@ const classService = {
 
   async createAssignment(
     classId: number,
-    payload: { binder_id: string; title: string; description?: string; due_date?: string }
+    payload: {
+      title: string
+      description?: string
+      instructions?: string
+      due_date?: string
+      publish_at?: string
+      allow_late?: boolean
+      // Voie multi-tâches (préférée) ou voie legacy mono-classeur.
+      tasks?: AssignmentTaskInput[]
+      binder_id?: string
+    }
   ): Promise<Assignment> {
     const resp = await api.post<Assignment>(`/classes/${classId}/assignments`, payload)
+    return resp.data
+  },
+
+  async submitTask(
+    classId: number,
+    assignmentId: number,
+    taskId: number
+  ): Promise<AssignmentTask> {
+    const resp = await api.post<AssignmentTask>(
+      `/classes/${classId}/assignments/${assignmentId}/tasks/${taskId}/submit`,
+      {}
+    )
     return resp.data
   },
 

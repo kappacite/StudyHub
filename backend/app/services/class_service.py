@@ -12,27 +12,63 @@ from typing import List, Optional
 from app.dao.group_dao import GroupDAO
 from app.dao.binder_dao import BinderDAO
 from app.dao.user_dao import UserDAO
+from app.dao.note_dao import NoteDAO
+from app.dao.assignment_dao import AssignmentDAO
+from app.dao.quiz_dao import QuizDAO
+from app.dao.exam_dao import ExamDAO
+from app.dao.evaluation_dao import EvaluationDAO
 from app.extensions import db
 from app.models.group import Group, GroupMember
-from app.models.assignment import Assignment, AssignmentProgress
+from app.models.assignment import (
+    Assignment, AssignmentTask, AssignmentTaskProgress, AssignmentProgress,
+)
 from app.models.binder import Binder
 from app.models.user import User
 from app.schemas.class_schema import (
     ClassCreateSchema, AssignmentCreateSchema,
     AssignmentResponseSchema, AssignmentSummarySchema,
     AssignmentProgressResponseSchema, ClassResponseSchema,
-    BinderProgressResponseSchema, StudentMaterialsProgressResponseSchema
+    BinderProgressResponseSchema, StudentMaterialsProgressResponseSchema,
+    AssignmentTaskResponseSchema,
 )
 from app.middlewares.error_handler import (
-    ResourceNotFoundError, ForbiddenError, ConflictError
+    ResourceNotFoundError, ForbiddenError, ConflictError, ValidationError
 )
+
+
+# Pour chaque type de tâche, la nature de la cible (et le DAO qui la résout).
+TASK_TARGET_KIND = {
+    "flashcards": "binder",
+    "exam": "binder",
+    "quiz": "note",
+    "blurting": "note",
+    "read": "note",
+}
 
 
 class ClassService:
-    def __init__(self, group_dao: GroupDAO, binder_dao: BinderDAO, user_dao: UserDAO):
+    def __init__(
+        self,
+        group_dao: GroupDAO,
+        binder_dao: BinderDAO,
+        user_dao: UserDAO,
+        note_dao: NoteDAO = None,
+        assignment_dao: AssignmentDAO = None,
+        quiz_dao: QuizDAO = None,
+        exam_dao: ExamDAO = None,
+        evaluation_dao: EvaluationDAO = None,
+    ):
         self._group_dao = group_dao
         self._binder_dao = binder_dao
         self._user_dao = user_dao
+        # DAOs additionnels : créés à la volée depuis la session si non injectés,
+        # pour ne pas casser les appelants existants (focus_service, etc.).
+        session = group_dao.db
+        self._note_dao = note_dao or NoteDAO(session)
+        self._assignment_dao = assignment_dao or AssignmentDAO(session)
+        self._quiz_dao = quiz_dao or QuizDAO(session)
+        self._exam_dao = exam_dao or ExamDAO(session)
+        self._evaluation_dao = evaluation_dao or EvaluationDAO(session)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Helpers
@@ -79,7 +115,37 @@ class ClassService:
         g = self._group_dao.get_by_id(group_id)
         return g.name if g else f"Classe #{group_id}"
 
-    def _serialize_assignment(self, asgn: Assignment, include_progress: bool = True) -> AssignmentResponseSchema:
+    def _serialize_task(self, task: AssignmentTask, viewer_id: int = None) -> AssignmentTaskResponseSchema:
+        my_status = my_score = my_completed = None
+        if viewer_id is not None:
+            prog = self._assignment_dao.get_task_progress(task.id, viewer_id)
+            if prog:
+                my_status, my_score, my_completed = prog.status, prog.score_pct, prog.completed_at
+        return AssignmentTaskResponseSchema(
+            id=task.id,
+            task_type=task.task_type,
+            ref_id=task.ref_id,
+            ref_uuid=task.ref_uuid,
+            ref_label=task.ref_label,
+            goal=task.goal,
+            order=task.order,
+            my_status=my_status,
+            my_score_pct=my_score,
+            my_completed_at=my_completed,
+        )
+
+    def _display_binder(self, asgn: Assignment):
+        """Classeur « principal » d'un devoir (rétro-compat : binder_id en réponse)."""
+        if asgn.binder:
+            return asgn.binder.id, asgn.binder.name
+        for t in asgn.tasks:
+            if t.task_type in ("flashcards", "exam") and t.ref_uuid:
+                return t.ref_uuid, t.ref_label or ""
+        return "", ""
+
+    def _serialize_assignment(
+        self, asgn: Assignment, include_progress: bool = True, viewer_id: int = None
+    ) -> AssignmentResponseSchema:
         progress_list = []
         if include_progress:
             for p in asgn.progresses:
@@ -92,18 +158,42 @@ class ClassService:
                     completed_at=p.completed_at
                 ))
 
+        binder_uuid, binder_name = self._display_binder(asgn)
         return AssignmentResponseSchema(
             id=asgn.id,
             group_id=asgn.group_id,
-            binder_id=asgn.binder.id if asgn.binder else "",
-            binder_name=asgn.binder.name if asgn.binder else "",
+            binder_id=binder_uuid,
+            binder_name=binder_name,
             title=asgn.title,
             description=asgn.description,
+            instructions=asgn.instructions,
             due_date=asgn.due_date,
+            publish_at=asgn.publish_at,
+            allow_late=asgn.allow_late,
             created_by=asgn.created_by,
             created_at=asgn.created_at,
+            tasks=[self._serialize_task(t, viewer_id) for t in asgn.tasks],
             progress=progress_list
         )
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Résolution des cibles de tâches & recalcul de progression
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def _resolve_task_target(self, owner_id: int, task_type: str, ref: str):
+        """Résout la cible d'une tâche → (ref_id interne, ref_uuid public, ref_label)."""
+        kind = TASK_TARGET_KIND.get(task_type)
+        if kind is None:
+            raise ValidationError(f"Type de tâche inconnu : {task_type}")
+        if kind == "binder":
+            binder = self._binder_dao.get_by_id(ref)
+            if not binder or binder.user_id != owner_id:
+                raise ResourceNotFoundError("Classeur introuvable pour cette tâche.")
+            return binder._id, binder.id, binder.name
+        note = self._note_dao.get_by_id(ref)
+        if not note or note.user_id != owner_id:
+            raise ResourceNotFoundError("Note introuvable pour cette tâche.")
+        return note._id, note.id, note.title
 
     # ─────────────────────────────────────────────────────────────────────────
     # Création de classe
@@ -179,29 +269,52 @@ class ClassService:
         self._get_class_or_404(class_id)
         self._require_teacher(class_id, user_id)
 
-        binder = self._binder_dao.get_by_id(data.binder_id)
-        if not binder:
-            raise ResourceNotFoundError("Classeur introuvable.")
+        # Déterminer la liste des tâches : voie multi-tâches ou voie legacy mono-classeur.
+        if data.tasks:
+            task_specs = [(t.task_type, t.ref, t.goal) for t in data.tasks]
+        else:
+            task_specs = [("flashcards", data.binder_id, None)]
+
+        resolved = []  # (task_type, ref_id, ref_uuid, ref_label, goal)
+        for task_type, ref, goal in task_specs:
+            ref_id, ref_uuid, ref_label = self._resolve_task_target(user_id, task_type, ref)
+            resolved.append((task_type, ref_id, ref_uuid, ref_label, goal))
+
+        # binder_id « principal » pour la rétro-compat de l'affichage.
+        legacy_binder_id = next(
+            (r[1] for r in resolved if r[0] in ("flashcards", "exam")), None
+        )
 
         asgn = Assignment(
             group_id=class_id,
-            binder_id=binder._id,
+            binder_id=legacy_binder_id,
             title=data.title,
             description=data.description,
+            instructions=data.instructions,
             due_date=data.due_date,
-            created_by=user_id
+            publish_at=data.publish_at,
+            allow_late=data.allow_late,
+            created_by=user_id,
         )
         db.session.add(asgn)
+        db.session.flush()
+
+        for order, (task_type, ref_id, ref_uuid, ref_label, goal) in enumerate(resolved):
+            db.session.add(AssignmentTask(
+                assignment_id=asgn.id, task_type=task_type, ref_id=ref_id,
+                ref_uuid=ref_uuid, ref_label=ref_label, goal=goal, order=order,
+            ))
+        db.session.flush()
+
+        # Initialiser l'agrégat + la progression par tâche pour chaque élève.
+        members = db.session.query(GroupMember).filter_by(group_id=class_id).all()
+        student_ids = [m.user_id for m in members if m.user_id != user_id]
+        for sid in student_ids:
+            db.session.add(AssignmentProgress(assignment_id=asgn.id, user_id=sid))
+            for task in asgn.tasks:
+                db.session.add(AssignmentTaskProgress(task_id=task.id, user_id=sid))
         db.session.commit()
         db.session.refresh(asgn)
-
-        # Initialiser le progress pour tous les membres élèves
-        members = db.session.query(GroupMember).filter_by(group_id=class_id).all()
-        for m in members:
-            if m.user_id != user_id:  # pas le prof
-                prog = AssignmentProgress(assignment_id=asgn.id, user_id=m.user_id)
-                db.session.add(prog)
-        db.session.commit()
 
         return self._serialize_assignment(asgn)
 
@@ -209,7 +322,7 @@ class ClassService:
         self._get_class_or_404(class_id)
         self._require_membership(class_id, user_id)
         asgns = db.session.query(Assignment).filter_by(group_id=class_id).order_by(Assignment.due_date).all()
-        return [self._serialize_assignment(a, include_progress=False) for a in asgns]
+        return [self._serialize_assignment(a, include_progress=False, viewer_id=user_id) for a in asgns]
 
     def get_assignment(self, class_id: int, assignment_id: int, user_id: int) -> AssignmentResponseSchema:
         self._get_class_or_404(class_id)
@@ -223,6 +336,26 @@ class ClassService:
         asgn = self._get_assignment_or_404(class_id, assignment_id)
         db.session.delete(asgn)
         db.session.commit()
+
+    def submit_task(
+        self, class_id: int, assignment_id: int, task_id: int, user_id: int, data=None
+    ) -> AssignmentTaskResponseSchema:
+        """Un élève soumet/valide une tâche. Recalcule la progression depuis l'état
+        du module sous-jacent (quiz/exam/blurting/flashcards) ; pour les tâches de
+        lecture, marque simplement la tâche comme faite."""
+        self._get_class_or_404(class_id)
+        self._require_membership(class_id, user_id)
+
+        asgn = self._get_assignment_or_404(class_id, assignment_id)
+        task = self._assignment_dao.get_task(task_id)
+        if not task or task.assignment_id != asgn.id:
+            raise ResourceNotFoundError("Tâche introuvable.")
+
+        recompute_task_for_user(db.session, user_id, task, mark_read_done=True)
+        recompute_assignment_for_user(db.session, user_id, asgn)
+        db.session.commit()
+
+        return self._serialize_task(task, viewer_id=user_id)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Progression des élèves
@@ -290,12 +423,13 @@ class ClassService:
                 else:
                     status = "todo"
 
+                binder_uuid, binder_name = self._display_binder(asgn)
                 result.append(AssignmentSummarySchema(
                     id=asgn.id,
                     group_id=asgn.group_id,
                     group_name=group.name if group else "",
-                    binder_id=asgn.binder.id if asgn.binder else "",
-                    binder_name=asgn.binder.name if asgn.binder else "",
+                    binder_id=binder_uuid,
+                    binder_name=binder_name,
                     title=asgn.title,
                     description=asgn.description,
                     due_date=asgn.due_date,
@@ -303,7 +437,8 @@ class ClassService:
                     my_cards_reviewed=prog.cards_reviewed if prog else 0,
                     my_score_pct=prog.score_pct if prog else None,
                     my_completed_at=prog.completed_at if prog else None,
-                    status=status
+                    status=status,
+                    tasks=[self._serialize_task(t, viewer_id=user_id) for t in asgn.tasks],
                 ))
 
         # Trier : late et todo d'abord, puis par deadline
@@ -480,97 +615,195 @@ def get_all_card_ids_in_binder(db_session, binder_id: int) -> List[int]:
     return card_ids
 
 
-def update_assignment_progress(db_session, user_id: int, assignment_id: int):
-    assignment = db_session.get(Assignment, assignment_id)
-    if not assignment:
-        return
-        
-    card_ids = get_all_card_ids_in_binder(db_session, assignment.binder_id)
-    total_cards = len(card_ids)
-    
-    if total_cards == 0:
-        progress = db_session.get(AssignmentProgress, (assignment_id, user_id))
-        if not progress:
-            progress = AssignmentProgress(assignment_id=assignment_id, user_id=user_id)
-            db_session.add(progress)
-        progress.cards_reviewed = 0
-        progress.score_pct = 100.0
-        if not progress.completed_at:
-            progress.completed_at = datetime.utcnow()
-        db_session.commit()
-        return
-
+def _flashcards_state(db_session, user_id, binder_id, created_after, goal):
+    """Calcule l'état d'une tâche flashcards : (status, score, completed_at, payload)."""
     from app.models.study_session import StudySession
-    
+
+    card_ids = get_all_card_ids_in_binder(db_session, binder_id) if binder_id else []
+    total_cards = len(card_ids)
+    payload = {"cards_reviewed": 0, "total_cards": total_cards}
+
+    if total_cards == 0:
+        # Rien à réviser : tâche considérée comme faite.
+        return "done", 100.0, datetime.utcnow(), payload
+
     sessions = (
         db_session.query(StudySession)
         .filter(
             StudySession.user_id == user_id,
             StudySession.module == "flashcard",
             StudySession.flashcard_id.in_(card_ids),
-            StudySession.created_at >= assignment.created_at - timedelta(seconds=5)
+            StudySession.created_at >= created_after - timedelta(seconds=5),
         )
         .all()
     )
-    
-    reviewed_card_ids = {s.flashcard_id for s in sessions if s.flashcard_id}
-    unique_reviewed = len(reviewed_card_ids)
-    
+    unique_reviewed = len({s.flashcard_id for s in sessions if s.flashcard_id})
     total_reviewed = sum(s.cards_reviewed or 0 for s in sessions)
     total_correct = sum(s.cards_correct or 0 for s in sessions)
     score_pct = (total_correct / total_reviewed * 100.0) if total_reviewed > 0 else 0.0
-    
-    progress = db_session.get(AssignmentProgress, (assignment_id, user_id))
-    if not progress:
-        progress = AssignmentProgress(assignment_id=assignment_id, user_id=user_id)
-        db_session.add(progress)
-        
-    progress.cards_reviewed = unique_reviewed
-    progress.score_pct = score_pct
-    
-    if unique_reviewed >= total_cards:
-        if not progress.completed_at:
-            progress.completed_at = datetime.utcnow()
+    payload["cards_reviewed"] = unique_reviewed
+
+    goal = goal or {}
+    threshold = total_cards
+    if goal.get("min_cards"):
+        threshold = min(int(goal["min_cards"]), total_cards)
+    cards_ok = unique_reviewed >= threshold and threshold > 0
+    score_ok = (score_pct >= goal["min_score"]) if goal.get("min_score") else True
+    done = cards_ok and score_ok
+
+    if done:
+        return "done", score_pct, datetime.utcnow(), payload
+    status = "in_progress" if unique_reviewed > 0 else "todo"
+    return status, (score_pct if unique_reviewed > 0 else None), None, payload
+
+
+def _module_completion_state(db_session, user_id, task):
+    """État d'une tâche quiz/exam/blurting depuis le module sous-jacent."""
+    if task.task_type == "exam":
+        from app.models.exam import ExamSession
+        row = (
+            db_session.query(ExamSession)
+            .filter(ExamSession.binder_id == task.ref_id,
+                    ExamSession.user_id == user_id,
+                    ExamSession.completed_at.isnot(None))
+            .order_by(ExamSession.score_pct.desc().nullslast())
+            .first()
+        )
+    elif task.task_type == "quiz":
+        from app.models.quiz import Quiz
+        row = (
+            db_session.query(Quiz)
+            .filter(Quiz.note_id == task.ref_id,
+                    Quiz.user_id == user_id,
+                    Quiz.completed_at.isnot(None))
+            .order_by(Quiz.score_pct.desc().nullslast())
+            .first()
+        )
+    else:  # blurting
+        from app.models.evaluation import Evaluation
+        row = (
+            db_session.query(Evaluation)
+            .filter(Evaluation.note_id == task.ref_id,
+                    Evaluation.user_id == user_id,
+                    Evaluation.completed_at.isnot(None))
+            .order_by(Evaluation.score_pct.desc().nullslast())
+            .first()
+        )
+    if not row:
+        return "todo", None, None, None
+    return "done", row.score_pct, row.completed_at, None
+
+
+def recompute_task_for_user(db_session, user_id, task, mark_read_done=False):
+    """Recalcule la progression d'un élève sur une tâche et la persiste (sans commit)."""
+    prog = db_session.get(AssignmentTaskProgress, (task.id, user_id))
+    if not prog:
+        prog = AssignmentTaskProgress(task_id=task.id, user_id=user_id)
+        db_session.add(prog)
+
+    if task.task_type in ("flashcards",):
+        created_after = task.assignment.created_at if task.assignment else datetime.utcnow()
+        status, score, completed, payload = _flashcards_state(
+            db_session, user_id, task.ref_id, created_after, task.goal
+        )
+    elif task.task_type in ("exam", "quiz", "blurting"):
+        status, score, completed, payload = _module_completion_state(db_session, user_id, task)
+    elif task.task_type == "read":
+        # Lecture : complétion manuelle uniquement.
+        if mark_read_done:
+            status, score, completed, payload = "done", None, datetime.utcnow(), None
+        else:
+            return prog  # on ne dégrade pas une lecture déjà validée
     else:
-        progress.completed_at = None
-        
+        return prog
+
+    prog.status = status
+    prog.score_pct = score
+    if completed and not prog.completed_at:
+        prog.completed_at = completed
+    elif not completed:
+        prog.completed_at = None
+    if status != "todo" and not prog.submitted_at:
+        prog.submitted_at = datetime.utcnow()
+    prog.payload = payload
+    return prog
+
+
+def recompute_assignment_for_user(db_session, user_id, assignment):
+    """Recalcule toutes les tâches d'un devoir pour un élève + l'agrégat (soumission)."""
+    task_progs = []
+    cards_reviewed = 0
+    scores = []
+    for task in assignment.tasks:
+        prog = recompute_task_for_user(db_session, user_id, task)
+        task_progs.append(prog)
+        if task.task_type == "flashcards" and prog.payload:
+            cards_reviewed += prog.payload.get("cards_reviewed", 0)
+        if prog.score_pct is not None:
+            scores.append(prog.score_pct)
+
+    sub = db_session.get(AssignmentProgress, (assignment.id, user_id))
+    if not sub:
+        sub = AssignmentProgress(assignment_id=assignment.id, user_id=user_id)
+        db_session.add(sub)
+    sub.cards_reviewed = cards_reviewed
+    sub.score_pct = (sum(scores) / len(scores)) if scores else None
+    all_done = bool(task_progs) and all(p.status == "done" for p in task_progs)
+    if all_done and not sub.completed_at:
+        sub.completed_at = datetime.utcnow()
+    elif not all_done:
+        sub.completed_at = None
+    return sub
+
+
+# Rétro-compatibilité : ancienne API appelée depuis le flux flashcards.
+def update_assignment_progress(db_session, user_id: int, assignment_id: int):
+    assignment = db_session.get(Assignment, assignment_id)
+    if not assignment:
+        return
+    recompute_assignment_for_user(db_session, user_id, assignment)
     db_session.commit()
 
 
 def trigger_assignment_progress_update(db_session, user_id: int, card_id: int):
+    """Quand un élève répond à une carte, recalcule les devoirs (tâches flashcards/exam)
+    dont la cible (classeur) contient cette carte."""
     from app.models.flashcard import Flashcard
     from app.models.deck import Deck
     from app.models.binder import Binder
-    
+
     card = db_session.get(Flashcard, card_id)
     if not card or not card.deck_id:
         return
     deck = db_session.get(Deck, card.deck_id)
     if not deck or not deck.binder_id:
         return
-        
+
     binder_ids = []
     curr_binder_id = deck.binder_id
     while curr_binder_id:
         binder_ids.append(curr_binder_id)
         b = db_session.get(Binder, curr_binder_id)
         curr_binder_id = b.parent_id if b else None
-        
     if not binder_ids:
         return
-        
-    from app.models.assignment import Assignment
+
     from app.models.group import GroupMember
-    
+
+    # Devoirs de l'élève dont une tâche flashcards/exam cible un de ces classeurs.
     assignments = (
         db_session.query(Assignment)
         .join(GroupMember, Assignment.group_id == GroupMember.group_id)
+        .join(AssignmentTask, AssignmentTask.assignment_id == Assignment.id)
         .filter(
             GroupMember.user_id == user_id,
-            Assignment.binder_id.in_(binder_ids)
+            AssignmentTask.task_type.in_(("flashcards", "exam")),
+            AssignmentTask.ref_id.in_(binder_ids),
         )
+        .distinct()
         .all()
     )
-    
     for asgn in assignments:
-        update_assignment_progress(db_session, user_id, asgn.id)
+        recompute_assignment_for_user(db_session, user_id, asgn)
+    if assignments:
+        db_session.commit()

@@ -2,10 +2,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import classService from '../../services/classService'
-import type { AssignmentSummary } from '../../services/classService'
+import type { AssignmentSummary, AssignmentTask, TaskType } from '../../services/classService'
+import { taskLaunchRoute } from '../../services/assignmentTasks'
 import {
   ClipboardList, Calendar, CheckCircle2, Clock, AlertTriangle,
-  Loader2, BookOpen, ArrowRight, GraduationCap
+  Loader2, BookOpen, ArrowRight, GraduationCap,
+  Layers, FileQuestion, PenLine, Check
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -71,6 +73,34 @@ function cardBorderClass(s: string) {
     done: 'border-green-100 dark:border-green-800/40',
     late: 'border-red-100 dark:border-red-800/40'
   }[s] ?? ''
+}
+
+// ─── Tâches ──────────────────────────────────────────────────────────────────
+
+const TASK_META: Record<TaskType, { label: string; cta: string; icon: unknown }> = {
+  flashcards: { label: 'Flashcards', cta: 'Réviser', icon: Layers },
+  quiz: { label: 'QCM', cta: 'Passer le QCM', icon: FileQuestion },
+  exam: { label: 'Examen blanc', cta: "Lancer l'examen", icon: GraduationCap },
+  blurting: { label: 'Blurting', cta: 'Feuille blanche', icon: PenLine },
+  read: { label: 'Lecture', cta: 'Ouvrir', icon: BookOpen },
+}
+
+function launchTask(task: AssignmentTask) {
+  router.push(taskLaunchRoute(task))
+}
+
+const validating = ref<number | null>(null)
+
+async function validateTask(asgn: AssignmentSummary, task: AssignmentTask) {
+  validating.value = task.id
+  try {
+    await classService.submitTask(asgn.group_id, asgn.id, task.id)
+    assignments.value = await classService.getMyAssignments()
+  } catch {
+    // silencieux : l'élève peut réessayer
+  } finally {
+    validating.value = null
+  }
 }
 </script>
 
@@ -155,12 +185,6 @@ function cardBorderClass(s: string) {
             </span>
           </div>
 
-          <!-- Binder -->
-          <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-3">
-            <BookOpen class="w-4 h-4 flex-shrink-0" />
-            <span class="truncate">{{ asgn.binder_name }}</span>
-          </div>
-
           <!-- Due date -->
           <div :class="[
             'flex items-center justify-between text-xs rounded-xl px-3 py-2 mb-4',
@@ -173,31 +197,38 @@ function cardBorderClass(s: string) {
             <span v-if="asgn.due_date" class="font-medium">{{ daysUntil(asgn.due_date) }}</span>
           </div>
 
-          <!-- Progress -->
-          <div v-if="asgn.my_cards_reviewed > 0" class="mb-4">
-            <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-              <span>{{ asgn.my_cards_reviewed }} cartes révisées</span>
-              <span v-if="asgn.my_score_pct !== null" class="font-medium" :class="asgn.my_score_pct >= 80 ? 'text-green-600' : 'text-amber-600'">
-                {{ Math.round(asgn.my_score_pct) }}%
-              </span>
+          <!-- Tâches -->
+          <div class="space-y-2">
+            <div
+              v-for="task in asgn.tasks"
+              :key="task.id"
+              class="flex items-center gap-2 rounded-xl border border-slate-100 dark:border-slate-700/60 bg-slate-50/60 dark:bg-slate-900/30 px-3 py-2"
+            >
+              <component :is="TASK_META[task.task_type].icon" class="w-4 h-4 flex-shrink-0 text-sky-500" />
+              <div class="min-w-0 flex-1">
+                <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">{{ TASK_META[task.task_type].label }}</p>
+                <p class="text-[11px] text-slate-400 truncate">{{ task.ref_label }}</p>
+              </div>
+              <CheckCircle2 v-if="task.my_status === 'done'" class="w-5 h-5 text-green-500 flex-shrink-0" />
+              <template v-else>
+                <button
+                  @click="launchTask(task)"
+                  class="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-medium transition flex-shrink-0"
+                >
+                  {{ TASK_META[task.task_type].cta }}
+                </button>
+                <button
+                  @click="validateTask(asgn, task)"
+                  :disabled="validating === task.id"
+                  :title="task.task_type === 'read' ? 'Marquer comme lu' : 'Vérifier la progression'"
+                  class="p-1.5 rounded-lg text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition flex-shrink-0"
+                >
+                  <Loader2 v-if="validating === task.id" class="w-4 h-4 animate-spin" />
+                  <Check v-else class="w-4 h-4" />
+                </button>
+              </template>
             </div>
           </div>
-
-          <!-- CTA -->
-          <button
-            @click="router.push(`/binders/${asgn.binder_id}`)"
-            :disabled="asgn.status === 'done'"
-            :class="[
-              'w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all',
-              asgn.status === 'done'
-                ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 cursor-default'
-                : 'bg-sky-600 hover:bg-sky-500 text-white shadow-sm'
-            ]"
-          >
-            <CheckCircle2 v-if="asgn.status === 'done'" class="w-4 h-4" />
-            <BookOpen v-else class="w-4 h-4" />
-            {{ asgn.status === 'done' ? 'Terminé ✓' : 'Ouvrir le classeur' }}
-          </button>
         </div>
       </article>
     </div>
