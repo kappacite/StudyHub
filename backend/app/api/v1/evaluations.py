@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity
-from app.extensions import db, limiter
+from app.extensions import db, limiter, celery_app
 from app.dao.evaluation_dao import EvaluationDAO
 from app.dao.note_dao import NoteDAO
 from app.dao.deck_dao import DeckDAO
@@ -15,7 +15,6 @@ from app.middlewares.auth_middleware import jwt_required_middleware
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 from app.tasks import run_evaluation_generation
 from app.utils.task_dispatch import dispatch_or_run
-from celery.result import AsyncResult
 
 evaluations_bp = Blueprint("evaluations", __name__)
 
@@ -84,7 +83,10 @@ def generate():
 @evaluations_bp.route("/tasks/<task_id>", methods=["GET"])
 @jwt_required_middleware
 def get_task_status(task_id):
-    result = AsyncResult(task_id)
+    # AsyncResult DOIT être lié explicitement à celery_app : l'AsyncResult nu de
+    # celery.result se rattache au current_app (thread-local), qui dans un thread
+    # worker gunicorn est le Celery par défaut (DisabledBackend) -> 500.
+    result = celery_app.AsyncResult(task_id)
     response = {"task_id": task_id, "status": result.status}
 
     if result.ready():

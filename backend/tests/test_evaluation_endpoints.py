@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 NOTE_CONTENT = (
     "Cours d'introduction.\n"
@@ -91,6 +91,24 @@ def test_generate_forbidden_for_other_user_note(mock_gen, client, auth_headers, 
 def test_generate_requires_auth(client):
     resp = client.post("/api/v1/evaluations/generate", json={"note_id": "x"})
     assert resp.status_code == 401
+
+
+def test_task_status_uses_celery_app_bound_asyncresult(client, auth_headers):
+    """Régression : get_task_status doit utiliser celery_app.AsyncResult (lié au
+    result-backend Redis), et non l'AsyncResult nu de celery.result. Ce dernier se
+    rattache au current_app *thread-local* — dans un thread worker gunicorn c'est le
+    Celery par défaut (DisabledBackend), d'où un 500 sur le polling."""
+    fake = MagicMock()
+    fake.status = "PENDING"
+    fake.ready.return_value = False
+
+    with patch("app.extensions.celery_app.AsyncResult", return_value=fake) as mock_ar:
+        resp = client.get("/api/v1/evaluations/tasks/some-task-id", headers=auth_headers)
+
+    assert resp.status_code == 200
+    assert resp.json["status"] == "PENDING"
+    # Si on régresse vers l'AsyncResult nu, ce mock ne serait jamais appelé.
+    mock_ar.assert_called_once_with("some-task-id")
 
 
 @patch("app.tasks.run_evaluation_generation.delay", side_effect=RuntimeError("broker down"))
