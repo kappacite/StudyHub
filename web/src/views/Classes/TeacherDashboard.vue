@@ -5,14 +5,14 @@ import { useBindersStore } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
 import classService from '../../services/classService'
-import type { Assignment, StudentMaterialsProgress, ClassOverview, ClassInsight, Leaderboard } from '../../services/classService'
+import type { Assignment, StudentMaterialsProgress, ClassOverview, ClassInsight, Leaderboard, RosterEntry } from '../../services/classService'
 import groupService from '../../services/groupService'
 import type { GroupBinder } from '../../services/groupService'
 import AssignmentBuilder from '../../components/classes/AssignmentBuilder.vue'
 import {
   GraduationCap, Plus, Users, ClipboardList,
   Loader2, AlertCircle, Calendar, BookOpen, Clock,
-  BarChart3, Trash2, Eye
+  BarChart3, Trash2, Eye, RefreshCw, UserMinus, Send
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -56,7 +56,8 @@ const classDetails = ref<Record<number, {
   leaderboard: Leaderboard | null;
   analyzing: boolean;
   loading: boolean;
-  activeTab: 'assignments' | 'resources' | 'progress' | 'analytics';
+  roster: RosterEntry[];
+  activeTab: 'assignments' | 'resources' | 'progress' | 'analytics' | 'roster';
 }>>({})
 
 // Annonce
@@ -94,7 +95,7 @@ const availableBindersToAssociate = computed(() => {
   return bindersStore.binders.filter(b => !sharedIds.includes(b.id))
 })
 
-async function selectClassTab(classId: number, tab: 'assignments' | 'resources' | 'progress' | 'analytics') {
+async function selectClassTab(classId: number, tab: 'assignments' | 'resources' | 'progress' | 'analytics' | 'roster') {
   if (!classDetails.value[classId]) {
     classDetails.value[classId] = {
       binders: [],
@@ -102,6 +103,7 @@ async function selectClassTab(classId: number, tab: 'assignments' | 'resources' 
       overview: null,
       insights: null,
       leaderboard: null,
+      roster: [],
       analyzing: false,
       loading: false,
       activeTab: 'assignments'
@@ -133,11 +135,53 @@ async function selectClassTab(classId: number, tab: 'assignments' | 'resources' 
       classDetails.value[classId].overview = overview
       classDetails.value[classId].insights = insights
       classDetails.value[classId].leaderboard = leaderboard
+    } else if (tab === 'roster') {
+      classDetails.value[classId].roster = await classService.getRoster(classId)
     }
   } catch (e) {
     console.error(e)
   } finally {
     classDetails.value[classId].loading = false
+  }
+}
+
+async function removeMember(classId: number, userId: number) {
+  if (!confirm("Retirer cet élève de la classe ?")) return
+  try {
+    await classService.removeMember(classId, userId)
+    const d = classDetails.value[classId]
+    if (d) d.roster = d.roster.filter(r => r.user_id !== userId)
+    // Mettre à jour le compteur d'élèves de la classe.
+    const c = classes.value.find(c => c.id === classId)
+    if (c && c.members_count > 0) c.members_count -= 1
+  } catch (e) {
+    alert("Impossible de retirer cet élève.")
+  }
+}
+
+async function regenerateInvite(classId: number) {
+  if (!confirm("Régénérer le code d'invitation ? L'ancien code ne fonctionnera plus.")) return
+  try {
+    const { invite_code } = await classService.regenerateInvite(classId)
+    const c = classes.value.find(c => c.id === classId)
+    if (c) c.invite_code = invite_code
+  } catch (e) {
+    alert("Impossible de régénérer le code.")
+  }
+}
+
+const distributingId = ref<string | null>(null)
+
+async function distributeBinder(classId: number, binderId: string) {
+  if (!confirm("Distribuer une copie de ce classeur à chaque élève ?")) return
+  distributingId.value = binderId
+  try {
+    const res = await classService.distributeBinder(classId, binderId)
+    alert(`Copie distribuée à ${res.distributed} élève(s).`)
+  } catch (e) {
+    alert("Impossible de distribuer ce classeur.")
+  } finally {
+    distributingId.value = null
   }
 }
 
@@ -358,6 +402,10 @@ function isPast(d: string | null): boolean {
                   <span class="flex items-center gap-1"><Users class="w-3 h-3" />{{ cls.members_count }} élèves</span>
                   <span class="flex items-center gap-1"><ClipboardList class="w-3 h-3" />{{ cls.assignments.length }} devoirs</span>
                   <span class="font-mono tracking-wider bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">{{ cls.invite_code }}</span>
+                  <button @click="regenerateInvite(cls.id)" title="Régénérer le code d'invitation"
+                    class="text-slate-400 hover:text-amber-500 transition">
+                    <RefreshCw class="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -393,7 +441,8 @@ function isPast(d: string | null): boolean {
                 { id: 'assignments', label: 'Devoirs' },
                 { id: 'resources', label: 'Cours & Classeurs' },
                 { id: 'progress', label: 'Suivi Révisions' },
-                { id: 'analytics', label: 'Tableau de bord' }
+                { id: 'analytics', label: 'Tableau de bord' },
+                { id: 'roster', label: 'Élèves' }
               ]"
               :key="tab.id"
               @click="selectClassTab(cls.id, tab.id)"
@@ -501,13 +550,24 @@ function isPast(d: string | null): boolean {
                       </p>
                     </div>
                   </div>
-                  <button
-                    @click.stop="dissociateBinder(cls.id, b.binder_id)"
-                    class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-                    title="Dissocier"
-                  >
-                    <Trash2 class="w-3.5 h-3.5" />
-                  </button>
+                  <div class="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      @click.stop="distributeBinder(cls.id, b.binder_id)"
+                      :disabled="distributingId === b.binder_id"
+                      class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition"
+                      title="Distribuer une copie à chaque élève"
+                    >
+                      <Loader2 v-if="distributingId === b.binder_id" class="w-3.5 h-3.5 animate-spin" />
+                      <Send v-else class="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      @click.stop="dissociateBinder(cls.id, b.binder_id)"
+                      class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                      title="Dissocier"
+                    >
+                      <Trash2 class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -658,6 +718,39 @@ function isPast(d: string | null): boolean {
               </div>
             </div>
             <div v-else class="text-center py-8 text-slate-400 text-sm">Aucune donnée analytique disponible.</div>
+          </div>
+
+          <!-- TAB 5: Roster -->
+          <div v-else-if="classDetails[cls.id]?.activeTab === 'roster'">
+            <div v-if="classDetails[cls.id]?.loading" class="flex items-center justify-center py-8">
+              <Loader2 class="w-6 h-6 text-amber-500 animate-spin" />
+            </div>
+            <div v-else-if="!classDetails[cls.id]?.roster?.length" class="text-center py-8 text-slate-400 text-sm">
+              Aucun membre.
+            </div>
+            <div v-else class="space-y-1.5">
+              <div v-for="m in classDetails[cls.id].roster" :key="m.user_id"
+                class="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50/60 dark:bg-slate-900/30">
+                <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 text-xs font-bold flex-shrink-0">
+                  {{ m.username.charAt(0).toUpperCase() }}
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">{{ m.username }}</p>
+                  <p class="text-[11px] text-slate-400">
+                    {{ m.role === 'owner' || m.role === 'admin' ? 'Professeur' : 'Élève' }}
+                    · {{ m.completed_assignments }} devoir(s) terminé(s)
+                  </p>
+                </div>
+                <button
+                  v-if="m.role !== 'owner' && m.role !== 'admin'"
+                  @click="removeMember(cls.id, m.user_id)"
+                  class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition flex-shrink-0"
+                  title="Retirer de la classe"
+                >
+                  <UserMinus class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -109,6 +109,37 @@ Développement des services d'orchestration dans [app/services/](file:///home/ro
 2. **Double relation User-Binder** : Création d'une clé étrangère distincte `original_author_id` sur la table des classeurs pour préserver la paternité originale d'un cours même après de multiples clones successifs.
 3. **Mise à jour idempotente au démarrage** : L'auto-migration s'appuie sur le contexte applicatif et filtre les contextes CLI et tests unitaires pour éviter des conflits de verrous SQL ou des lenteurs de chargement.
 
+## [2026-06-14] Rework Espace Professeur — PR 5 : gestion de classe
+
+Cinquième et dernière étape : outiller le professeur pour piloter sa classe.
+
+### Ajouts et modifications
+
+#### 👥 Gestion (class_management_service.py)
+* **`get_roster`** : trombinoscope agrégé (rôle, date d'inscription, devoirs complétés, dernière activité) — requêtes bornées, professeurs en tête.
+* **`regenerate_invite`** : nouveau code d'invitation (invalide l'ancien).
+* **`distribute_binder`** : clone un classeur dans le compte de **chaque élève** (réutilise `CommunityService.clone_package` pour le clone profond notes/decks/cartes/tags), partage d'abord le classeur à la classe si besoin, et notifie les élèves. Résilient (échecs comptés, pas bloquants).
+
+#### 🌐 API (classes.py)
+* `GET /classes/:id/members`, `POST /classes/:id/invite/regenerate`, `POST /classes/:id/distribute`.
+* Le **retrait de membre** et le **changement de rôle** réutilisent les endpoints groupes existants (les classes sont des groupes).
+
+#### 🖥️ Frontend
+* `TeacherDashboard` : onglet **Élèves** (roster + retrait), bouton de **régénération** du code d'invitation, et action **Distribuer** par classeur (onglet Cours & Classeurs).
+
+#### 🧪 Tests
+* `test_class_management.py` : roster (+ interdiction élève), régénération (ancien code invalidé, interdiction élève), distribution (copie clonée chez l'élève + notification), interdictions (élève → 403, classeur d'autrui → 404).
+
+### Décisions d'architecture
+1. **Réutilisation maximale** : on s'appuie sur la gestion de membres des groupes et sur le clone profond de la marketplace plutôt que de dupliquer la logique.
+2. **Distribution = copie personnelle** (fork), distincte du partage en lecture : chaque élève reçoit un classeur modifiable dans son espace.
+
+---
+
+### 🎓 Bilan du rework Espace Professeur (PR 1 → 5)
+
+La feature professeur est passée d'un système « un devoir = un classeur de flashcards » à une plateforme de cours complète : **devoirs multi-activités** (flashcards, QCM, examens, blurting, lecture) avec objectifs et soumission, **tableau de bord analytique** (complétion, scores, lacunes IA), **notation**, **engagement** (annonces, classement, badges, notifications) et **gestion de classe** (roster, invitations, distribution de cours). 5 migrations additives et rétro-compatibles, ~30 endpoints, couverture de tests étendue (backend + frontend).
+
 ## [2026-06-14] Rework Espace Professeur — PR 4 : engagement de classe
 
 Quatrième étape : rendre la classe vivante et motivante.

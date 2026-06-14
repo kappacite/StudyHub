@@ -1287,3 +1287,20 @@ Classement opt-in (`leaderboard_enabled`) : par élève, `completed_assignments`
 | `POST` | `/notifications/read-all` | Tout marquer comme lu |
 
 Générées côté serveur (nouveau devoir, annonce). Sur mobile, des **rappels locaux** de deadline (J‑1) sont programmés côté client via `@capacitor/local-notifications` (aucune infra push serveur).
+
+---
+
+## Espace Professeur — Gestion de classe (PR 5)
+
+### `GET /classes/:id/members` (professeur)
+Trombinoscope : par membre, `username`, `role`, `joined_at`, `completed_assignments`, `last_active` (professeurs d'abord).
+
+### `POST /classes/:id/invite/regenerate` (professeur)
+Régénère le code d'invitation (l'ancien devient invalide) → `{ "invite_code": "AB12CD34" }`.
+
+### `POST /classes/:id/distribute` (professeur)
+Distribue une **copie** d'un classeur à chaque élève (clone profond dans leur compte) et les notifie.
+* **Body** : `{ "binder_id": "<binder_uuid>" }`
+* **Response** : `{ "distributed": N, "failed": M }`
+
+> Le **retrait d'un membre** et le **changement de rôle** réutilisent les endpoints groupes existants : `DELETE`/`PATCH /groups/:id/members/:user_id` (les classes sont des groupes).
