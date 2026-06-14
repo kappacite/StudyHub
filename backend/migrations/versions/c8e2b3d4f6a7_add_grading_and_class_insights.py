@@ -28,6 +28,9 @@ def upgrade():
     prog_cols = {
         c["name"] for c in inspector.get_columns("assignment_progress")
     } if "assignment_progress" in tables else set()
+    prog_fk_cols = {
+        tuple(fk["constrained_columns"]) for fk in inspector.get_foreign_keys("assignment_progress")
+    } if "assignment_progress" in tables else set()
 
     if "assignment_progress" in tables:
         with op.batch_alter_table('assignment_progress', schema=None) as batch_op:
@@ -39,6 +42,11 @@ def upgrade():
                 batch_op.add_column(sa.Column('graded_by', sa.Integer(), nullable=True))
             if "graded_at" not in prog_cols:
                 batch_op.add_column(sa.Column('graded_at', sa.DateTime(), nullable=True))
+            if ("graded_by",) not in prog_fk_cols:
+                batch_op.create_foreign_key(
+                    'fk_assignment_progress_graded_by_users',
+                    'users', ['graded_by'], ['id'], ondelete='SET NULL',
+                )
 
     if "class_insights" not in tables:
         op.create_table(
