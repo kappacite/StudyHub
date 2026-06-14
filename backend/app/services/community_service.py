@@ -88,7 +88,7 @@ class CommunityService:
             db.session.add(new_binder)
             db.session.flush()  # Pour obtenir le nouvel ID
             
-            # --- Cloner les Notes et leurs Decks Fantômes associés ---
+            # --- Cloner les Notes ---
             for old_note in old_binder.notes:
                 new_note = Note(
                     title=old_note.title,
@@ -97,62 +97,32 @@ class CommunityService:
                     binder_id=new_binder._id
                 )
                 db.session.add(new_note)
-                db.session.flush()
-                
-                # Vérifier s'il y a un deck fantôme associé à l'ancienne note
-                old_deck = db.session.query(Deck).filter_by(note_id=old_note._id).first()
-                if old_deck:
-                    new_deck = Deck(
-                        name=old_deck.name,
-                        description=old_deck.description,
-                        user_id=user_id,
-                        binder_id=new_binder._id,
-                        note_id=new_note._id
-                    )
-                    db.session.add(new_deck)
-                    db.session.flush()
-                    
-                    # Cloner les cartes et réinitialiser l'état SM-2
-                    for old_card in old_deck.cards:
-                        new_card = Flashcard(
-                            deck_id=new_deck.id,
-                            front=old_card.front,
-                            back=old_card.back,
-                            placeholder_hash=old_card.placeholder_hash,
-                            original_text=old_card.original_text,
-                            ease_factor=2.5,
-                            interval=0,
-                            repetitions=0,
-                            next_review=func.now()
-                        )
-                        db.session.add(new_card)
- 
-            # --- Cloner les Decks classiques (non liés à des notes) ---
+
+            # --- Cloner les Decks ---
             for old_deck in old_binder.decks:
-                if old_deck.note_id is None:
-                    new_deck = Deck(
-                        name=old_deck.name,
-                        description=old_deck.description,
-                        user_id=user_id,
-                        binder_id=new_binder._id
+                new_deck = Deck(
+                    name=old_deck.name,
+                    description=old_deck.description,
+                    user_id=user_id,
+                    binder_id=new_binder._id
+                )
+                db.session.add(new_deck)
+                db.session.flush()
+
+                for old_card in old_deck.cards:
+                    new_card = Flashcard(
+                        deck_id=new_deck.id,
+                        front=old_card.front,
+                        back=old_card.back,
+                        placeholder_hash=old_card.placeholder_hash,
+                        original_text=old_card.original_text,
+                        ease_factor=2.5,
+                        interval=0,
+                        repetitions=0,
+                        next_review=func.now()
                     )
-                    db.session.add(new_deck)
-                    db.session.flush()
-                    
-                    for old_card in old_deck.cards:
-                        new_card = Flashcard(
-                            deck_id=new_deck.id,
-                            front=old_card.front,
-                            back=old_card.back,
-                            placeholder_hash=old_card.placeholder_hash,
-                            original_text=old_card.original_text,
-                            ease_factor=2.5,
-                            interval=0,
-                            repetitions=0,
-                            next_review=func.now()
-                        )
-                        db.session.add(new_card)
- 
+                    db.session.add(new_card)
+
             # --- Cloner les Diagrammes ---
             for old_diag in old_binder.diagrams:
                 new_diag = Diagram(

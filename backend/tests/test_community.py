@@ -45,14 +45,25 @@ def test_community_marketplace_and_cloning(client, auth_headers, other_auth_head
     assert resp.status_code == 201
     binder_id = resp.json["id"]
     
-    # Ajouter une note avec placeholder dans ce binder
+    # Ajouter une note dans ce binder
     note_data = {
         "title": "Les Alcènes",
-        "content": "Un alcène possède une [double liaison C=C]{def:insaturée}.",
+        "content": "Un alcène possède une double liaison C=C insaturée.",
         "binder_id": binder_id
     }
     client.post("/api/v1/notes", json=note_data, headers=auth_headers)
-    
+
+    # Ajouter un deck réel + une carte dans ce binder
+    deck_resp = client.post("/api/v1/decks", json={
+        "name": "Alcènes", "binder_id": binder_id
+    }, headers=auth_headers)
+    assert deck_resp.status_code == 201
+    deck_pub_id = deck_resp.json["id"]
+    card_resp = client.post(f"/api/v1/decks/{deck_pub_id}/cards", json={
+        "front": "Qu'est-ce qu'un alcène ?", "back": "Un hydrocarbure insaturé (C=C)."
+    }, headers=auth_headers)
+    assert card_resp.status_code == 201
+
     # Simuler une révision de la carte pour changer son SM-2
     with client.application.app_context():
         binder_obj = db.session.query(Binder).filter_by(id=binder_id).first()

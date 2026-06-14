@@ -18,6 +18,12 @@ class EvaluationAnswerRequest(BaseModel):
     self_grade: Optional[Literal["acquired", "partial", "missed"]] = None
 
 
+class EvaluationFlashcardsRequest(BaseModel):
+    """Ajout opt-in de flashcards (items ratés) à un deck réel choisi par l'élève."""
+    deck_id: int
+    item_ids: List[int] = Field(default_factory=list, min_length=1)
+
+
 # --- Réponses ---
 
 class EvaluationItemResponse(BaseModel):
@@ -31,6 +37,14 @@ class EvaluationItemResponse(BaseModel):
     is_correct: Optional[bool] = None
 
 
+class ProposedCard(BaseModel):
+    """Carte de révision PROPOSÉE (non créée) pour un item raté. L'élève décide
+    s'il l'ajoute à un deck."""
+    item_id: int
+    front: str
+    back: str
+
+
 class EvaluationResponse(BaseModel):
     id: int
     note_id: str
@@ -39,8 +53,14 @@ class EvaluationResponse(BaseModel):
     created_at: datetime
     completed_at: Optional[datetime] = None
     items: List[EvaluationItemResponse] = []
+    # Renseigné à la complétion : suggestions de cartes pour les items ratés.
+    proposed_cards: List[ProposedCard] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class FlashcardsCreatedResponse(BaseModel):
+    created: int
 
 
 class EvaluationAnswerResponse(BaseModel):

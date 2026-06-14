@@ -35,6 +35,12 @@ export interface EvalItem {
   is_correct: boolean | null
 }
 
+export interface ProposedCard {
+  item_id: number
+  front: string
+  back: string
+}
+
 export interface Evaluation {
   id: number
   note_id: string
@@ -43,6 +49,8 @@ export interface Evaluation {
   created_at: string
   completed_at: string | null
   items: EvalItem[]
+  // Renseigné à la complétion : cartes suggérées pour les items ratés.
+  proposed_cards: ProposedCard[]
 }
 
 export interface EvalCorrection {
@@ -135,6 +143,22 @@ const evaluationService = {
   async complete(evaluationId: number): Promise<Evaluation> {
     const { data } = await api.post<Evaluation>(`/evaluations/${evaluationId}/complete`)
     return data
+  },
+
+  /**
+   * Ajoute (opt-in) les cartes des items ratés sélectionnés à un deck réel choisi
+   * par l'élève. Renvoie le nombre de cartes effectivement créées.
+   */
+  async addFlashcards(
+    evaluationId: number,
+    deckId: number,
+    itemIds: number[],
+  ): Promise<number> {
+    const { data } = await api.post<{ created: number }>(
+      `/evaluations/${evaluationId}/flashcards`,
+      { deck_id: deckId, item_ids: itemIds },
+    )
+    return data.created
   },
 }
 

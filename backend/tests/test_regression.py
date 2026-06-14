@@ -19,7 +19,6 @@ def test_regression_note_creation_and_update(client, auth_headers):
     assert save_resp.status_code == 200
     assert save_resp.json["title"] == "Note de test mise à jour"
     assert save_resp.json["content"] == "Contenu de la note mis à jour avec un {{vf::La Terre est ronde::Vrai::La Terre est ronde}}."
-    assert len(save_resp.json["flashcards"]) > 0  # Assurer que les placeholders sont créés dans le deck fantôme
 
 def test_regression_flashcard_creation_and_review(client, auth_headers):
     # 1. Créer un deck

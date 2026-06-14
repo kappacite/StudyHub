@@ -2,18 +2,18 @@ import re
 import hashlib
 import unicodedata
 from datetime import datetime
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.dao.evaluation_dao import EvaluationDAO
 from app.dao.note_dao import NoteDAO
 from app.models.evaluation import Evaluation, EvaluationItem
-from app.models.deck import Deck
 from app.models.flashcard import Flashcard
 from app.services.ai_service import AIService
 from app.schemas.evaluation_schema import (
     EvaluationResponse,
     EvaluationItemResponse,
     EvaluationAnswerResponse,
+    ProposedCard,
 )
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 from app.utils.placeholder_parser import extract_placeholders_from_text
@@ -166,7 +166,8 @@ class EvaluationService:
 
     def get_evaluation(self, user_id: int, evaluation_id: int) -> EvaluationResponse:
         evaluation = self._get_eval_or_403(evaluation_id, user_id)
-        return self._serialize(evaluation, reveal=evaluation.completed_at is not None)
+        completed = evaluation.completed_at is not None
+        return self._serialize(evaluation, reveal=completed, include_proposals=completed)
 
     def answer_item(
         self,
@@ -203,24 +204,32 @@ class EvaluationService:
             evaluation.score_pct = (correct / total * 100) if total else 0.0
             evaluation.completed_at = datetime.utcnow()
             self._evaluation_dao.update(evaluation)
-            # Bouclage SM-2 : les items ratés deviennent des flashcards révisables.
-            self._reinforce_missed_items(evaluation)
-        return self._serialize(evaluation, reveal=True)
+        # Aucune carte n'est créée automatiquement : on PROPOSE des cartes pour les
+        # items ratés ; l'élève choisit de les ajouter (ou non) à un deck réel.
+        return self._serialize(evaluation, reveal=True, include_proposals=True)
 
-    # --- Bouclage SM-2 ---
+    # --- Ajout opt-in de flashcards (items ratés) ---
 
-    def _reinforce_missed_items(self, evaluation: Evaluation) -> int:
-        """Crée des flashcards (source='ai') dans le deck fantôme de la note pour
-        chaque item raté, afin de les réviser en répétition espacée. Idempotent
-        via un hash de contenu : pas de doublon entre tentatives."""
+    def create_flashcards_from_missed(
+        self, user_id: int, evaluation_id: int, item_ids, deck_id: int
+    ) -> int:
+        """Crée des flashcards (source='ai') dans un deck RÉEL choisi par l'élève,
+        pour les items ratés sélectionnés. Idempotent par deck via un hash, et
+        protégé par la vérification d'appartenance du deck."""
         if not self._deck_dao or not self._flashcard_dao:
             return 0
 
-        note = self._note_dao.get_by_id(evaluation.note_id)
-        if not note:
-            return 0
+        evaluation = self._get_eval_or_403(evaluation_id, user_id)
+        if evaluation.completed_at is None:
+            raise ForbiddenError("L'évaluation doit être complétée avant d'ajouter des cartes.")
 
-        deck = self._find_or_create_phantom_deck(note)
+        deck = self._deck_dao.get_by_id(deck_id)
+        if not deck:
+            raise ResourceNotFoundError("Deck introuvable.")
+        if deck.user_id != user_id:
+            raise ForbiddenError("Accès interdit à ce deck.")
+
+        requested = set(item_ids or [])
         existing_hashes = {
             c.placeholder_hash
             for c in self._flashcard_dao.db.query(Flashcard)
@@ -231,13 +240,15 @@ class EvaluationService:
 
         created = 0
         for it in evaluation.items:
-            if it.is_correct is not False:  # on ne renforce que les items ratés
+            if it.id not in requested:
+                continue
+            if it.is_correct is not False:  # on n'ajoute que les items ratés
                 continue
             front, back = self._card_front_back(it.type, it.payload)
             if not front or not back:
                 continue
             p_hash = hashlib.sha256(
-                f"eval:{note._id}:{it.type}:{front}".encode("utf-8")
+                f"eval:{evaluation.id}:{it.id}".encode("utf-8")
             ).hexdigest()
             if p_hash in existing_hashes:
                 continue
@@ -255,18 +266,17 @@ class EvaluationService:
             created += 1
         return created
 
-    def _find_or_create_phantom_deck(self, note) -> Deck:
-        deck = self._deck_dao.db.query(Deck).filter_by(note_id=note._id).first()
-        if deck:
-            return deck
-        deck = Deck(
-            name=f"[Phantom] Note: {note.title}",
-            description=f"Deck de révision active pour la note: {note.title}",
-            user_id=note.user_id,
-            note_id=note._id,
-            binder_id=note.binder_id,
-        )
-        return self._deck_dao.create(deck)
+    def _proposed_cards(self, evaluation: Evaluation) -> List[ProposedCard]:
+        """Suggestions de cartes (non persistées) pour les items ratés."""
+        proposals: List[ProposedCard] = []
+        for it in evaluation.items:
+            if it.is_correct is not False:
+                continue
+            front, back = self._card_front_back(it.type, it.payload)
+            if not front or not back:
+                continue
+            proposals.append(ProposedCard(item_id=it.id, front=front, back=back))
+        return proposals
 
     def _card_front_back(self, item_type: str, payload: Dict[str, Any]):
         if item_type == "qcm":
@@ -337,7 +347,9 @@ class EvaluationService:
 
     # --- Sérialisation ---
 
-    def _serialize(self, evaluation: Evaluation, reveal: bool) -> EvaluationResponse:
+    def _serialize(
+        self, evaluation: Evaluation, reveal: bool, include_proposals: bool = False
+    ) -> EvaluationResponse:
         items = []
         for it in evaluation.items:
             payload = dict(it.payload) if reveal else self._sanitize_payload(it.type, it.payload)
@@ -359,4 +371,5 @@ class EvaluationService:
             created_at=evaluation.created_at,
             completed_at=evaluation.completed_at,
             items=items,
+            proposed_cards=self._proposed_cards(evaluation) if include_proposals else [],
         )

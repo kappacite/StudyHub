@@ -573,7 +573,7 @@
                 <!-- Section 1: Placeholders -->
                 <div class="space-y-2">
                   <h4 class="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider font-semibold">1. Syntaxes de Révision Intégrée (Active Reading)</h4>
-                  <p>Incorporez des questions interactives de révision directe dans vos notes Markdown. Elles génèrent automatiquement des cartes de révision espacée (SM-2) :</p>
+                  <p>Incorporez des questions interactives de révision directe dans vos notes Markdown. Révisez-les en place via le mode « Révision Active » ; elles alimentent aussi les évaluations IA générées depuis la note :</p>
                   <ul class="list-disc pl-5 space-y-2.5 mt-1">
                     <li>
                       <strong class="text-indigo-600 dark:text-indigo-400">Texte à trous (Cloze) :</strong> 

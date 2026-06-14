@@ -17,8 +17,6 @@ class NoteUpdate(BaseModel):
     binder_id: Optional[str] = None
     is_public: Optional[bool] = None
 
-from app.schemas.flashcard_schema import FlashcardResponse
-
 class NoteResponse(NoteBase):
     id: str
     binder_id: Optional[str] = Field(None, validation_alias="binder_uuid")
@@ -26,7 +24,6 @@ class NoteResponse(NoteBase):
     is_public: bool = False
     share_token: Optional[str] = None
     last_blurting_at: Optional[datetime] = None
-    flashcards: List[FlashcardResponse] = []
     tags: List[TagResponseSchema] = []
     created_at: datetime
     updated_at: datetime

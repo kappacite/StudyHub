@@ -73,6 +73,52 @@ def test_generate_poll_answer_complete_flow(mock_gen, client, auth_headers):
 
 
 @patch("app.services.ai_service.AIService.generate_evaluation")
+def test_complete_proposes_cards_and_optin_adds_to_deck(mock_gen, client, auth_headers):
+    mock_gen.return_value = AI_RESULT
+    note_id = _create_note(client, auth_headers)
+
+    gen = client.post(
+        "/api/v1/evaluations/generate",
+        json={"note_id": note_id, "item_count": 4},
+        headers=auth_headers,
+    )
+    result = client.get(
+        f"/api/v1/evaluations/tasks/{gen.json['task_id']}", headers=auth_headers
+    ).json["result"]
+    eval_id = result["id"]
+    qcm = next(i for i in result["items"] if i["type"] == "qcm" and i["source"] == "ai")
+
+    # Rater le QCM volontairement (mauvaise option)
+    client.post(
+        f"/api/v1/evaluations/{eval_id}/items/{qcm['id']}/answer",
+        json={"value": "a"},
+        headers=auth_headers,
+    )
+
+    # Complétion : des cartes sont PROPOSÉES (pas créées).
+    done = client.post(f"/api/v1/evaluations/{eval_id}/complete", headers=auth_headers)
+    assert done.status_code == 200
+    proposals = done.json["proposed_cards"]
+    assert any(c["front"] == "Capitale de la France ?" for c in proposals)
+    proposed_item_id = next(c["item_id"] for c in proposals if c["front"] == "Capitale de la France ?")
+
+    # L'élève choisit un deck réel et y ajoute la carte (opt-in).
+    deck = client.post("/api/v1/decks", json={"name": "Mes lacunes"}, headers=auth_headers)
+    deck_id = deck.json["id"]
+    add = client.post(
+        f"/api/v1/evaluations/{eval_id}/flashcards",
+        json={"deck_id": deck_id, "item_ids": [proposed_item_id]},
+        headers=auth_headers,
+    )
+    assert add.status_code == 201
+    assert add.json["created"] == 1
+
+    cards = client.get(f"/api/v1/decks/{deck_id}/cards", headers=auth_headers)
+    fronts = [c["front"] for c in cards.json["data"]]
+    assert "Capitale de la France ?" in fronts
+
+
+@patch("app.services.ai_service.AIService.generate_evaluation")
 def test_generate_forbidden_for_other_user_note(mock_gen, client, auth_headers, app):
     mock_gen.return_value = AI_RESULT
     note_id = _create_note(client, auth_headers)
