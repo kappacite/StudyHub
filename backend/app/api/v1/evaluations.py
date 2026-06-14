@@ -14,6 +14,7 @@ from app.schemas.evaluation_schema import (
 from app.middlewares.auth_middleware import jwt_required_middleware
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 from app.tasks import run_evaluation_generation
+from app.utils.task_dispatch import dispatch_or_run
 from celery.result import AsyncResult
 
 evaluations_bp = Blueprint("evaluations", __name__)
@@ -70,8 +71,14 @@ def generate():
     if note.user_id != user_id:
         raise ForbiddenError("Accès interdit à cette note.")
 
-    task = run_evaluation_generation.delay(user_id, req.note_id, req.item_count, req.force)
-    return jsonify({"task_id": task.id, "status": task.status}), 202
+    mode, payload = dispatch_or_run(
+        run_evaluation_generation, user_id, req.note_id, req.item_count, req.force
+    )
+    if mode == "async":
+        return jsonify({"task_id": payload.id, "status": payload.status}), 202
+    # Repli synchrone (broker Redis indisponible) : le résultat est déjà prêt,
+    # le frontend court-circuite alors le polling.
+    return jsonify({"status": "SUCCESS", "result": payload}), 200
 
 
 @evaluations_bp.route("/tasks/<task_id>", methods=["GET"])

@@ -62,8 +62,10 @@ export interface EvalAnswerResult {
 }
 
 interface GenerateTaskResponse {
-  task_id: string
+  task_id?: string
   status: string
+  // Présent quand le serveur a exécuté la tâche en synchrone (dev sans broker).
+  result?: Evaluation
 }
 
 interface TaskPollResponse {
@@ -87,6 +89,11 @@ const evaluationService = {
       item_count: itemCount,
       force,
     })
+
+    // Repli synchrone côté serveur (broker Redis indisponible) : résultat déjà prêt.
+    if (data.status === 'SUCCESS' && data.result) {
+      return data.result
+    }
 
     const taskId = data.task_id
     if (!taskId) {

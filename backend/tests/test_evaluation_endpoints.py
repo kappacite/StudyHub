@@ -91,3 +91,27 @@ def test_generate_forbidden_for_other_user_note(mock_gen, client, auth_headers, 
 def test_generate_requires_auth(client):
     resp = client.post("/api/v1/evaluations/generate", json={"note_id": "x"})
     assert resp.status_code == 401
+
+
+@patch("app.tasks.run_evaluation_generation.delay", side_effect=RuntimeError("broker down"))
+@patch("app.services.ai_service.AIService.generate_evaluation")
+def test_generate_falls_back_to_sync_when_broker_down(mock_gen, mock_delay, client, auth_headers):
+    """Broker Redis injoignable -> exécution inline -> 200 + résultat direct,
+    sans task_id (le frontend court-circuite alors le polling)."""
+    mock_gen.return_value = AI_RESULT
+    note_id = _create_note(client, auth_headers)
+
+    resp = client.post(
+        "/api/v1/evaluations/generate",
+        json={"note_id": note_id, "item_count": 4},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json["status"] == "SUCCESS"
+    assert "task_id" not in resp.json
+    result = resp.json["result"]
+    assert len(result["items"]) == 4
+    # La vue question reste sanitisée même en repli synchrone.
+    qcm = next(i for i in result["items"] if i["type"] == "qcm" and i["source"] == "ai")
+    for opt in qcm["payload"]["options"]:
+        assert "correct" not in opt
