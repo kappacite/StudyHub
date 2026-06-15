@@ -8,7 +8,7 @@ import { useClassNotifications } from '../../composables/useClassNotifications'
 import {
   ClipboardList, Calendar, CheckCircle2, Clock, AlertTriangle,
   Loader2, BookOpen, ArrowRight, GraduationCap,
-  Layers, FileQuestion, PenLine, Check
+  Layers, FileQuestion, PenLine, Check, ListChecks
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -88,6 +88,7 @@ const TASK_META: Record<TaskType, { label: string; cta: string; icon: unknown }>
   exam: { label: 'Examen blanc', cta: "Lancer l'examen", icon: GraduationCap },
   blurting: { label: 'Blurting', cta: 'Feuille blanche', icon: PenLine },
   read: { label: 'Lecture', cta: 'Ouvrir', icon: BookOpen },
+  revision: { label: 'Ensemble de révision', cta: 'Réviser', icon: ListChecks },
 }
 
 function launchTask(task: AssignmentTask) {

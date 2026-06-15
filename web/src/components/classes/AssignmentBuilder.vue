@@ -4,13 +4,14 @@ import classService from '../../services/classService'
 import type { Assignment, AssignmentTaskInput, TaskType } from '../../services/classService'
 import {
   ClipboardList, Plus, Trash2, Loader2, AlertCircle,
-  Layers, FileQuestion, GraduationCap, PenLine, BookOpen,
+  Layers, FileQuestion, GraduationCap, PenLine, BookOpen, ListChecks,
 } from 'lucide-vue-next'
 
 const props = defineProps<{
   classId: number
   binders: Array<{ id: string; name: string }>
   notes: Array<{ id: string; title: string }>
+  sets?: Array<{ id: number; name: string }>
 }>()
 
 const emit = defineEmits<{
@@ -23,6 +24,7 @@ interface DraftTask {
   ref: string
   min_cards?: number | null
   min_score?: number | null
+  min_items?: number | null
 }
 
 const title = ref('')
@@ -32,19 +34,30 @@ const tasks = ref<DraftTask[]>([{ task_type: 'flashcards', ref: '' }])
 const creating = ref(false)
 const error = ref('')
 
-// Métadonnées par type : libellé, icône, et nature de la cible (classeur ou note).
-const TASK_META: Record<TaskType, { label: string; icon: unknown; target: 'binder' | 'note' }> = {
+// Métadonnées par type : libellé, icône, et nature de la cible (classeur, note ou ensemble de révision).
+const TASK_META: Record<TaskType, { label: string; icon: unknown; target: 'binder' | 'note' | 'set' }> = {
   flashcards: { label: 'Flashcards', icon: Layers, target: 'binder' },
-  quiz: { label: 'QCM', icon: FileQuestion, target: 'note' },
+  quiz: { label: 'QCM (note)', icon: FileQuestion, target: 'note' },
   exam: { label: 'Examen blanc', icon: GraduationCap, target: 'binder' },
   blurting: { label: 'Blurting (feuille blanche)', icon: PenLine, target: 'note' },
   read: { label: 'Lecture', icon: BookOpen, target: 'note' },
+  revision: { label: 'Ensemble de révision', icon: ListChecks, target: 'set' },
 }
 
 const taskTypes = Object.keys(TASK_META) as TaskType[]
 
-function targetOptions(type: TaskType) {
-  return TASK_META[type].target === 'binder' ? props.binders : props.notes.map(n => ({ id: n.id, name: n.title }))
+function targetOptions(type: TaskType): Array<{ id: string; name: string }> {
+  const target = TASK_META[type].target
+  if (target === 'binder') return props.binders
+  if (target === 'set') return (props.sets ?? []).map(s => ({ id: String(s.id), name: s.name }))
+  return props.notes.map(n => ({ id: n.id, name: n.title }))
+}
+
+function targetPlaceholder(type: TaskType): string {
+  const target = TASK_META[type].target
+  if (target === 'binder') return 'Choisir un classeur…'
+  if (target === 'set') return 'Choisir un ensemble de révision…'
+  return 'Choisir une note…'
 }
 
 function addTask() {
@@ -56,10 +69,11 @@ function removeTask(idx: number) {
 }
 
 function onTypeChange(t: DraftTask) {
-  // Le changement de type invalide la cible précédente (classeur vs note).
+  // Le changement de type invalide la cible précédente (classeur vs note vs ensemble).
   t.ref = ''
   t.min_cards = null
   t.min_score = null
+  t.min_items = null
 }
 
 const canSubmit = computed(() =>
@@ -77,6 +91,9 @@ async function submit() {
       const goal: Record<string, number> = {}
       if (t.task_type === 'flashcards') {
         if (t.min_cards) goal.min_cards = Number(t.min_cards)
+        if (t.min_score) goal.min_score = Number(t.min_score)
+      } else if (t.task_type === 'revision') {
+        if (t.min_items) goal.min_items = Number(t.min_items)
         if (t.min_score) goal.min_score = Number(t.min_score)
       }
       return {
@@ -159,15 +176,21 @@ async function submit() {
 
                 <select v-model="t.ref"
                   class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                  <option value="" disabled>
-                    {{ TASK_META[t.task_type].target === 'binder' ? 'Choisir un classeur…' : 'Choisir une note…' }}
-                  </option>
+                  <option value="" disabled>{{ targetPlaceholder(t.task_type) }}</option>
                   <option v-for="opt in targetOptions(t.task_type)" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
                 </select>
 
                 <!-- Objectif pour les flashcards -->
                 <div v-if="t.task_type === 'flashcards'" class="flex gap-2">
                   <input v-model.number="t.min_cards" type="number" min="1" placeholder="Cartes min."
+                    class="w-1/2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                  <input v-model.number="t.min_score" type="number" min="1" max="100" placeholder="Score min. %"
+                    class="w-1/2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                </div>
+
+                <!-- Objectif pour un ensemble de révision -->
+                <div v-if="t.task_type === 'revision'" class="flex gap-2">
+                  <input v-model.number="t.min_items" type="number" min="1" placeholder="Items min."
                     class="w-1/2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500" />
                   <input v-model.number="t.min_score" type="number" min="1" max="100" placeholder="Score min. %"
                     class="w-1/2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500" />

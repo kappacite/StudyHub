@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 # Types de tâches supportés par un devoir.
-TaskType = Literal["flashcards", "quiz", "exam", "blurting", "read"]
+TaskType = Literal["flashcards", "quiz", "exam", "blurting", "read", "revision"]
 
 
 # ─── Input schemas ────────────────────────────────────────────────────────────

@@ -26,7 +26,7 @@ export interface AssignmentProgress {
   graded_at?: string | null
 }
 
-export type TaskType = 'flashcards' | 'quiz' | 'exam' | 'blurting' | 'read'
+export type TaskType = 'flashcards' | 'quiz' | 'exam' | 'blurting' | 'read' | 'revision'
 
 export interface AssignmentTask {
   id: number
