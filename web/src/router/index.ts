@@ -88,6 +88,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'revision/sets/:id/stats',
+        name: 'RevisionSetStats',
+        component: () => import('../views/Reviews/RevisionSetStats.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'reviews',
         name: 'Reviews',
         component: () => import('../views/Reviews/Reviews.vue'),
