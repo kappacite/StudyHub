@@ -12,12 +12,18 @@ class PDFService:
         self._pdf_dao = pdf_dao
         self._binder_dao = binder_dao
 
-    def _get_pdf_or_404(self, pdf_id, user_id: int) -> PDFDocument:
+    def _get_pdf_or_404(self, pdf_id, user_id: int, write_required: bool = False) -> PDFDocument:
         pdf = self._pdf_dao.get_by_id(pdf_id)
         if not pdf:
             raise ResourceNotFoundError("Document PDF introuvable.")
         if pdf.user_id != user_id:
-            raise ForbiddenError("Accès interdit à ce document PDF.")
+            # Accès en lecture aux PDF d'un classeur partagé (cours) ; l'écriture
+            # (suppression) reste réservée selon la permission du classeur partagé.
+            if pdf.binder_id:
+                from app.utils.security import check_binder_access
+                check_binder_access(self._pdf_dao.db, pdf.binder_id, user_id, write_required=write_required)
+            else:
+                raise ForbiddenError("Accès interdit à ce document PDF.")
         return pdf
 
     def create_pdf(
@@ -89,12 +95,30 @@ class PDFService:
         offset = (page - 1) * per_page
         pdfs = self._pdf_dao.get_by_binder(user_id, binder_id, tag_id, limit=per_page, offset=offset)
         total = self._pdf_dao.count_by_binder(user_id, binder_id, tag_id)
-        
-        return [PDFResponse.model_validate(p) for p in pdfs], total
+
+        responses = [PDFResponse.model_validate(p) for p in pdfs]
+
+        # Lors d'un listing global, inclure les PDF des classeurs partagés
+        # (cours), en LECTURE SEULE — symétrique des notes.
+        if binder_id is None and tag_id is None:
+            shared_binder_ids: list = []
+            for root in self._binder_dao.get_shared_root_binders(user_id):
+                shared_binder_ids.append(root._id)
+                shared_binder_ids.extend(d._id for d in self._binder_dao.get_descendants(root._id))
+            if shared_binder_ids:
+                for p in self._pdf_dao.get_by_binder_internal_ids(shared_binder_ids):
+                    resp = PDFResponse.model_validate(p)
+                    resp.read_only = True
+                    responses.append(resp)
+                total = len(responses)
+
+        return responses, total
 
     def get_pdf(self, user_id: int, pdf_id) -> PDFResponse:
         pdf = self._get_pdf_or_404(pdf_id, user_id)
-        return PDFResponse.model_validate(pdf)
+        resp = PDFResponse.model_validate(pdf)
+        resp.read_only = pdf.user_id != user_id
+        return resp
 
     def get_pdf_file_path(self, user_id: int, pdf_id, upload_folder: str) -> str:
         pdf = self._get_pdf_or_404(pdf_id, user_id)
@@ -106,7 +130,8 @@ class PDFService:
         return file_path
 
     def delete_pdf(self, user_id: int, pdf_id, upload_folder: str) -> None:
-        pdf = self._get_pdf_or_404(pdf_id, user_id)
+        # Écriture requise : un élève (lecture seule sur un cours partagé) ne peut pas supprimer.
+        pdf = self._get_pdf_or_404(pdf_id, user_id, write_required=True)
         file_path = os.path.join(upload_folder, pdf.filename)
         
         # Supprimer d'abord de la base de données

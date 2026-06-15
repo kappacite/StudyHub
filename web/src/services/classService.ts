@@ -228,6 +228,12 @@ const classService = {
     return resp.data
   },
 
+  // Dépôt de cours (B1) : résout/crée le classeur de cours partagé à la classe.
+  async getCourseBinder(classId: number): Promise<{ binder_id: string; name: string; created: boolean }> {
+    const resp = await api.post(`/classes/${classId}/course-binder`)
+    return resp.data
+  },
+
   // Questions des élèves (Q&A) — B4
   async listQuestions(classId: number): Promise<ClassQuestion[]> {
     const resp = await api.get<ClassQuestion[]>(`/classes/${classId}/questions`)
