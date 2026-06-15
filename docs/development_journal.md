@@ -350,3 +350,20 @@ Mise en œuvre du socle A0 de `docs/REFACTO_FONCTIONNALITES.md`. **Décision D3c
 
 ### À suivre
 * A1–A6 : éditeurs/étude par type depuis le store révision ; A7/A8 : stats par élément/classeur (D5) ; C2 : réorg de l'onglet Révisions.
+
+## [2026-06-15] A1 — Flashcard avancée : mode inversé, tuning par carte & courbe d'apprentissage
+
+Implémentation de A1 (`docs/REFACTO_FONCTIONNALITES.md`), remappée sur `Deck`/`Flashcard` (D3c).
+
+### Backend
+* **`Deck`** : `reversed` (D7) et `tuning_default` (D4). **`Flashcard`** : `tuning` par carte et `reverse_of_id` (miroir verso→recto).
+* **Mode inversé matérialisé** : création/édition/suppression d'une carte gèrent son miroir (contenu synchronisé, suppression en cascade) ; la bascule `reversed` du deck (PUT) crée/retire les miroirs. Les miroirs ont un état SM-2 distinct, sont **étudiés séparément** et **exclus** des listes/compteurs de gestion.
+* **SM-2 par carte** : intervalle × (`deck.tuning_default` × `card.tuning`).
+* **Courbe d'apprentissage** : `GET /decks/:id/cards/:card_id/history` → série (date, grade) depuis `StudySession`.
+* Migration additive/idempotente `c3d4e5f6a7b8`. Tests : miroir matérialisé, bascule on/off, suppression cascade, tuning allonge l'intervalle, historique. Suite 209/209, drift OK.
+
+### Frontend
+* `stores/decks.ts` : `Deck.reversed/tuning_default`, `Flashcard.tuning/reverse_of_id`, `createDeck`/`updateDeck`/`updateCard` étendus (rétro-compatibles), `fetchCardHistory`.
+* `Decks.vue` : toggle **Mode inversé** + slider fine-tuning par défaut (modale deck), slider tuning par carte (modale carte), badge « ⇄ Inversé » sur la grille, bouton **courbe** par carte.
+* **`LearningCurve.vue`** : sparkline SVG (zéro dépendance) — grades dans le temps, seuil de réussite, moyenne.
+* Tests : `decks.spec` (reversed/tuning_default, tuning updateCard, fetchCardHistory). vue-tsc clean, Vitest 26/26, build OK.
