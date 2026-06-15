@@ -19,6 +19,11 @@ class StudySession(db.Model):
     
     # Pour le suivi des flashcards individuelles
     flashcard_id = Column(Integer, ForeignKey("flashcards.id", ondelete="CASCADE"), nullable=True)
+    # Suivi unifié « élément de révision » (D5) : couvre flashcards ET items typés
+    # (revision_items). Polymorphe (pas de FK) : `item_type` discrimine la source
+    # ('flashcard', 'qcm', 'vf', 'association', 'definition', 'ordre').
+    item_id = Column(Integer, nullable=True, index=True)
+    item_type = Column(String(20), nullable=True)
     grade = Column(Integer, nullable=True)
     
     created_at = Column(DateTime, server_default=func.now())

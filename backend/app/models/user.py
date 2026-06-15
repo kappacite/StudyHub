@@ -18,6 +18,7 @@ class User(db.Model):
     # Relations
     binders = relationship("Binder", back_populates="user", cascade="all, delete-orphan", foreign_keys="[Binder.user_id]")
     decks = relationship("Deck", back_populates="user", cascade="all, delete-orphan")
+    revision_sets = relationship("RevisionSet", back_populates="user", cascade="all, delete-orphan")
     notes = relationship("Note", back_populates="user", cascade="all, delete-orphan")
     diagrams = relationship("Diagram", back_populates="user", cascade="all, delete-orphan")
     pdfs = relationship("PDFDocument", back_populates="user", cascade="all, delete-orphan")

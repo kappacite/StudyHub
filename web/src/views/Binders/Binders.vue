@@ -430,7 +430,10 @@ import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
 import RevisionItemModal from '../../components/decks/RevisionItemModal.vue'
-import type { CardType } from '../../stores/decks'
+import type { RevisionType } from '../../stores/revision'
+
+// 'basic' = flashcard recto/verso (Deck) ; les autres types = ensembles de révision.
+type RevisionItemType = RevisionType | 'basic'
 import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network } from 'lucide-vue-next'
 
 const bindersStore = useBindersStore()
@@ -476,7 +479,7 @@ const showAddMenu = ref(false)
 const showDeckModal = ref(false)
 const newDeckName = ref('')
 const showRevisionModal = ref(false)
-const revisionInitialType = ref<CardType>('basic')
+const revisionInitialType = ref<RevisionItemType>('basic')
 const revisionDeckId = ref<number | undefined>(undefined)
 
 const addMenu = [
@@ -486,8 +489,9 @@ const addMenu = [
   { label: 'Carte', icon: Layers, action: () => closeMenuThen(() => openRevisionItem('basic')) },
   { label: 'QCM', icon: FileQuestion, action: () => closeMenuThen(() => openRevisionItem('qcm')) },
   { label: 'Vrai / Faux', icon: CheckSquare, action: () => closeMenuThen(() => openRevisionItem('vf')) },
+  { label: 'Définition', icon: FileText, action: () => closeMenuThen(() => openRevisionItem('definition')) },
   { label: 'Ordre', icon: ListOrdered, action: () => closeMenuThen(() => openRevisionItem('ordre')) },
-  { label: 'Association', icon: Network, action: () => closeMenuThen(() => openRevisionItem('assoc')) },
+  { label: 'Association', icon: Network, action: () => closeMenuThen(() => openRevisionItem('association')) },
 ]
 
 function closeMenuThen(fn: () => void) {
@@ -511,7 +515,7 @@ async function createDeck() {
   showDeckModal.value = false
 }
 
-function openRevisionItem(type: CardType) {
+function openRevisionItem(type: RevisionItemType) {
   revisionInitialType.value = type
   revisionDeckId.value = undefined
   showRevisionModal.value = true

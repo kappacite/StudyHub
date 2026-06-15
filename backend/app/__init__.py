@@ -124,6 +124,7 @@ def create_app(config_name=None):
         from app.api.v1.binders import binders_bp
         from app.api.v1.decks import decks_bp
         from app.api.v1.flashcards import flashcards_bp, flashcards_global_bp
+        from app.api.v1.revision import revision_bp
         from app.api.v1.notes import notes_bp
         from app.api.v1.diagrams import diagrams_bp
         from app.api.v1.pdfs import pdfs_bp
@@ -149,6 +150,7 @@ def create_app(config_name=None):
         flask_app.register_blueprint(decks_bp, url_prefix="/api/v1/decks")
         flask_app.register_blueprint(flashcards_bp, url_prefix="/api/v1/decks/<int:deck_id>/cards")
         flask_app.register_blueprint(flashcards_global_bp, url_prefix="/api/v1/flashcards")
+        flask_app.register_blueprint(revision_bp, url_prefix="/api/v1/revision")
         flask_app.register_blueprint(notes_bp, url_prefix="/api/v1/notes")
         flask_app.register_blueprint(diagrams_bp, url_prefix="/api/v1/diagrams")
         flask_app.register_blueprint(pdfs_bp, url_prefix="/api/v1/pdfs")
@@ -174,6 +176,7 @@ def create_app(config_name=None):
         import app.models.binder
         import app.models.deck
         import app.models.flashcard
+        import app.models.revision
         import app.models.note
         import app.models.diagram
         import app.models.pdf_document
