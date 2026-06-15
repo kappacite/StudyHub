@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal, Union
 from pydantic import BaseModel, Field, ConfigDict
 from app.schemas.tag_schema import TagResponseSchema
 
@@ -18,6 +18,14 @@ class BinderUpdate(BaseModel):
     is_public: Optional[bool] = None
     description: Optional[str] = None
     tags: Optional[List[str]] = None
+
+class BinderItemRef(BaseModel):
+    """Référence à un élément rattachable (C1)."""
+    type: Literal["note", "deck", "set", "diagram", "pdf"]
+    id: Union[int, str]
+
+class BinderItemsRequest(BaseModel):
+    items: List[BinderItemRef] = Field(..., min_length=1)
 
 class BinderResponse(BinderBase):
     id: str

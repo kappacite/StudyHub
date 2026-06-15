@@ -438,3 +438,22 @@ Agrégation des stats de révision à l'échelle d'un classeur (et de son sous-a
 
 ### Portée
 * Couvre les **ensembles de révision**. Les decks de flashcards conservent `/stats/decks/:id` ; leur intégration à la vue classeur pourra suivre l'unification flashcards↔items évoquée en A7. **Partie A (Révision) désormais complète.**
+
+## [2026-06-15] C1 — Classeur : rattacher/détacher des éléments existants
+
+Le classeur n'est plus seulement un lieu de **création** : on peut y déplacer des éléments déjà existants, et les en retirer sans les supprimer.
+
+### Backend
+* **`BinderItemsService`** (orchestration transverse) : `attach(user_id, binder_id, items)` et `detach(user_id, items)` pour `note`/`deck`/`set`/`diagram`/`pdf`. Vérifie l'appartenance de chaque élément **et** l'accès en écriture au classeur (`check_binder_access`). Aucune SQL directe (passe par les DAO + `binder_id`).
+* Endpoints **`POST /binders/:id/items`** (attache) et **`POST /binders/:id/items/detach`** (détache → `binder_id = NULL`, sans suppression). Schémas `BinderItemRef`/`BinderItemsRequest`. Pas de migration.
+
+### Frontend
+* `stores/binders.ts` : `attachItems`/`detachItems` + types `BinderItemRef`/`BinderItemType`.
+* `Binders.vue` : entrée **« Élément existant »** dans le menu « + Ajouter » ouvrant une **modale multi-sélection** (notes, jeux de révision, ensembles non rangés ou d'un autre classeur) ; bouton **« détacher »** (icône `FolderMinus`) par ligne, distinct de la suppression.
+
+### Tests
+* Backend `test_binder_items.py` : attache (note/deck/ensemble), détache conserve l'élément, rejet d'un type inconnu (400), isolation (élément d'autrui → 403/404, classeur d'autrui → 403/404). Suite **234/234**.
+* Front : `binders.spec` (attachItems/detachItems → bons endpoints). vue-tsc clean, **Vitest 35/35**.
+
+### Reste
+* Afficher les **diagrammes et PDF** directement dans la vue classeur (le backend attach/détache les gère déjà ; seul l'affichage/sélecteur UI manque). Suite du plan : **C2** (réorg de l'onglet Révisions).

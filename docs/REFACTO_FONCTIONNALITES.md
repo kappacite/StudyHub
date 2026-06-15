@@ -78,8 +78,8 @@
 | Révision IA | Évaluation IA (note), Auto-QCM (`Quiz`), Blurting, Feynman. Onglets à plat. | `views/Reviews/Reviews.vue`, `models/quiz.py`, `models/evaluation.py` |
 | Professeur | `Group(is_class)`, `GroupBinder` (partage par référence), `Assignment`+`AssignmentTask` (`flashcards|quiz|exam|blurting|read`), `AssignmentProgress` (+notation), analytics, engagement, `Notification`, `ClassInsight`. | `services/class_*`, `models/assignment.py`, `models/group.py` |
 | Révision active notes | Balisage `{{qcm}}/{{vf}}/{{trou}}/[def]` + mode « Révision Active » inline (révéler/répondre). | `views/Notes/NoteEdit.vue`, `utils/placeholder_parser.py` |
-| Fait depuis (PR #49→#54 + stats-binder) | Socle `revision_sets`/`revision_items` (A0) ; flashcard avancée — inversé/tuning/courbe (A1) ; QCM scoré (A2) ; VF/association/définition/ordre (A3–A6) ; stats par élément/ensemble (A7) ; **stats par classeur (A8)**. **Partie A complète.** | cf. §5 |
-| Manquant | Réorg onglet Révisions Classiques/IA (C2) ; rattacher/détacher des éléments existants (C1) ; devoirs sur ensembles de révision (B3) ; Q&A élèves (B4) ; stats de groupe étendues (B5). | — |
+| Fait depuis (PR #49→#54 + stats-binder + binder-manage) | Socle `revision_sets`/`revision_items` (A0) ; flashcard avancée — inversé/tuning/courbe (A1) ; QCM scoré (A2) ; VF/association/définition/ordre (A3–A6) ; stats par élément/ensemble (A7) ; **stats par classeur (A8)** ; **rattacher/détacher des éléments existants (C1)**. **Partie A complète.** | cf. §5 |
+| Manquant | Réorg onglet Révisions Classiques/IA (C2) ; affichage diagrammes/pdfs dans le classeur (reste de C1) ; devoirs sur ensembles de révision (B3) ; Q&A élèves (B4) ; stats de groupe étendues (B5). | — |
 
 ---
 
@@ -300,16 +300,16 @@
 
 **Objectif** : créer un classeur puis **y rattacher des éléments déjà existants** ; gérer visibilité, renommer, retirer/ajouter des éléments.
 
-**État actuel** : 🟡 création + menu « + Ajouter » (crée du neuf) ; visibilité ✅ ; renommer ✅ (update) ; **rattacher existant / détacher** ⬜.
+**État actuel** : ✅ **Fait** (PR `feature/binder-manage`, 2026-06-15). Attache/détache existant ; visibilité ✅ ; renommer ✅ (update). _Reste : affichage des diagrammes/PDF **dans** la vue classeur (backend déjà compatible)._
 
 **Étapes**
-- [ ] (backend) Endpoints d'**attache/détache** : déplacer un ensemble/note/diagramme/pdf vers/hors d'un classeur (`binder_id`), sans suppression. Vérifs d'appartenance.
-- [ ] (frontend) Modale « Ajouter un élément existant » (sélecteur multi : notes, ensembles, diagrammes, pdfs non rangés / d'un autre classeur).
-- [ ] (frontend) Retirer un élément du classeur (détache, ne supprime pas) + supprimer définitivement (distinct).
-- [ ] (frontend) Afficher **tous** les types dans le classeur (notes, ensembles par type, diagrammes, pdfs).
-- [ ] (frontend) Renommer le classeur en place ; rappel visibilité public/privé.
+- [x] (backend) Endpoints d'**attache/détache** : `POST /binders/:id/items` et `POST /binders/:id/items/detach` déplacent note/deck/ensemble/diagramme/pdf vers/hors d'un classeur (`binder_id`), sans suppression. `BinderItemsService`, vérifs d'appartenance (élément **et** classeur via `check_binder_access`).
+- [x] (frontend) Modale « **Ajouter un élément existant** » (sélecteur multi) dans `Binders.vue` : notes, jeux de révision (decks), ensembles non rangés / d'un autre classeur. _(diagrammes/pdfs : backend prêt, à exposer quand ils seront affichés dans le classeur)_
+- [x] (frontend) Retirer un élément du classeur (**détache**, ne supprime pas) — bouton dédié par ligne, distinct de la suppression.
+- [ ] (frontend) Afficher **tous** les types dans le classeur (diagrammes, pdfs manquants à l'affichage).
+- [x] (frontend) Renommer le classeur (via update) ; rappel visibilité public/privé (bouton Partager).
 
-**Tests** : attache/détache conserve l'élément ; isolation ; un détaché reste accessible hors classeur.
+**Tests** : attache (note/deck/ensemble), détache conserve l'élément, rejet type inconnu (400), isolation (élément d'autrui, classeur d'autrui). Front : `binders.spec` (attachItems/detachItems).
 **Commits** : `feat(binder): rattacher/détacher des éléments existants`, `feat(binder): affichage complet des contenus`.
 **PR** : `feature/binder-manage`.
 
@@ -363,3 +363,4 @@
 - **2026-06-15** — **A7 livré** (PR #54 `feature/stats-elements`, mergée). `revision_stats_service` (D : difficulté, R : Ebbinghaus, S : stabilité, True Retention, sangsues, maturité, date de maîtrise), `GET /stats/items/:id` + `GET /stats/sets/:id` (anti-N+1), `RevisionSetStats.vue` (KPI + verdicts + mini-courbe). Pas de migration.
 - **2026-06-15** — **Note de process** : merge de la pile de PR (#49→#54). #51/#52 fermées en cascade par GitHub (suppression de leur branche de base) → recréées en #55/#56 vers `main`. Les enfants ont ensuite été re-ciblés sur `main` **avant** merge du parent pour éviter la cascade. Conflits limités à `docs/FEATURES.md` / `docs/development_journal.md` (ajouts conservés des deux côtés). **Reste : A8 (prochain), puis C1/C2 et extensions B3/B4/B5.**
 - **2026-06-15** — **A8 livré** (`feature/stats-binder`). `GET /stats/binders/<uuid>` (option `?descendants=false`) agrège tous les ensembles de révision d'un classeur et de son sous-arbre ; refactor de `RevisionStatsService` (`_aggregate_set` partagé, accès via `check_binder_access`, anti-N+1 : 1 req. sets + 1 req. items + 1 req. sessions/type). Front : `RevisionBinderStats.vue` (KPI, répartition par type, ensembles à surveiller, liste) + bouton « Stats » dans `Binders.vue`. Pas de migration. Tests : backend 229 (dont `test_stats_binder` : agrégation, sous-arbre, isolation, budget), vue-tsc clean, Vitest 33. **Partie A désormais complète ; suite : C1/C2 puis B3/B4/B5.**
+- **2026-06-15** — **C1 livré** (`feature/binder-manage`). Rattacher/détacher des éléments existants : `BinderItemsService` + `POST /binders/:id/items` et `POST /binders/:id/items/detach` (note/deck/ensemble/diagramme/pdf), vérifs d'appartenance élément **et** classeur. Front : modale « Ajouter un élément existant » (multi-select notes/decks/ensembles) + bouton « détacher » par ligne dans `Binders.vue` ; store `attachItems`/`detachItems`. Pas de migration. Tests : backend 234 (`test_binder_items` : attache, détache, type inconnu, double isolation), vue-tsc clean, Vitest 35. **Reste de C1 : afficher diagrammes/pdfs dans le classeur. Suite : C2.**

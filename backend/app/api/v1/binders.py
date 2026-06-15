@@ -2,8 +2,14 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from app.extensions import db
 from app.dao.binder_dao import BinderDAO
+from app.dao.note_dao import NoteDAO
+from app.dao.deck_dao import DeckDAO
+from app.dao.diagram_dao import DiagramDAO
+from app.dao.pdf_dao import PDFDAO
+from app.dao.revision_dao import RevisionSetDAO
 from app.services.binder_service import BinderService
-from app.schemas.binder_schema import BinderCreate, BinderUpdate
+from app.services.binder_items_service import BinderItemsService
+from app.schemas.binder_schema import BinderCreate, BinderUpdate, BinderItemsRequest
 from app.middlewares.auth_middleware import jwt_required_middleware
 from app.api.v1.tags import remove_entity_tag, set_entity_tags
 import math
@@ -12,6 +18,10 @@ binders_bp = Blueprint("binders", __name__)
 
 binder_dao = BinderDAO(db.session)
 binder_service = BinderService(binder_dao)
+binder_items_service = BinderItemsService(
+    binder_dao, NoteDAO(db.session), DeckDAO(db.session),
+    RevisionSetDAO(db.session), DiagramDAO(db.session), PDFDAO(db.session),
+)
 
 @binders_bp.route("", methods=["GET"])
 @jwt_required_middleware
@@ -86,6 +96,23 @@ def delete_binder(binder_id):
     user_id = int(get_jwt_identity())
     binder_service.delete_binder(user_id, binder_id)
     return "", 204
+
+
+@binders_bp.route("/<binder_id>/items", methods=["POST"])
+@jwt_required_middleware
+def attach_binder_items(binder_id):
+    user_id = int(get_jwt_identity())
+    payload = BinderItemsRequest.model_validate(request.get_json() or {})
+    attached = binder_items_service.attach(user_id, binder_id, payload.items)
+    return jsonify({"attached": attached}), 200
+
+@binders_bp.route("/<binder_id>/items/detach", methods=["POST"])
+@jwt_required_middleware
+def detach_binder_items(binder_id):
+    user_id = int(get_jwt_identity())
+    payload = BinderItemsRequest.model_validate(request.get_json() or {})
+    detached = binder_items_service.detach(user_id, payload.items)
+    return jsonify({"detached": detached}), 200
 
 
 @binders_bp.route("/<binder_id>/tags", methods=["POST"])
