@@ -200,11 +200,21 @@
                 </p>
                 <p class="text-[10px] text-slate-400 mt-0.5">Mis à jour il y a 2h</p>
               </div>
-              <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              <div class="flex items-center gap-1 shrink-0">
+                <button
+                  v-if="isOwner"
+                  @click.stop="detachItem('note', note.id)"
+                  class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all"
+                  title="Retirer du classeur (sans supprimer)"
+                >
+                  <FolderMinus class="w-4 h-4" />
+                </button>
+                <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              </div>
             </div>
 
-            <div 
-              v-if="currentNotes.length === 0" 
+            <div
+              v-if="currentNotes.length === 0"
               class="text-center py-8 text-slate-400 text-xs font-semibold uppercase tracking-wider"
             >
               Aucune note dans ce dossier
@@ -245,6 +255,14 @@
                   title="Ajouter un item"
                 >
                   <Plus class="w-4 h-4" />
+                </button>
+                <button
+                  v-if="isOwner"
+                  @click.stop="detachItem('deck', deck.id)"
+                  class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all"
+                  title="Retirer du classeur (sans supprimer)"
+                >
+                  <FolderMinus class="w-4 h-4" />
                 </button>
                 <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </div>
@@ -287,6 +305,14 @@
                 >
                   <BarChart3 class="w-4 h-4" />
                 </button>
+                <button
+                  v-if="isOwner"
+                  @click.stop="detachItem('set', set.id)"
+                  class="p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                  title="Retirer du classeur (sans supprimer)"
+                >
+                  <FolderMinus class="w-4 h-4" />
+                </button>
                 <span class="text-xs font-bold text-indigo-600 flex items-center gap-1">
                   {{ set.type === 'qcm' ? 'Lancer' : 'Étudier' }}
                   <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -305,8 +331,46 @@
       </div>
     </div>
 
+    <!-- Attach Existing Items Modal (C1) -->
+    <div v-if="showAttachModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showAttachModal = false"></div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-lg p-6 relative z-10 shadow-2xl animate-scale-up flex flex-col max-h-[80vh]">
+        <h3 class="font-bold text-lg text-slate-800 dark:text-white mb-1">Ajouter un élément existant</h3>
+        <p class="text-xs text-slate-400 mb-4">Déplace des éléments non rangés ou d'un autre classeur vers celui-ci.</p>
+
+        <div class="flex-1 overflow-y-auto -mx-2 px-2 space-y-4">
+          <div v-for="group in attachableGroups" :key="group.type">
+            <p v-if="group.items.length" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{{ group.label }}</p>
+            <label
+              v-for="it in group.items" :key="`${group.type}:${it.id}`"
+              class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+            >
+              <input type="checkbox" :checked="isSelected(group.type, it.id)" @change="toggleSelect(group.type, it.id)"
+                     class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+              <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{{ it.label }}</span>
+            </label>
+          </div>
+          <p v-if="attachableGroups.every(g => g.items.length === 0)" class="text-center py-8 text-xs text-slate-400 uppercase tracking-wider">
+            Aucun élément disponible à rattacher.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 mt-5">
+          <button @click="showAttachModal = false" class="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Annuler</button>
+          <button
+            @click="confirmAttach"
+            :disabled="selectedCount === 0 || attaching"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
+          >
+            <Loader2 v-if="attaching" class="w-4 h-4 animate-spin" />
+            Ajouter{{ selectedCount ? ` (${selectedCount})` : '' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Create Folder Modal -->
-    <div 
+    <div
       v-if="showModal"
       class="fixed inset-0 z-50 flex items-center justify-center px-4"
     >
@@ -495,7 +559,8 @@ const REVISION_TYPE_LABELS: Record<RevisionType, string> = {
   definition: 'Définition',
   ordre: 'Ordre',
 }
-import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network, BarChart3 } from 'lucide-vue-next'
+import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network, BarChart3, FolderMinus, FolderInput } from 'lucide-vue-next'
+import type { BinderItemType } from '../../stores/binders'
 
 const bindersStore = useBindersStore()
 const notesStore = useNotesStore()
@@ -546,6 +611,7 @@ const revisionDeckId = ref<number | undefined>(undefined)
 
 const addMenu = [
   { label: 'Sous-dossier', icon: FolderPlus, action: () => closeMenuThen(openCreateModal) },
+  { label: 'Élément existant', icon: FolderInput, action: () => closeMenuThen(openAttachModal) },
   { label: 'Note', icon: FileText, action: () => closeMenuThen(addNote) },
   { label: 'Jeu de révision', icon: Layers, action: () => closeMenuThen(openNewDeck) },
   { label: 'Carte', icon: Layers, action: () => closeMenuThen(() => openRevisionItem('basic')) },
@@ -639,6 +705,71 @@ function openSet(set: { id: number; type: RevisionType }) {
   // QCM → passage scoré ; autres types → étude générique (révéler/corriger + SM-2).
   const path = set.type === 'qcm' ? 'run' : 'study'
   router.push(`/revision/sets/${set.id}/${path}`)
+}
+
+// --- C1 : rattacher / détacher des éléments existants --------------------------
+const showAttachModal = ref(false)
+const attaching = ref(false)
+const selected = ref<Record<string, { type: BinderItemType; id: number | string }>>({})
+
+const attachableGroups = computed(() => {
+  const cur = currentBinderId.value
+  return [
+    {
+      type: 'note' as BinderItemType, label: 'Notes',
+      items: notesStore.notes.filter(n => n.binder_id !== cur && !n.read_only).map(n => ({ id: n.id, label: n.title })),
+    },
+    {
+      type: 'deck' as BinderItemType, label: 'Jeux de révision',
+      items: decksStore.decks.filter(d => d.binder_id !== cur).map(d => ({ id: d.id, label: d.name })),
+    },
+    {
+      type: 'set' as BinderItemType, label: 'Ensembles de révision',
+      items: revisionStore.sets.filter(s => s.binder_id !== cur).map(s => ({ id: s.id, label: s.name })),
+    },
+  ]
+})
+
+const selectedCount = computed(() => Object.keys(selected.value).length)
+function keyOf(type: BinderItemType, id: number | string) { return `${type}:${id}` }
+function isSelected(type: BinderItemType, id: number | string) { return keyOf(type, id) in selected.value }
+function toggleSelect(type: BinderItemType, id: number | string) {
+  const k = keyOf(type, id)
+  if (k in selected.value) { delete selected.value[k] }
+  else { selected.value[k] = { type, id } }
+}
+
+function openAttachModal() {
+  selected.value = {}
+  showAttachModal.value = true
+}
+
+async function refreshContentStores() {
+  await Promise.all([notesStore.fetchNotes(), decksStore.fetchDecks(), revisionStore.fetchSets()])
+}
+
+async function confirmAttach() {
+  if (!currentBinderId.value || selectedCount.value === 0) return
+  attaching.value = true
+  try {
+    await bindersStore.attachItems(currentBinderId.value, Object.values(selected.value))
+    await refreshContentStores()
+    showAttachModal.value = false
+  } catch (e) {
+    console.error("Erreur lors du rattachement d'éléments", e)
+  } finally {
+    attaching.value = false
+  }
+}
+
+async function detachItem(type: BinderItemType, id: number | string) {
+  if (!currentBinderId.value) return
+  try {
+    await bindersStore.detachItems(currentBinderId.value, [{ type, id }])
+    await refreshContentStores()
+  } catch (e) {
+    console.error("Erreur lors du retrait de l'élément", e)
+  }
 }
 
 // Breadcrumbs trace path from root

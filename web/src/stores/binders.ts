@@ -93,12 +93,31 @@ export const useBindersStore = defineStore('binders', () => {
     }
   }
 
+  // C1 — rattacher/détacher des éléments existants à un classeur.
+  async function attachItems(binderId: string, items: BinderItemRef[]) {
+    const response = await api.post<{ attached: number }>(`/binders/${binderId}/items`, { items })
+    return response.data.attached
+  }
+
+  async function detachItems(binderId: string, items: BinderItemRef[]) {
+    const response = await api.post<{ detached: number }>(`/binders/${binderId}/items/detach`, { items })
+    return response.data.detached
+  }
+
   return {
     binders,
     loading,
     fetchBinders,
     createBinder,
     updateBinder,
-    deleteBinder
+    deleteBinder,
+    attachItems,
+    detachItems
   }
 })
+
+export type BinderItemType = 'note' | 'deck' | 'set' | 'diagram' | 'pdf'
+export interface BinderItemRef {
+  type: BinderItemType
+  id: number | string
+}
