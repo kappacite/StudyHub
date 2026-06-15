@@ -473,3 +473,23 @@ Le classeur n'est plus seulement un lieu de **création** : on peut y déplacer 
 
 ### Reste / suite
 * Frontend uniquement, pas de migration. **Parties A et C bouclées** (hors affichage diagrammes/pdfs dans le classeur). Suite du plan : **Partie B** — B3 (devoirs sur ensembles de révision), B4 (Q&A élèves), B5 (stats de groupe étendues).
+
+## [2026-06-15] B3 — Devoirs ciblant un ensemble de révision
+
+Les devoirs (déjà multi-tâches) peuvent désormais cibler un **ensemble de révision typé** (qcm/vf/association/définition/ordre), en plus des classeurs et notes.
+
+### Backend
+* `TASK_TYPES` + `TASK_TARGET_KIND` étendus avec **`revision`** (cible `revision_set`). `_resolve_task_target` résout l'ensemble par `id` et vérifie l'appartenance au professeur (→ `ref_id=set.id`, `ref_label=set.name`).
+* **Complétion dérivée** (`_revision_state`) : à partir des `StudySession` des items de l'ensemble (`item_id`/`item_type`), nombre d'items révisés vs objectif `min_items` + `min_score` (% réussite). Branchée dans `recompute_task_for_user` ; l'élève « soumet » la tâche pour rafraîchir (comme quiz/exam/blurting).
+* Pas de migration : `task_type` est une colonne `String` sans contrainte d'énum.
+
+### Frontend
+* `AssignmentBuilder` : nouveau type **« Ensemble de révision »** (cible `set`, prop `sets`) + champs d'objectif (items min., score min.). `TeacherDashboard` fournit `setOptions` et charge `fetchSets()`.
+* Lancement élève : `taskLaunchRoute` route `revision` → `/revision/sets/:id/study` (via `ref_id`) ; `RevisionStudy` **redirige les QCM** vers leur passage scoré (`/run`). CTA « Réviser » dans `StudentClassView` (`TASK_META.revision`).
+
+### Tests
+* Backend `test_assignment_revision` : création/résolution de la tâche, complétion dérivée d'une session d'étude, isolation (ensemble d'autrui → 404). Suite **237/237**.
+* Front : `assignmentTasks.spec` (route revision par `ref_id`). vue-tsc clean, **Vitest 37/37**.
+
+### Suite
+* **B4** — Questions des élèves (Q&A) : introduit un nouveau modèle + migration. Puis **B5** (stats de groupe étendues).

@@ -171,6 +171,11 @@ onMounted(async () => {
       revisionStore.fetchSet(setId),
       revisionStore.fetchStudyItems(setId),
     ])
+    // Les QCM ont leur passage scoré dédié : on y redirige (ex. lancement d'une tâche de devoir).
+    if (set.type === 'qcm') {
+      router.replace(`/revision/sets/${setId}/run`)
+      return
+    }
     setName.value = set.name
     setType.value = set.type
     items.value = studyItems

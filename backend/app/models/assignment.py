@@ -5,7 +5,8 @@ from app.extensions import db
 
 
 # Types de tâches supportés par un devoir.
-TASK_TYPES = ("flashcards", "quiz", "exam", "blurting", "read")
+# 'revision' cible un ensemble de révision typé (qcm/vf/association/définition/ordre).
+TASK_TYPES = ("flashcards", "quiz", "exam", "blurting", "read", "revision")
 
 
 class Assignment(db.Model):

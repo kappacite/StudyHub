@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useBindersStore } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
+import { useRevisionStore } from '../../stores/revision'
 import classService from '../../services/classService'
 import type { Assignment, StudentMaterialsProgress, ClassOverview, ClassInsight, Leaderboard, RosterEntry } from '../../services/classService'
 import groupService from '../../services/groupService'
@@ -19,6 +20,7 @@ const router = useRouter()
 const bindersStore = useBindersStore()
 const notesStore = useNotesStore()
 const decksStore = useDecksStore()
+const revisionStore = useRevisionStore()
 
 // Classes = groups where is_class = true and user is teacher
 const classes = ref<Array<{
@@ -41,6 +43,7 @@ const newClassIsPublic = ref(false)
 // Notes disponibles comme cibles de tâches (QCM, blurting, lecture)
 const noteOptions = computed(() => notesStore.notes.map(n => ({ id: n.id, title: n.title })))
 const binderOptions = computed(() => bindersStore.binders.map(b => ({ id: b.id, name: b.name })))
+const setOptions = computed(() => revisionStore.sets.map(s => ({ id: s.id, name: `${s.name} (${s.type.toUpperCase()})` })))
 
 // Associate binder state
 const showAssociateModal = ref(false)
@@ -244,7 +247,8 @@ async function loadClasses() {
     classService.getMyClasses(),
     bindersStore.fetchBinders(),
     notesStore.fetchNotes(),
-    decksStore.fetchDecks()
+    decksStore.fetchDecks(),
+    revisionStore.fetchSets()
   ])
   const results = await Promise.all(
     myClasses.map(async c => {
@@ -807,6 +811,7 @@ function isPast(d: string | null): boolean {
       :class-id="selectedClassId"
       :binders="binderOptions"
       :notes="noteOptions"
+      :sets="setOptions"
       @created="onAssignmentCreated"
       @close="showCreateAssignmentModal = false"
     />

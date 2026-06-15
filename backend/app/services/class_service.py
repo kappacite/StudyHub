@@ -17,6 +17,7 @@ from app.dao.assignment_dao import AssignmentDAO
 from app.dao.quiz_dao import QuizDAO
 from app.dao.exam_dao import ExamDAO
 from app.dao.evaluation_dao import EvaluationDAO
+from app.dao.revision_dao import RevisionSetDAO
 from app.extensions import db
 from app.models.group import Group, GroupMember
 from app.models.assignment import (
@@ -43,6 +44,7 @@ TASK_TARGET_KIND = {
     "quiz": "note",
     "blurting": "note",
     "read": "note",
+    "revision": "revision_set",
 }
 
 
@@ -69,6 +71,7 @@ class ClassService:
         self._quiz_dao = quiz_dao or QuizDAO(session)
         self._exam_dao = exam_dao or ExamDAO(session)
         self._evaluation_dao = evaluation_dao or EvaluationDAO(session)
+        self._revision_set_dao = RevisionSetDAO(session)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Helpers
@@ -193,6 +196,15 @@ class ClassService:
             if not binder or binder.user_id != owner_id:
                 raise ResourceNotFoundError("Classeur introuvable pour cette tâche.")
             return binder._id, binder.id, binder.name
+        if kind == "revision_set":
+            try:
+                set_id = int(ref)
+            except (TypeError, ValueError):
+                raise ValidationError("Identifiant d'ensemble de révision invalide.")
+            rset = self._revision_set_dao.get_by_id(set_id)
+            if not rset or rset.user_id != owner_id:
+                raise ResourceNotFoundError("Ensemble de révision introuvable pour cette tâche.")
+            return rset.id, None, rset.name
         note = self._note_dao.get_by_id(ref)
         if not note or note.user_id != owner_id:
             raise ResourceNotFoundError("Note introuvable pour cette tâche.")
@@ -699,6 +711,51 @@ def _flashcards_state(db_session, user_id, binder_id, created_after, goal):
     return status, (score_pct if unique_reviewed > 0 else None), None, payload
 
 
+def _revision_state(db_session, user_id, set_id, created_after, goal):
+    """État d'une tâche `revision` : dérivé des `StudySession` des items de l'ensemble."""
+    from app.models.study_session import StudySession
+    from app.models.revision import RevisionSet, RevisionItem
+
+    rset = db_session.get(RevisionSet, set_id) if set_id else None
+    if not rset:
+        return "todo", None, None, {"reviewed": 0, "total": 0}
+
+    item_ids = [r.id for r in db_session.query(RevisionItem.id).filter(RevisionItem.set_id == set_id).all()]
+    total = len(item_ids)
+    payload = {"reviewed": 0, "total": total}
+    if total == 0:
+        return "done", 100.0, datetime.utcnow(), payload
+
+    sessions = (
+        db_session.query(StudySession)
+        .filter(
+            StudySession.user_id == user_id,
+            StudySession.item_type == rset.type,
+            StudySession.item_id.in_(item_ids),
+            StudySession.created_at >= created_after - timedelta(seconds=5),
+        )
+        .all()
+    )
+    graded = [s for s in sessions if s.grade is not None]
+    unique_reviewed = len({s.item_id for s in sessions if s.item_id})
+    successes = sum(1 for s in graded if s.grade >= 3)
+    score_pct = (successes / len(graded) * 100.0) if graded else 0.0
+    payload["reviewed"] = unique_reviewed
+
+    goal = goal or {}
+    threshold = total
+    if goal.get("min_items"):
+        threshold = min(int(goal["min_items"]), total)
+    items_ok = unique_reviewed >= threshold and threshold > 0
+    score_ok = (score_pct >= goal["min_score"]) if goal.get("min_score") else True
+    done = items_ok and score_ok
+
+    if done:
+        return "done", score_pct, datetime.utcnow(), payload
+    status = "in_progress" if unique_reviewed > 0 else "todo"
+    return status, (score_pct if unique_reviewed > 0 else None), None, payload
+
+
 def _module_completion_state(db_session, user_id, task):
     """État d'une tâche quiz/exam/blurting depuis le module sous-jacent."""
     if task.task_type == "exam":
@@ -746,6 +803,11 @@ def recompute_task_for_user(db_session, user_id, task, mark_read_done=False):
     if task.task_type in ("flashcards",):
         created_after = task.assignment.created_at if task.assignment else datetime.utcnow()
         status, score, completed, payload = _flashcards_state(
+            db_session, user_id, task.ref_id, created_after, task.goal
+        )
+    elif task.task_type == "revision":
+        created_after = task.assignment.created_at if task.assignment else datetime.utcnow()
+        status, score, completed, payload = _revision_state(
             db_session, user_id, task.ref_id, created_after, task.goal
         )
     elif task.task_type in ("exam", "quiz", "blurting"):
