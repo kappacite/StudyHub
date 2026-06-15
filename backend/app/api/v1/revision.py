@@ -8,6 +8,7 @@ from app.services.revision_service import RevisionService
 from app.schemas.revision_schema import (
     RevisionSetCreate, RevisionSetUpdate,
     RevisionItemCreate, RevisionItemUpdate, RevisionItemAnswer,
+    RevisionRunRequest,
 )
 from app.middlewares.auth_middleware import jwt_required_middleware
 
@@ -125,4 +126,13 @@ def answer_item(set_id, item_id):
     user_id = int(get_jwt_identity())
     data = RevisionItemAnswer.model_validate(request.get_json() or {})
     result = revision_service.answer_item(user_id, set_id, item_id, data.score)
+    return jsonify(result.model_dump()), 200
+
+
+@revision_bp.route("/sets/<int:set_id>/run", methods=["POST"])
+@jwt_required_middleware
+def run_qcm(set_id):
+    user_id = int(get_jwt_identity())
+    data = RevisionRunRequest.model_validate(request.get_json() or {})
+    result = revision_service.run_qcm(user_id, set_id, data)
     return jsonify(result.model_dump()), 200

@@ -350,3 +350,19 @@ Mise en œuvre du socle A0 de `docs/REFACTO_FONCTIONNALITES.md`. **Décision D3c
 
 ### À suivre
 * A1–A6 : éditeurs/étude par type depuis le store révision ; A7/A8 : stats par élément/classeur (D5) ; C2 : réorg de l'onglet Révisions.
+
+## [2026-06-15] A2 — QCM scoré (D6)
+
+Implémentation de A2 (`docs/REFACTO_FONCTIONNALITES.md`) sur le socle de révision.
+
+### Backend
+* **Passage scoré** : `POST /revision/sets/:id/run` (réservé au type `qcm`). Correction pondérée par **points** par question, **réponses multiples** en **tout-ou-rien**, score/total/pourcentage + détail par question (bonnes réponses, sélection).
+* **Mise à jour SM-2 par question** au passage (réussi → grade 5, raté → 1 ; tuning ensemble × item) + `StudySession` unifiée (`item_id`/`item_type=qcm`).
+* Schémas `RevisionRun*`. Pas de changement de modèle (aucune migration). Tests : score mono/multi, tout-ou-rien, SM-2/sessions, rejet hors-QCM. Suite 207/207.
+
+### Frontend
+* `RevisionItemModal` : champ **barème (points)** pour le QCM + indice réponses multiples.
+* `stores/revision.ts` : `runQcm`, `fetchSet`, types `RunResult`/`RunAnswer`.
+* **`QcmRun.vue`** (route `/revision/sets/:id/run`) : passage interactif (cases à cocher), correction, score pondéré + feedback par question (bonnes réponses révélées).
+* `Binders.vue` : section **« Ensembles de révision »** (par type, compteur d'items) avec lancement du QCM.
+* Tests : `revision.spec` (runQcm). vue-tsc clean, Vitest 26/26, build OK.

@@ -250,6 +250,42 @@
             </div>
           </div>
         </div>
+
+        <!-- Ensembles de révision (QCM, V/F, association, définition, ordre) -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+            <FileQuestion class="w-4 h-4 text-indigo-500" />
+            Ensembles de révision ({{ currentSets.length }})
+          </h3>
+
+          <div class="space-y-3">
+            <div
+              v-for="set in currentSets"
+              :key="set.id"
+              class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl"
+              :class="set.type === 'qcm' ? 'hover:border-indigo-200 cursor-pointer group' : ''"
+              @click="set.type === 'qcm' && router.push(`/revision/sets/${set.id}/run`)"
+            >
+              <div class="min-w-0">
+                <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">{{ set.name }}</p>
+                <p class="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wider mt-0.5">
+                  {{ REVISION_TYPE_LABELS[set.type] }} · {{ set.item_count }} item(s)
+                </p>
+              </div>
+              <span v-if="set.type === 'qcm'" class="text-xs font-bold text-indigo-600 flex items-center gap-1">
+                Lancer <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </span>
+              <span v-else class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">étude bientôt</span>
+            </div>
+
+            <div
+              v-if="currentSets.length === 0"
+              class="text-center py-8 text-slate-400 text-xs font-semibold uppercase tracking-wider"
+            >
+              Aucun ensemble de révision dans ce dossier
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -430,15 +466,25 @@ import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
 import RevisionItemModal from '../../components/decks/RevisionItemModal.vue'
+import { useRevisionStore } from '../../stores/revision'
 import type { RevisionType } from '../../stores/revision'
 
 // 'basic' = flashcard recto/verso (Deck) ; les autres types = ensembles de révision.
 type RevisionItemType = RevisionType | 'basic'
+
+const REVISION_TYPE_LABELS: Record<RevisionType, string> = {
+  qcm: 'QCM',
+  vf: 'Vrai / Faux',
+  association: 'Association',
+  definition: 'Définition',
+  ordre: 'Ordre',
+}
 import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network } from 'lucide-vue-next'
 
 const bindersStore = useBindersStore()
 const notesStore = useNotesStore()
 const decksStore = useDecksStore()
+const revisionStore = useRevisionStore()
 const tagsStore = useTagsStore()
 const router = useRouter()
 const route = useRoute()
@@ -529,7 +575,7 @@ function openRevisionItemForDeck(deckId: number) {
 
 async function onRevisionCreated() {
   showRevisionModal.value = false
-  await decksStore.fetchDecks()
+  await Promise.all([decksStore.fetchDecks(), revisionStore.fetchSets()])
 }
 
 // Refs pour le partage du classeur
@@ -543,6 +589,7 @@ onMounted(async () => {
     bindersStore.fetchBinders(),
     notesStore.fetchNotes(),
     decksStore.fetchDecks(),
+    revisionStore.fetchSets(),
     tagsStore.fetchTags()
   ])
 })
@@ -565,6 +612,11 @@ const currentNotes = computed(() => {
 // Decks belonging to the current binder
 const currentDecks = computed(() => {
   return decksStore.decks.filter(d => d.binder_id === currentBinderId.value)
+})
+
+// Revision sets (qcm/vf/…) belonging to the current binder
+const currentSets = computed(() => {
+  return revisionStore.sets.filter(s => s.binder_id === currentBinderId.value)
 })
 
 // Breadcrumbs trace path from root

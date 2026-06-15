@@ -76,6 +76,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'revision/sets/:id/run',
+        name: 'QcmRun',
+        component: () => import('../views/Reviews/QcmRun.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'reviews',
         name: 'Reviews',
         component: () => import('../views/Reviews/Reviews.vue'),
