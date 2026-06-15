@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Literal, Any, Dict
+from typing import Optional, Literal, Any, Dict, List
 from pydantic import BaseModel, Field, ConfigDict
 
 # Types d'ensembles génériques (cf. app.models.revision.REVISION_SET_TYPES).
@@ -72,3 +72,30 @@ class RevisionItemResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# --- Passage scoré (QCM — A2/D6) --------------------------------------------
+
+class RevisionRunAnswer(BaseModel):
+    item_id: int
+    selected_option_ids: List[str] = []
+
+
+class RevisionRunRequest(BaseModel):
+    answers: List[RevisionRunAnswer]
+
+
+class RevisionRunQuestionResult(BaseModel):
+    item_id: int
+    correct: bool
+    earned: int
+    points: int
+    correct_option_ids: List[str]
+    selected_option_ids: List[str]
+
+
+class RevisionRunResult(BaseModel):
+    score: int
+    max_score: int
+    percentage: float
+    results: List[RevisionRunQuestionResult]

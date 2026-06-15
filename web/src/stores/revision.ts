@@ -53,6 +53,27 @@ export interface RevisionItem {
   next_review: string
 }
 
+export interface RunAnswer {
+  item_id: number
+  selected_option_ids: string[]
+}
+
+export interface RunQuestionResult {
+  item_id: number
+  correct: boolean
+  earned: number
+  points: number
+  correct_option_ids: string[]
+  selected_option_ids: string[]
+}
+
+export interface RunResult {
+  score: number
+  max_score: number
+  percentage: number
+  results: RunQuestionResult[]
+}
+
 interface SetsResponse {
   data: RevisionSet[]
 }
@@ -106,6 +127,11 @@ export const useRevisionStore = defineStore('revision', () => {
     sets.value = sets.value.filter(s => s.id !== setId)
   }
 
+  async function fetchSet(setId: number) {
+    const response = await api.get<RevisionSet>(`/revision/sets/${setId}`)
+    return response.data
+  }
+
   async function fetchItems(setId: number) {
     const response = await api.get<ItemsResponse>(`/revision/sets/${setId}/items`)
     return response.data.data
@@ -134,6 +160,11 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
+  async function runQcm(setId: number, answers: RunAnswer[]) {
+    const response = await api.post<RunResult>(`/revision/sets/${setId}/run`, { answers })
+    return response.data
+  }
+
   return {
     sets,
     loading,
@@ -141,9 +172,11 @@ export const useRevisionStore = defineStore('revision', () => {
     createSet,
     updateSet,
     deleteSet,
+    fetchSet,
     fetchItems,
     createItem,
     fetchStudyItems,
     answerItem,
+    runQcm,
   }
 })

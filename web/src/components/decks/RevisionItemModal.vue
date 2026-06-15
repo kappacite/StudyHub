@@ -56,6 +56,11 @@
               <button type="button" @click="qcmOptions.splice(i, 1)" :disabled="qcmOptions.length <= 2" class="text-slate-400 hover:text-rose-500 disabled:opacity-30 shrink-0 px-1">✕</button>
             </div>
             <button type="button" @click="qcmOptions.push({ text: '', correct: false })" class="text-xs font-bold text-indigo-600 hover:text-indigo-700">+ Ajouter une option</button>
+            <p class="text-[10px] text-slate-400 mt-1">Cochez plusieurs cases pour une question à réponses multiples (correction tout-ou-rien).</p>
+          </div>
+          <div>
+            <label :class="labelCls">Barème (points)</label>
+            <input v-model.number="qcmPoints" type="number" min="1" step="1" :class="inputCls" />
           </div>
         </template>
 
@@ -187,6 +192,7 @@ const basicFront = ref('')
 const basicBack = ref('')
 // QCM
 const qcmQuestion = ref('')
+const qcmPoints = ref(1)
 const qcmOptions = ref<{ text: string; correct: boolean }[]>([
   { text: '', correct: false },
   { text: '', correct: false },
@@ -229,7 +235,7 @@ function buildPayload(): RevisionItemPayload {
     const options = qcmOptions.value
       .filter((o) => o.text.trim())
       .map((o, i) => ({ id: OPTION_IDS[i] || String(i), text: o.text.trim(), correct: o.correct }))
-    return { question: qcmQuestion.value.trim(), options }
+    return { question: qcmQuestion.value.trim(), options, points: Math.max(1, qcmPoints.value || 1) }
   }
   if (itemType.value === 'vf') {
     return {

@@ -6,6 +6,7 @@ from app.models.study_session import StudySession
 from app.schemas.revision_schema import (
     RevisionSetCreate, RevisionSetUpdate, RevisionSetResponse,
     RevisionItemCreate, RevisionItemUpdate, RevisionItemResponse,
+    RevisionRunRequest, RevisionRunResult, RevisionRunQuestionResult,
 )
 from app.services.spaced_repetition import calculate_sm2
 from app.middlewares.error_handler import (
@@ -246,3 +247,69 @@ class RevisionService:
         self._item_dao.db.commit()
 
         return RevisionItemResponse.model_validate(updated)
+
+    def run_qcm(self, user_id: int, set_id: int, data: RevisionRunRequest) -> RevisionRunResult:
+        """Passage scoré d'un QCM (D6) : correction pondérée par points, tout-ou-rien
+        sur les réponses multiples, et mise à jour SM-2 par question."""
+        rset = self._get_set_or_404(set_id, user_id, write_required=False)
+        if rset.type != "qcm":
+            raise ValidationError("Le passage scoré n'est disponible que pour les QCM.")
+
+        items = {i.id: i for i in self._item_dao.get_by_set(set_id)}
+        tuning = (rset.tuning_default or 1.0)
+        score = 0
+        max_score = 0
+        results = []
+
+        for answer in data.answers:
+            item = items.get(answer.item_id)
+            if item is None:
+                raise ValidationError("Une réponse cible une question hors de cet ensemble.")
+
+            payload = item.payload or {}
+            options = payload.get("options", [])
+            points = payload.get("points", 1)
+            correct_ids = sorted(o["id"] for o in options if o.get("correct"))
+            selected_ids = sorted(set(answer.selected_option_ids))
+            is_correct = selected_ids == correct_ids
+            earned = points if is_correct else 0
+
+            score += earned
+            max_score += points
+            results.append(RevisionRunQuestionResult(
+                item_id=item.id,
+                correct=is_correct,
+                earned=earned,
+                points=points,
+                correct_option_ids=correct_ids,
+                selected_option_ids=selected_ids,
+            ))
+
+            # Mise à jour SM-2 par question (réussi → 5, raté → 1).
+            grade = 5 if is_correct else 1
+            ease_factor, interval, repetitions, next_review = calculate_sm2(
+                score=grade,
+                ease_factor=item.ease_factor,
+                interval=item.interval,
+                repetitions=item.repetitions,
+                tuning=tuning * (item.tuning or 1.0),
+            )
+            item.ease_factor = ease_factor
+            item.interval = interval
+            item.repetitions = repetitions
+            item.next_review = next_review
+            self._item_dao.db.add(StudySession(
+                user_id=user_id,
+                module=rset.type,
+                duration_seconds=0,
+                cards_reviewed=1,
+                cards_correct=1 if is_correct else 0,
+                item_id=item.id,
+                item_type=rset.type,
+                grade=grade,
+            ))
+
+        self._item_dao.db.commit()
+
+        percentage = round(score / max_score * 100, 1) if max_score else 0.0
+        return RevisionRunResult(score=score, max_score=max_score, percentage=percentage, results=results)

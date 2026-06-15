@@ -51,4 +51,16 @@ describe('revision store — ensembles typés (D3c)', () => {
     expect(api.post).toHaveBeenLastCalledWith('/revision/sets/5/items', { payload, tuning: 1.0 })
     expect(store.sets[0].item_count).toBe(1)
   })
+
+  it('runQcm poste les réponses et renvoie le score pondéré', async () => {
+    const runResult = { score: 3, max_score: 4, percentage: 75, results: [] }
+    api.post.mockResolvedValue({ data: runResult })
+    const store = useRevisionStore()
+
+    const answers = [{ item_id: 9, selected_option_ids: ['b'] }]
+    const res = await store.runQcm(5, answers)
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/run', { answers })
+    expect(res).toEqual(runResult)
+  })
 })
