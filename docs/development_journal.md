@@ -457,3 +457,19 @@ Le classeur n'est plus seulement un lieu de **création** : on peut y déplacer 
 
 ### Reste
 * Afficher les **diagrammes et PDF** directement dans la vue classeur (le backend attach/détache les gère déjà ; seul l'affichage/sélecteur UI manque). Suite du plan : **C2** (réorg de l'onglet Révisions).
+
+## [2026-06-15] C2 — Onglet Révisions réorganisé (Classiques vs IA)
+
+`Reviews.vue` passait des onglets à plat mélangeant tout. On structure en deux catégories.
+
+### Frontend
+* **Sélecteur de catégorie** (`Classiques` / `IA`) + **sous-onglets** dynamiques (`currentTabs`).
+* **Classiques** : Flashcards (panneau existant) + un panneau générique par type d'ensemble (`set-qcm`, `set-vf`, `set-association`, `set-definition`, `set-ordre`). Chaque ensemble : bouton **Étudier/Lancer** (`/revision/sets/:id/run|study`), **Stats** (`/revision/sets/:id/stats`, A7) et un volet **Réglages** (renommer, slider **fine-tuning** `tuning_default`, sélecteur **classeur**, **supprimer**).
+* **IA** : regroupe les panneaux existants (évaluation IA, feuille blanche, Feynman, auto-QCM).
+* `stores/revision.ts` : `updateSet` accepte désormais `binder_id` (rattachement depuis les réglages). `onMounted` charge aussi `fetchSets()`.
+
+### Tests
+* `revision.spec` : `updateSet` transmet name/tuning_default/binder_id. vue-tsc clean, **Vitest 36/36**. E2E `/reviews` se rend sans erreur.
+
+### Reste / suite
+* Frontend uniquement, pas de migration. **Parties A et C bouclées** (hors affichage diagrammes/pdfs dans le classeur). Suite du plan : **Partie B** — B3 (devoirs sur ensembles de révision), B4 (Q&A élèves), B5 (stats de groupe étendues).

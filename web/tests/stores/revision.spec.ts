@@ -85,6 +85,18 @@ describe('revision store — ensembles typés (D3c)', () => {
     expect(api.get).toHaveBeenCalledWith('/stats/items/9')
   })
 
+  it('updateSet transmet name/tuning_default/binder_id (gestion C2)', async () => {
+    api.post.mockResolvedValue({ data: { id: 5, name: 'S', type: 'qcm', binder_id: null, tuning_default: 1, is_public: false, item_count: 0 } })
+    const store = useRevisionStore()
+    await store.createSet('S', 'qcm', null)
+
+    api.put.mockResolvedValue({ data: { id: 5, name: 'Renommé', type: 'qcm', binder_id: 'b1', tuning_default: 1.5, is_public: false, item_count: 0 } })
+    await store.updateSet(5, { name: 'Renommé', tuning_default: 1.5, binder_id: 'b1' })
+
+    expect(api.put).toHaveBeenCalledWith('/revision/sets/5', { name: 'Renommé', tuning_default: 1.5, binder_id: 'b1' })
+    expect(store.sets[0].name).toBe('Renommé')
+  })
+
   it('fetchBinderStats interroge le bon endpoint (avec/sans sous-arbre)', async () => {
     const store = useRevisionStore()
     api.get.mockResolvedValue({ data: { binder_id: 'abc', sets: [], by_type: [], weakest_sets: [], verdicts: [] } })
