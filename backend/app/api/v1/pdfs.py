@@ -121,12 +121,22 @@ def get_pdf_file(pdf_id):
             download_name=pdf_meta.name
         )
 
+@pdfs_bp.route("/<pdf_id>", methods=["PUT"])
+@jwt_required_middleware
+def update_pdf(pdf_id):
+    from app.schemas.pdf_schema import PDFUpdate
+    user_id = int(get_jwt_identity())
+    data = PDFUpdate.model_validate(request.get_json() or {})
+    result = pdf_service.update_pdf(user_id, pdf_id, data)
+    return jsonify(result.model_dump()), 200
+
+
 @pdfs_bp.route("/<pdf_id>", methods=["DELETE"])
 @jwt_required_middleware
 def delete_pdf(pdf_id):
     user_id = int(get_jwt_identity())
     upload_folder = current_app.config["UPLOAD_FOLDER"]
-    
+
     pdf_service.delete_pdf(user_id, pdf_id, upload_folder)
     return "", 204
 

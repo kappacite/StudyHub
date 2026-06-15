@@ -10,6 +10,9 @@ class PDFBase(BaseModel):
 class PDFCreate(PDFBase):
     pass
 
+class PDFUpdate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+
 class PDFResponse(PDFBase):
     id: str
     binder_id: Optional[str] = Field(None, validation_alias="binder_uuid")

@@ -530,5 +530,32 @@ Le tableau de bord professeur intègre les métriques de **révision** (au-delà
 ### Tests
 * Backend `test_class_overview_revision_metrics` (temps/réussite/par-élève) + non-régression du budget de requêtes. Suite **242**. vue-tsc clean, **Vitest 40**.
 
-### 🎉 Plan de refonte terminé
-* Toutes les parties **A (Révision)**, **B (Professeur)** et **C (UI)** du plan `REFACTO_FONCTIONNALITES.md` sont livrées. Seul reliquat **optionnel** : afficher diagrammes/PDF directement dans la vue classeur (C1, backend déjà compatible).
+### Suite
+* B5 n'était **pas** le dernier item : B1 et B2 avaient été sautés (cf. section suivante).
+
+## [2026-06-15] Compléments B2 / B1 / C1 / A9 (clôture réelle du plan)
+
+À la relecture des cases du plan, **B1** et **B2** n'étaient pas livrés et **C1**/**A9** avaient des cases ouvertes. Bouclés ici :
+* **B2** (`feature/teacher-share-binder`) — partage de classeur par référence vérifié (test « élément ajouté après partage visible de l'élève ») + endpoint `GET /groups/binders/:uuid/classes` et UI « Partager à la classe » + badge dans `Binders.vue`.
+* **B1** (`feature/teacher-courses`) — dépôt de cours (note) dans un classeur de cours partagé (`POST /classes/:id/course-binder`) ; partage **PDF en lecture seule** étendu en miroir des notes.
+* **C1 affichage** (`feature/binder-diagrams-pdfs`) — sections Diagrammes & PDF dans la vue classeur + attache/détache de ces types.
+* **A9** (`docs/revision-active-notes`) — vérif cohérence du balisage (self-test sans persistance) ; **correction d'un bug** : l'aide in-app documentait `ordre`/`assoc`/`vf` avec de mauvais séparateurs ; doc utilisateur `docs/revision-active-notes.md`.
+
+### 🎉 Plan de refonte réellement terminé
+* Toutes les cases A/B/C du plan `REFACTO_FONCTIONNALITES.md` sont cochées.
+
+## [2026-06-15] Upload PDF réel (feature supplémentaire)
+
+Le module PDF était entièrement **simulé** côté front (données factices, aucun appel à l'API `/pdfs` pourtant réelle). Branché en vrai.
+
+### Backend
+* Ajout de `PUT /pdfs/:id` (renommage) : `PDFService.update_pdf` (écriture refusée sur un cours partagé en lecture seule).
+
+### Frontend
+* `stores/pdf.ts` réécrit sur l'API réelle : `fetchPdfs`, `uploadPdf` (multipart), `renamePdf`, `removePdf`, `openPdf` (charge le fichier en **blob** via l'instance Axios authentifiée — le stream `/file` est protégé par JWT — puis `URL.createObjectURL`), `closePdf` (révoque l'URL), `setPdfTags`.
+* `PDFs.vue` : liste réelle, import, suppression, modale **renommer + tags** (tags via `setTagsForEntity('pdfs', …)`), badge « Cours partagé » (lecture seule, sans actions). `PdfReader.vue` réécrit en visionneuse `<iframe>` (+ ouvrir dans un onglet).
+* Retrait des **annotations simulées** (aucun backend) plutôt que de livrer du factice.
+
+### Tests
+* Backend `test_pdfs` (upload multipart, listing, renommage, stream fichier, suppression, rejet non-PDF). Suite **250**.
+* Front `pdf.spec` (store : fetch/upload/rename/open-blob/delete). vue-tsc clean, **Vitest 50**.

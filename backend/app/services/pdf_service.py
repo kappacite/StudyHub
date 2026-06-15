@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional
 from app.dao.pdf_dao import PDFDAO
 from app.dao.binder_dao import BinderDAO
 from app.models.pdf_document import PDFDocument
-from app.schemas.pdf_schema import PDFResponse
+from app.schemas.pdf_schema import PDFResponse, PDFUpdate
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError, ValidationError
 
 class PDFService:
@@ -128,6 +128,13 @@ class PDFService:
             raise ResourceNotFoundError("Le fichier physique du PDF est introuvable sur le serveur.")
             
         return file_path
+
+    def update_pdf(self, user_id: int, pdf_id, data: PDFUpdate) -> PDFResponse:
+        # Écriture requise : un élève (cours partagé en lecture seule) ne peut pas renommer.
+        pdf = self._get_pdf_or_404(pdf_id, user_id, write_required=True)
+        pdf.name = data.name
+        updated = self._pdf_dao.update(pdf)
+        return PDFResponse.model_validate(updated)
 
     def delete_pdf(self, user_id: int, pdf_id, upload_folder: str) -> None:
         # Écriture requise : un élève (lecture seule sur un cours partagé) ne peut pas supprimer.
