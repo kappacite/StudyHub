@@ -74,12 +74,8 @@
         </div>
       </div>
 
-      <!-- Typed revision item (qcm/vf/ordre/assoc) -->
-      <TypedStudyCard v-if="isTyped" :card="currentCard" :key="currentCard.id" @revealed="onTypedRevealed" />
-
       <!-- Card container (3D Flip Effect) — cartes recto/verso -->
       <div
-        v-else
         class="perspective-1000 w-full min-h-[320px] cursor-pointer"
         @click="flipCard"
       >
@@ -135,7 +131,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDecksStore } from '../../stores/decks'
 import type { Flashcard } from '../../stores/decks'
-import TypedStudyCard from '../../components/decks/TypedStudyCard.vue'
 import { useFocusStore } from '../../stores/focus'
 import { usePlanningStore } from '../../stores/planning'
 import { ChevronLeft, Sparkles } from '@lucide/vue'
@@ -150,13 +145,8 @@ const deckId = ref(Number(route.params.id))
 const deckName = ref('Deck')
 const loading = ref(true)
 const isFlipped = ref(false)
-const revealed = ref(false)  // item typé révélé (qcm/vf/ordre/assoc)
 
-const isTyped = computed(() => {
-  const t = currentCard.value.card_type
-  return !!t && t !== 'basic'
-})
-const showRating = computed(() => isFlipped.value || revealed.value)
+const showRating = computed(() => isFlipped.value)
 
 const isFocusMode = computed(() => route.query.focus === 'true')
 
@@ -181,7 +171,6 @@ async function loadSession() {
   loading.value = true
   currentIndex.value = 0
   isFlipped.value = false
-  revealed.value = false
   studyCards.value = []
   
   try {
@@ -242,11 +231,6 @@ function flipCard() {
   isFlipped.value = !isFlipped.value
 }
 
-function onTypedRevealed() {
-  // L'item typé est révélé : on propose l'auto-évaluation SM-2 (boutons ci-dessous).
-  revealed.value = true
-}
-
 async function rateCard(score: number) {
   if (!deckId.value || !currentCard.value?.id) {
     console.error('Identifiants manquants pour la notation :', { deckId: deckId.value, cardId: currentCard.value?.id })
@@ -259,8 +243,7 @@ async function rateCard(score: number) {
     await decksStore.answerCard(deckId.value, currentCard.value.id, score)
 
     isFlipped.value = false
-    revealed.value = false
-    
+
     // Wait a moment for flip animation back to normal
     setTimeout(() => {
       // If user failed, card stays in queue (re-added to the end or just retry later).

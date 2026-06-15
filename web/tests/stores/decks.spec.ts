@@ -12,14 +12,14 @@ vi.mock('../../src/services/api', () => ({ default: api }))
 
 import { useDecksStore } from '../../src/stores/decks'
 
-describe('decks store — cartes typées', () => {
+describe('decks store — flashcards recto/verso (D3c)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 
-  it('createCard envoie card_type=basic et payload=null par défaut', async () => {
-    api.post.mockResolvedValue({ data: { id: 1, deck_id: 7, card_type: 'basic', payload: null } })
+  it('createCard envoie uniquement front/back (pas de type ni payload)', async () => {
+    api.post.mockResolvedValue({ data: { id: 1, deck_id: 7, front: 'Recto', back: 'Verso' } })
     const store = useDecksStore()
 
     await store.createCard(7, 'Recto', 'Verso')
@@ -27,29 +27,6 @@ describe('decks store — cartes typées', () => {
     expect(api.post).toHaveBeenCalledWith('/decks/7/cards', {
       front: 'Recto',
       back: 'Verso',
-      card_type: 'basic',
-      payload: null,
-    })
-  })
-
-  it('createCard transmet le type et le payload structuré (QCM)', async () => {
-    const payload = {
-      question: 'Capitale de la France ?',
-      options: [
-        { id: 'a', text: 'Lyon', correct: false },
-        { id: 'b', text: 'Paris', correct: true },
-      ],
-    }
-    api.post.mockResolvedValue({ data: { id: 2, deck_id: 7, card_type: 'qcm', payload } })
-    const store = useDecksStore()
-
-    await store.createCard(7, 'Capitale de la France ?', 'Paris', 'qcm', payload)
-
-    expect(api.post).toHaveBeenCalledWith('/decks/7/cards', {
-      front: 'Capitale de la France ?',
-      back: 'Paris',
-      card_type: 'qcm',
-      payload,
     })
   })
 })

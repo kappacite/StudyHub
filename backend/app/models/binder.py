@@ -30,6 +30,7 @@ class Binder(db.Model):
     children = relationship("Binder", back_populates="parent", cascade="all, delete-orphan")
     
     decks = relationship("Deck", back_populates="binder", cascade="all, delete-orphan")
+    revision_sets = relationship("RevisionSet", back_populates="binder", cascade="all, delete-orphan")
     notes = relationship("Note", back_populates="binder", cascade="all, delete-orphan")
     diagrams = relationship("Diagram", back_populates="binder", cascade="all, delete-orphan")
     pdfs = relationship("PDFDocument", back_populates="binder", cascade="all, delete-orphan")

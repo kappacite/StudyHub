@@ -66,51 +66,17 @@ def test_create_deck(client, auth_headers):
     assert response.json["binder_id"] is None
 
 
-def test_basic_card_defaults_to_basic_type(client, auth_headers):
+def test_deck_card_is_recto_verso_only(client, auth_headers):
+    """D3c : un deck ne contient que des flashcards recto/verso. Les anciens
+    champs typés (card_type/payload, PR #48) ne sont plus exposés par l'API deck."""
     deck = client.post("/api/v1/decks", json={"name": "Bases"}, headers=auth_headers)
     deck_id = deck.json["id"]
     card = client.post(f"/api/v1/decks/{deck_id}/cards", json={
         "front": "Capitale de l'Italie ?", "back": "Rome"
     }, headers=auth_headers)
     assert card.status_code == 201
-    assert card.json["card_type"] == "basic"
-    assert card.json["payload"] is None
-
-
-def test_create_typed_qcm_card(client, auth_headers):
-    deck = client.post("/api/v1/decks", json={"name": "Jeu de révision"}, headers=auth_headers)
-    deck_id = deck.json["id"]
-
-    payload = {
-        "question": "Quelle est la capitale de la France ?",
-        "options": [
-            {"id": "a", "text": "Lyon", "correct": False},
-            {"id": "b", "text": "Paris", "correct": True},
-        ],
-    }
-    card = client.post(f"/api/v1/decks/{deck_id}/cards", json={
-        "front": "Quelle est la capitale de la France ?",
-        "back": "Paris",
-        "card_type": "qcm",
-        "payload": payload,
-    }, headers=auth_headers)
-    assert card.status_code == 201
-    assert card.json["card_type"] == "qcm"
-    assert card.json["payload"]["options"][1]["correct"] is True
-
-    # La carte typée apparaît dans la liste ET dans les cartes à réviser (SM-2).
-    listed = client.get(f"/api/v1/decks/{deck_id}/cards", headers=auth_headers)
-    assert any(c["card_type"] == "qcm" for c in listed.json["data"])
-
-    study = client.get(f"/api/v1/decks/{deck_id}/study", headers=auth_headers)
-    assert study.status_code == 200
-    assert any(c["card_type"] == "qcm" and c["payload"] for c in study.json)
-
-
-def test_typed_card_rejects_invalid_type(client, auth_headers):
-    deck = client.post("/api/v1/decks", json={"name": "Bad"}, headers=auth_headers)
-    deck_id = deck.json["id"]
-    resp = client.post(f"/api/v1/decks/{deck_id}/cards", json={
-        "front": "x", "back": "y", "card_type": "wat"
-    }, headers=auth_headers)
-    assert resp.status_code == 400
+    assert card.json["front"] == "Capitale de l'Italie ?"
+    assert card.json["back"] == "Rome"
+    # Le type/payload typés ont migré vers les ensembles de révision.
+    assert "card_type" not in card.json
+    assert "payload" not in card.json

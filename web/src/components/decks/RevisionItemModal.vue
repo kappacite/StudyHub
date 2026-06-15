@@ -3,7 +3,7 @@
     <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="$emit('close')"></div>
 
     <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-lg p-6 relative z-10 shadow-2xl max-h-[88vh] overflow-y-auto">
-      <h3 class="text-lg font-bold mb-1 text-slate-800 dark:text-white">Ajouter un item de révision</h3>
+      <h3 class="text-lg font-bold mb-1 text-slate-800 dark:text-white">Ajouter un élément de révision</h3>
       <p class="text-xs text-slate-400 mb-4">Choisissez un type, il sera révisé en répétition espacée (SM-2).</p>
 
       <!-- Type selector -->
@@ -12,9 +12,9 @@
           v-for="t in TYPES"
           :key="t.value"
           type="button"
-          @click="cardType = t.value"
+          @click="itemType = t.value"
           class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all"
-          :class="cardType === t.value
+          :class="itemType === t.value
             ? 'bg-indigo-600 text-white border-transparent'
             : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
         >
@@ -23,30 +23,30 @@
       </div>
 
       <form @submit.prevent="submit" class="space-y-4">
-        <!-- Target deck -->
+        <!-- Target : deck (basic) OR revision set (typed) -->
         <div>
-          <label :class="labelCls">Jeu de révision</label>
-          <select v-model="deckChoice" :class="inputCls">
-            <option :value="NEW_DECK">➕ Nouveau jeu de révision…</option>
-            <option v-for="d in decks" :key="d.id" :value="d.id">{{ d.name }}</option>
+          <label :class="labelCls">{{ itemType === 'basic' ? 'Jeu de révision (flashcards)' : 'Ensemble de révision' }}</label>
+          <select v-model="targetChoice" :class="inputCls">
+            <option :value="NEW_TARGET">➕ Nouvel ensemble…</option>
+            <option v-for="t in targets" :key="t.id" :value="t.id">{{ t.name }}</option>
           </select>
           <input
-            v-if="deckChoice === NEW_DECK"
-            v-model="newDeckName"
+            v-if="targetChoice === NEW_TARGET"
+            v-model="newTargetName"
             type="text"
-            placeholder="Nom du jeu de révision"
+            placeholder="Nom de l'ensemble"
             :class="['mt-2', inputCls]"
           />
         </div>
 
         <!-- BASIC -->
-        <template v-if="cardType === 'basic'">
+        <template v-if="itemType === 'basic'">
           <div><label :class="labelCls">Recto (question)</label><textarea v-model="basicFront" rows="2" :class="inputCls" placeholder="Ex: Capitale de l'Italie ?"></textarea></div>
           <div><label :class="labelCls">Verso (réponse)</label><textarea v-model="basicBack" rows="2" :class="inputCls" placeholder="Ex: Rome"></textarea></div>
         </template>
 
         <!-- QCM -->
-        <template v-else-if="cardType === 'qcm'">
+        <template v-else-if="itemType === 'qcm'">
           <div><label :class="labelCls">Question</label><textarea v-model="qcmQuestion" rows="2" :class="inputCls" placeholder="Ex: Quelle est la capitale de la France ?"></textarea></div>
           <div>
             <label :class="labelCls">Options (cochez la/les bonne(s))</label>
@@ -60,7 +60,7 @@
         </template>
 
         <!-- VF -->
-        <template v-else-if="cardType === 'vf'">
+        <template v-else-if="itemType === 'vf'">
           <div><label :class="labelCls">Affirmation</label><textarea v-model="vfAssertion" rows="2" :class="inputCls" placeholder="Ex: La Terre est plate."></textarea></div>
           <div>
             <label :class="labelCls">Verdict</label>
@@ -72,8 +72,14 @@
           <div><label :class="labelCls">Justification (optionnel)</label><textarea v-model="vfJustification" rows="2" :class="inputCls" placeholder="Ex: Elle a la forme d'un géoïde."></textarea></div>
         </template>
 
+        <!-- DEFINITION -->
+        <template v-else-if="itemType === 'definition'">
+          <div><label :class="labelCls">Terme</label><input v-model="defTerm" type="text" :class="inputCls" placeholder="Ex: Photosynthèse" /></div>
+          <div><label :class="labelCls">Définition</label><textarea v-model="defDefinition" rows="3" :class="inputCls" placeholder="Ex: Conversion de la lumière en énergie chimique."></textarea></div>
+        </template>
+
         <!-- ORDRE -->
-        <template v-else-if="cardType === 'ordre'">
+        <template v-else-if="itemType === 'ordre'">
           <div><label :class="labelCls">Titre / consigne</label><input v-model="ordreTitle" type="text" :class="inputCls" placeholder="Ex: Cycle de l'eau" /></div>
           <div>
             <label :class="labelCls">Étapes (dans le bon ordre)</label>
@@ -86,8 +92,8 @@
           </div>
         </template>
 
-        <!-- ASSOC -->
-        <template v-else-if="cardType === 'assoc'">
+        <!-- ASSOCIATION -->
+        <template v-else-if="itemType === 'association'">
           <div><label :class="labelCls">Titre / consigne</label><input v-model="assocTitle" type="text" :class="inputCls" placeholder="Ex: Pays et capitales" /></div>
           <div>
             <label :class="labelCls">Associations</label>
@@ -115,39 +121,66 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useDecksStore } from '../../stores/decks'
-import type { CardType, CardPayload, Deck } from '../../stores/decks'
+import type { Deck } from '../../stores/decks'
+import { useRevisionStore } from '../../stores/revision'
+import type { RevisionType, RevisionItemPayload } from '../../stores/revision'
+
+// 'basic' = flashcard recto/verso (Deck) ; les autres = ensembles de révision.
+type ItemType = 'basic' | RevisionType
 
 const props = defineProps<{
   binderId: string | null
   decks: Deck[]
-  initialType?: CardType
+  initialType?: ItemType
   initialDeckId?: number
 }>()
-const emit = defineEmits<{ (e: 'close'): void; (e: 'created', deckId: number): void }>()
+const emit = defineEmits<{ (e: 'close'): void; (e: 'created'): void }>()
 
 const decksStore = useDecksStore()
+const revisionStore = useRevisionStore()
 
 const labelCls = 'block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1'
 const inputCls = 'w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
 
-const TYPES: { value: CardType; label: string }[] = [
+const TYPES: { value: ItemType; label: string }[] = [
   { value: 'basic', label: 'Carte' },
   { value: 'qcm', label: 'QCM' },
   { value: 'vf', label: 'Vrai / Faux' },
+  { value: 'definition', label: 'Définition' },
   { value: 'ordre', label: 'Ordre' },
-  { value: 'assoc', label: 'Association' },
+  { value: 'association', label: 'Association' },
 ]
 
-const NEW_DECK = '__new__' as const
-const cardType = ref<CardType>(props.initialType || 'basic')
-const deckChoice = ref<number | typeof NEW_DECK>(
-  props.initialDeckId ?? (props.decks.length ? props.decks[0].id : NEW_DECK),
-)
-const newDeckName = ref('')
+const NEW_TARGET = '__new__' as const
+const itemType = ref<ItemType>(props.initialType || 'basic')
+const targetChoice = ref<number | typeof NEW_TARGET>(NEW_TARGET)
+const newTargetName = ref('')
 const saving = ref(false)
 const error = ref('')
+
+// Cibles disponibles selon le type : decks (basic) ou ensembles du même type.
+const targets = computed(() => {
+  if (itemType.value === 'basic') return props.decks.map(d => ({ id: d.id, name: d.name }))
+  return revisionStore.sets
+    .filter(s => s.type === itemType.value)
+    .map(s => ({ id: s.id, name: s.name }))
+})
+
+function resetTargetChoice() {
+  if (itemType.value === 'basic' && props.initialDeckId) {
+    targetChoice.value = props.initialDeckId
+    return
+  }
+  targetChoice.value = targets.value.length ? targets.value[0].id : NEW_TARGET
+}
+
+watch(itemType, resetTargetChoice)
+onMounted(async () => {
+  await revisionStore.fetchSets()
+  resetTargetChoice()
+})
 
 // BASIC
 const basicFront = ref('')
@@ -162,10 +195,13 @@ const qcmOptions = ref<{ text: string; correct: boolean }[]>([
 const vfAssertion = ref('')
 const vfCorrect = ref(true)
 const vfJustification = ref('')
-// ORDRE (objets pour permettre le v-model sur primitive)
+// DEFINITION
+const defTerm = ref('')
+const defDefinition = ref('')
+// ORDRE
 const ordreTitle = ref('')
 const ordreSteps = ref<{ value: string }[]>([{ value: '' }, { value: '' }])
-// ASSOC
+// ASSOCIATION
 const assocTitle = ref('')
 const assocPairs = ref<{ left: string; right: string }[]>([
   { left: '', right: '' },
@@ -173,52 +209,48 @@ const assocPairs = ref<{ left: string; right: string }[]>([
 ])
 
 const canSubmit = computed(() => {
-  if (deckChoice.value === NEW_DECK && !newDeckName.value.trim()) return false
-  if (cardType.value === 'basic') return !!basicFront.value.trim() && !!basicBack.value.trim()
-  if (cardType.value === 'qcm') {
+  if (targetChoice.value === NEW_TARGET && !newTargetName.value.trim()) return false
+  if (itemType.value === 'basic') return !!basicFront.value.trim() && !!basicBack.value.trim()
+  if (itemType.value === 'qcm') {
     const opts = qcmOptions.value.filter((o) => o.text.trim())
     return !!qcmQuestion.value.trim() && opts.length >= 2 && opts.some((o) => o.correct)
   }
-  if (cardType.value === 'vf') return !!vfAssertion.value.trim()
-  if (cardType.value === 'ordre') return !!ordreTitle.value.trim() && ordreSteps.value.filter((s) => s.value.trim()).length >= 2
-  if (cardType.value === 'assoc') return !!assocTitle.value.trim() && assocPairs.value.filter((p) => p.left.trim() && p.right.trim()).length >= 2
+  if (itemType.value === 'vf') return !!vfAssertion.value.trim()
+  if (itemType.value === 'definition') return !!defTerm.value.trim() && !!defDefinition.value.trim()
+  if (itemType.value === 'ordre') return !!ordreTitle.value.trim() && ordreSteps.value.filter((s) => s.value.trim()).length >= 2
+  if (itemType.value === 'association') return !!assocTitle.value.trim() && assocPairs.value.filter((p) => p.left.trim() && p.right.trim()).length >= 2
   return false
 })
 
 const OPTION_IDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
-function build(): { front: string; back: string; payload: CardPayload | null } {
-  if (cardType.value === 'qcm') {
-    const opts = qcmOptions.value
+function buildPayload(): RevisionItemPayload {
+  if (itemType.value === 'qcm') {
+    const options = qcmOptions.value
       .filter((o) => o.text.trim())
       .map((o, i) => ({ id: OPTION_IDS[i] || String(i), text: o.text.trim(), correct: o.correct }))
-    const back = opts.filter((o) => o.correct).map((o) => o.text).join(', ')
-    return { front: qcmQuestion.value.trim(), back, payload: { question: qcmQuestion.value.trim(), options: opts } }
+    return { question: qcmQuestion.value.trim(), options }
   }
-  if (cardType.value === 'vf') {
-    const verdict = vfCorrect.value ? 'Vrai' : 'Faux'
-    const just = vfJustification.value.trim()
+  if (itemType.value === 'vf') {
     return {
-      front: vfAssertion.value.trim(),
-      back: just ? `${verdict} — ${just}` : verdict,
-      payload: { assertion: vfAssertion.value.trim(), correct: vfCorrect.value, justification: just },
+      assertion: vfAssertion.value.trim(),
+      correct: vfCorrect.value,
+      justification: vfJustification.value.trim() || undefined,
     }
   }
-  if (cardType.value === 'ordre') {
-    const steps = ordreSteps.value.map((s) => s.value.trim()).filter(Boolean)
-    return { front: ordreTitle.value.trim(), back: steps.join(' → '), payload: { title: ordreTitle.value.trim(), steps } }
+  if (itemType.value === 'definition') {
+    return { term: defTerm.value.trim(), definition: defDefinition.value.trim() }
   }
-  if (cardType.value === 'assoc') {
-    const pairs = assocPairs.value
+  if (itemType.value === 'ordre') {
+    return { title: ordreTitle.value.trim(), steps: ordreSteps.value.map((s) => s.value.trim()).filter(Boolean) }
+  }
+  // association
+  return {
+    title: assocTitle.value.trim(),
+    pairs: assocPairs.value
       .map((p) => ({ left: p.left.trim(), right: p.right.trim() }))
-      .filter((p) => p.left && p.right)
-    return {
-      front: assocTitle.value.trim(),
-      back: pairs.map((p) => `${p.left} → ${p.right}`).join(' ; '),
-      payload: { title: assocTitle.value.trim(), pairs },
-    }
+      .filter((p) => p.left && p.right),
   }
-  return { front: basicFront.value.trim(), back: basicBack.value.trim(), payload: null }
 }
 
 async function submit() {
@@ -226,18 +258,28 @@ async function submit() {
   saving.value = true
   error.value = ''
   try {
-    let deckId: number
-    if (deckChoice.value === NEW_DECK) {
-      const deck = await decksStore.createDeck(newDeckName.value.trim(), '', props.binderId)
-      deckId = deck.id
+    if (itemType.value === 'basic') {
+      let deckId: number
+      if (targetChoice.value === NEW_TARGET) {
+        const deck = await decksStore.createDeck(newTargetName.value.trim(), '', props.binderId)
+        deckId = deck.id
+      } else {
+        deckId = targetChoice.value
+      }
+      await decksStore.createCard(deckId, basicFront.value.trim(), basicBack.value.trim())
     } else {
-      deckId = deckChoice.value
+      let setId: number
+      if (targetChoice.value === NEW_TARGET) {
+        const set = await revisionStore.createSet(newTargetName.value.trim(), itemType.value, props.binderId)
+        setId = set.id
+      } else {
+        setId = targetChoice.value
+      }
+      await revisionStore.createItem(setId, buildPayload())
     }
-    const { front, back, payload } = build()
-    await decksStore.createCard(deckId, front, back, cardType.value, payload)
-    emit('created', deckId)
+    emit('created')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : "Impossible d'ajouter l'item."
+    error.value = e instanceof Error ? e.message : "Impossible d'ajouter l'élément."
   } finally {
     saving.value = false
   }

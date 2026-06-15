@@ -3,35 +3,13 @@ import { ref } from 'vue'
 import api from '../services/api'
 import type { Tag } from './tags'
 
-export type CardType = 'basic' | 'qcm' | 'vf' | 'ordre' | 'assoc'
-
-export interface QcmOption {
-  id: string
-  text: string
-  correct: boolean
-}
-
-export interface CardPayload {
-  // qcm
-  question?: string
-  options?: QcmOption[]
-  // vf
-  assertion?: string
-  correct?: boolean
-  justification?: string
-  // ordre / assoc
-  title?: string
-  steps?: string[]
-  pairs?: { left: string; right: string }[]
-}
-
+// D3c : une flashcard est strictement recto/verso. Les types interactifs
+// (QCM, vrai/faux, association, définition, ordre) vivent dans le store revision.
 export interface Flashcard {
   id: number
   deck_id: number
   front: string
   back: string
-  card_type: CardType
-  payload: CardPayload | null
   interval: number
   ease_factor: number
   repetitions: number
@@ -154,19 +132,11 @@ export const useDecksStore = defineStore('decks', () => {
     }
   }
 
-  async function createCard(
-    deckId: number,
-    front: string,
-    back: string,
-    cardType: CardType = 'basic',
-    payload: CardPayload | null = null,
-  ) {
+  async function createCard(deckId: number, front: string, back: string) {
     try {
       const response = await api.post<Flashcard>(`/decks/${deckId}/cards`, {
         front,
         back,
-        card_type: cardType,
-        payload,
       })
       const newCard = response.data
       cards.value.push(newCard)
