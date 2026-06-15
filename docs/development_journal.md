@@ -514,3 +514,21 @@ Un canal de questions élève → professeur dans chaque classe, avec notificati
 
 ### Suite
 * **B5** — Stats de groupe étendues (temps moyen de révision, réussite globale, avancement par élève) : **dernier item** du plan de refonte.
+
+## [2026-06-15] B5 — Statistiques de groupe étendues
+
+Le tableau de bord professeur intègre les métriques de **révision** (au-delà des seuls devoirs).
+
+### Backend
+* `AnalyticsService.get_class_overview` enrichi : **temps moyen de révision** (somme `StudySession.duration_seconds` / élèves), **taux de réussite global** (Σ `cards_correct` / Σ `cards_reviewed`) et **avancement par élève** (`StudentStatSchema` : devoirs terminés, score moyen, minutes de révision, réussite).
+* **Agrégats SQL bornés** : +3 requêtes constantes (noms, study group-by user, progress group-by user) — le test de budget (`assert_max_queries`) reste vert, coût indépendant du nombre d'élèves.
+
+### Frontend
+* `classService` : `ClassOverview` enrichi (`avg_study_minutes`, `study_success_rate`, `students[]` + type `StudentStat`).
+* `TeacherDashboard` (onglet Tableau de bord) : 2 KPI supplémentaires (« Révision moy. », « Réussite révisions ») + **tableau par élève** (devoirs faits, score, temps, réussite).
+
+### Tests
+* Backend `test_class_overview_revision_metrics` (temps/réussite/par-élève) + non-régression du budget de requêtes. Suite **242**. vue-tsc clean, **Vitest 40**.
+
+### 🎉 Plan de refonte terminé
+* Toutes les parties **A (Révision)**, **B (Professeur)** et **C (UI)** du plan `REFACTO_FONCTIONNALITES.md` sont livrées. Seul reliquat **optionnel** : afficher diagrammes/PDF directement dans la vue classeur (C1, backend déjà compatible).

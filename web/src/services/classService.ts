@@ -255,6 +255,15 @@ export interface AssignmentStat {
   avg_score: number | null
 }
 
+export interface StudentStat {
+  user_id: number
+  username: string
+  completed_assignments: number
+  avg_score: number | null
+  study_minutes: number
+  success_rate: number | null
+}
+
 export interface ClassOverview {
   class_id: number
   students_count: number
@@ -262,7 +271,10 @@ export interface ClassOverview {
   completion_rate: number
   avg_score: number | null
   active_students_7d: number
+  avg_study_minutes: number
+  study_success_rate: number | null
   assignments: AssignmentStat[]
+  students: StudentStat[]
 }
 
 export interface WeakTopic {
