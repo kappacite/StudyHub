@@ -71,6 +71,13 @@ def delete_flashcard(deck_id, card_id):
     flashcard_service.delete_flashcard(user_id, deck_id, card_id)
     return "", 204
 
+@flashcards_bp.route("/<int:card_id>/history", methods=["GET"])
+@jwt_required_middleware
+def get_flashcard_history(deck_id, card_id):
+    user_id = int(get_jwt_identity())
+    entries = flashcard_service.get_history(user_id, deck_id, card_id)
+    return jsonify({"data": [e.model_dump(mode="json") for e in entries]}), 200
+
 # --- API globale de révision directe sans deck_id ---
 flashcards_global_bp = Blueprint("flashcards_global", __name__)
 

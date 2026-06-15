@@ -10,21 +10,26 @@ class FlashcardDAO(BaseDAO[Flashcard]):
         super().__init__(Flashcard, db)
 
     def count_by_decks(self, deck_ids: List[int]) -> Dict[int, int]:
-        """Compte les cartes par deck en UNE requête (évite l'over-fetch ORM)."""
+        """Compte les cartes *originales* par deck en UNE requête (les miroirs
+        inversés, reverse_of_id non nul, ne sont pas comptés)."""
         if not deck_ids:
             return {}
         rows = (
             self.db.query(self.model.deck_id, func.count(self.model.id))
             .filter(self.model.deck_id.in_(deck_ids))
+            .filter(self.model.reverse_of_id.is_(None))
             .group_by(self.model.deck_id)
             .all()
         )
         return {deck_id: count for deck_id, count in rows}
 
     def get_by_deck(self, deck_id: int, limit: int = 20, offset: int = 0) -> List[Flashcard]:
+        # Liste de gestion : cartes originales uniquement (les miroirs inversés
+        # sont gérés via le mode inversé du deck, pas éditables séparément).
         return (
             self.db.query(self.model)
             .filter_by(deck_id=deck_id)
+            .filter(self.model.reverse_of_id.is_(None))
             .limit(limit)
             .offset(offset)
             .all()
@@ -34,7 +39,37 @@ class FlashcardDAO(BaseDAO[Flashcard]):
         return (
             self.db.query(self.model)
             .filter_by(deck_id=deck_id)
+            .filter(self.model.reverse_of_id.is_(None))
             .count()
+        )
+
+    def get_originals_by_deck(self, deck_id: int) -> List[Flashcard]:
+        return (
+            self.db.query(self.model)
+            .filter_by(deck_id=deck_id)
+            .filter(self.model.reverse_of_id.is_(None))
+            .all()
+        )
+
+    def get_reverses_by_deck(self, deck_id: int) -> List[Flashcard]:
+        return (
+            self.db.query(self.model)
+            .filter_by(deck_id=deck_id)
+            .filter(self.model.reverse_of_id.isnot(None))
+            .all()
+        )
+
+    def get_reverse_for(self, origin_id: int) -> "Flashcard | None":
+        return self.db.query(self.model).filter_by(reverse_of_id=origin_id).first()
+
+    def get_review_history(self, card_id: int) -> List["tuple"]:
+        """Historique (date, grade) des révisions d'une carte (courbe d'apprentissage)."""
+        from app.models.study_session import StudySession
+        return (
+            self.db.query(StudySession.created_at, StudySession.grade)
+            .filter(StudySession.flashcard_id == card_id)
+            .order_by(StudySession.created_at)
+            .all()
         )
 
     def get_cards_to_study(self, deck_id: int) -> List[Flashcard]:

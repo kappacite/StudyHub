@@ -9,17 +9,22 @@ class DeckBase(BaseModel):
     binder_id: Optional[str] = None
 
 class DeckCreate(DeckBase):
-    pass
+    reversed: bool = False
+    tuning_default: float = Field(1.0, gt=0)
 
 class DeckUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     binder_id: Optional[str] = None
+    reversed: Optional[bool] = None
+    tuning_default: Optional[float] = Field(None, gt=0)
 
 class DeckResponse(DeckBase):
     id: int
     binder_id: Optional[str] = Field(None, validation_alias="binder_uuid")
     user_id: int
+    reversed: bool = False
+    tuning_default: float = 1.0
     # Injecté par le service (COUNT groupé) ; 0 par défaut si non fourni.
     card_count: int = 0
     tags: List[TagResponseSchema] = []
