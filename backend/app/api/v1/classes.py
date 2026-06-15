@@ -21,11 +21,14 @@ from app.schemas.class_schema import (
     ClassCreateSchema, AssignmentCreateSchema, TaskSubmitSchema, AssignmentGradeSchema,
 )
 from app.schemas.analytics_schema import ClassInsightSchema
-from app.schemas.engagement_schema import AnnouncementCreateSchema
+from app.schemas.engagement_schema import (
+    AnnouncementCreateSchema, ClassQuestionCreateSchema, ClassQuestionAnswerSchema,
+)
 from app.schemas.management_schema import DistributeSchema
 from app.services.class_service import ClassService
 from app.services.analytics_service import AnalyticsService
 from app.services.engagement_service import EngagementService
+from app.services.class_qa_service import ClassQAService
 from app.services.class_management_service import ClassManagementService
 from app.tasks import run_class_gap_analysis
 from app.utils.task_dispatch import dispatch_or_run
@@ -49,6 +52,10 @@ def _make_analytics() -> AnalyticsService:
 
 def _make_engagement() -> EngagementService:
     return EngagementService(group_dao=GroupDAO(db.session))
+
+
+def _make_qa() -> ClassQAService:
+    return ClassQAService(group_dao=GroupDAO(db.session))
 
 
 def _make_management() -> ClassManagementService:
@@ -239,6 +246,40 @@ def get_feed(class_id: int):
 def get_leaderboard(class_id: int):
     user_id = int(get_jwt_identity())
     result = _make_engagement().get_leaderboard(class_id, user_id)
+    return jsonify(result.model_dump(mode="json")), 200
+
+
+# ─── Questions des élèves (Q&A) ───────────────────────────────────────────────
+
+@classes_bp.route("/<int:class_id>/questions", methods=["GET"])
+@jwt_required()
+def list_questions(class_id: int):
+    user_id = int(get_jwt_identity())
+    result = _make_qa().list_questions(class_id, user_id)
+    return jsonify([q.model_dump(mode="json") for q in result]), 200
+
+
+@classes_bp.route("/<int:class_id>/questions", methods=["POST"])
+@jwt_required()
+def post_question(class_id: int):
+    user_id = int(get_jwt_identity())
+    try:
+        data = ClassQuestionCreateSchema(**(request.get_json() or {}))
+    except Exception as e:
+        raise ValidationError(str(e))
+    result = _make_qa().post_question(class_id, user_id, data)
+    return jsonify(result.model_dump(mode="json")), 201
+
+
+@classes_bp.route("/<int:class_id>/questions/<int:question_id>/answer", methods=["POST"])
+@jwt_required()
+def answer_question(class_id: int, question_id: int):
+    user_id = int(get_jwt_identity())
+    try:
+        data = ClassQuestionAnswerSchema(**(request.get_json() or {}))
+    except Exception as e:
+        raise ValidationError(str(e))
+    result = _make_qa().answer_question(class_id, user_id, question_id, data)
     return jsonify(result.model_dump(mode="json")), 200
 
 

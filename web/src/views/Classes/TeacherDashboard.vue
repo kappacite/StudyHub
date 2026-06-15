@@ -6,7 +6,7 @@ import { useNotesStore } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
 import { useRevisionStore } from '../../stores/revision'
 import classService from '../../services/classService'
-import type { Assignment, StudentMaterialsProgress, ClassOverview, ClassInsight, Leaderboard, RosterEntry } from '../../services/classService'
+import type { Assignment, StudentMaterialsProgress, ClassOverview, ClassInsight, Leaderboard, RosterEntry, ClassQuestion } from '../../services/classService'
 import groupService from '../../services/groupService'
 import type { GroupBinder } from '../../services/groupService'
 import AssignmentBuilder from '../../components/classes/AssignmentBuilder.vue'
@@ -60,8 +60,13 @@ const classDetails = ref<Record<number, {
   analyzing: boolean;
   loading: boolean;
   roster: RosterEntry[];
-  activeTab: 'assignments' | 'resources' | 'progress' | 'analytics' | 'roster';
+  questions: ClassQuestion[];
+  activeTab: 'assignments' | 'resources' | 'progress' | 'analytics' | 'roster' | 'questions';
 }>>({})
+
+// Q&A — brouillons de réponse par question.
+const answerDrafts = ref<Record<number, string>>({})
+const answering = ref<number | null>(null)
 
 // Annonce
 const showAnnounceModal = ref(false)
@@ -98,7 +103,7 @@ const availableBindersToAssociate = computed(() => {
   return bindersStore.binders.filter(b => !sharedIds.includes(b.id))
 })
 
-async function selectClassTab(classId: number, tab: 'assignments' | 'resources' | 'progress' | 'analytics' | 'roster') {
+async function selectClassTab(classId: number, tab: 'assignments' | 'resources' | 'progress' | 'analytics' | 'roster' | 'questions') {
   if (!classDetails.value[classId]) {
     classDetails.value[classId] = {
       binders: [],
@@ -107,6 +112,7 @@ async function selectClassTab(classId: number, tab: 'assignments' | 'resources' 
       insights: null,
       leaderboard: null,
       roster: [],
+      questions: [],
       analyzing: false,
       loading: false,
       activeTab: 'assignments'
@@ -140,11 +146,28 @@ async function selectClassTab(classId: number, tab: 'assignments' | 'resources' 
       classDetails.value[classId].leaderboard = leaderboard
     } else if (tab === 'roster') {
       classDetails.value[classId].roster = await classService.getRoster(classId)
+    } else if (tab === 'questions') {
+      classDetails.value[classId].questions = await classService.listQuestions(classId)
     }
   } catch (e) {
     console.error(e)
   } finally {
     classDetails.value[classId].loading = false
+  }
+}
+
+async function answerQuestion(classId: number, questionId: number) {
+  const body = (answerDrafts.value[questionId] || '').trim()
+  if (!body) return
+  answering.value = questionId
+  try {
+    await classService.answerQuestion(classId, questionId, body)
+    delete answerDrafts.value[questionId]
+    classDetails.value[classId].questions = await classService.listQuestions(classId)
+  } catch (e) {
+    console.error(e)
+  } finally {
+    answering.value = null
   }
 }
 
@@ -446,7 +469,8 @@ function isPast(d: string | null): boolean {
                 { id: 'resources', label: 'Cours & Classeurs' },
                 { id: 'progress', label: 'Suivi Révisions' },
                 { id: 'analytics', label: 'Tableau de bord' },
-                { id: 'roster', label: 'Élèves' }
+                { id: 'roster', label: 'Élèves' },
+                { id: 'questions', label: 'Questions' }
               ]"
               :key="tab.id"
               @click="selectClassTab(cls.id, tab.id)"
@@ -753,6 +777,41 @@ function isPast(d: string | null): boolean {
                 >
                   <UserMinus class="w-4 h-4" />
                 </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: Questions des élèves (Q&A) -->
+          <div v-else-if="classDetails[cls.id]?.activeTab === 'questions'">
+            <div v-if="classDetails[cls.id]?.loading" class="flex items-center justify-center py-8">
+              <Loader2 class="w-6 h-6 text-amber-500 animate-spin" />
+            </div>
+            <div v-else-if="!classDetails[cls.id]?.questions?.length" class="text-center py-8 text-slate-400 text-sm">
+              Aucune question pour le moment.
+            </div>
+            <div v-else class="space-y-3">
+              <div v-for="q in classDetails[cls.id].questions" :key="q.id"
+                class="border border-slate-100 dark:border-slate-700/60 rounded-xl p-3">
+                <div class="flex items-start justify-between gap-2">
+                  <p class="text-sm text-slate-700 dark:text-slate-200">{{ q.body }}</p>
+                  <span class="shrink-0 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
+                    :class="q.status === 'answered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'">
+                    {{ q.status === 'answered' ? 'Répondu' : 'En attente' }}
+                  </span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">{{ q.author_username }}</p>
+
+                <div v-if="q.answer" class="mt-2 pl-3 border-l-2 border-green-400">
+                  <p class="text-sm text-slate-600 dark:text-slate-300">{{ q.answer }}</p>
+                </div>
+                <div v-else class="mt-2 flex gap-2">
+                  <input v-model="answerDrafts[q.id]" type="text" placeholder="Votre réponse…" @keyup.enter="answerQuestion(cls.id, q.id)"
+                    class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm" />
+                  <button @click="answerQuestion(cls.id, q.id)" :disabled="answering === q.id || !(answerDrafts[q.id] || '').trim()"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white text-xs font-semibold transition">
+                    <Loader2 v-if="answering === q.id" class="w-3.5 h-3.5 animate-spin" /> Répondre
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -15,6 +15,7 @@ from app.models.assignment import (
 )
 from app.models.class_insight import ClassInsight
 from app.models.notification import Notification
+from app.models.class_question import ClassQuestion
 
 __all__ = [
     "User",
@@ -40,4 +41,5 @@ __all__ = [
     "AssignmentProgress",
     "ClassInsight",
     "Notification",
+    "ClassQuestion",
 ]

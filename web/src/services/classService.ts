@@ -226,6 +226,22 @@ const classService = {
   async distributeBinder(classId: number, binderId: string): Promise<{ distributed: number; failed: number }> {
     const resp = await api.post(`/classes/${classId}/distribute`, { binder_id: binderId })
     return resp.data
+  },
+
+  // Questions des élèves (Q&A) — B4
+  async listQuestions(classId: number): Promise<ClassQuestion[]> {
+    const resp = await api.get<ClassQuestion[]>(`/classes/${classId}/questions`)
+    return resp.data
+  },
+
+  async postQuestion(classId: number, body: string): Promise<ClassQuestion> {
+    const resp = await api.post<ClassQuestion>(`/classes/${classId}/questions`, { body })
+    return resp.data
+  },
+
+  async answerQuestion(classId: number, questionId: number, body: string): Promise<ClassQuestion> {
+    const resp = await api.post<ClassQuestion>(`/classes/${classId}/questions/${questionId}/answer`, { body })
+    return resp.data
   }
 }
 
@@ -309,6 +325,18 @@ export interface StudentMaterialsProgress {
   user_id: number
   username: string
   binders_progress: BinderProgress[]
+}
+
+export interface ClassQuestion {
+  id: number
+  body: string
+  answer: string | null
+  status: 'open' | 'answered'
+  author_id: number
+  author_username: string | null
+  answered_by_username: string | null
+  created_at: string
+  answered_at: string | null
 }
 
 export default classService

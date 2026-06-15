@@ -2,13 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import classService from '../../services/classService'
-import type { AssignmentSummary, AssignmentTask, TaskType } from '../../services/classService'
+import type { AssignmentSummary, AssignmentTask, TaskType, ClassInfo, ClassQuestion } from '../../services/classService'
 import { taskLaunchRoute } from '../../services/assignmentTasks'
 import { useClassNotifications } from '../../composables/useClassNotifications'
 import {
   ClipboardList, Calendar, CheckCircle2, Clock, AlertTriangle,
   Loader2, BookOpen, ArrowRight, GraduationCap,
-  Layers, FileQuestion, PenLine, Check, ListChecks
+  Layers, FileQuestion, PenLine, Check, ListChecks, MessageCircleQuestion, Send
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -19,9 +19,38 @@ const filterStatus = ref<'all' | 'todo' | 'in_progress' | 'done' | 'late'>('all'
 
 const { scheduleDueReminders } = useClassNotifications()
 
+// ─── Q&A (B4) ─────────────────────────────────────────────────────────────────
+const myClasses = ref<ClassInfo[]>([])
+const qaClassId = ref<number | null>(null)
+const questions = ref<ClassQuestion[]>([])
+const newQuestion = ref('')
+const postingQuestion = ref(false)
+
+async function loadQuestions() {
+  if (qaClassId.value === null) { questions.value = []; return }
+  questions.value = await classService.listQuestions(qaClassId.value).catch(() => [])
+}
+
+async function askQuestion() {
+  if (qaClassId.value === null || !newQuestion.value.trim()) return
+  postingQuestion.value = true
+  try {
+    await classService.postQuestion(qaClassId.value, newQuestion.value.trim())
+    newQuestion.value = ''
+    await loadQuestions()
+  } catch {
+    // silencieux
+  } finally {
+    postingQuestion.value = false
+  }
+}
+
 onMounted(async () => {
   loading.value = true
   assignments.value = await classService.getMyAssignments().catch(() => [])
+  myClasses.value = await classService.getMyClasses().catch(() => [])
+  qaClassId.value = myClasses.value[0]?.id ?? null
+  await loadQuestions()
   loading.value = false
   // Programme des rappels locaux (mobile) pour les deadlines à venir.
   scheduleDueReminders(assignments.value)
@@ -238,5 +267,38 @@ async function validateTask(asgn: AssignmentSummary, task: AssignmentTask) {
         </div>
       </article>
     </div>
+
+    <!-- Q&A : poser une question au professeur (B4) -->
+    <section v-if="myClasses.length" class="mt-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-5">
+      <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+        <MessageCircleQuestion class="w-5 h-5 text-sky-500" /> Poser une question
+      </h2>
+      <div class="flex flex-col sm:flex-row gap-2 mb-3">
+        <select v-model="qaClassId" @change="loadQuestions"
+          class="sm:w-56 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm">
+          <option v-for="c in myClasses" :key="c.id" :value="c.id">{{ c.name }}</option>
+        </select>
+        <div class="flex-1 flex gap-2">
+          <input v-model="newQuestion" type="text" placeholder="Votre question au professeur…" @keyup.enter="askQuestion"
+            class="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm" />
+          <button @click="askQuestion" :disabled="postingQuestion || !newQuestion.trim()"
+            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-sm font-semibold transition">
+            <Loader2 v-if="postingQuestion" class="w-4 h-4 animate-spin" /><Send v-else class="w-4 h-4" /> Envoyer
+          </button>
+        </div>
+      </div>
+
+      <div v-if="questions.length" class="space-y-2">
+        <div v-for="q in questions" :key="q.id" class="border border-slate-100 dark:border-slate-800 rounded-xl p-3">
+          <p class="text-sm text-slate-700 dark:text-slate-200">{{ q.body }}</p>
+          <div v-if="q.answer" class="mt-2 pl-3 border-l-2 border-sky-400">
+            <p class="text-[10px] font-bold text-sky-500 uppercase tracking-wider">Réponse{{ q.answered_by_username ? ` · ${q.answered_by_username}` : '' }}</p>
+            <p class="text-sm text-slate-600 dark:text-slate-300">{{ q.answer }}</p>
+          </div>
+          <p v-else class="text-[11px] text-amber-500 font-semibold mt-1">En attente de réponse…</p>
+        </div>
+      </div>
+      <p v-else class="text-xs text-slate-400 text-center py-4">Aucune question pour le moment.</p>
+    </section>
   </div>
 </template>
