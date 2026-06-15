@@ -262,9 +262,8 @@
             <div
               v-for="set in currentSets"
               :key="set.id"
-              class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl"
-              :class="set.type === 'qcm' ? 'hover:border-indigo-200 cursor-pointer group' : ''"
-              @click="set.type === 'qcm' && router.push(`/revision/sets/${set.id}/run`)"
+              class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-200 cursor-pointer group"
+              @click="openSet(set)"
             >
               <div class="min-w-0">
                 <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">{{ set.name }}</p>
@@ -272,10 +271,10 @@
                   {{ REVISION_TYPE_LABELS[set.type] }} · {{ set.item_count }} item(s)
                 </p>
               </div>
-              <span v-if="set.type === 'qcm'" class="text-xs font-bold text-indigo-600 flex items-center gap-1">
-                Lancer <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span class="text-xs font-bold text-indigo-600 flex items-center gap-1">
+                {{ set.type === 'qcm' ? 'Lancer' : 'Étudier' }}
+                <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </span>
-              <span v-else class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">étude bientôt</span>
             </div>
 
             <div
@@ -618,6 +617,12 @@ const currentDecks = computed(() => {
 const currentSets = computed(() => {
   return revisionStore.sets.filter(s => s.binder_id === currentBinderId.value)
 })
+
+function openSet(set: { id: number; type: RevisionType }) {
+  // QCM → passage scoré ; autres types → étude générique (révéler/corriger + SM-2).
+  const path = set.type === 'qcm' ? 'run' : 'study'
+  router.push(`/revision/sets/${set.id}/${path}`)
+}
 
 // Breadcrumbs trace path from root
 const breadcrumbs = computed(() => {

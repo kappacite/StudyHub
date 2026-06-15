@@ -63,4 +63,14 @@ describe('revision store — ensembles typés (D3c)', () => {
     expect(api.post).toHaveBeenCalledWith('/revision/sets/5/run', { answers })
     expect(res).toEqual(runResult)
   })
+
+  it('gradeItem poste la réponse typée et renvoie la correction', async () => {
+    api.post.mockResolvedValue({ data: { correct: true, item: { id: 9 } } })
+    const store = useRevisionStore()
+
+    const res = await store.gradeItem(5, 9, { value: false })
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/study/grade/9', { answer: { value: false } })
+    expect(res.correct).toBe(true)
+  })
 })

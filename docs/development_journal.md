@@ -383,3 +383,18 @@ Implémentation de A2 (`docs/REFACTO_FONCTIONNALITES.md`) sur le socle de révis
 * **`QcmRun.vue`** (route `/revision/sets/:id/run`) : passage interactif (cases à cocher), correction, score pondéré + feedback par question (bonnes réponses révélées).
 * `Binders.vue` : section **« Ensembles de révision »** (par type, compteur d'items) avec lancement du QCM.
 * Tests : `revision.spec` (runQcm). vue-tsc clean, Vitest 26/26, build OK.
+
+## [2026-06-15] A3–A6 — Étude typée : Vrai/Faux, Association, Définition, Ordre
+
+Implémentation groupée (le plan autorise A3+A4–A6 ensemble) de l'**étude + correction + SM-2** pour les types restants, sur le socle de révision. Les éditeurs existaient déjà (socle) ; il manquait l'expérience d'étude.
+
+### Backend
+* **Correction par type** (`check_answer`) : VF (verdict), Association (appariement **ordre indifférent**, partiel/erroné = faux), Ordre (suite **stricte**).
+* **`POST /revision/sets/:id/study/grade/:item_id`** : corrige (vf/association/ordre), met à jour **SM-2** (réussi → 5, raté → 2) + `StudySession` unifiée, renvoie `{correct, item}`. La **Définition** reste en **auto-évaluation** via l'endpoint `answer` générique.
+* Schémas `RevisionGrade*`. Aucune migration. Tests : verdict VF, association ordre-indifférent + partiel=faux, ordre strict, rejet du type non corrigeable, définition self-eval. Suite 212/212.
+
+### Frontend
+* **`RevisionStudy.vue`** (route `/revision/sets/:id/study`) : étude carte-par-carte selon le type — VF (verdict + justification), Définition (révéler + auto-éval À revoir/Moyen/Acquis), Association (appariement par menus), Ordre (réordonnancement ▲▼) — avec correction, feedback et progression.
+* `stores/revision.ts` : `gradeItem`.
+* `Binders.vue` : les ensembles non-QCM lancent désormais l'étude générique (QCM → passage scoré).
+* Tests : `revision.spec` (gradeItem). vue-tsc clean, Vitest 27/27, build OK.

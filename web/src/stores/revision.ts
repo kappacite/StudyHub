@@ -165,6 +165,14 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
+  async function gradeItem(setId: number, itemId: number, answer: Record<string, unknown>) {
+    const response = await api.post<{ correct: boolean; item: RevisionItem }>(
+      `/revision/sets/${setId}/study/grade/${itemId}`,
+      { answer },
+    )
+    return response.data
+  }
+
   return {
     sets,
     loading,
@@ -178,5 +186,6 @@ export const useRevisionStore = defineStore('revision', () => {
     fetchStudyItems,
     answerItem,
     runQcm,
+    gradeItem,
   }
 })
