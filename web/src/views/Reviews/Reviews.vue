@@ -58,13 +58,22 @@
               <p class="text-xs text-slate-400 mt-1">L'algorithme SM-2 calcule automatiquement la prochaine date de révision pour maximiser votre rétention.</p>
             </div>
             
-            <button 
-              @click="openGenerateModal"
-              class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-700 rounded-xl transition-all shadow-md active:scale-95 duration-200"
-            >
-              <Sparkles class="w-4 h-4 text-amber-400 animate-pulse" />
-              Générer depuis Notes / Classeurs
-            </button>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button
+                @click="openCreate('basic')"
+                class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md active:scale-95 duration-200"
+              >
+                <Plus class="w-4 h-4" />
+                Nouvelle carte
+              </button>
+              <button
+                @click="openGenerateModal"
+                class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-700 rounded-xl transition-all shadow-md active:scale-95 duration-200"
+              >
+                <Sparkles class="w-4 h-4 text-amber-400 animate-pulse" />
+                Générer depuis Notes / Classeurs
+              </button>
+            </div>
           </div>
           
           <div v-if="decksLoading" class="flex items-center justify-center py-12">
@@ -147,10 +156,18 @@
               <Layers class="w-5 h-5 text-indigo-500" />
               {{ currentSetTypeLabel }} ({{ typedSets.length }})
             </h2>
+            <button
+              v-if="currentSetType"
+              @click="openCreate(currentSetType)"
+              class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md active:scale-95"
+            >
+              <Plus class="w-4 h-4" />
+              Créer
+            </button>
           </div>
 
           <div v-if="typedSets.length === 0" class="text-center py-12 text-sm text-slate-400">
-            Aucun ensemble de ce type. Créez-en un depuis un classeur (menu « + Ajouter »).
+            Aucun ensemble de ce type. Cliquez sur « Créer » pour en ajouter un.
           </div>
 
           <div v-else class="grid gap-3 sm:grid-cols-2">
@@ -893,6 +910,16 @@
       </div>
     </div>
 
+    <!-- Création d'un élément de révision (carte ou ensemble typé) -->
+    <RevisionItemModal
+      v-if="showCreateModal"
+      :binder-id="null"
+      :decks="decksStore.decks"
+      :initial-type="createType"
+      @close="showCreateModal = false"
+      @created="onItemCreated"
+    />
+
   </div>
 </div>
 </template>
@@ -906,6 +933,7 @@ import { useBindersStore } from '../../stores/binders'
 import { useRevisionStore } from '../../stores/revision'
 import type { RevisionType } from '../../stores/revision'
 import api from '../../services/api'
+import RevisionItemModal from '../../components/decks/RevisionItemModal.vue'
 import {
   Layers,
   FileText,
@@ -916,7 +944,8 @@ import {
   Clock,
   Compass,
   Settings,
-  Trash2
+  Trash2,
+  Plus
 } from '@lucide/vue'
 
 const router = useRouter()
@@ -970,6 +999,24 @@ const typedSets = computed(() =>
 
 function openSet(set: { id: number; type: RevisionType }) {
   router.push(`/revision/sets/${set.id}/${set.type === 'qcm' ? 'run' : 'study'}`)
+}
+
+// Création d'éléments de révision (déplacée ici depuis le menu classeur).
+// Les éléments sont créés « non rangés » (binderId=null) ; on les rattache
+// ensuite à un classeur via la vue Classeurs (« Ajouter un élément existant »).
+type CreateType = RevisionType | 'basic'
+const showCreateModal = ref(false)
+const createType = ref<CreateType>('basic')
+
+function openCreate(type: CreateType) {
+  createType.value = type
+  showCreateModal.value = true
+}
+
+async function onItemCreated() {
+  showCreateModal.value = false
+  await Promise.all([decksStore.fetchDecks(), revisionStore.fetchSets()])
+  await fetchDecksStats()
 }
 
 const openSettingsId = ref<number | null>(null)
