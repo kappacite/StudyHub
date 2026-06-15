@@ -2,6 +2,7 @@ from typing import List, Tuple, Optional
 from app.dao.deck_dao import DeckDAO
 from app.dao.binder_dao import BinderDAO
 from app.models.deck import Deck
+from app.models.flashcard import Flashcard
 from app.schemas.deck_schema import DeckCreate, DeckUpdate, DeckResponse
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 
@@ -43,7 +44,9 @@ class DeckService:
             name=data.name,
             description=data.description,
             user_id=user_id,
-            binder_id=binder_id_internal
+            binder_id=binder_id_internal,
+            reversed=data.reversed,
+            tuning_default=data.tuning_default,
         )
         created = self._deck_dao.create(deck)
         return self._to_response(created, 0)
@@ -84,10 +87,40 @@ class DeckService:
             deck.binder_id = binder._id
         elif "binder_id" in data.model_fields_set and data.binder_id is None:
             deck.binder_id = None
-            
+
+        if data.tuning_default is not None:
+            deck.tuning_default = data.tuning_default
+
+        # Bascule du mode inversé (D7) : matérialiser ou retirer les cartes miroir.
+        if data.reversed is not None and data.reversed != deck.reversed:
+            deck.reversed = data.reversed
+            if data.reversed:
+                self._enable_reversed(deck.id)
+            else:
+                self._disable_reversed(deck.id)
+
         updated = self._deck_dao.update(deck)
         counts = self._flashcard_dao.count_by_decks([updated.id])
         return self._to_response(updated, counts.get(updated.id, 0))
+
+    def _enable_reversed(self, deck_id: int) -> None:
+        """Crée une carte miroir verso→recto pour chaque carte originale sans miroir."""
+        originals = self._flashcard_dao.get_originals_by_deck(deck_id)
+        for origin in originals:
+            if self._flashcard_dao.get_reverse_for(origin.id):
+                continue
+            self._flashcard_dao.create(Flashcard(
+                deck_id=origin.deck_id,
+                front=origin.back,
+                back=origin.front,
+                tuning=origin.tuning,
+                reverse_of_id=origin.id,
+            ))
+
+    def _disable_reversed(self, deck_id: int) -> None:
+        """Retire toutes les cartes miroir du deck."""
+        for reverse in self._flashcard_dao.get_reverses_by_deck(deck_id):
+            self._flashcard_dao.delete(reverse)
 
     def delete_deck(self, user_id: int, deck_id: int) -> None:
         deck = self._get_deck_or_404(deck_id, user_id, write_required=True)

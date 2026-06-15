@@ -41,6 +41,13 @@ class Flashcard(db.Model):
     # (évaluations) et protégée de la sync déterministe.
     source = Column(String(10), default="manual", server_default="manual", nullable=False)
     
+    # Multiplicateur SM-2 par carte (« réviser plus/moins souvent ») — D4.
+    tuning = Column(Float, default=1.0, server_default="1.0", nullable=False)
+    # Mode inversé (D7) : si renseigné, cette carte est le miroir verso→recto de la
+    # carte d'id `reverse_of_id` (suivi SM-2 distinct). Polymorphe léger : pas de FK
+    # DB, la suppression du miroir est gérée par le service (cf. delete_flashcard).
+    reverse_of_id = Column(Integer, nullable=True, index=True)
+
     # Paramètres de l'algorithme SM-2
     ease_factor = Column(Float, default=2.5, nullable=False)
     interval = Column(Integer, default=0, nullable=False)  # en jours

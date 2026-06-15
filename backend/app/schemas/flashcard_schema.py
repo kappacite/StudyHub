@@ -11,18 +11,25 @@ class FlashcardBase(BaseModel):
     back: str = Field(..., min_length=1)
 
 class FlashcardCreate(FlashcardBase):
-    pass
+    tuning: float = Field(1.0, gt=0)
 
 class FlashcardUpdate(BaseModel):
     front: Optional[str] = Field(None, min_length=1)
     back: Optional[str] = Field(None, min_length=1)
+    tuning: Optional[float] = Field(None, gt=0)
 
 class FlashcardAnswer(BaseModel):
     score: int = Field(..., ge=0, le=5, description="Score d'évaluation SM-2 de 0 à 5")
 
+class FlashcardHistoryEntry(BaseModel):
+    date: datetime
+    grade: Optional[int] = None
+
 class FlashcardResponse(FlashcardBase):
     id: int
     deck_id: int
+    tuning: float = 1.0
+    reverse_of_id: Optional[int] = None
     placeholder_hash: Optional[str] = None
     original_text: Optional[str] = None
     ease_factor: float

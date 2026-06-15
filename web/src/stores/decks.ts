@@ -10,6 +10,8 @@ export interface Flashcard {
   deck_id: number
   front: string
   back: string
+  tuning: number
+  reverse_of_id: number | null
   interval: number
   ease_factor: number
   repetitions: number
@@ -21,9 +23,16 @@ export interface Deck {
   binder_id: string | null
   name: string
   description: string
+  reversed: boolean
+  tuning_default: number
   card_count: number
   created_at: string
   tags: Tag[]
+}
+
+export interface CardHistoryEntry {
+  date: string
+  grade: number | null
 }
 
 interface DecksResponse {
@@ -72,13 +81,21 @@ export const useDecksStore = defineStore('decks', () => {
     }
   }
 
-  async function createDeck(name: string, description: string, binderId: string | null = null) {
+  async function createDeck(
+    name: string,
+    description: string,
+    binderId: string | null = null,
+    reversed = false,
+    tuningDefault = 1.0,
+  ) {
     loading.value = true
     try {
       const response = await api.post<Deck>('/decks', {
         name,
         description,
-        binder_id: binderId
+        binder_id: binderId,
+        reversed,
+        tuning_default: tuningDefault,
       })
       const newDeck = response.data
       decks.value.push(newDeck)
@@ -91,9 +108,14 @@ export const useDecksStore = defineStore('decks', () => {
     }
   }
 
-  async function updateDeck(id: number, name: string, description: string) {
+  async function updateDeck(
+    id: number,
+    name: string,
+    description: string,
+    opts: { reversed?: boolean; tuning_default?: number } = {},
+  ) {
     try {
-      const response = await api.put<Deck>(`/decks/${id}`, { name, description })
+      const response = await api.put<Deck>(`/decks/${id}`, { name, description, ...opts })
       const updatedDeck = response.data
       const index = decks.value.findIndex(d => d.id === id)
       if (index !== -1) {
@@ -152,12 +174,14 @@ export const useDecksStore = defineStore('decks', () => {
     }
   }
 
-  async function updateCard(cardId: number, front: string, back: string) {
+  async function updateCard(cardId: number, front: string, back: string, tuning?: number) {
     const card = cards.value.find(c => c.id === cardId)
     if (!card) throw new Error('Carte introuvable localement pour mise à jour')
-    
+
     try {
-      const response = await api.put<Flashcard>(`/decks/${card.deck_id}/cards/${cardId}`, { front, back })
+      const body: { front: string; back: string; tuning?: number } = { front, back }
+      if (tuning !== undefined) body.tuning = tuning
+      const response = await api.put<Flashcard>(`/decks/${card.deck_id}/cards/${cardId}`, body)
       const updatedCard = response.data
       const index = cards.value.findIndex(c => c.id === cardId)
       if (index !== -1) {
@@ -213,6 +237,11 @@ export const useDecksStore = defineStore('decks', () => {
     }
   }
 
+  async function fetchCardHistory(deckId: number, cardId: number) {
+    const response = await api.get<{ data: CardHistoryEntry[] }>(`/decks/${deckId}/cards/${cardId}/history`)
+    return response.data.data
+  }
+
   async function importAnki(file: File, binderId: string | null = null) {
     loading.value = true
     try {
@@ -259,6 +288,7 @@ export const useDecksStore = defineStore('decks', () => {
     deleteCard,
     fetchStudyCards,
     answerCard,
+    fetchCardHistory,
     importAnki
   }
 })
