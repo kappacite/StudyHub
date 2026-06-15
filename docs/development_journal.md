@@ -324,3 +324,29 @@ Refonte de la fonction Classeur : la rendre plus instinctive pour y ajouter du c
 ### À suivre (hors périmètre de cette itération)
 * Surfacer diagrammes & PDFs dans le menu d'ajout / l'affichage du classeur (ils se rattachent déjà aux classeurs mais via leurs propres vues).
 * Permettre la création d'items typés aussi depuis la vue Decks.
+
+## [2026-06-15] Socle de révision (D3c) — ensembles typés indépendants + réconciliation PR #48
+
+Mise en œuvre du socle A0 de `docs/REFACTO_FONCTIONNALITES.md`. **Décision D3c** : le `Deck`/`Flashcard` reste strictement recto/verso ; les autres types de révision (QCM, vrai/faux, association, définition, ordre) deviennent des entités indépendantes portées par `RevisionSet`/`RevisionItem`.
+
+### Backend
+* Modèles **`RevisionSet`** (homogène, typé, rattaché à un classeur, `tuning_default`) et **`RevisionItem`** (payload validé par type, état SM-2 par item, `tuning`). Relations `User`/`Binder`.
+* **`/api/v1/revision`** : CRUD ensembles + items, étude (`/study`), réponse SM-2 (`/study/answer/:id`). DAO + service + schémas Pydantic, validation de payload par type, isolation `user_id`.
+* **SM-2** : paramètre `tuning` (multiplicateur d'intervalle, plancher 1 jour) — `calculate_sm2(..., tuning=tuning_ensemble*tuning_item)`.
+* **`StudySession`** : colonnes `item_id`/`item_type` (suivi unifié des éléments de révision, base des stats D5).
+* **Flashcards ramenées à recto/verso** : retrait de `card_type`/`payload` des schémas et du `FlashcardService` (annulation du mélange PR #48).
+* **Migrations** : `a1b2c3d4e5f6` (tables + colonnes, additive/idempotente) et `b2c3d4e5f6a7` (réconciliation : déplace les cartes typées des decks vers des `RevisionSet` homogènes, fonction `reconcile()` testable, idempotente). Probe de drift OK (seuls faux positifs GIN SQLite).
+
+### Frontend
+* **`stores/revision.ts`** : CRUD ensembles/items typés + étude.
+* **`RevisionItemModal.vue`** réconcilié : `basic` → flux deck (flashcard), autres types → ensembles de révision (choix/création d'un ensemble du **même** type).
+* **`StudyDeck.vue`** : retrait du flux typé (les decks ne contiennent plus que du recto/verso) ; **`TypedStudyCard.vue`** supprimé (réintroduit en A2–A6 depuis le store révision).
+* **`stores/decks.ts`** : `Flashcard` recto/verso pur, `createCard(deckId, front, back)`.
+* **`Binders.vue`** : menu d'ajout pointant vers les types d'ensembles (ajout de « Définition »).
+
+### Tests
+* Backend 203/203 (ajout `tests/test_revision.py` : ensembles homogènes, rejet de type invalide, tuning, étude/SM-2 + `StudySession` unifiée, isolation, migration de réconciliation idempotente).
+* `vue-tsc` clean ; Vitest 26/26 (`decks.spec.ts` recto/verso + `revision.spec.ts`).
+
+### À suivre
+* A1–A6 : éditeurs/étude par type depuis le store révision ; A7/A8 : stats par élément/classeur (D5) ; C2 : réorg de l'onglet Révisions.
