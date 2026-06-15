@@ -13,7 +13,7 @@ import AssignmentBuilder from '../../components/classes/AssignmentBuilder.vue'
 import {
   GraduationCap, Plus, Users, ClipboardList,
   Loader2, AlertCircle, Calendar, BookOpen, Clock,
-  BarChart3, Trash2, Eye, RefreshCw, UserMinus, Send
+  BarChart3, Trash2, Eye, RefreshCw, UserMinus, Send, FileText
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -257,6 +257,37 @@ function openAssociateBinder(classId: number) {
   associateClassId.value = classId
   showAssociateModal.value = true
   associateBinderId.value = null
+}
+
+// --- B1 : déposer un cours (note) dans le classeur de cours de la classe -------
+const showDepositModal = ref(false)
+const depositClassId = ref<number | null>(null)
+const depositTitle = ref('')
+const depositContent = ref('')
+const depositing = ref(false)
+
+function openDepositCourse(classId: number) {
+  depositClassId.value = classId
+  depositTitle.value = ''
+  depositContent.value = ''
+  showDepositModal.value = true
+}
+
+async function depositCourse() {
+  if (!depositClassId.value || !depositTitle.value.trim()) return
+  depositing.value = true
+  try {
+    // Résout/crée le classeur de cours partagé à la classe, puis y dépose la note.
+    const course = await classService.getCourseBinder(depositClassId.value)
+    await notesStore.createNote(depositTitle.value.trim(), depositContent.value, course.binder_id)
+    // S'assurer que le classeur de cours est listé dans l'onglet ressources.
+    await selectClassTab(depositClassId.value, 'resources')
+    showDepositModal.value = false
+  } catch (e) {
+    alert('Impossible de déposer le cours.')
+  } finally {
+    depositing.value = false
+  }
 }
 
 function getBinderStats(binderId: string) {
@@ -545,13 +576,22 @@ function isPast(d: string | null): boolean {
             <div v-else>
               <div class="flex items-center justify-between gap-4 mb-4">
                 <span class="text-xs text-slate-400">Classeurs, cours & révisions associés à la classe</span>
-                <button
-                  @click="openAssociateBinder(cls.id)"
-                  class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-100 text-amber-600 dark:text-amber-400 text-xs font-semibold transition"
-                >
-                  <Plus class="w-3.5 h-3.5" />
-                  Associer un classeur
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    @click="openDepositCourse(cls.id)"
+                    class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 text-xs font-semibold transition"
+                  >
+                    <FileText class="w-3.5 h-3.5" />
+                    Déposer un cours
+                  </button>
+                  <button
+                    @click="openAssociateBinder(cls.id)"
+                    class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-100 text-amber-600 dark:text-amber-400 text-xs font-semibold transition"
+                  >
+                    <Plus class="w-3.5 h-3.5" />
+                    Associer un classeur
+                  </button>
+                </div>
               </div>
 
               <div v-if="!classDetails[cls.id]?.binders || classDetails[cls.id].binders.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-655 text-sm border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
@@ -973,6 +1013,45 @@ function isPast(d: string | null): boolean {
               <Loader2 v-if="creating" class="w-4 h-4 animate-spin" />
               <Plus v-else class="w-4 h-4" />
               Associer
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- B1 — Déposer un cours (note) Modal -->
+    <Teleport to="body">
+      <div v-if="showDepositModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showDepositModal = false">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <FileText class="w-5 h-5 text-indigo-500" />
+              Déposer un cours
+            </h2>
+            <p class="text-xs text-slate-400 mt-1.5">
+              Le cours est ajouté au classeur de cours de la classe et devient
+              automatiquement visible des élèves, en lecture seule.
+            </p>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Titre <span class="text-red-500">*</span></label>
+              <input v-model="depositTitle" type="text" placeholder="Ex. Chapitre 1 — La cellule"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Contenu</label>
+              <textarea v-model="depositContent" rows="5" placeholder="Rédigez le contenu du cours…"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"></textarea>
+            </div>
+          </div>
+          <div class="p-6 pt-0 flex gap-3">
+            <button @click="showDepositModal = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition text-sm font-medium">Annuler</button>
+            <button @click="depositCourse" :disabled="!depositTitle.trim() || depositing"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium text-sm transition">
+              <Loader2 v-if="depositing" class="w-4 h-4 animate-spin" />
+              <FileText v-else class="w-4 h-4" />
+              Déposer
             </button>
           </div>
         </div>

@@ -16,6 +16,7 @@ class PDFResponse(PDFBase):
     filename: str
     user_id: int
     tags: List[TagResponseSchema] = []
+    read_only: bool = False
     created_at: datetime
     updated_at: datetime
 

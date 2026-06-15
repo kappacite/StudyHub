@@ -314,6 +314,14 @@ def distribute_binder(class_id: int):
     return jsonify(result.model_dump(mode="json")), 200
 
 
+@classes_bp.route("/<int:class_id>/course-binder", methods=["POST"])
+@jwt_required()
+def get_or_create_course_binder(class_id: int):
+    user_id = int(get_jwt_identity())
+    result = _make_management().get_or_create_course_binder(class_id, user_id)
+    return jsonify(result.model_dump(mode="json")), 200
+
+
 # ─── Progression élève ────────────────────────────────────────────────────────
 
 @classes_bp.route("/<int:class_id>/students/<int:student_id>/progress", methods=["GET"])

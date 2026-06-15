@@ -25,3 +25,10 @@ class DistributeSchema(BaseModel):
 class DistributeResultSchema(BaseModel):
     distributed: int
     failed: int = 0
+
+
+class CourseBinderSchema(BaseModel):
+    """Classeur de cours d'une classe (partagé par référence aux élèves)."""
+    binder_id: str
+    name: str
+    created: bool = False

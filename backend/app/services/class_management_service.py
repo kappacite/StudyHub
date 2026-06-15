@@ -14,12 +14,13 @@ from sqlalchemy import func, case
 from app.dao.group_dao import GroupDAO
 from app.dao.binder_dao import BinderDAO
 from app.models.group import Group, GroupMember, GroupBinder
+from app.models.binder import Binder
 from app.models.assignment import Assignment, AssignmentProgress
 from app.models.study_session import StudySession
 from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.management_schema import (
-    RosterEntrySchema, InviteCodeSchema, DistributeResultSchema,
+    RosterEntrySchema, InviteCodeSchema, DistributeResultSchema, CourseBinderSchema,
 )
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError, ConflictError
 
@@ -152,3 +153,26 @@ class ClassManagementService:
                 failed += 1
         self._db.commit()
         return DistributeResultSchema(distributed=distributed, failed=failed)
+
+    # ─── Dépôt de cours (B1) ─────────────────────────────────────────────────
+
+    def get_or_create_course_binder(self, class_id: int, user_id: int) -> CourseBinderSchema:
+        """Résout (ou crée) le classeur de cours de la classe : un classeur du prof
+        partagé **par référence** à la classe. Les notes/PDF qu'il y dépose ensuite
+        sont automatiquement visibles des élèves en lecture seule (cf. B2)."""
+        cls = self._get_class_or_404(class_id)
+        self._require_teacher(class_id, user_id)
+
+        course_name = f"Cours — {cls.name}"
+
+        # Réutiliser un classeur de cours déjà partagé à cette classe (idempotent).
+        for gb in self._group_dao.get_group_binders(class_id):
+            b = gb.binder
+            if b and b.user_id == user_id and b.name == course_name:
+                return CourseBinderSchema(binder_id=b.id, name=b.name, created=False)
+
+        binder = Binder(user_id=user_id, name=course_name)
+        self._db.add(binder)
+        self._db.commit()
+        self._group_dao.add_group_binder(class_id, binder._id, "read", user_id)
+        return CourseBinderSchema(binder_id=binder.id, name=binder.name, created=True)

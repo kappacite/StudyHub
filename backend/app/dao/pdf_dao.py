@@ -24,6 +24,19 @@ class PDFDAO(BaseDAO[PDFDocument]):
             .all()
         )
 
+    def get_by_binder_internal_ids(self, binder_internal_ids: List[int]) -> List[PDFDocument]:
+        """PDF (tous propriétaires) appartenant aux classeurs donnés — pour le
+        contenu en lecture seule des classeurs partagés (cours)."""
+        if not binder_internal_ids:
+            return []
+        from sqlalchemy.orm import selectinload
+        return (
+            self.db.query(self.model)
+            .filter(self.model.binder_id.in_(binder_internal_ids))
+            .options(selectinload(self.model.tags), selectinload(self.model.binder))
+            .all()
+        )
+
     def get_by_binder(
         self, 
         user_id: int, 
