@@ -242,9 +242,6 @@
               <Layers class="w-4 h-4 text-indigo-500" />
               Jeux de révision ({{ currentDecks.length }})
             </h3>
-            <button v-if="isOwner" @click="openRevisionItem('basic')" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
-              <Plus class="w-3.5 h-3.5" /> Item
-            </button>
           </div>
 
           <div class="space-y-3">
@@ -261,14 +258,6 @@
                 </p>
               </div>
               <div class="flex items-center gap-1">
-                <button
-                  v-if="isOwner"
-                  @click.stop="openRevisionItemForDeck(deck.id)"
-                  class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all"
-                  title="Ajouter un item"
-                >
-                  <Plus class="w-4 h-4" />
-                </button>
                 <button
                   v-if="isOwner"
                   @click.stop="detachItem('deck', deck.id)"
@@ -646,38 +635,6 @@
         </div>
       </div>
     </div>
-
-    <!-- New "jeu de révision" (empty deck) Modal -->
-    <div v-if="showDeckModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showDeckModal = false"></div>
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
-        <h3 class="text-lg font-bold mb-4">Nouveau jeu de révision</h3>
-        <form @submit.prevent="createDeck">
-          <input
-            v-model="newDeckName"
-            type="text"
-            required
-            placeholder="Ex: Anatomie — chapitre 1"
-            class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
-          />
-          <div class="flex items-center justify-end gap-3 mt-6">
-            <button type="button" @click="showDeckModal = false" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800">Annuler</button>
-            <button type="submit" class="px-4 py-2 text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700">Créer</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Typed revision item Modal -->
-    <RevisionItemModal
-      v-if="showRevisionModal"
-      :binder-id="currentBinderId"
-      :decks="currentDecks"
-      :initial-type="revisionInitialType"
-      :initial-deck-id="revisionDeckId"
-      @close="showRevisionModal = false"
-      @created="onRevisionCreated"
-    />
   </div>
 </template>
 
@@ -692,12 +649,8 @@ import { useDecksStore } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
-import RevisionItemModal from '../../components/decks/RevisionItemModal.vue'
 import { useRevisionStore } from '../../stores/revision'
 import type { RevisionType } from '../../stores/revision'
-
-// 'basic' = flashcard recto/verso (Deck) ; les autres types = ensembles de révision.
-type RevisionItemType = RevisionType | 'basic'
 
 const REVISION_TYPE_LABELS: Record<RevisionType, string> = {
   qcm: 'QCM',
@@ -706,7 +659,7 @@ const REVISION_TYPE_LABELS: Record<RevisionType, string> = {
   definition: 'Définition',
   ordre: 'Ordre',
 }
-import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network, BarChart3, FolderMinus, FolderInput, GraduationCap, Activity, FileDown } from 'lucide-vue-next'
+import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, BarChart3, FolderMinus, FolderInput, GraduationCap, Activity, FileDown } from 'lucide-vue-next'
 import groupService, { type BinderClassRef } from '../../services/groupService'
 import classService, { type ClassInfo } from '../../services/classService'
 import type { BinderItemType } from '../../stores/binders'
@@ -750,25 +703,16 @@ const newFolderName = ref('')
 const folderTags = ref<Tag[]>([])
 const selectedTagId = ref<number | null>(null)
 
-// Menu d'ajout unifié + modales de contenu
+// Menu d'ajout unifié
 const showAddMenu = ref(false)
-const showDeckModal = ref(false)
-const newDeckName = ref('')
-const showRevisionModal = ref(false)
-const revisionInitialType = ref<RevisionItemType>('basic')
-const revisionDeckId = ref<number | undefined>(undefined)
 
+// La création d'éléments de révision (cartes, QCM, V/F, définition, ordre,
+// association) se fait désormais depuis le menu Révisions. Ici on n'organise que
+// le classeur : créer des sous-dossiers, des notes, et rattacher des éléments existants.
 const addMenu = [
   { label: 'Sous-dossier', icon: FolderPlus, action: () => closeMenuThen(openCreateModal) },
   { label: 'Élément existant', icon: FolderInput, action: () => closeMenuThen(openAttachModal) },
   { label: 'Note', icon: FileText, action: () => closeMenuThen(addNote) },
-  { label: 'Jeu de révision', icon: Layers, action: () => closeMenuThen(openNewDeck) },
-  { label: 'Carte', icon: Layers, action: () => closeMenuThen(() => openRevisionItem('basic')) },
-  { label: 'QCM', icon: FileQuestion, action: () => closeMenuThen(() => openRevisionItem('qcm')) },
-  { label: 'Vrai / Faux', icon: CheckSquare, action: () => closeMenuThen(() => openRevisionItem('vf')) },
-  { label: 'Définition', icon: FileText, action: () => closeMenuThen(() => openRevisionItem('definition')) },
-  { label: 'Ordre', icon: ListOrdered, action: () => closeMenuThen(() => openRevisionItem('ordre')) },
-  { label: 'Association', icon: Network, action: () => closeMenuThen(() => openRevisionItem('association')) },
 ]
 
 function closeMenuThen(fn: () => void) {
@@ -779,34 +723,6 @@ function closeMenuThen(fn: () => void) {
 async function addNote() {
   const note = await notesStore.createNote('Nouvelle note', '', currentBinderId.value)
   router.push(`/notes/${note.id}?edit=true`)
-}
-
-function openNewDeck() {
-  newDeckName.value = ''
-  showDeckModal.value = true
-}
-
-async function createDeck() {
-  if (!newDeckName.value.trim()) return
-  await decksStore.createDeck(newDeckName.value.trim(), '', currentBinderId.value)
-  showDeckModal.value = false
-}
-
-function openRevisionItem(type: RevisionItemType) {
-  revisionInitialType.value = type
-  revisionDeckId.value = undefined
-  showRevisionModal.value = true
-}
-
-function openRevisionItemForDeck(deckId: number) {
-  revisionInitialType.value = 'basic'
-  revisionDeckId.value = deckId
-  showRevisionModal.value = true
-}
-
-async function onRevisionCreated() {
-  showRevisionModal.value = false
-  await Promise.all([decksStore.fetchDecks(), revisionStore.fetchSets()])
 }
 
 // Refs pour le partage du classeur

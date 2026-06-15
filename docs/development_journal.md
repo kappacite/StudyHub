@@ -559,3 +559,15 @@ Le module PDF était entièrement **simulé** côté front (données factices, a
 ### Tests
 * Backend `test_pdfs` (upload multipart, listing, renommage, stream fichier, suppression, rejet non-PDF). Suite **250**.
 * Front `pdf.spec` (store : fetch/upload/rename/open-blob/delete). vue-tsc clean, **Vitest 50**.
+
+## [2026-06-15] Création des éléments de révision déplacée vers le menu Révisions
+
+Demande : ne plus **créer** les éléments de révision depuis le menu classeur — seulement les **rattacher**. Création déplacée dans `Reviews.vue`.
+
+### Frontend
+* `Reviews.vue` : bouton **« Nouvelle carte »** (onglet Flashcards) et **« Créer »** (onglets QCM / V-F / Association / Définition / Ordre) ouvrant `RevisionItemModal` avec `binderId=null` (élément créé non rangé). Message d'état vide mis à jour (« Cliquez sur Créer »).
+* `Binders.vue` : retrait des entrées de création du menu « + Ajouter » (ne reste que Sous-dossier, Note, **Élément existant**), du bouton « + Item » et du « Ajouter un item » par deck ; suppression de `RevisionItemModal`, de la modale deck et des fonctions/états associés. Le classeur ne fait plus qu'**organiser** (créer dossiers/notes, rattacher/détacher l'existant).
+* Le rattachement d'un élément existant à un classeur reste inchangé (modale « Ajouter un élément existant »).
+
+### Tests
+* Aucune régression : vue-tsc clean, **Vitest 50**. Frontend uniquement, pas de migration.
