@@ -31,6 +31,17 @@ const mySuccessRate = computed(() =>
 )
 const myDoneCount = computed(() => assignments.value.filter(a => a.status === 'done').length)
 
+// Classes où l'utilisateur est inscrit comme élève (member/follower) — celles
+// qu'il anime sont dans l'Espace Professeur.
+const enrolledClasses = computed(() =>
+  myClasses.value.filter(c => c.my_role === 'member' || c.my_role === 'follower'),
+)
+
+function askInClass(classId: number) {
+  qaClassId.value = classId
+  loadQuestions()
+}
+
 // ─── Q&A (B4) ─────────────────────────────────────────────────────────────────
 const myClasses = ref<ClassInfo[]>([])
 const qaClassId = ref<number | null>(null)
@@ -184,6 +195,35 @@ async function validateTask(asgn: AssignmentSummary, task: AssignmentTask) {
       <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Devoirs terminés</p>
         <p class="text-2xl font-bold text-slate-800 dark:text-white mt-1">{{ myDoneCount }}</p>
+      </div>
+    </div>
+
+    <!-- Mes classes (inscrit comme élève) -->
+    <div v-if="enrolledClasses.length" class="mb-6">
+      <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+        <GraduationCap class="w-4 h-4 text-sky-500" />
+        Mes classes ({{ enrolledClasses.length }})
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div
+          v-for="c in enrolledClasses"
+          :key="c.id"
+          class="bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 flex items-center justify-between gap-3"
+        >
+          <div class="min-w-0">
+            <p class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ c.name }}</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">{{ c.members_count }} membre(s)</p>
+            <p class="text-[10px] text-slate-400 mt-1">Cours & révisions partagés : voir Classeurs / Révisions.</p>
+          </div>
+          <button
+            @click="askInClass(c.id)"
+            class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition"
+            title="Poser une question dans cette classe"
+          >
+            <MessageCircleQuestion class="w-3.5 h-3.5" />
+            Question
+          </button>
+        </div>
       </div>
     </div>
 
