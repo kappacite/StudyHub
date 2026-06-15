@@ -78,8 +78,8 @@
 | Révision IA | Évaluation IA (note), Auto-QCM (`Quiz`), Blurting, Feynman. Onglets à plat. | `views/Reviews/Reviews.vue`, `models/quiz.py`, `models/evaluation.py` |
 | Professeur | `Group(is_class)`, `GroupBinder` (partage par référence), `Assignment`+`AssignmentTask` (`flashcards|quiz|exam|blurting|read`), `AssignmentProgress` (+notation), analytics, engagement, `Notification`, `ClassInsight`. | `services/class_*`, `models/assignment.py`, `models/group.py` |
 | Révision active notes | Balisage `{{qcm}}/{{vf}}/{{trou}}/[def]` + mode « Révision Active » inline (révéler/répondre). | `views/Notes/NoteEdit.vue`, `utils/placeholder_parser.py` |
-| Fait depuis (PR #49→#54 + stats-binder + binder-manage) | Socle `revision_sets`/`revision_items` (A0) ; flashcard avancée — inversé/tuning/courbe (A1) ; QCM scoré (A2) ; VF/association/définition/ordre (A3–A6) ; stats par élément/ensemble (A7) ; **stats par classeur (A8)** ; **rattacher/détacher des éléments existants (C1)**. **Partie A complète.** | cf. §5 |
-| Manquant | Réorg onglet Révisions Classiques/IA (C2) ; affichage diagrammes/pdfs dans le classeur (reste de C1) ; devoirs sur ensembles de révision (B3) ; Q&A élèves (B4) ; stats de groupe étendues (B5). | — |
+| Fait depuis (A0→A8 + C1 + C2) | Socle `revision_sets`/`revision_items` (A0) ; flashcard avancée — inversé/tuning/courbe (A1) ; QCM scoré (A2) ; VF/association/définition/ordre (A3–A6) ; stats par élément/ensemble (A7) ; **stats par classeur (A8)** ; **rattacher/détacher des éléments existants (C1)** ; **onglet Révisions Classiques/IA (C2)**. **Parties A et C (hors affichage diagrammes/pdfs) complètes.** | cf. §5 |
+| Manquant | Affichage diagrammes/pdfs dans le classeur (reste de C1) ; devoirs sur ensembles de révision (B3) ; Q&A élèves (B4) ; stats de groupe étendues (B5). | — |
 
 ---
 
@@ -317,15 +317,15 @@
 
 **Objectif** : deux catégories. **Classiques** (flashcard, qcm, vf, association, définition, ordre) en sous-catégories gérables (nom, fine-tuning, association classeur) + stats. **IA** (auto-QCM, feuille blanche, Feynman, évaluation IA).
 
-**État actuel** : 🟡 onglets à plat mélangeant tout (`Reviews.vue`).
+**État actuel** : ✅ **Fait** (PR `feature/reviews-reorg`, 2026-06-15).
 
 **Étapes**
-- [ ] (frontend) Réorganiser `Reviews.vue` : 2 catégories (Classiques / IA) ; Classiques = sous-onglets par type.
-- [ ] (frontend) Par type : liste des ensembles, gestion (renommer, fine-tuning, rattacher à un classeur, supprimer), accès étude.
-- [ ] (frontend) Panneau stats par élément (réutilise A7 : nb révisé, % réussite, % rétention, date de maîtrise, courbe).
-- [ ] (frontend) Catégorie IA : regrouper évaluation/feuille blanche/Feynman/auto-QCM.
+- [x] (frontend) Réorganiser `Reviews.vue` : 2 catégories (**Classiques / IA**) avec sélecteur + sous-onglets ; Classiques = sous-onglets par type (Flashcards, QCM, V/F, Association, Définition, Ordre).
+- [x] (frontend) Par type : liste des ensembles avec **gestion** (renommer, **fine-tuning** `tuning_default`, **rattacher à un classeur**, supprimer) et accès **étude/lancement**.
+- [x] (frontend) Accès au **panneau stats par élément** (réutilise A7 : bouton « Stats » → `RevisionSetStats.vue`).
+- [x] (frontend) Catégorie **IA** : regroupe évaluation IA / feuille blanche / Feynman / auto-QCM (panneaux existants).
 
-**Tests** : Vitest de navigation/sous-catégories ; E2E parcours « créer un QCM → l'étudier → voir ses stats ».
+**Tests** : Vitest `revision.spec` (updateSet name/tuning/binder). vue-tsc clean, E2E `/reviews` rendu OK.
 **Commits** : `feat(reviews): catégories Classiques/IA + sous-catégories`, `feat(reviews): gestion & stats par élément`.
 **PR** : `feature/reviews-reorg` (dépend de A7).
 
@@ -364,3 +364,4 @@
 - **2026-06-15** — **Note de process** : merge de la pile de PR (#49→#54). #51/#52 fermées en cascade par GitHub (suppression de leur branche de base) → recréées en #55/#56 vers `main`. Les enfants ont ensuite été re-ciblés sur `main` **avant** merge du parent pour éviter la cascade. Conflits limités à `docs/FEATURES.md` / `docs/development_journal.md` (ajouts conservés des deux côtés). **Reste : A8 (prochain), puis C1/C2 et extensions B3/B4/B5.**
 - **2026-06-15** — **A8 livré** (`feature/stats-binder`). `GET /stats/binders/<uuid>` (option `?descendants=false`) agrège tous les ensembles de révision d'un classeur et de son sous-arbre ; refactor de `RevisionStatsService` (`_aggregate_set` partagé, accès via `check_binder_access`, anti-N+1 : 1 req. sets + 1 req. items + 1 req. sessions/type). Front : `RevisionBinderStats.vue` (KPI, répartition par type, ensembles à surveiller, liste) + bouton « Stats » dans `Binders.vue`. Pas de migration. Tests : backend 229 (dont `test_stats_binder` : agrégation, sous-arbre, isolation, budget), vue-tsc clean, Vitest 33. **Partie A désormais complète ; suite : C1/C2 puis B3/B4/B5.**
 - **2026-06-15** — **C1 livré** (`feature/binder-manage`). Rattacher/détacher des éléments existants : `BinderItemsService` + `POST /binders/:id/items` et `POST /binders/:id/items/detach` (note/deck/ensemble/diagramme/pdf), vérifs d'appartenance élément **et** classeur. Front : modale « Ajouter un élément existant » (multi-select notes/decks/ensembles) + bouton « détacher » par ligne dans `Binders.vue` ; store `attachItems`/`detachItems`. Pas de migration. Tests : backend 234 (`test_binder_items` : attache, détache, type inconnu, double isolation), vue-tsc clean, Vitest 35. **Reste de C1 : afficher diagrammes/pdfs dans le classeur. Suite : C2.**
+- **2026-06-15** — **C2 livré** (`feature/reviews-reorg`). Réorganisation de `Reviews.vue` en deux catégories **Classiques** (Flashcards + QCM/V-F/Association/Définition/Ordre en sous-onglets) et **IA** (évaluation, feuille blanche, Feynman, auto-QCM). Pour chaque type : liste des ensembles avec étude/lancement, stats (A7), et réglages (renommer, fine-tuning `tuning_default`, rattacher à un classeur, supprimer). Store `updateSet` accepte désormais `binder_id`. Frontend uniquement, pas de migration. Tests : vue-tsc clean, Vitest 36, E2E `/reviews` OK. **Parties A et C (hors affichage diagrammes/pdfs) bouclées ; suite : B3/B4/B5.**

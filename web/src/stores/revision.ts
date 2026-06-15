@@ -212,7 +212,7 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
-  async function updateSet(setId: number, patch: Partial<Pick<RevisionSet, 'name' | 'description' | 'tuning_default'>>) {
+  async function updateSet(setId: number, patch: Partial<Pick<RevisionSet, 'name' | 'description' | 'tuning_default' | 'binder_id'>>) {
     const response = await api.put<RevisionSet>(`/revision/sets/${setId}`, patch)
     const index = sets.value.findIndex(s => s.id === setId)
     if (index !== -1) sets.value[index] = response.data

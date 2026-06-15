@@ -7,21 +7,39 @@
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Multipliez l'efficacité de votre apprentissage grâce aux meilleures techniques cognitives.</p>
       </div>
       
-      <!-- Tab selectors -->
-      <div class="flex flex-wrap p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl gap-1">
-        <button 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          class="px-4 py-2 text-xs font-bold rounded-xl transition-all"
-          :class="[
-            activeTab === tab.id 
-              ? 'bg-white text-indigo-600 shadow-sm dark:bg-slate-700 dark:text-white' 
-              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
-          ]"
-        >
-          {{ tab.name }}
-        </button>
+      <!-- Category selector (Classiques vs IA) -->
+      <div class="flex flex-col items-end gap-2">
+        <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl gap-1">
+          <button
+            v-for="cat in categories"
+            :key="cat.id"
+            @click="selectCategory(cat.id)"
+            class="px-4 py-2 text-xs font-bold rounded-xl transition-all"
+            :class="[
+              activeCategory === cat.id
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+            ]"
+          >
+            {{ cat.name }}
+          </button>
+        </div>
+        <!-- Sub-tabs of the active category -->
+        <div class="flex flex-wrap justify-end p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl gap-1">
+          <button
+            v-for="tab in currentTabs"
+            :key="tab.id"
+            @click="activeTab = tab.id"
+            class="px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all"
+            :class="[
+              activeTab === tab.id
+                ? 'bg-white text-indigo-600 shadow-sm dark:bg-slate-700 dark:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+            ]"
+          >
+            {{ tab.name }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -116,6 +134,73 @@
               >
                 Créer un deck
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: ENSEMBLES TYPÉS CLASSIQUES (QCM / V-F / association / définition / ordre) -->
+      <div v-if="currentSetType" class="space-y-6">
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <Layers class="w-5 h-5 text-indigo-500" />
+              {{ currentSetTypeLabel }} ({{ typedSets.length }})
+            </h2>
+          </div>
+
+          <div v-if="typedSets.length === 0" class="text-center py-12 text-sm text-slate-400">
+            Aucun ensemble de ce type. Créez-en un depuis un classeur (menu « + Ajouter »).
+          </div>
+
+          <div v-else class="grid gap-3 sm:grid-cols-2">
+            <div v-for="set in typedSets" :key="set.id" class="border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ set.name }}</p>
+                  <p class="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wider mt-0.5">{{ set.item_count }} item(s)</p>
+                </div>
+                <button @click="toggleSetSettings(set.id)" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30" title="Réglages">
+                  <Settings class="w-4 h-4" />
+                </button>
+              </div>
+
+              <div class="flex items-center gap-2 mt-3">
+                <button @click="openSet(set)" class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all">
+                  <Compass class="w-3.5 h-3.5" /> {{ set.type === 'qcm' ? 'Lancer' : 'Étudier' }}
+                </button>
+                <button @click="router.push(`/revision/sets/${set.id}/stats`)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" title="Statistiques">
+                  <Activity class="w-3.5 h-3.5" /> Stats
+                </button>
+              </div>
+
+              <!-- Réglages : renommer, fine-tuning, classeur, suppression -->
+              <div v-if="openSettingsId === set.id" class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nom</label>
+                  <input v-model="setEdit.name" class="w-full text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fine-tuning SM-2 (×{{ setEdit.tuning_default.toFixed(2) }})</label>
+                  <input type="range" min="0.5" max="2" step="0.1" v-model.number="setEdit.tuning_default" class="w-full accent-indigo-600" />
+                  <p class="text-[10px] text-slate-400">&lt; 1 : réviser plus souvent · &gt; 1 : espacer</p>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Classeur</label>
+                  <select v-model="setEdit.binder_id" class="w-full text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                    <option :value="null">— Aucun —</option>
+                    <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">{{ b.name }}</option>
+                  </select>
+                </div>
+                <div class="flex items-center justify-between gap-2 pt-1">
+                  <button @click="deleteSet(set.id)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all">
+                    <Trash2 class="w-3.5 h-3.5" /> Supprimer
+                  </button>
+                  <button @click="saveSetSettings(set.id)" :disabled="savingSet" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50">
+                    Enregistrer
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -818,37 +903,120 @@ import { useRouter } from 'vue-router'
 import { useDecksStore } from '../../stores/decks'
 import { useNotesStore } from '../../stores/notes'
 import { useBindersStore } from '../../stores/binders'
+import { useRevisionStore } from '../../stores/revision'
+import type { RevisionType } from '../../stores/revision'
 import api from '../../services/api'
-import { 
-  Layers, 
-  FileText, 
-  Sparkles, 
+import {
+  Layers,
+  FileText,
+  Sparkles,
   Activity,
   CheckCircle2,
   Flame,
   Clock,
-  Compass
+  Compass,
+  Settings,
+  Trash2
 } from '@lucide/vue'
 
 const router = useRouter()
 const decksStore = useDecksStore()
 const notesStore = useNotesStore()
 const bindersStore = useBindersStore()
+const revisionStore = useRevisionStore()
 
-const tabs = [
-  { id: 'flashcards', name: 'Flashcards' },
-  { id: 'evaluation', name: 'Évaluation IA' },
-  { id: 'blank-sheet', name: 'Feuille Blanche' },
-  { id: 'feynman', name: 'Méthode Feynman' },
-  { id: 'quiz', name: 'Quiz Auto-QCM' }
+// C2 — deux catégories : Classiques (flashcards + types de révision) et IA.
+const SET_TYPE_LABELS: Record<RevisionType, string> = {
+  qcm: 'QCM', vf: 'Vrai / Faux', association: 'Association', definition: 'Définition', ordre: 'Ordre',
+}
+
+const categories = [
+  {
+    id: 'classic', name: 'Classiques', tabs: [
+      { id: 'flashcards', name: 'Flashcards' },
+      { id: 'set-qcm', name: 'QCM' },
+      { id: 'set-vf', name: 'Vrai / Faux' },
+      { id: 'set-association', name: 'Association' },
+      { id: 'set-definition', name: 'Définition' },
+      { id: 'set-ordre', name: 'Ordre' },
+    ],
+  },
+  {
+    id: 'ai', name: 'IA', tabs: [
+      { id: 'evaluation', name: 'Évaluation IA' },
+      { id: 'blank-sheet', name: 'Feuille Blanche' },
+      { id: 'feynman', name: 'Méthode Feynman' },
+      { id: 'quiz', name: 'Quiz Auto-QCM' },
+    ],
+  },
 ]
+
+const activeCategory = ref('classic')
+const activeTab = ref('flashcards')
+const currentTabs = computed(() => categories.find(c => c.id === activeCategory.value)?.tabs ?? [])
+function selectCategory(id: string) {
+  activeCategory.value = id
+  activeTab.value = currentTabs.value[0]?.id ?? 'flashcards'
+}
+
+// Ensembles typés (Classiques hors flashcards)
+const currentSetType = computed<RevisionType | null>(() =>
+  activeTab.value.startsWith('set-') ? (activeTab.value.slice(4) as RevisionType) : null,
+)
+const currentSetTypeLabel = computed(() => (currentSetType.value ? SET_TYPE_LABELS[currentSetType.value] : ''))
+const typedSets = computed(() =>
+  currentSetType.value ? revisionStore.sets.filter(s => s.type === currentSetType.value) : [],
+)
+
+function openSet(set: { id: number; type: RevisionType }) {
+  router.push(`/revision/sets/${set.id}/${set.type === 'qcm' ? 'run' : 'study'}`)
+}
+
+const openSettingsId = ref<number | null>(null)
+const savingSet = ref(false)
+const setEdit = ref<{ name: string; tuning_default: number; binder_id: string | null }>({
+  name: '', tuning_default: 1, binder_id: null,
+})
+function toggleSetSettings(setId: number) {
+  if (openSettingsId.value === setId) { openSettingsId.value = null; return }
+  const set = revisionStore.sets.find(s => s.id === setId)
+  if (!set) return
+  setEdit.value = {
+    name: set.name,
+    tuning_default: set.tuning_default ?? 1,
+    binder_id: set.binder_id ?? null,
+  }
+  openSettingsId.value = setId
+}
+async function saveSetSettings(setId: number) {
+  savingSet.value = true
+  try {
+    await revisionStore.updateSet(setId, {
+      name: setEdit.value.name,
+      tuning_default: setEdit.value.tuning_default,
+      binder_id: setEdit.value.binder_id,
+    })
+    openSettingsId.value = null
+  } catch (e) {
+    console.error('Erreur de mise à jour de l\'ensemble', e)
+  } finally {
+    savingSet.value = false
+  }
+}
+async function deleteSet(setId: number) {
+  if (!confirm('Supprimer cet ensemble et tous ses items ?')) return
+  try {
+    await revisionStore.deleteSet(setId)
+    openSettingsId.value = null
+  } catch (e) {
+    console.error('Erreur de suppression de l\'ensemble', e)
+  }
+}
 
 function startEvaluation() {
   if (selectedNoteId.value === null) return
   router.push(`/notes/${selectedNoteId.value}/evaluation`)
 }
-
-const activeTab = ref('flashcards')
 
 // Decks logic
 const decksLoading = ref(false)
@@ -1496,7 +1664,8 @@ onMounted(async () => {
     await Promise.all([
       decksStore.fetchDecks(),
       notesStore.fetchNotes(),
-      bindersStore.fetchBinders()
+      bindersStore.fetchBinders(),
+      revisionStore.fetchSets()
     ])
     // Fetch deck due counts
     await fetchDecksStats()
