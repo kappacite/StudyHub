@@ -38,4 +38,15 @@ describe('binders store — rattacher/détacher des éléments (C1)', () => {
     expect(api.post).toHaveBeenCalledWith('/binders/binder-uuid/items/detach', { items })
     expect(n).toBe(1)
   })
+
+  it('attachItems accepte diagrammes (id entier) et PDF (id uuid) — affichage classeur (C1)', async () => {
+    api.post.mockResolvedValue({ data: { attached: 2 } })
+    const store = useBindersStore()
+
+    const items = [{ type: 'diagram' as const, id: 7 }, { type: 'pdf' as const, id: 'pdf-uuid' }]
+    const n = await store.attachItems('binder-uuid', items)
+
+    expect(api.post).toHaveBeenCalledWith('/binders/binder-uuid/items', { items })
+    expect(n).toBe(2)
+  })
 })
