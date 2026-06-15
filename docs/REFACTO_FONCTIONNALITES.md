@@ -79,7 +79,7 @@
 | Professeur | `Group(is_class)`, `GroupBinder` (partage par référence), `Assignment`+`AssignmentTask` (`flashcards|quiz|exam|blurting|read`), `AssignmentProgress` (+notation), analytics, engagement, `Notification`, `ClassInsight`. | `services/class_*`, `models/assignment.py`, `models/group.py` |
 | Révision active notes | Balisage `{{qcm}}/{{vf}}/{{trou}}/[def]` + mode « Révision Active » inline (révéler/répondre). | `views/Notes/NoteEdit.vue`, `utils/placeholder_parser.py` |
 | Fait depuis (A0→A8 + C1 + C2) | Socle `revision_sets`/`revision_items` (A0) ; flashcard avancée — inversé/tuning/courbe (A1) ; QCM scoré (A2) ; VF/association/définition/ordre (A3–A6) ; stats par élément/ensemble (A7) ; **stats par classeur (A8)** ; **rattacher/détacher des éléments existants (C1)** ; **onglet Révisions Classiques/IA (C2)**. **Parties A et C (hors affichage diagrammes/pdfs) complètes.** | cf. §5 |
-| Manquant | Affichage diagrammes/pdfs dans le classeur (reste de C1) ; stats de groupe étendues (B5). | — |
+| Manquant | Affichage diagrammes/pdfs dans le classeur (reste de C1, optionnel — backend déjà compatible). | — |
 
 ---
 
@@ -283,13 +283,13 @@
 
 **Objectif** : avancement des élèves, taux de réussite, temps moyen de révision.
 
-**État actuel** : 🟡 analytics prof + `ClassInsight` existent (lacunes IA, progression devoirs).
+**État actuel** : ✅ **Fait** (PR `feature/teacher-group-stats`, 2026-06-15). **Dernier item du plan.**
 
 **Étapes**
-- [ ] (backend) Étendre l'analytics : temps moyen de révision (`StudySession.duration_seconds`), taux de réussite global, avancement par élève/ensemble — **agrégats SQL** + budget de requêtes.
-- [ ] (frontend) `TeacherDashboard` : KPIs groupe + tableau par élève.
+- [x] (backend) `get_class_overview` étendu : **temps moyen de révision** (`StudySession.duration_seconds`), **taux de réussite global** (cartes correctes/révisées) et **avancement par élève** (`StudentStatSchema` : devoirs terminés, score moyen, minutes de révision, réussite). Agrégats SQL **bornés** (1 req. noms + 1 req. study group-by + 1 req. progress group-by) — budget de requêtes inchangé (test `assert_max_queries`).
+- [x] (frontend) `TeacherDashboard` (onglet Tableau de bord) : KPI **Révision moy.** + **Réussite révisions** + **tableau par élève** (devoirs faits, score, temps, réussite).
 
-**Tests** : agrégats sur jeu fixé ; isolation classe ; budget requêtes.
+**Tests** : `test_class_overview_revision_metrics` (temps/réussite/par-élève) + budget de requêtes (non-régression). vue-tsc clean, Vitest 40.
 **Commits** : `feat(teacher): stats de groupe (réussite, temps, avancement)`. **PR** : `feature/teacher-group-stats`.
 
 ---
@@ -367,3 +367,4 @@
 - **2026-06-15** — **C2 livré** (`feature/reviews-reorg`). Réorganisation de `Reviews.vue` en deux catégories **Classiques** (Flashcards + QCM/V-F/Association/Définition/Ordre en sous-onglets) et **IA** (évaluation, feuille blanche, Feynman, auto-QCM). Pour chaque type : liste des ensembles avec étude/lancement, stats (A7), et réglages (renommer, fine-tuning `tuning_default`, rattacher à un classeur, supprimer). Store `updateSet` accepte désormais `binder_id`. Frontend uniquement, pas de migration. Tests : vue-tsc clean, Vitest 36, E2E `/reviews` OK. **Parties A et C (hors affichage diagrammes/pdfs) bouclées ; suite : B3/B4/B5.**
 - **2026-06-15** — **B3 livré** (`feature/teacher-assignments-revision`). Type de tâche **`revision`** ciblant un `RevisionSet` typé : `TASK_TYPES`/`TASK_TARGET_KIND` étendus, `_resolve_task_target` (appartenance prof), complétion **dérivée** des `StudySession` des items (`_revision_state`, objectif `{min_items, min_score}`). Front : `AssignmentBuilder` (cible « ensemble de révision » + objectif), `TeacherDashboard` (`setOptions`), `taskLaunchRoute` → `/revision/sets/:id/study` (QCM redirigé vers run via `RevisionStudy`), CTA élève « Réviser ». Pas de migration (`task_type` est un `String`). Tests : backend 237 (`test_assignment_revision`), vue-tsc clean, Vitest 37. **Suite : B4 (Q&A élèves).**
 - **2026-06-15** — **B4 livré** (`feature/teacher-qa`). Questions des élèves : modèle **`ClassQuestion`** (réponse unique, statut `open`/`answered`) + migration idempotente `a7c1d2e3f4b5` ; `ClassQAService` + endpoints `POST/GET /classes/:id/questions` et `POST .../:qid/answer` (isolation : élève = ses questions, prof = toutes) ; notifications `question` (→ profs) et `answer` (→ auteur). Front : section Q&A dans `StudentClassView` (sélecteur de classe + poser + fil), onglet « Questions » dans `TeacherDashboard` (inbox + réponse inline), `classService` Q&A. Tests : backend 242 (`test_class_qa`), vue-tsc clean, Vitest 40. **Suite : B5 (stats de groupe étendues) — dernier item du plan.**
+- **2026-06-15** — **B5 livré** (`feature/teacher-group-stats`). `get_class_overview` étendu : temps moyen de révision, taux de réussite global (cartes correctes/révisées) et **avancement par élève** (`StudentStatSchema`), en agrégats SQL bornés (budget de requêtes inchangé). Front : KPI « Révision moy. » + « Réussite révisions » + tableau par élève dans l'onglet Tableau de bord de `TeacherDashboard`. Pas de migration. Tests : backend 242 (`test_class_overview_revision_metrics` + budget), vue-tsc clean, Vitest 40. **🎉 Plan de refonte Révision/Professeur/UI terminé** (seul reliquat optionnel : affichage diagrammes/pdfs dans le classeur, C1 — backend déjà prêt).

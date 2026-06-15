@@ -690,6 +690,44 @@ function isPast(d: string | null): boolean {
                     {{ classDetails[cls.id].overview!.avg_score !== null ? Math.round(classDetails[cls.id].overview!.avg_score!) + '%' : '—' }}
                   </p>
                 </div>
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-3">
+                  <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Révision moy.</p>
+                  <p class="text-2xl font-bold text-slate-800 dark:text-white">{{ Math.round(classDetails[cls.id].overview!.avg_study_minutes) }} min</p>
+                </div>
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-3">
+                  <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Réussite révisions</p>
+                  <p class="text-2xl font-bold text-slate-800 dark:text-white">
+                    {{ classDetails[cls.id].overview!.study_success_rate !== null ? Math.round(classDetails[cls.id].overview!.study_success_rate!) + '%' : '—' }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Avancement par élève (B5) -->
+              <div v-if="classDetails[cls.id].overview!.students.length" class="mb-6">
+                <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Avancement par élève</p>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-xs">
+                    <thead>
+                      <tr class="text-left text-slate-400 border-b border-slate-100 dark:border-slate-700/60">
+                        <th class="py-1.5 pr-2 font-semibold">Élève</th>
+                        <th class="py-1.5 px-2 font-semibold text-right">Devoirs faits</th>
+                        <th class="py-1.5 px-2 font-semibold text-right">Score moy.</th>
+                        <th class="py-1.5 px-2 font-semibold text-right">Révision</th>
+                        <th class="py-1.5 pl-2 font-semibold text-right">Réussite</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="s in classDetails[cls.id].overview!.students" :key="s.user_id"
+                        class="border-b border-slate-50 dark:border-slate-800/40">
+                        <td class="py-1.5 pr-2 font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[160px]">{{ s.username }}</td>
+                        <td class="py-1.5 px-2 text-right text-slate-600 dark:text-slate-300">{{ s.completed_assignments }}</td>
+                        <td class="py-1.5 px-2 text-right text-slate-600 dark:text-slate-300">{{ s.avg_score !== null ? Math.round(s.avg_score) + '%' : '—' }}</td>
+                        <td class="py-1.5 px-2 text-right text-slate-600 dark:text-slate-300">{{ s.study_minutes }} min</td>
+                        <td class="py-1.5 pl-2 text-right text-slate-600 dark:text-slate-300">{{ s.success_rate !== null ? Math.round(s.success_rate) + '%' : '—' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <!-- Per-assignment completion -->

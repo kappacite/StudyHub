@@ -17,8 +17,9 @@ from app.models.assignment import Assignment, AssignmentProgress
 from app.models.study_session import StudySession
 from app.models.evaluation import Evaluation, EvaluationItem
 from app.models.note import Note
+from app.models.user import User
 from app.schemas.analytics_schema import (
-    ClassOverviewSchema, AssignmentStatSchema, WeakTopicSchema,
+    ClassOverviewSchema, AssignmentStatSchema, WeakTopicSchema, StudentStatSchema,
 )
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
 
@@ -110,6 +111,65 @@ class AnalyticsService:
                 .scalar()
             ) or 0
 
+        # B5 — Stats de révision & avancement par élève (agrégats bornés).
+        student_stats: List[StudentStatSchema] = []
+        avg_study_minutes = 0.0
+        study_success_rate: Optional[float] = None
+        if student_ids:
+            # Noms (1 requête).
+            names = dict(
+                self._db.query(User.id, User.username)
+                .filter(User.id.in_(student_ids)).all()
+            )
+            # Temps d'étude + cartes par élève (1 requête).
+            study_rows = (
+                self._db.query(
+                    StudySession.user_id,
+                    func.sum(StudySession.duration_seconds),
+                    func.sum(StudySession.cards_reviewed),
+                    func.sum(StudySession.cards_correct),
+                )
+                .filter(StudySession.user_id.in_(student_ids))
+                .group_by(StudySession.user_id)
+                .all()
+            )
+            study_by_user = {r[0]: (r[1] or 0, r[2] or 0, r[3] or 0) for r in study_rows}
+            # Devoirs terminés + score moyen par élève (1 requête).
+            prog_by_user = {}
+            if assignment_ids:
+                prog_rows = (
+                    self._db.query(
+                        AssignmentProgress.user_id,
+                        func.sum(case((AssignmentProgress.completed_at.isnot(None), 1), else_=0)),
+                        func.avg(AssignmentProgress.score_pct),
+                    )
+                    .filter(AssignmentProgress.assignment_id.in_(assignment_ids))
+                    .group_by(AssignmentProgress.user_id)
+                    .all()
+                )
+                prog_by_user = {r[0]: (r[1] or 0, r[2]) for r in prog_rows}
+
+            total_seconds = 0
+            total_reviewed = 0
+            total_correct = 0
+            for sid in student_ids:
+                secs, reviewed, correct = study_by_user.get(sid, (0, 0, 0))
+                completed, avg = prog_by_user.get(sid, (0, None))
+                total_seconds += secs
+                total_reviewed += reviewed
+                total_correct += correct
+                student_stats.append(StudentStatSchema(
+                    user_id=sid,
+                    username=names.get(sid, f"#{sid}"),
+                    completed_assignments=int(completed),
+                    avg_score=float(avg) if avg is not None else None,
+                    study_minutes=round(secs / 60),
+                    success_rate=(correct / reviewed * 100.0) if reviewed else None,
+                ))
+            student_stats.sort(key=lambda s: s.completed_assignments, reverse=True)
+            avg_study_minutes = round(total_seconds / 60 / len(student_ids), 1)
+            study_success_rate = (total_correct / total_reviewed * 100.0) if total_reviewed else None
+
         return ClassOverviewSchema(
             class_id=class_id,
             students_count=len(student_ids),
@@ -117,7 +177,10 @@ class AnalyticsService:
             completion_rate=completion_rate,
             avg_score=avg_score,
             active_students_7d=active_7d,
+            avg_study_minutes=avg_study_minutes,
+            study_success_rate=study_success_rate,
             assignments=assignment_stats,
+            students=student_stats,
         )
 
     # ─────────────────────────────────────────────────────────────────────────
