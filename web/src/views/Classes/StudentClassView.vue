@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import classService from '../../services/classService'
 import type { AssignmentSummary, AssignmentTask, TaskType, ClassInfo, ClassQuestion } from '../../services/classService'
+import api from '../../services/api'
 import { taskLaunchRoute } from '../../services/assignmentTasks'
 import { useClassNotifications } from '../../composables/useClassNotifications'
 import {
@@ -18,6 +19,17 @@ const loading = ref(true)
 const filterStatus = ref<'all' | 'todo' | 'in_progress' | 'done' | 'late'>('all')
 
 const { scheduleDueReminders } = useClassNotifications()
+
+// ─── Tableau de bord élève : ses propres stats (globales) ──────────────────────
+interface MyStats { streak: number; total_time_seconds: number; total_reviewed: number; total_correct: number }
+const myStats = ref<MyStats | null>(null)
+const myStudyMinutes = computed(() => myStats.value ? Math.round(myStats.value.total_time_seconds / 60) : 0)
+const mySuccessRate = computed(() =>
+  myStats.value && myStats.value.total_reviewed > 0
+    ? Math.round((myStats.value.total_correct / myStats.value.total_reviewed) * 100)
+    : 0,
+)
+const myDoneCount = computed(() => assignments.value.filter(a => a.status === 'done').length)
 
 // ─── Q&A (B4) ─────────────────────────────────────────────────────────────────
 const myClasses = ref<ClassInfo[]>([])
@@ -49,6 +61,7 @@ onMounted(async () => {
   loading.value = true
   assignments.value = await classService.getMyAssignments().catch(() => [])
   myClasses.value = await classService.getMyClasses().catch(() => [])
+  myStats.value = await api.get('/stats/overview').then(r => r.data).catch(() => null)
   qaClassId.value = myClasses.value[0]?.id ?? null
   await loadQuestions()
   loading.value = false
@@ -152,6 +165,26 @@ async function validateTask(asgn: AssignmentSummary, task: AssignmentTask) {
       <p class="mt-1 text-slate-500 dark:text-slate-400 text-sm">
         Suivez vos devoirs assignés par vos professeurs.
       </p>
+    </div>
+
+    <!-- Tableau de bord élève : mes propres statistiques -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Série</p>
+        <p class="text-2xl font-bold text-slate-800 dark:text-white mt-1">{{ myStats?.streak ?? 0 }} j</p>
+      </div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Temps de révision</p>
+        <p class="text-2xl font-bold text-slate-800 dark:text-white mt-1">{{ myStudyMinutes }} min</p>
+      </div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Réussite révisions</p>
+        <p class="text-2xl font-bold text-slate-800 dark:text-white mt-1">{{ mySuccessRate }}%</p>
+      </div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Devoirs terminés</p>
+        <p class="text-2xl font-bold text-slate-800 dark:text-white mt-1">{{ myDoneCount }}</p>
+      </div>
     </div>
 
     <!-- Filters -->

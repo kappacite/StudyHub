@@ -13,6 +13,7 @@ export interface ClassInfo {
   created_by: number | null
   created_at: string
   members_count: number
+  my_role?: 'owner' | 'admin' | 'member' | 'follower' | null
 }
 
 export interface AssignmentProgress {

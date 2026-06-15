@@ -580,3 +580,9 @@ Deux bugs signalés sur la fonctionnalité professeur :
 
 ### Tests
 * Backend `test_shared_revision_sets` (ensemble partagé visible read_only + isolation non-membre ; devoir sur ensemble vide = todo). Suite **252**. vue-tsc clean, Vitest 50. Pas de migration.
+
+### Séparation des rôles prof/élève (#1, #2, #3)
+* **Backend** : `ClassResponseSchema.my_role` (rôle de l'utilisateur courant dans la classe), peuplé par `get_my_classes` depuis `members_assoc`.
+* **#1/#2** : `TeacherDashboard.loadClasses` ne liste que les classes animées (`my_role ∈ {owner, admin}`) → un élève n'y voit plus la gestion ni les onglets vides (état vide existant réutilisé).
+* **#3** : `StudentClassView` (« Mes Devoirs ») gagne un **tableau de bord perso** : série, temps de révision, taux de réussite (depuis `/stats/overview`) et nombre de devoirs terminés — les stats de l'élève.
+* Tests : backend `test_my_classes_exposes_role`, suite **253**. vue-tsc clean, Vitest 50.
