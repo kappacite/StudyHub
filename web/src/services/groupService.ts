@@ -51,6 +51,12 @@ export interface GroupDetail {
   binders: GroupBinder[]
 }
 
+export interface BinderClassRef {
+  id: number
+  name: string
+  permission: 'read' | 'write'
+}
+
 export interface MemberProgress {
   user_id: number
   username: string
@@ -101,6 +107,11 @@ const groupService = {
 
   async unshareBinder(groupId: number, binderId: string) {
     await api.delete(`/groups/${groupId}/binders/${binderId}`)
+  },
+
+  async getBinderClasses(binderId: string) {
+    const response = await api.get<BinderClassRef[]>(`/groups/binders/${binderId}/classes`)
+    return response.data
   },
 
   async getGroupActivity(groupId: number, page = 1, perPage = 20) {

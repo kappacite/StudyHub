@@ -12,7 +12,7 @@ from app.models.study_session import StudySession
 from app.schemas.group_schema import (
     GroupCreateSchema, GroupResponseSchema, GroupDetailResponseSchema,
     GroupMemberResponseSchema, GroupBinderResponseSchema, GroupActivityResponseSchema,
-    GroupMemberProgressSchema
+    GroupMemberProgressSchema, BinderClassRefSchema
 )
 from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError, ConflictError
 
@@ -308,6 +308,24 @@ class GroupService:
             raise ForbiddenError("Vous n'êtes pas autorisé à retirer ce classeur du groupe.")
 
         self._group_dao.remove_group_binder(group_binder)
+
+    def get_classes_sharing_binder(self, user_id: int, binder_id: str) -> List[BinderClassRefSchema]:
+        """Liste les classes auxquelles un classeur (possédé par l'utilisateur) est
+        partagé — alimente l'indicateur « partagé à la classe » de la vue classeur."""
+        binder = self._binder_dao.get_by_id(binder_id)
+        if not binder or binder.user_id != user_id:
+            raise ResourceNotFoundError("Classeur introuvable.")
+
+        rows = (
+            self._group_dao.db.query(Group, GroupBinder.permission)
+            .join(GroupBinder, GroupBinder.group_id == Group.id)
+            .filter(GroupBinder.binder_id == binder._id, Group.is_class.is_(True))
+            .all()
+        )
+        return [
+            BinderClassRefSchema(id=g.id, name=g.name, permission=perm)
+            for g, perm in rows
+        ]
 
     def get_group_activity(self, group_id: int, user_id: int, page: int = 1, per_page: int = 50) -> List[GroupActivityResponseSchema]:
         group = self._group_dao.get_by_id(group_id)
