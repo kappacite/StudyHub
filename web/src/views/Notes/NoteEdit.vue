@@ -586,19 +586,19 @@
                       <p class="text-[10px] text-slate-450 mt-0.5">Exemple : <code v-pre>{{qcm::Combien de continents ?::4|5|*6|7*|8}}</code>.</p>
                     </li>
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Ordre / Séquence :</strong> 
-                      Utilisez <code v-pre>{{ordre::Titre::Étape1|Étape2|Étape3}}</code> pour ordonner des concepts.
-                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : Cycle de l'eau : <code v-pre>{{ordre::Étapes::Évaporation|Condensation|Précipitations}}</code>.</p>
+                      <strong class="text-indigo-600 dark:text-indigo-400">Ordre / Séquence :</strong>
+                      Utilisez <code v-pre>{{ordre::Titre::Étape 1 > Étape 2 > Étape 3}}</code> (étapes séparées par <code>></code>).
+                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : <code v-pre>{{ordre::Cycle de l'eau::Évaporation > Condensation > Précipitations}}</code>.</p>
                     </li>
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Associations :</strong> 
-                      Utilisez <code v-pre>{{assoc::Titre::Clé 1: Valeur 1|Clé 2: Valeur 2}}</code>.
-                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : Assigner pays/capitales : <code v-pre>{{assoc::Capitales::France: Paris|Italie: Rome}}</code>.</p>
+                      <strong class="text-indigo-600 dark:text-indigo-400">Associations :</strong>
+                      Utilisez <code v-pre>{{assoc::Titre::Clé 1=Valeur 1 | Clé 2=Valeur 2}}</code> (paires <code>clé=valeur</code> séparées par <code>|</code>).
+                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : <code v-pre>{{assoc::Capitales::France=Paris | Italie=Rome}}</code>.</p>
                     </li>
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Vrai / Faux :</strong> 
-                      Utilisez <code v-pre>{{vf::Affirmation::vrai/faux|Justification}}</code>.
-                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : <code v-pre>{{vf::La Terre est plate::faux|Elle a la forme d'un géoïde.}}</code>.</p>
+                      <strong class="text-indigo-600 dark:text-indigo-400">Vrai / Faux :</strong>
+                      Utilisez <code v-pre>{{vf::Affirmation::Vrai/Faux::Justification}}</code> (séparateur <code>::</code>).
+                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : <code v-pre>{{vf::La Terre est plate::Faux::Elle a la forme d'un géoïde.}}</code>.</p>
                     </li>
                   </ul>
                 </div>
