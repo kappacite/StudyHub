@@ -84,4 +84,15 @@ describe('revision store — ensembles typés (D3c)', () => {
     await store.fetchItemStats(9)
     expect(api.get).toHaveBeenCalledWith('/stats/items/9')
   })
+
+  it('fetchBinderStats interroge le bon endpoint (avec/sans sous-arbre)', async () => {
+    const store = useRevisionStore()
+    api.get.mockResolvedValue({ data: { binder_id: 'abc', sets: [], by_type: [], weakest_sets: [], verdicts: [] } })
+
+    await store.fetchBinderStats('abc')
+    expect(api.get).toHaveBeenCalledWith('/stats/binders/abc')
+
+    await store.fetchBinderStats('abc', false)
+    expect(api.get).toHaveBeenCalledWith('/stats/binders/abc?descendants=false')
+  })
 })

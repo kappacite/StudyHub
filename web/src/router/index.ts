@@ -94,6 +94,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'revision/binders/:id/stats',
+        name: 'RevisionBinderStats',
+        component: () => import('../views/Reviews/RevisionBinderStats.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'reviews',
         name: 'Reviews',
         component: () => import('../views/Reviews/Reviews.vue'),

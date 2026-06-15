@@ -92,3 +92,11 @@ def get_item_stats(item_id):
     user_id = int(get_jwt_identity())
     result = revision_stats_service.get_item_stats(user_id, item_id)
     return jsonify(result.model_dump(mode="json")), 200
+
+@stats_bp.route("/binders/<binder_id>", methods=["GET"])
+@jwt_required_middleware
+def get_binder_stats(binder_id):
+    user_id = int(get_jwt_identity())
+    include_descendants = request.args.get("descendants", "true").lower() != "false"
+    result = revision_stats_service.get_binder_stats(user_id, binder_id, include_descendants)
+    return jsonify(result.model_dump(mode="json")), 200

@@ -27,7 +27,15 @@
       <!-- Action Buttons -->
       <div class="flex items-center gap-3">
         <template v-if="isOwner">
-          <button 
+          <button
+            v-if="currentBinderId !== null"
+            @click="router.push(`/revision/binders/${currentBinderId}/stats`)"
+            class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-850 transition-all active:scale-95"
+          >
+            <BarChart3 class="w-4 h-4" />
+            Stats
+          </button>
+          <button
             v-if="currentBinderId !== null"
             @click="openShareModal"
             class="inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-semibold transition-all active:scale-95"

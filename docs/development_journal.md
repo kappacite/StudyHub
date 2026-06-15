@@ -416,3 +416,25 @@ Stats actionnables fondées sur des indicateurs reconnus (modèle DSR/FSRS, cour
 
 ### Portée
 * A7 couvre les **éléments de révision** (qcm/vf/assoc/def/ordre) via `item_id`. Les flashcards ont déjà leur courbe (A1) + `/stats/decks/:id` ; l'unification complète flashcards↔items (écriture `item_id` côté flashcard) est laissée à un futur passage.
+
+## [2026-06-15] A8 — Statistiques par classeur (clôt la Partie A)
+
+Agrégation des stats de révision à l'échelle d'un classeur (et de son sous-arbre), réutilisant le service A7.
+
+### Backend
+* **`GET /stats/binders/<uuid>`** (option `?descendants=false`) : agrège tous les `RevisionSet` du classeur + descendants. Renvoie maîtrise, rétention réelle (True Retention), réussite moyenne, sangsues, à-réviser, difficulté moyenne, **répartition par type**, **ensembles à surveiller** (sangsues puis faible maîtrise) et liste complète.
+* Refactor de `RevisionStatsService` : extraction de **`_aggregate_set`** (logique par ensemble partagée avec `get_set_stats`) + **`get_binder_stats`**. Accès vérifié par `check_binder_access` (propriétaire **ou** classe partagée). Sous-arbre via `BinderDAO.get_descendants`.
+* **Anti-N+1** : `RevisionSetDAO.get_by_binders`, `RevisionItemDAO.get_by_sets`, sessions chargées en **une requête par type** présent (≤ 5). `test_binder_stats_query_budget` borne le nombre de requêtes.
+* Schémas `RevisionBinderStats`/`RevisionSetSummary`/`RevisionTypeBreakdown`. **Aucune migration** (pas de changement de modèle).
+
+### Frontend
+* `stores/revision.ts` : `fetchBinderStats(binderId, includeDescendants)` + types `BinderStats`/`SetSummary`/`TypeBreakdown`.
+* **`RevisionBinderStats.vue`** (`/revision/binders/:id/stats`) : KPI globaux, bascule « inclure les sous-classeurs », barres de **répartition par type**, ensembles **à surveiller** et liste cliquable (→ stats par ensemble A7).
+* `Binders.vue` : bouton **« Stats »** dans l'en-tête du classeur.
+
+### Tests
+* Backend `test_stats_binder.py` : agrégation multi-ensembles/types, inclusion du sous-arbre (+ `descendants=false`), isolation entre utilisateurs, budget de requêtes. Suite **229/229**.
+* Front : `revision.spec` (fetchBinderStats avec/sans sous-arbre). vue-tsc clean, **Vitest 33/33**.
+
+### Portée
+* Couvre les **ensembles de révision**. Les decks de flashcards conservent `/stats/decks/:id` ; leur intégration à la vue classeur pourra suivre l'unification flashcards↔items évoquée en A7. **Partie A (Révision) désormais complète.**

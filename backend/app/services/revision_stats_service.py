@@ -1,12 +1,15 @@
 import math
 from datetime import datetime, timedelta
 from typing import List, Optional
+from dataclasses import dataclass, field
 from app.dao.revision_dao import RevisionSetDAO, RevisionItemDAO
 from app.dao.study_session_dao import StudySessionDAO
+from app.dao.binder_dao import BinderDAO
 from app.models.revision import RevisionSet, RevisionItem
 from app.models.study_session import StudySession
 from app.schemas.revision_schema import (
     RevisionItemStats, RevisionSetStats, RevisionHistoryPoint, RevisionItemSummary,
+    RevisionSetSummary, RevisionTypeBreakdown, RevisionBinderStats,
 )
 
 
@@ -57,11 +60,45 @@ def project_mastery_date(interval: int, ease_factor: float, next_review: Optiona
     return d
 
 
+@dataclass
+class _SetAggregate:
+    """Métriques d'un ensemble + accumulateurs bruts (recomposables au niveau classeur)."""
+    set: RevisionSet
+    items_count: int = 0
+    reviewed_items: int = 0
+    mastered_count: int = 0
+    leeches_count: int = 0
+    due_count: int = 0
+    mature_reviews: int = 0
+    mature_successes: int = 0
+    success_rates: list = field(default_factory=list)   # par item révisé
+    difficulties: list = field(default_factory=list)     # par item
+    item_summaries: list = field(default_factory=list)
+
+    @property
+    def mastery_rate(self) -> float:
+        return round(self.mastered_count / self.items_count * 100, 1) if self.items_count else 0.0
+
+    @property
+    def avg_success_rate(self) -> float:
+        return round(sum(self.success_rates) / len(self.success_rates), 1) if self.success_rates else 0.0
+
+    @property
+    def true_retention(self) -> float:
+        return round(self.mature_successes / self.mature_reviews * 100, 1) if self.mature_reviews else 0.0
+
+    @property
+    def avg_difficulty(self) -> float:
+        return round(sum(self.difficulties) / len(self.difficulties), 1) if self.difficulties else 0.0
+
+
 class RevisionStatsService:
-    def __init__(self, set_dao: RevisionSetDAO, item_dao: RevisionItemDAO, session_dao: StudySessionDAO):
+    def __init__(self, set_dao: RevisionSetDAO, item_dao: RevisionItemDAO,
+                 session_dao: StudySessionDAO, binder_dao: BinderDAO = None):
         self._set_dao = set_dao
         self._item_dao = item_dao
         self._session_dao = session_dao
+        self._binder_dao = binder_dao or BinderDAO(set_dao.db)
 
     def _get_set_or_404(self, set_id: int, user_id: int) -> RevisionSet:
         rset = self._set_dao.get_by_id(set_id)
@@ -117,29 +154,11 @@ class RevisionStatsService:
 
     # --- Ensemble -------------------------------------------------------------
 
-    def get_set_stats(self, user_id: int, set_id: int) -> RevisionSetStats:
-        rset = self._get_set_or_404(set_id, user_id)
-        now = datetime.utcnow()
-        items = self._item_dao.get_by_set(set_id)
-        item_ids = [i.id for i in items]
-
-        # Une seule requête pour toutes les sessions de l'ensemble (anti-N+1).
-        sessions = self._session_dao.get_for_items(item_ids, rset.type)
-        by_item = {}
-        for s in sessions:
-            by_item.setdefault(s.item_id, []).append(s)
-
-        items_count = len(items)
-        reviewed_items = 0
-        mastered_count = 0
-        leeches_count = 0
-        due_count = 0
-        success_rates = []
-        difficulties = []
-        mature_reviews = 0
-        mature_successes = 0
-        item_summaries = []
-
+    def _aggregate_set(self, rset: RevisionSet, items: List[RevisionItem],
+                       by_item: dict, now: datetime) -> _SetAggregate:
+        """Calcule les métriques d'un ensemble à partir d'items + sessions déjà chargés
+        (aucune requête ici : appelable en boucle sans N+1)."""
+        agg = _SetAggregate(set=rset, items_count=len(items))
         for item in items:
             graded = [s for s in by_item.get(item.id, []) if s.grade is not None]
             reviews = len(graded)
@@ -153,19 +172,19 @@ class RevisionStatsService:
             last_reviewed = graded[-1].created_at if graded else None
 
             if reviews:
-                reviewed_items += 1
-                success_rates.append(item_success)
-            difficulties.append(difficulty)
+                agg.reviewed_items += 1
+                agg.success_rates.append(item_success)
+            agg.difficulties.append(difficulty)
             if is_mature:
-                mastered_count += 1
-                mature_reviews += reviews
-                mature_successes += successes
+                agg.mastered_count += 1
+                agg.mature_reviews += reviews
+                agg.mature_successes += successes
             if is_leech:
-                leeches_count += 1
+                agg.leeches_count += 1
             if is_due:
-                due_count += 1
+                agg.due_count += 1
 
-            item_summaries.append(RevisionItemSummary(
+            agg.item_summaries.append(RevisionItemSummary(
                 item_id=item.id,
                 label=item_label(rset.type, item.payload),
                 reviews=reviews,
@@ -176,32 +195,41 @@ class RevisionStatsService:
                 is_mature=is_mature,
                 due=is_due,
             ))
+        return agg
 
-        mastery_rate = round(mastered_count / items_count * 100, 1) if items_count else 0.0
-        avg_success_rate = round(sum(success_rates) / len(success_rates), 1) if success_rates else 0.0
-        true_retention = round(mature_successes / mature_reviews * 100, 1) if mature_reviews else 0.0
-        avg_difficulty = round(sum(difficulties) / len(difficulties), 1) if difficulties else 0.0
+    def get_set_stats(self, user_id: int, set_id: int) -> RevisionSetStats:
+        rset = self._get_set_or_404(set_id, user_id)
+        now = datetime.utcnow()
+        items = self._item_dao.get_by_set(set_id)
+        item_ids = [i.id for i in items]
 
+        # Une seule requête pour toutes les sessions de l'ensemble (anti-N+1).
+        sessions = self._session_dao.get_for_items(item_ids, rset.type)
+        by_item = {}
+        for s in sessions:
+            by_item.setdefault(s.item_id, []).append(s)
+
+        agg = self._aggregate_set(rset, items, by_item, now)
         verdicts = self._build_verdicts(
-            items_count, reviewed_items, leeches_count, due_count,
-            true_retention, mature_reviews,
+            agg.items_count, agg.reviewed_items, agg.leeches_count, agg.due_count,
+            agg.true_retention, agg.mature_reviews,
         )
 
         return RevisionSetStats(
             set_id=rset.id,
             type=rset.type,
             name=rset.name,
-            items_count=items_count,
-            reviewed_items=reviewed_items,
-            mastered_count=mastered_count,
-            mastery_rate=mastery_rate,
-            avg_success_rate=avg_success_rate,
-            true_retention=true_retention,
-            leeches_count=leeches_count,
-            due_count=due_count,
-            avg_difficulty=avg_difficulty,
+            items_count=agg.items_count,
+            reviewed_items=agg.reviewed_items,
+            mastered_count=agg.mastered_count,
+            mastery_rate=agg.mastery_rate,
+            avg_success_rate=agg.avg_success_rate,
+            true_retention=agg.true_retention,
+            leeches_count=agg.leeches_count,
+            due_count=agg.due_count,
+            avg_difficulty=agg.avg_difficulty,
             verdicts=verdicts,
-            items=item_summaries,
+            items=agg.item_summaries,
         )
 
     def _build_verdicts(self, items_count, reviewed_items, leeches, due, true_retention, mature_reviews) -> List[str]:
@@ -219,3 +247,107 @@ class RevisionStatsService:
         if not verdicts:
             verdicts.append("Bonne progression — rien à signaler.")
         return verdicts
+
+    # --- Classeur (A8) --------------------------------------------------------
+
+    def get_binder_stats(self, user_id: int, binder_id, include_descendants: bool = True) -> RevisionBinderStats:
+        """Agrège les stats de tous les ensembles de révision d'un classeur (et,
+        par défaut, de son sous-arbre). Les decks de flashcards ont leurs stats
+        propres (`/stats/decks/:id`) et ne sont pas inclus ici."""
+        from app.utils.security import check_binder_access
+
+        # Vérifie l'accès (propriétaire OU classe partagée) ; lève 404/403.
+        binder = check_binder_access(self._set_dao.db, binder_id, user_id, write_required=False)
+
+        binder_internal_ids = [binder._id]
+        if include_descendants:
+            binder_internal_ids += [b._id for b in self._binder_dao.get_descendants(binder._id)]
+
+        now = datetime.utcnow()
+        sets = self._set_dao.get_by_binders(binder_internal_ids)
+        set_ids = [s.id for s in sets]
+
+        # Items de tous les ensembles en une requête, regroupés par ensemble.
+        items = self._item_dao.get_by_sets(set_ids)
+        items_by_set: dict = {}
+        for it in items:
+            items_by_set.setdefault(it.set_id, []).append(it)
+
+        # Sessions : une requête par type d'ensemble présent (≤ 5), pas par item.
+        ids_by_type: dict = {}
+        for s in sets:
+            for it in items_by_set.get(s.id, []):
+                ids_by_type.setdefault(s.type, []).append(it.id)
+        by_item: dict = {}
+        for set_type, ids in ids_by_type.items():
+            for sess in self._session_dao.get_for_items(ids, set_type):
+                by_item.setdefault(sess.item_id, []).append(sess)
+
+        # Agrégation par ensemble (réutilise la logique de get_set_stats).
+        summaries: List[RevisionSetSummary] = []
+        by_type_acc: dict = {}   # type -> [sets, items, mastered]
+        tot = _SetAggregate(set=binder)   # accumulateur global
+
+        for rset in sets:
+            agg = self._aggregate_set(rset, items_by_set.get(rset.id, []), by_item, now)
+            summaries.append(RevisionSetSummary(
+                set_id=rset.id, type=rset.type, name=rset.name,
+                items_count=agg.items_count, reviewed_items=agg.reviewed_items,
+                mastered_count=agg.mastered_count, mastery_rate=agg.mastery_rate,
+                avg_success_rate=agg.avg_success_rate, true_retention=agg.true_retention,
+                leeches_count=agg.leeches_count, due_count=agg.due_count,
+                avg_difficulty=agg.avg_difficulty,
+            ))
+            tot.items_count += agg.items_count
+            tot.reviewed_items += agg.reviewed_items
+            tot.mastered_count += agg.mastered_count
+            tot.leeches_count += agg.leeches_count
+            tot.due_count += agg.due_count
+            tot.mature_reviews += agg.mature_reviews
+            tot.mature_successes += agg.mature_successes
+            tot.success_rates.extend(agg.success_rates)
+            tot.difficulties.extend(agg.difficulties)
+
+            acc = by_type_acc.setdefault(rset.type, [0, 0, 0])
+            acc[0] += 1
+            acc[1] += agg.items_count
+            acc[2] += agg.mastered_count
+
+        by_type = [
+            RevisionTypeBreakdown(
+                type=t, sets_count=a[0], items_count=a[1], mastered_count=a[2],
+                mastery_rate=round(a[2] / a[1] * 100, 1) if a[1] else 0.0,
+            )
+            for t, a in sorted(by_type_acc.items())
+        ]
+
+        # Ensembles les plus à risque : sangsues d'abord, puis faible maîtrise.
+        weakest = sorted(
+            [s for s in summaries if s.items_count > 0],
+            key=lambda s: (-s.leeches_count, s.mastery_rate, -s.due_count),
+        )[:5]
+
+        verdicts = self._build_verdicts(
+            tot.items_count, tot.reviewed_items, tot.leeches_count, tot.due_count,
+            tot.true_retention, tot.mature_reviews,
+        )
+
+        return RevisionBinderStats(
+            binder_id=binder.id,
+            name=binder.name,
+            include_descendants=include_descendants,
+            sets_count=len(sets),
+            items_count=tot.items_count,
+            reviewed_items=tot.reviewed_items,
+            mastered_count=tot.mastered_count,
+            mastery_rate=tot.mastery_rate,
+            avg_success_rate=tot.avg_success_rate,
+            true_retention=tot.true_retention,
+            leeches_count=tot.leeches_count,
+            due_count=tot.due_count,
+            avg_difficulty=tot.avg_difficulty,
+            by_type=by_type,
+            sets=summaries,
+            weakest_sets=weakest,
+            verdicts=verdicts,
+        )

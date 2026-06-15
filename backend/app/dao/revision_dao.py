@@ -60,6 +60,21 @@ class RevisionSetDAO(BaseDAO[RevisionSet]):
             )
         return query.count()
 
+    def get_by_binders(self, binder_ids: List[int]) -> List[RevisionSet]:
+        """Tous les ensembles rattachés à l'un des classeurs donnés (PK internes).
+
+        L'accès au classeur (et donc à son sous-arbre) est vérifié en amont par le
+        service ; on filtre uniquement par `binder_id` pour couvrir aussi les
+        ensembles d'un classeur partagé (qui appartiennent à son propriétaire)."""
+        if not binder_ids:
+            return []
+        return (
+            self.db.query(self.model)
+            .filter(self.model.binder_id.in_(binder_ids))
+            .order_by(self.model.created_at.desc())
+            .all()
+        )
+
     def count_items_by_sets(self, set_ids: List[int]) -> Dict[int, int]:
         """Compte les items par ensemble en UNE requête (évite l'over-fetch ORM)."""
         if not set_ids:
@@ -89,6 +104,17 @@ class RevisionItemDAO(BaseDAO[RevisionItem]):
 
     def count_by_set(self, set_id: int) -> int:
         return self.db.query(self.model).filter_by(set_id=set_id).count()
+
+    def get_by_sets(self, set_ids: List[int]) -> List[RevisionItem]:
+        """Tous les items de plusieurs ensembles en UNE requête (anti-N+1, stats classeur)."""
+        if not set_ids:
+            return []
+        return (
+            self.db.query(self.model)
+            .filter(self.model.set_id.in_(set_ids))
+            .order_by(self.model.set_id, self.model.position, self.model.id)
+            .all()
+        )
 
     def get_items_to_study(self, set_id: int) -> List[RevisionItem]:
         return (
