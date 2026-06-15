@@ -39,6 +39,7 @@ export interface RevisionSet {
   tuning_default: number
   is_public: boolean
   item_count: number
+  read_only?: boolean
 }
 
 export interface RevisionItem {

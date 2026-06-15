@@ -175,9 +175,12 @@
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
                   <p class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ set.name }}</p>
-                  <p class="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wider mt-0.5">{{ set.item_count }} item(s)</p>
+                  <p class="text-[10px] font-semibold uppercase tracking-wider mt-0.5 flex items-center gap-1.5">
+                    <span class="text-indigo-500 dark:text-indigo-400">{{ set.item_count }} item(s)</span>
+                    <span v-if="set.read_only" class="text-amber-600 dark:text-amber-400">· Cours partagé</span>
+                  </p>
                 </div>
-                <button @click="toggleSetSettings(set.id)" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30" title="Réglages">
+                <button v-if="!set.read_only" @click="toggleSetSettings(set.id)" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30" title="Réglages">
                   <Settings class="w-4 h-4" />
                 </button>
               </div>

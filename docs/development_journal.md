@@ -571,3 +571,12 @@ Demande : ne plus **créer** les éléments de révision depuis le menu classeur
 
 ### Tests
 * Aucune régression : vue-tsc clean, **Vitest 50**. Frontend uniquement, pas de migration.
+
+## [2026-06-15] Corrections prof/élève — ensembles partagés & complétion
+
+Deux bugs signalés sur la fonctionnalité professeur :
+* **#5 — ensembles de révision d'un classeur partagé invisibles des élèves.** `RevisionService.get_sets` ne filtrait que par `user_id`. Ajout (en miroir des notes/PDF) : le listing global inclut désormais les ensembles des classeurs partagés (racines partagées + descendants) en **lecture seule** (`RevisionSetResponse.read_only`), via `RevisionSetDAO.get_by_binders`. `get_set` marque aussi `read_only` quand l'utilisateur n'est pas propriétaire. Front : `read_only` exposé dans le store ; `Reviews.vue` masque les réglages (renommer/tuning/supprimer) et affiche un badge « Cours partagé » sur ces ensembles (l'étude/lancement reste). `Binders.vue` les montre dans le classeur partagé (détache déjà masqué pour non-propriétaire).
+* **#4 — devoir ciblant un ensemble vide marqué « fait ».** `_revision_state` renvoyait `done` (100 %) quand l'ensemble n'a aucun item. Corrigé en `todo` (rien à réviser ⇒ à faire).
+
+### Tests
+* Backend `test_shared_revision_sets` (ensemble partagé visible read_only + isolation non-membre ; devoir sur ensemble vide = todo). Suite **252**. vue-tsc clean, Vitest 50. Pas de migration.

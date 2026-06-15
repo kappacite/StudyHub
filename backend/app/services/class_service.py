@@ -724,7 +724,8 @@ def _revision_state(db_session, user_id, set_id, created_after, goal):
     total = len(item_ids)
     payload = {"reviewed": 0, "total": total}
     if total == 0:
-        return "done", 100.0, datetime.utcnow(), payload
+        # Un ensemble sans item n'est pas « fait » : rien à réviser ⇒ à faire.
+        return "todo", None, None, payload
 
     sessions = (
         db_session.query(StudySession)
