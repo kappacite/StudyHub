@@ -99,3 +99,18 @@ class RevisionRunResult(BaseModel):
     max_score: int
     percentage: float
     results: List[RevisionRunQuestionResult]
+
+
+# --- Correction d'un item à l'étude (A3/A4/A6 : vf, association, ordre) -------
+
+class RevisionGradeRequest(BaseModel):
+    # Réponse spécifique au type :
+    #   vf          -> {"value": bool}
+    #   association -> {"matches": {left: right}}
+    #   ordre       -> {"order": [str, ...]}
+    answer: Dict[str, Any]
+
+
+class RevisionGradeResult(BaseModel):
+    correct: bool
+    item: RevisionItemResponse

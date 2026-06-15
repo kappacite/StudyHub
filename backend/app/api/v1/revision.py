@@ -8,7 +8,7 @@ from app.services.revision_service import RevisionService
 from app.schemas.revision_schema import (
     RevisionSetCreate, RevisionSetUpdate,
     RevisionItemCreate, RevisionItemUpdate, RevisionItemAnswer,
-    RevisionRunRequest,
+    RevisionRunRequest, RevisionGradeRequest,
 )
 from app.middlewares.auth_middleware import jwt_required_middleware
 
@@ -135,4 +135,13 @@ def run_qcm(set_id):
     user_id = int(get_jwt_identity())
     data = RevisionRunRequest.model_validate(request.get_json() or {})
     result = revision_service.run_qcm(user_id, set_id, data)
+    return jsonify(result.model_dump()), 200
+
+
+@revision_bp.route("/sets/<int:set_id>/study/grade/<int:item_id>", methods=["POST"])
+@jwt_required_middleware
+def grade_item(set_id, item_id):
+    user_id = int(get_jwt_identity())
+    data = RevisionGradeRequest.model_validate(request.get_json() or {})
+    result = revision_service.grade_item(user_id, set_id, item_id, data.answer)
     return jsonify(result.model_dump()), 200

@@ -7,7 +7,11 @@ from app.schemas.revision_schema import (
     RevisionSetCreate, RevisionSetUpdate, RevisionSetResponse,
     RevisionItemCreate, RevisionItemUpdate, RevisionItemResponse,
     RevisionRunRequest, RevisionRunResult, RevisionRunQuestionResult,
+    RevisionGradeResult,
 )
+
+# Types corrigés automatiquement à l'étude (la définition reste en auto-évaluation).
+GRADABLE_TYPES = ("vf", "association", "ordre")
 from app.services.spaced_repetition import calculate_sm2
 from app.middlewares.error_handler import (
     ResourceNotFoundError, ForbiddenError, ValidationError,
@@ -63,6 +67,25 @@ def validate_item_payload(set_type: str, payload: dict) -> dict:
         raise ValidationError(f"Type d'ensemble de révision inconnu : {set_type}.")
 
     return payload
+
+
+def check_answer(set_type: str, payload: dict, answer: dict) -> bool:
+    """Correction d'une réponse à l'étude pour les types auto-corrigeables."""
+    if set_type == "vf":
+        return isinstance(answer.get("value"), bool) and answer["value"] is bool(payload.get("correct"))
+
+    if set_type == "association":
+        expected = {p["left"]: p["right"] for p in payload.get("pairs", [])}
+        submitted = answer.get("matches")
+        # Appariement complet et exact (ordre indifférent) ; un appariement
+        # partiel ou erroné est considéré faux.
+        return isinstance(submitted, dict) and submitted == expected
+
+    if set_type == "ordre":
+        expected = [s for s in payload.get("steps", []) if str(s).strip()]
+        return answer.get("order") == expected
+
+    return False
 
 
 class RevisionService:
@@ -313,3 +336,40 @@ class RevisionService:
 
         percentage = round(score / max_score * 100, 1) if max_score else 0.0
         return RevisionRunResult(score=score, max_score=max_score, percentage=percentage, results=results)
+
+    def grade_item(self, user_id: int, set_id: int, item_id: int, answer: dict) -> RevisionGradeResult:
+        """Corrige une réponse à un item auto-corrigeable (vf/association/ordre) et
+        met à jour SM-2 (réussi → 5, raté → 2). La définition reste en self-eval."""
+        rset = self._get_set_or_404(set_id, user_id, write_required=False)
+        if rset.type not in GRADABLE_TYPES:
+            raise ValidationError("Ce type d'ensemble n'est pas corrigé automatiquement.")
+        item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
+
+        is_correct = check_answer(rset.type, item.payload or {}, answer or {})
+        grade = 5 if is_correct else 2
+        ease_factor, interval, repetitions, next_review = calculate_sm2(
+            score=grade,
+            ease_factor=item.ease_factor,
+            interval=item.interval,
+            repetitions=item.repetitions,
+            tuning=(rset.tuning_default or 1.0) * (item.tuning or 1.0),
+        )
+        item.ease_factor = ease_factor
+        item.interval = interval
+        item.repetitions = repetitions
+        item.next_review = next_review
+        updated = self._item_dao.update(item)
+
+        self._item_dao.db.add(StudySession(
+            user_id=user_id,
+            module=rset.type,
+            duration_seconds=0,
+            cards_reviewed=1,
+            cards_correct=1 if is_correct else 0,
+            item_id=item.id,
+            item_type=rset.type,
+            grade=grade,
+        ))
+        self._item_dao.db.commit()
+
+        return RevisionGradeResult(correct=is_correct, item=RevisionItemResponse.model_validate(updated))
