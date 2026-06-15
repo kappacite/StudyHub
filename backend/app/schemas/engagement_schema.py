@@ -3,6 +3,28 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 
 
+# ─── Questions des élèves (Q&A) ──────────────────────────────────────────────
+
+class ClassQuestionCreateSchema(BaseModel):
+    body: str = Field(..., min_length=1, max_length=2000)
+
+
+class ClassQuestionAnswerSchema(BaseModel):
+    body: str = Field(..., min_length=1, max_length=2000)
+
+
+class ClassQuestionResponseSchema(BaseModel):
+    id: int
+    body: str
+    answer: Optional[str] = None
+    status: str
+    author_id: int
+    author_username: Optional[str] = None
+    answered_by_username: Optional[str] = None
+    created_at: datetime
+    answered_at: Optional[datetime] = None
+
+
 # ─── Annonces & fil d'actualité ──────────────────────────────────────────────
 
 class AnnouncementCreateSchema(BaseModel):

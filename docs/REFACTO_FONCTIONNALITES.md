@@ -79,7 +79,7 @@
 | Professeur | `Group(is_class)`, `GroupBinder` (partage par référence), `Assignment`+`AssignmentTask` (`flashcards|quiz|exam|blurting|read`), `AssignmentProgress` (+notation), analytics, engagement, `Notification`, `ClassInsight`. | `services/class_*`, `models/assignment.py`, `models/group.py` |
 | Révision active notes | Balisage `{{qcm}}/{{vf}}/{{trou}}/[def]` + mode « Révision Active » inline (révéler/répondre). | `views/Notes/NoteEdit.vue`, `utils/placeholder_parser.py` |
 | Fait depuis (A0→A8 + C1 + C2) | Socle `revision_sets`/`revision_items` (A0) ; flashcard avancée — inversé/tuning/courbe (A1) ; QCM scoré (A2) ; VF/association/définition/ordre (A3–A6) ; stats par élément/ensemble (A7) ; **stats par classeur (A8)** ; **rattacher/détacher des éléments existants (C1)** ; **onglet Révisions Classiques/IA (C2)**. **Parties A et C (hors affichage diagrammes/pdfs) complètes.** | cf. §5 |
-| Manquant | Affichage diagrammes/pdfs dans le classeur (reste de C1) ; Q&A élèves (B4) ; stats de groupe étendues (B5). | — |
+| Manquant | Affichage diagrammes/pdfs dans le classeur (reste de C1) ; stats de groupe étendues (B5). | — |
 
 ---
 
@@ -267,15 +267,15 @@
 
 **Objectif** : un élève pose une question au prof ; le prof répond ; notifications.
 
-**État actuel** : ⬜ (aucun modèle Q&A).
+**État actuel** : ✅ **Fait** (PR `feature/teacher-qa`, 2026-06-15).
 
 **Étapes**
-- [ ] (backend) Modèle `ClassQuestion` (group_id, author_id, body, status, created_at) + `ClassAnswer` (ou thread) ; migration.
-- [ ] (backend) Endpoints : élève poste/list ses questions ; prof list/répond/clôt ; isolation classe.
-- [ ] (backend) Notifications (`Notification` existant) à la réponse / nouvelle question.
-- [ ] (frontend) Élève : poser une question + fil. Prof : boîte de questions + réponse.
+- [x] (backend) Modèle **`ClassQuestion`** (group_id, author_id, body, answer, answered_by, status `open|answered`, created_at, answered_at) — réponse unique (pas de thread). Migration idempotente `a7c1d2e3f4b5`.
+- [x] (backend) Endpoints : `POST /classes/:id/questions` (élève poste), `GET /classes/:id/questions` (prof = toutes, élève = les siennes), `POST /classes/:id/questions/:qid/answer` (prof répond → clôt). `ClassQAService`, isolation classe.
+- [x] (backend) Notifications (`Notification`) : type `question` aux professeurs à la création, type `answer` à l'auteur à la réponse.
+- [x] (frontend) Élève : section « Poser une question » (sélecteur de classe + fil) dans `StudentClassView`. Prof : onglet **« Questions »** (inbox + réponse inline) dans `TeacherDashboard`. `classService.listQuestions/postQuestion/answerQuestion`.
 
-**Tests** : isolation (un membre ne voit que ses questions / le prof celles de sa classe) ; notification émise ; statut clôturé.
+**Tests** : backend `test_class_qa` (post + visibilité prof/élève, isolation entre élèves, réponse + statut, élève ne peut répondre → 403, notifications prof/élève) ; front `classQuestions.spec`. vue-tsc clean.
 **Commits** : `feat(teacher): questions des élèves (Q&A)`, `test(teacher): isolation Q&A`.
 **PR** : `feature/teacher-qa`.
 
@@ -366,3 +366,4 @@
 - **2026-06-15** — **C1 livré** (`feature/binder-manage`). Rattacher/détacher des éléments existants : `BinderItemsService` + `POST /binders/:id/items` et `POST /binders/:id/items/detach` (note/deck/ensemble/diagramme/pdf), vérifs d'appartenance élément **et** classeur. Front : modale « Ajouter un élément existant » (multi-select notes/decks/ensembles) + bouton « détacher » par ligne dans `Binders.vue` ; store `attachItems`/`detachItems`. Pas de migration. Tests : backend 234 (`test_binder_items` : attache, détache, type inconnu, double isolation), vue-tsc clean, Vitest 35. **Reste de C1 : afficher diagrammes/pdfs dans le classeur. Suite : C2.**
 - **2026-06-15** — **C2 livré** (`feature/reviews-reorg`). Réorganisation de `Reviews.vue` en deux catégories **Classiques** (Flashcards + QCM/V-F/Association/Définition/Ordre en sous-onglets) et **IA** (évaluation, feuille blanche, Feynman, auto-QCM). Pour chaque type : liste des ensembles avec étude/lancement, stats (A7), et réglages (renommer, fine-tuning `tuning_default`, rattacher à un classeur, supprimer). Store `updateSet` accepte désormais `binder_id`. Frontend uniquement, pas de migration. Tests : vue-tsc clean, Vitest 36, E2E `/reviews` OK. **Parties A et C (hors affichage diagrammes/pdfs) bouclées ; suite : B3/B4/B5.**
 - **2026-06-15** — **B3 livré** (`feature/teacher-assignments-revision`). Type de tâche **`revision`** ciblant un `RevisionSet` typé : `TASK_TYPES`/`TASK_TARGET_KIND` étendus, `_resolve_task_target` (appartenance prof), complétion **dérivée** des `StudySession` des items (`_revision_state`, objectif `{min_items, min_score}`). Front : `AssignmentBuilder` (cible « ensemble de révision » + objectif), `TeacherDashboard` (`setOptions`), `taskLaunchRoute` → `/revision/sets/:id/study` (QCM redirigé vers run via `RevisionStudy`), CTA élève « Réviser ». Pas de migration (`task_type` est un `String`). Tests : backend 237 (`test_assignment_revision`), vue-tsc clean, Vitest 37. **Suite : B4 (Q&A élèves).**
+- **2026-06-15** — **B4 livré** (`feature/teacher-qa`). Questions des élèves : modèle **`ClassQuestion`** (réponse unique, statut `open`/`answered`) + migration idempotente `a7c1d2e3f4b5` ; `ClassQAService` + endpoints `POST/GET /classes/:id/questions` et `POST .../:qid/answer` (isolation : élève = ses questions, prof = toutes) ; notifications `question` (→ profs) et `answer` (→ auteur). Front : section Q&A dans `StudentClassView` (sélecteur de classe + poser + fil), onglet « Questions » dans `TeacherDashboard` (inbox + réponse inline), `classService` Q&A. Tests : backend 242 (`test_class_qa`), vue-tsc clean, Vitest 40. **Suite : B5 (stats de groupe étendues) — dernier item du plan.**
