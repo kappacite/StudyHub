@@ -341,6 +341,86 @@
             </div>
           </div>
         </div>
+
+        <!-- Diagrammes associés -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+            <Activity class="w-4 h-4 text-indigo-500" />
+            Diagrammes associés ({{ currentDiagrams.length }})
+          </h3>
+
+          <div class="space-y-3">
+            <div
+              v-for="diagram in currentDiagrams"
+              :key="diagram.id"
+              class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-200 cursor-pointer group"
+              @click="router.push('/diagrams')"
+            >
+              <div class="flex items-center gap-3 min-w-0">
+                <Activity class="w-4 h-4 text-slate-400 shrink-0" />
+                <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">{{ diagram.title || 'Diagramme sans titre' }}</p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button
+                  v-if="isOwner"
+                  @click.stop="detachItem('diagram', diagram.id)"
+                  class="p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                  title="Retirer du classeur (sans supprimer)"
+                >
+                  <FolderMinus class="w-4 h-4" />
+                </button>
+                <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+
+            <div
+              v-if="currentDiagrams.length === 0"
+              class="text-center py-8 text-slate-400 text-xs font-semibold uppercase tracking-wider"
+            >
+              Aucun diagramme dans ce dossier
+            </div>
+          </div>
+        </div>
+
+        <!-- Documents PDF associés -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+            <FileDown class="w-4 h-4 text-indigo-500" />
+            Documents PDF ({{ currentPdfs.length }})
+          </h3>
+
+          <div class="space-y-3">
+            <div
+              v-for="pdf in currentPdfs"
+              :key="pdf.id"
+              class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-200 cursor-pointer group"
+              @click="router.push('/pdfs')"
+            >
+              <div class="flex items-center gap-3 min-w-0">
+                <FileDown class="w-4 h-4 text-slate-400 shrink-0" />
+                <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">{{ pdf.name }}</p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button
+                  v-if="isOwner && !pdf.read_only"
+                  @click.stop="detachItem('pdf', pdf.id)"
+                  class="p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                  title="Retirer du classeur (sans supprimer)"
+                >
+                  <FolderMinus class="w-4 h-4" />
+                </button>
+                <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+
+            <div
+              v-if="currentPdfs.length === 0"
+              class="text-center py-8 text-slate-400 text-xs font-semibold uppercase tracking-wider"
+            >
+              Aucun document PDF dans ce dossier
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -626,7 +706,7 @@ const REVISION_TYPE_LABELS: Record<RevisionType, string> = {
   definition: 'Définition',
   ordre: 'Ordre',
 }
-import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network, BarChart3, FolderMinus, FolderInput, GraduationCap } from 'lucide-vue-next'
+import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network, BarChart3, FolderMinus, FolderInput, GraduationCap, Activity, FileDown } from 'lucide-vue-next'
 import groupService, { type BinderClassRef } from '../../services/groupService'
 import classService, { type ClassInfo } from '../../services/classService'
 import type { BinderItemType } from '../../stores/binders'
@@ -735,13 +815,33 @@ const shareIsPublic = ref(false)
 const shareDescription = ref('')
 const shareTags = ref('')
 
+// --- C1 : diagrammes & PDF du classeur (lecture/navigation) --------------------
+interface BinderDiagram { id: number; title: string; binder_id: string | null }
+interface BinderPdf { id: string; name: string; binder_id: string | null; read_only?: boolean }
+const allDiagrams = ref<BinderDiagram[]>([])
+const allPdfs = ref<BinderPdf[]>([])
+
+async function fetchBinderMedia() {
+  try {
+    const [diag, pdf] = await Promise.all([
+      api.get('/diagrams?per_page=100'),
+      api.get('/pdfs?per_page=100'),
+    ])
+    allDiagrams.value = diag.data.data
+    allPdfs.value = pdf.data.data
+  } catch (error) {
+    console.error('Erreur lors du chargement des diagrammes/PDF', error)
+  }
+}
+
 onMounted(async () => {
   await Promise.all([
     bindersStore.fetchBinders(),
     notesStore.fetchNotes(),
     decksStore.fetchDecks(),
     revisionStore.fetchSets(),
-    tagsStore.fetchTags()
+    tagsStore.fetchTags(),
+    fetchBinderMedia()
   ])
 })
 
@@ -770,6 +870,14 @@ const currentSets = computed(() => {
   return revisionStore.sets.filter(s => s.binder_id === currentBinderId.value)
 })
 
+// Diagrams & PDFs belonging to the current binder (C1)
+const currentDiagrams = computed(() => {
+  return allDiagrams.value.filter(d => d.binder_id === currentBinderId.value)
+})
+const currentPdfs = computed(() => {
+  return allPdfs.value.filter(p => p.binder_id === currentBinderId.value)
+})
+
 function openSet(set: { id: number; type: RevisionType }) {
   // QCM → passage scoré ; autres types → étude générique (révéler/corriger + SM-2).
   const path = set.type === 'qcm' ? 'run' : 'study'
@@ -796,6 +904,14 @@ const attachableGroups = computed(() => {
       type: 'set' as BinderItemType, label: 'Ensembles de révision',
       items: revisionStore.sets.filter(s => s.binder_id !== cur).map(s => ({ id: s.id, label: s.name })),
     },
+    {
+      type: 'diagram' as BinderItemType, label: 'Diagrammes',
+      items: allDiagrams.value.filter(d => d.binder_id !== cur).map(d => ({ id: d.id, label: d.title || 'Diagramme sans titre' })),
+    },
+    {
+      type: 'pdf' as BinderItemType, label: 'Documents PDF',
+      items: allPdfs.value.filter(p => p.binder_id !== cur && !p.read_only).map(p => ({ id: p.id, label: p.name })),
+    },
   ]
 })
 
@@ -814,7 +930,7 @@ function openAttachModal() {
 }
 
 async function refreshContentStores() {
-  await Promise.all([notesStore.fetchNotes(), decksStore.fetchDecks(), revisionStore.fetchSets()])
+  await Promise.all([notesStore.fetchNotes(), decksStore.fetchDecks(), revisionStore.fetchSets(), fetchBinderMedia()])
 }
 
 async function confirmAttach() {
