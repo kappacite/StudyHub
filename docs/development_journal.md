@@ -398,3 +398,21 @@ Implémentation groupée (le plan autorise A3+A4–A6 ensemble) de l'**étude + 
 * `stores/revision.ts` : `gradeItem`.
 * `Binders.vue` : les ensembles non-QCM lancent désormais l'étude générique (QCM → passage scoré).
 * Tests : `revision.spec` (gradeItem). vue-tsc clean, Vitest 27/27, build OK.
+
+## [2026-06-15] A7 — Statistiques par élément de révision (indicateurs D5)
+
+Stats actionnables fondées sur des indicateurs reconnus (modèle DSR/FSRS, courbe d'oubli d'Ebbinghaus, True Retention & sangsues d'Anki). Pas de migration : `StudySession.item_id`/`item_type` (posés au socle) servent de source d'historique.
+
+### Backend
+* **`revision_stats_service`** — indicateurs dérivés de SM-2/`StudySession` : **difficulté D** ∈ [1,10] (de l'ease factor), **récupérabilité R** ∈ [0,1] (Ebbinghaus `R=exp(-t/S)`), **stabilité S** (= intervalle), **rétention réelle** (True Retention sur items mûrs), **sangsues** (échecs ≥ 4), **maturité** (intervalle ≥ 21 j), **date de maîtrise** (projection SM-2), nb de révisions, % réussite, échéances.
+* **`GET /stats/items/:id`** (item + série historique) et **`GET /stats/sets/:id`** (agrégats + **verdicts actionnables** + résumé par item). Agrégat en **2 requêtes** (anti-N+1, `test_*_query_budget`).
+* Méthodes DAO `StudySessionDAO.get_for_item(s)`. Schémas `RevisionItemStats`/`RevisionSetStats`/`RevisionItemSummary`. Suite 219/219.
+
+### Frontend
+* `stores/revision.ts` : `fetchSetStats`, `fetchItemStats` + types.
+* **`RevisionSetStats.vue`** (`/revision/sets/:id/stats`) : cartes KPI (maîtrise, rétention réelle vs cible, réussite, échéances, sangsues, difficulté), **verdicts**, liste d'éléments (badges sangsue/mûr/à réviser) avec détail dépliable (**mini-courbe SVG** + stabilité/échecs/maîtrise).
+* `Binders.vue` : bouton **stats** par ensemble.
+* Tests : `revision.spec` (fetchSetStats/fetchItemStats). vue-tsc clean, Vitest 28/28, build OK.
+
+### Portée
+* A7 couvre les **éléments de révision** (qcm/vf/assoc/def/ordre) via `item_id`. Les flashcards ont déjà leur courbe (A1) + `/stats/decks/:id` ; l'unification complète flashcards↔items (écriture `item_id` côté flashcard) est laissée à un futur passage.

@@ -114,3 +114,60 @@ class RevisionGradeRequest(BaseModel):
 class RevisionGradeResult(BaseModel):
     correct: bool
     item: RevisionItemResponse
+
+
+# --- Statistiques (A7 / D5) --------------------------------------------------
+
+class RevisionHistoryPoint(BaseModel):
+    date: datetime
+    grade: Optional[int] = None
+
+
+class RevisionItemStats(BaseModel):
+    item_id: int
+    reviews: int
+    success_rate: float          # % grade >= 3 sur l'historique
+    lapses: int                  # nb d'échecs (grade < 3)
+    repetitions: int
+    ease_factor: float
+    interval: int
+    next_review: Optional[datetime] = None
+    last_reviewed: Optional[datetime] = None
+    # Indicateurs DSR/FSRS dérivés (cf. D5).
+    stability_days: int          # S ≈ intervalle
+    difficulty: float            # D ∈ [1,10] dérivée de l'ease factor
+    retrievability: float        # R ∈ [0,1] (courbe d'oubli d'Ebbinghaus)
+    is_mature: bool              # intervalle ≥ seuil de maturité
+    is_leech: bool               # échoué de façon répétée (sangsue)
+    mastered: bool
+    mastery_date: Optional[datetime] = None  # date de maîtrise estimée (projection SM-2)
+    history: List[RevisionHistoryPoint] = []
+
+
+class RevisionItemSummary(BaseModel):
+    item_id: int
+    label: str
+    reviews: int
+    success_rate: float
+    difficulty: float
+    retrievability: float
+    is_leech: bool
+    is_mature: bool
+    due: bool
+
+
+class RevisionSetStats(BaseModel):
+    set_id: int
+    type: str
+    name: str
+    items_count: int
+    reviewed_items: int
+    mastered_count: int
+    mastery_rate: float          # % d'items mûrs
+    avg_success_rate: float
+    true_retention: float        # % grade≥3 sur les items mûrs (True Retention)
+    leeches_count: int
+    due_count: int               # items à réviser maintenant
+    avg_difficulty: float
+    verdicts: List[str] = []     # messages actionnables
+    items: List[RevisionItemSummary] = []

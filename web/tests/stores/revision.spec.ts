@@ -73,4 +73,15 @@ describe('revision store — ensembles typés (D3c)', () => {
     expect(api.post).toHaveBeenCalledWith('/revision/sets/5/study/grade/9', { answer: { value: false } })
     expect(res.correct).toBe(true)
   })
+
+  it('fetchSetStats et fetchItemStats interrogent les endpoints stats', async () => {
+    const store = useRevisionStore()
+    api.get.mockResolvedValueOnce({ data: { set_id: 5, items: [], verdicts: [] } })
+    await store.fetchSetStats(5)
+    expect(api.get).toHaveBeenCalledWith('/stats/sets/5')
+
+    api.get.mockResolvedValueOnce({ data: { item_id: 9, history: [] } })
+    await store.fetchItemStats(9)
+    expect(api.get).toHaveBeenCalledWith('/stats/items/9')
+  })
 })

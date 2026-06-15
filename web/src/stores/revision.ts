@@ -74,6 +74,60 @@ export interface RunResult {
   results: RunQuestionResult[]
 }
 
+export interface HistoryPoint {
+  date: string
+  grade: number | null
+}
+
+export interface ItemStats {
+  item_id: number
+  reviews: number
+  success_rate: number
+  lapses: number
+  repetitions: number
+  ease_factor: number
+  interval: number
+  next_review: string | null
+  last_reviewed: string | null
+  stability_days: number
+  difficulty: number
+  retrievability: number
+  is_mature: boolean
+  is_leech: boolean
+  mastered: boolean
+  mastery_date: string | null
+  history: HistoryPoint[]
+}
+
+export interface ItemSummary {
+  item_id: number
+  label: string
+  reviews: number
+  success_rate: number
+  difficulty: number
+  retrievability: number
+  is_leech: boolean
+  is_mature: boolean
+  due: boolean
+}
+
+export interface SetStats {
+  set_id: number
+  type: RevisionType
+  name: string
+  items_count: number
+  reviewed_items: number
+  mastered_count: number
+  mastery_rate: number
+  avg_success_rate: number
+  true_retention: number
+  leeches_count: number
+  due_count: number
+  avg_difficulty: number
+  verdicts: string[]
+  items: ItemSummary[]
+}
+
 interface SetsResponse {
   data: RevisionSet[]
 }
@@ -173,6 +227,16 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
+  async function fetchSetStats(setId: number) {
+    const response = await api.get<SetStats>(`/stats/sets/${setId}`)
+    return response.data
+  }
+
+  async function fetchItemStats(itemId: number) {
+    const response = await api.get<ItemStats>(`/stats/items/${itemId}`)
+    return response.data
+  }
+
   return {
     sets,
     loading,
@@ -187,5 +251,7 @@ export const useRevisionStore = defineStore('revision', () => {
     answerItem,
     runQcm,
     gradeItem,
+    fetchSetStats,
+    fetchItemStats,
   }
 })

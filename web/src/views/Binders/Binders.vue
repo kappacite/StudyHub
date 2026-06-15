@@ -271,10 +271,19 @@
                   {{ REVISION_TYPE_LABELS[set.type] }} · {{ set.item_count }} item(s)
                 </p>
               </div>
-              <span class="text-xs font-bold text-indigo-600 flex items-center gap-1">
-                {{ set.type === 'qcm' ? 'Lancer' : 'Étudier' }}
-                <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </span>
+              <div class="flex items-center gap-2 shrink-0">
+                <button
+                  @click.stop="router.push(`/revision/sets/${set.id}/stats`)"
+                  class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                  title="Statistiques"
+                >
+                  <BarChart3 class="w-4 h-4" />
+                </button>
+                <span class="text-xs font-bold text-indigo-600 flex items-center gap-1">
+                  {{ set.type === 'qcm' ? 'Lancer' : 'Étudier' }}
+                  <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </div>
             </div>
 
             <div
@@ -478,7 +487,7 @@ const REVISION_TYPE_LABELS: Record<RevisionType, string> = {
   definition: 'Définition',
   ordre: 'Ordre',
 }
-import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network } from 'lucide-vue-next'
+import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network, BarChart3 } from 'lucide-vue-next'
 
 const bindersStore = useBindersStore()
 const notesStore = useNotesStore()

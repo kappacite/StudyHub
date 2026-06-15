@@ -27,6 +27,26 @@ class StudySessionDAO(BaseDAO[StudySession]):
             
         return query.order_by(self.model.created_at.desc()).all()
 
+    def get_for_item(self, item_id: int, item_type: str) -> List[StudySession]:
+        """Historique des sessions d'un élément de révision, ordre chronologique."""
+        return (
+            self.db.query(self.model)
+            .filter(self.model.item_id == item_id, self.model.item_type == item_type)
+            .order_by(self.model.created_at.asc())
+            .all()
+        )
+
+    def get_for_items(self, item_ids: List[int], item_type: str) -> List[StudySession]:
+        """Sessions de plusieurs éléments (agrégats par ensemble, anti-N+1)."""
+        if not item_ids:
+            return []
+        return (
+            self.db.query(self.model)
+            .filter(self.model.item_id.in_(item_ids), self.model.item_type == item_type)
+            .order_by(self.model.created_at.asc())
+            .all()
+        )
+
     def get_total_duration(self, user_id: int) -> int:
         result = self.db.query(func.sum(self.model.duration_seconds)).filter_by(user_id=user_id).scalar()
         return result if result else 0
