@@ -586,3 +586,9 @@ Deux bugs signalés sur la fonctionnalité professeur :
 * **#1/#2** : `TeacherDashboard.loadClasses` ne liste que les classes animées (`my_role ∈ {owner, admin}`) → un élève n'y voit plus la gestion ni les onglets vides (état vide existant réutilisé).
 * **#3** : `StudentClassView` (« Mes Devoirs ») gagne un **tableau de bord perso** : série, temps de révision, taux de réussite (depuis `/stats/overview`) et nombre de devoirs terminés — les stats de l'élève.
 * Tests : backend `test_my_classes_exposes_role`, suite **253**. vue-tsc clean, Vitest 50.
+
+## [2026-06-16] Élève : voir ses classes (suite séparation des rôles)
+
+Régression de la séparation : après avoir retiré les classes non animées de l'Espace Professeur, un élève ne voyait plus sa classe **nulle part** (la vue Groupes exclut les classes via `is_class`, et `StudentClassView` n'affichait que les devoirs).
+* `StudentClassView` : nouvelle section **« Mes classes »** listant les classes où l'utilisateur est inscrit comme élève (`my_role` member/follower), avec un raccourci « Question » (ouvre le fil Q&A de la classe). Le contenu partagé (cours/ensembles) reste accessible via Classeurs / Révisions.
+* Frontend uniquement, pas de migration. vue-tsc clean, Vitest 50.
