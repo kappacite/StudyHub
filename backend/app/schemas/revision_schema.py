@@ -34,6 +34,9 @@ class RevisionSetResponse(BaseModel):
     is_public: bool
     # Injecté par le service (COUNT groupé) ; 0 par défaut si non fourni.
     item_count: int = 0
+    # Vrai quand l'ensemble provient d'un classeur partagé (cours) : l'utilisateur
+    # peut l'étudier mais pas l'éditer.
+    read_only: bool = False
     created_at: datetime
     updated_at: datetime
 

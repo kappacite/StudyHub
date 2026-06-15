@@ -168,12 +168,34 @@ class RevisionService:
         sets = self._set_dao.search_sets(user_id, set_type, binder_internal, search, limit=per_page, offset=offset)
         total = self._set_dao.count_sets(user_id, set_type, binder_internal, search)
         counts = self._set_dao.count_items_by_sets([s.id for s in sets])
-        return [self._to_set_response(s, counts.get(s.id, 0)) for s in sets], total
+        responses = [self._to_set_response(s, counts.get(s.id, 0)) for s in sets]
+
+        # Inclure les ensembles des classeurs partagés (cours), en LECTURE SEULE —
+        # symétrique des notes/PDF (listing global, sans filtre binder ni recherche).
+        if binder_id is None and search is None:
+            shared_ids: list = []
+            for root in self._binder_dao.get_shared_root_binders(user_id):
+                shared_ids.append(root._id)
+                shared_ids.extend(d._id for d in self._binder_dao.get_descendants(root._id))
+            if shared_ids:
+                shared_sets = self._set_dao.get_by_binders(shared_ids)
+                if set_type:
+                    shared_sets = [s for s in shared_sets if s.type == set_type]
+                shared_counts = self._set_dao.count_items_by_sets([s.id for s in shared_sets])
+                for s in shared_sets:
+                    resp = self._to_set_response(s, shared_counts.get(s.id, 0))
+                    resp.read_only = True
+                    responses.append(resp)
+                total = len(responses)
+
+        return responses, total
 
     def get_set(self, user_id: int, set_id: int) -> RevisionSetResponse:
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
         counts = self._set_dao.count_items_by_sets([rset.id])
-        return self._to_set_response(rset, counts.get(rset.id, 0))
+        resp = self._to_set_response(rset, counts.get(rset.id, 0))
+        resp.read_only = rset.user_id != user_id
+        return resp
 
     def update_set(self, user_id: int, set_id: int, data: RevisionSetUpdate) -> RevisionSetResponse:
         rset = self._get_set_or_404(set_id, user_id, write_required=True)

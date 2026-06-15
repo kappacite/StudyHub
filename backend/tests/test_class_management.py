@@ -29,6 +29,17 @@ def _class_with_student(client, teacher_headers, app, email):
     return class_id, invite, sid, sh
 
 
+def test_my_classes_exposes_role(client, auth_headers, app, test_user):
+    """GET /classes expose le rôle de l'utilisateur (sépare prof/élève côté UI)."""
+    class_id, _invite, _sid, sh = _class_with_student(client, auth_headers, app, "rolecheck@test.com")
+
+    teacher_list = client.get("/api/v1/classes", headers=auth_headers).json
+    assert next(c for c in teacher_list if c["id"] == class_id)["my_role"] == "owner"
+
+    student_list = client.get("/api/v1/classes", headers=sh).json
+    assert next(c for c in student_list if c["id"] == class_id)["my_role"] == "member"
+
+
 def test_roster_lists_members(client, auth_headers, app, test_user):
     class_id, invite, sid, sh = _class_with_student(client, auth_headers, app, "mg1@test.com")
 

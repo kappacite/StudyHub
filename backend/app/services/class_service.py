@@ -221,6 +221,9 @@ class ClassService:
             if not g.is_class:
                 continue
             members_count = len(g.members_assoc)
+            my_role = next(
+                (m.role for m in g.members_assoc if m.user_id == user_id), None
+            )
             response.append(
                 ClassResponseSchema(
                     id=g.id,
@@ -232,7 +235,8 @@ class ClassService:
                     is_public=g.is_public,
                     created_by=g.created_by,
                     created_at=g.created_at,
-                    members_count=members_count
+                    members_count=members_count,
+                    my_role=my_role,
                 )
             )
         return response
@@ -724,7 +728,8 @@ def _revision_state(db_session, user_id, set_id, created_after, goal):
     total = len(item_ids)
     payload = {"reviewed": 0, "total": total}
     if total == 0:
-        return "done", 100.0, datetime.utcnow(), payload
+        # Un ensemble sans item n'est pas « fait » : rien à réviser ⇒ à faire.
+        return "todo", None, None, payload
 
     sessions = (
         db_session.query(StudySession)

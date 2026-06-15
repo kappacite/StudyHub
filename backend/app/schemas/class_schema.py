@@ -136,6 +136,8 @@ class ClassResponseSchema(BaseModel):
     created_by: Optional[int] = None
     created_at: datetime
     members_count: int = 0
+    # Rôle de l'utilisateur courant dans cette classe : owner/admin (prof) ou member/follower (élève).
+    my_role: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

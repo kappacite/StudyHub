@@ -304,8 +304,11 @@ async function loadClasses() {
     decksStore.fetchDecks(),
     revisionStore.fetchSets()
   ])
+  // Espace Professeur : ne lister que les classes que l'utilisateur anime
+  // (owner/admin). Les classes où il n'est qu'élève vivent dans « Mes Devoirs ».
+  const taught = myClasses.filter(c => c.my_role === 'owner' || c.my_role === 'admin')
   const results = await Promise.all(
-    myClasses.map(async c => {
+    taught.map(async c => {
       const asgns = await classService.listAssignments(c.id).catch(() => [])
       return { ...c, assignments: asgns }
     })
