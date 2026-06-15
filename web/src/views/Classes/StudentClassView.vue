@@ -171,10 +171,10 @@ async function validateTask(asgn: AssignmentSummary, task: AssignmentTask) {
         <span class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/30">
           <GraduationCap class="w-5 h-5" />
         </span>
-        Mes Devoirs
+        Mes Classes
       </h1>
       <p class="mt-1 text-slate-500 dark:text-slate-400 text-sm">
-        Suivez vos devoirs assignés par vos professeurs.
+        Vos classes, leurs cours partagés et les devoirs assignés par vos professeurs.
       </p>
     </div>
 
@@ -226,6 +226,12 @@ async function validateTask(asgn: AssignmentSummary, task: AssignmentTask) {
         </div>
       </div>
     </div>
+
+    <!-- Devoirs -->
+    <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+      <ClipboardList class="w-4 h-4 text-sky-500" />
+      Mes devoirs
+    </h2>
 
     <!-- Filters -->
     <div class="flex flex-wrap gap-2 mb-6">

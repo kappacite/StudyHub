@@ -226,8 +226,7 @@ import {
   Search,
   ShieldAlert,
   UsersRound,
-  GraduationCap,
-  ClipboardList
+  GraduationCap
 } from '@lucide/vue'
 
 
@@ -261,7 +260,7 @@ const navItems = [
   { name: 'PDFs', path: '/pdfs', icon: FileDown },
   { name: 'Groupes', path: '/groups', icon: UsersRound },
   { name: 'Espace Professeur', path: '/classes/teacher', icon: GraduationCap },
-  { name: 'Mes Devoirs', path: '/classes/student', icon: ClipboardList },
+  { name: 'Mes Classes', path: '/classes/student', icon: GraduationCap },
   { name: 'Mode Examen', path: '/exam/setup', icon: ShieldAlert }
 ]
 
@@ -276,7 +275,7 @@ const currentRouteName = computed(() => {
   if (name === 'ExamSession') return 'Session d\'Examen'
   if (name === 'ExamResults') return 'Résultats d\'Examen'
   if (name === 'TeacherDashboard') return 'Espace Professeur'
-  if (name === 'StudentClassView') return 'Mes Devoirs'
+  if (name === 'StudentClassView') return 'Mes Classes'
   if (name === 'AssignmentDetail') return 'Détails du devoir'
   return name
 })
