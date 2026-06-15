@@ -171,3 +171,50 @@ class RevisionSetStats(BaseModel):
     avg_difficulty: float
     verdicts: List[str] = []     # messages actionnables
     items: List[RevisionItemSummary] = []
+
+
+# --- Stats par classeur (A8) -------------------------------------------------
+
+class RevisionSetSummary(BaseModel):
+    """Résumé d'un ensemble dans la vue agrégée d'un classeur (sans les items)."""
+    set_id: int
+    type: str
+    name: str
+    items_count: int
+    reviewed_items: int
+    mastered_count: int
+    mastery_rate: float
+    avg_success_rate: float
+    true_retention: float
+    leeches_count: int
+    due_count: int
+    avg_difficulty: float
+
+
+class RevisionTypeBreakdown(BaseModel):
+    """Répartition par type d'ensemble dans un classeur."""
+    type: str
+    sets_count: int
+    items_count: int
+    mastered_count: int
+    mastery_rate: float
+
+
+class RevisionBinderStats(BaseModel):
+    binder_id: str               # UUID public du classeur
+    name: str
+    include_descendants: bool = True
+    sets_count: int
+    items_count: int
+    reviewed_items: int
+    mastered_count: int
+    mastery_rate: float
+    avg_success_rate: float
+    true_retention: float
+    leeches_count: int
+    due_count: int
+    avg_difficulty: float
+    by_type: List[RevisionTypeBreakdown] = []
+    sets: List[RevisionSetSummary] = []
+    weakest_sets: List[RevisionSetSummary] = []   # ensembles les plus à risque
+    verdicts: List[str] = []

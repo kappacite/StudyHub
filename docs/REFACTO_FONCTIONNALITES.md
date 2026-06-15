@@ -78,8 +78,8 @@
 | Révision IA | Évaluation IA (note), Auto-QCM (`Quiz`), Blurting, Feynman. Onglets à plat. | `views/Reviews/Reviews.vue`, `models/quiz.py`, `models/evaluation.py` |
 | Professeur | `Group(is_class)`, `GroupBinder` (partage par référence), `Assignment`+`AssignmentTask` (`flashcards|quiz|exam|blurting|read`), `AssignmentProgress` (+notation), analytics, engagement, `Notification`, `ClassInsight`. | `services/class_*`, `models/assignment.py`, `models/group.py` |
 | Révision active notes | Balisage `{{qcm}}/{{vf}}/{{trou}}/[def]` + mode « Révision Active » inline (révéler/répondre). | `views/Notes/NoteEdit.vue`, `utils/placeholder_parser.py` |
-| Fait depuis (PR #49→#54) | Socle `revision_sets`/`revision_items` (A0) ; flashcard avancée — inversé/tuning/courbe (A1) ; QCM scoré (A2) ; VF/association/définition/ordre (A3–A6) ; stats par élément/ensemble (A7). | cf. §5 |
-| Manquant | Stats par **classeur** (A8) ; réorg onglet Révisions Classiques/IA (C2) ; rattacher/détacher des éléments existants (C1) ; devoirs sur ensembles de révision (B3) ; Q&A élèves (B4) ; stats de groupe étendues (B5). | — |
+| Fait depuis (PR #49→#54 + stats-binder) | Socle `revision_sets`/`revision_items` (A0) ; flashcard avancée — inversé/tuning/courbe (A1) ; QCM scoré (A2) ; VF/association/définition/ordre (A3–A6) ; stats par élément/ensemble (A7) ; **stats par classeur (A8)**. **Partie A complète.** | cf. §5 |
+| Manquant | Réorg onglet Révisions Classiques/IA (C2) ; rattacher/détacher des éléments existants (C1) ; devoirs sur ensembles de révision (B3) ; Q&A élèves (B4) ; stats de groupe étendues (B5). | — |
 
 ---
 
@@ -203,13 +203,13 @@
 
 **Objectif** : vue d'avancement/rétention agrégée de tous les éléments d'un classeur (et sous-arbre).
 
-**État actuel** : ⬜ **À faire — prochaine étape** (clôt la Partie A ; réutilise `revision_stats_service` de A7).
+**État actuel** : ✅ **Fait** (PR `feature/stats-binder`, 2026-06-15). `GET /stats/binders/:id` (réutilise `revision_stats_service`), `RevisionBinderStats.vue`, bouton « Stats » dans `Binders.vue`. _Périmètre : ensembles de révision ; les decks de flashcards gardent `/stats/decks/:id` (à unifier plus tard si besoin)._
 
 **Étapes**
-- [ ] (backend) `GET /stats/binders/:id` : agrégat sur tous les ensembles du classeur + descendants (réutilise A7), en **agrégats SQL** (éviter N+1) + `test_*_query_budget`.
-- [ ] (frontend) Onglet « Stats » du classeur (avancement global, rétention moyenne, répartition par type, top éléments faibles).
+- [x] (backend) `GET /stats/binders/:id` (UUID) : agrégat sur tous les ensembles du classeur **+ descendants** (option `?descendants=false`), via `RevisionStatsService.get_binder_stats` ; **agrégats bornés** (1 req. sets + 1 req. items + 1 req. sessions par type) → `test_binder_stats_query_budget`.
+- [x] (frontend) Vue « Stats » du classeur (`RevisionBinderStats.vue`) : avancement global (KPI), rétention moyenne, **répartition par type**, **ensembles à surveiller** + liste complète ; accès via bouton dans `Binders.vue`.
 
-**Tests** : agrégation multi-ensembles ; budget de requêtes ; isolation.
+**Tests** : agrégation multi-ensembles/types ; inclusion du sous-arbre (+ `descendants=false`) ; budget de requêtes ; isolation entre utilisateurs. Front : `revision.spec` (fetchBinderStats).
 **Commits** : `feat(stats): tableau de bord par classeur`. **PR** : `feature/stats-binder`.
 
 ## A9. Mode révision active sur les notes (balisage)
@@ -362,3 +362,4 @@
 - **2026-06-15** — **A3–A6 livrés** (PR #53 `feature/revision-typed-study`, mergée). Étude + correction + SM-2 de VF / Association (ordre indifférent) / Définition (auto-éval) / Ordre (strict), `RevisionStudy.vue` + `POST /revision/sets/:id/study/grade/:item_id`. Pas de migration.
 - **2026-06-15** — **A7 livré** (PR #54 `feature/stats-elements`, mergée). `revision_stats_service` (D : difficulté, R : Ebbinghaus, S : stabilité, True Retention, sangsues, maturité, date de maîtrise), `GET /stats/items/:id` + `GET /stats/sets/:id` (anti-N+1), `RevisionSetStats.vue` (KPI + verdicts + mini-courbe). Pas de migration.
 - **2026-06-15** — **Note de process** : merge de la pile de PR (#49→#54). #51/#52 fermées en cascade par GitHub (suppression de leur branche de base) → recréées en #55/#56 vers `main`. Les enfants ont ensuite été re-ciblés sur `main` **avant** merge du parent pour éviter la cascade. Conflits limités à `docs/FEATURES.md` / `docs/development_journal.md` (ajouts conservés des deux côtés). **Reste : A8 (prochain), puis C1/C2 et extensions B3/B4/B5.**
+- **2026-06-15** — **A8 livré** (`feature/stats-binder`). `GET /stats/binders/<uuid>` (option `?descendants=false`) agrège tous les ensembles de révision d'un classeur et de son sous-arbre ; refactor de `RevisionStatsService` (`_aggregate_set` partagé, accès via `check_binder_access`, anti-N+1 : 1 req. sets + 1 req. items + 1 req. sessions/type). Front : `RevisionBinderStats.vue` (KPI, répartition par type, ensembles à surveiller, liste) + bouton « Stats » dans `Binders.vue`. Pas de migration. Tests : backend 229 (dont `test_stats_binder` : agrégation, sous-arbre, isolation, budget), vue-tsc clean, Vitest 33. **Partie A désormais complète ; suite : C1/C2 puis B3/B4/B5.**

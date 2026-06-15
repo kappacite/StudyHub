@@ -128,6 +128,49 @@ export interface SetStats {
   items: ItemSummary[]
 }
 
+export interface SetSummary {
+  set_id: number
+  type: RevisionType
+  name: string
+  items_count: number
+  reviewed_items: number
+  mastered_count: number
+  mastery_rate: number
+  avg_success_rate: number
+  true_retention: number
+  leeches_count: number
+  due_count: number
+  avg_difficulty: number
+}
+
+export interface TypeBreakdown {
+  type: RevisionType
+  sets_count: number
+  items_count: number
+  mastered_count: number
+  mastery_rate: number
+}
+
+export interface BinderStats {
+  binder_id: string
+  name: string
+  include_descendants: boolean
+  sets_count: number
+  items_count: number
+  reviewed_items: number
+  mastered_count: number
+  mastery_rate: number
+  avg_success_rate: number
+  true_retention: number
+  leeches_count: number
+  due_count: number
+  avg_difficulty: number
+  by_type: TypeBreakdown[]
+  sets: SetSummary[]
+  weakest_sets: SetSummary[]
+  verdicts: string[]
+}
+
 interface SetsResponse {
   data: RevisionSet[]
 }
@@ -237,6 +280,12 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
+  async function fetchBinderStats(binderId: string, includeDescendants = true) {
+    const suffix = includeDescendants ? '' : '?descendants=false'
+    const response = await api.get<BinderStats>(`/stats/binders/${binderId}${suffix}`)
+    return response.data
+  }
+
   return {
     sets,
     loading,
@@ -253,5 +302,6 @@ export const useRevisionStore = defineStore('revision', () => {
     gradeItem,
     fetchSetStats,
     fetchItemStats,
+    fetchBinderStats,
   }
 })
