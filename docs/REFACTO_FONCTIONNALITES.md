@@ -78,7 +78,8 @@
 | Révision IA | Évaluation IA (note), Auto-QCM (`Quiz`), Blurting, Feynman. Onglets à plat. | `views/Reviews/Reviews.vue`, `models/quiz.py`, `models/evaluation.py` |
 | Professeur | `Group(is_class)`, `GroupBinder` (partage par référence), `Assignment`+`AssignmentTask` (`flashcards|quiz|exam|blurting|read`), `AssignmentProgress` (+notation), analytics, engagement, `Notification`, `ClassInsight`. | `services/class_*`, `models/assignment.py`, `models/group.py` |
 | Révision active notes | Balisage `{{qcm}}/{{vf}}/{{trou}}/[def]` + mode « Révision Active » inline (révéler/répondre). | `views/Notes/NoteEdit.vue`, `utils/placeholder_parser.py` |
-| Manquant | Modèle générique d'élément de révision indépendant ; types def/ordre comme entités ; points QCM ; mode inversé ; tuning ; courbe d'apprentissage ; stats par élément/classeur ; Q&A élèves ; rattachement d'éléments existants à un classeur. | — |
+| Fait depuis (PR #49→#54) | Socle `revision_sets`/`revision_items` (A0) ; flashcard avancée — inversé/tuning/courbe (A1) ; QCM scoré (A2) ; VF/association/définition/ordre (A3–A6) ; stats par élément/ensemble (A7). | cf. §5 |
+| Manquant | Stats par **classeur** (A8) ; réorg onglet Révisions Classiques/IA (C2) ; rattacher/détacher des éléments existants (C1) ; devoirs sur ensembles de révision (B3) ; Q&A élèves (B4) ; stats de groupe étendues (B5). | — |
 
 ---
 
@@ -88,20 +89,20 @@
 
 **Objectif** : poser les tables `revision_sets` (homogène, typé, rattaché à un classeur) + `revision_items` (génériques, SM-2 par item) pour QCM/VF/assoc/déf/ordre, **annuler le mélange de la PR #48** dans `Deck`/`Flashcard`, et exposer une abstraction « élément de révision » commune aux deux familles. (Décision **D3c**, cf. §0.)
 
-**État actuel** : 🟡 `Deck`/`Flashcard` existent ; la PR #48 a injecté `card_type`/`payload` mixtes à annuler.
+**État actuel** : ✅ **Fait** (PR #49 `feature/revision-foundation`, 2026-06-15). Tables `revision_sets`/`revision_items`, réconciliation de la PR #48 et `tuning` SM-2 en place. _Nuance : l'abstraction transverse côté **devoirs** reste à brancher (cf. B3)._
 
 **Étapes (backend)**
 - [x] Décision **D3c** actée (cf. §0) : `Deck`/`Flashcard` = flashcards uniquement ; nouvelles tables `revision_sets`/`revision_items` pour les autres types.
-- [ ] Nouveaux modèles `RevisionSet` (`name`, `type ∈ {qcm,vf,association,definition,ordre}`, `binder_id`, `tuning_default` Float 1.0, `is_public`, clone/partage alignés sur `Deck`) et `RevisionItem` (`set_id`, `payload` JSON validé par type, état SM-2 : `ease_factor`, `interval`, `repetitions`, `due_date`, `tuning` Float 1.0).
-- [ ] **Réconciliation PR #48** : migration qui (1) transfère chaque `Flashcard.card_type ≠ basic` vers un `RevisionSet` homogène + `RevisionItem`, (2) restaure `Deck`/`Flashcard` en recto/verso pur (`card_type=basic`, retrait de l'usage `payload`). Additive, idempotente (guard `inspector`), SQLite + PostgreSQL.
-- [ ] `revision_service.py` : CRUD ensembles typés + items ; rejet d'un item de type ≠ ensemble ; application du `tuning` (`tuning_set * tuning_item`).
-- [ ] `spaced_repetition.calculate_sm2` : paramètre `tuning: float = 1.0` appliqué à l'intervalle final (partagé par flashcards et items).
-- [ ] Abstraction « élément de révision » transverse : `StudySession.item_id` (+ type), étude, stats, partage/clone, devoirs traitent `Flashcard` **et** `RevisionItem` uniformément (cf. D5/A7).
-- [ ] Schémas Pydantic : `RevisionSetCreate/Update/Response`, `RevisionItemCreate/Update/Response` (payload validé par type).
+- [x] Nouveaux modèles `RevisionSet` (`name`, `type ∈ {qcm,vf,association,definition,ordre}`, `binder_id`, `tuning_default` Float 1.0, `is_public`, clone/partage alignés sur `Deck`) et `RevisionItem` (`set_id`, `payload` JSON validé par type, état SM-2 : `ease_factor`, `interval`, `repetitions`, `due_date`, `tuning` Float 1.0).
+- [x] **Réconciliation PR #48** : migration qui (1) transfère chaque `Flashcard.card_type ≠ basic` vers un `RevisionSet` homogène + `RevisionItem`, (2) restaure `Deck`/`Flashcard` en recto/verso pur (`card_type=basic`, retrait de l'usage `payload`). Additive, idempotente (guard `inspector`), SQLite + PostgreSQL. _(migrations `a1b2c3d4e5f6`, `b2c3d4e5f6a7`)_
+- [x] `revision_service.py` : CRUD ensembles typés + items ; rejet d'un item de type ≠ ensemble ; application du `tuning` (`tuning_set * tuning_item`).
+- [x] `spaced_repetition.calculate_sm2` : paramètre `tuning: float = 1.0` appliqué à l'intervalle final (partagé par flashcards et items).
+- [x] Abstraction « élément de révision » transverse : `StudySession.item_id` (+ type), étude, stats, partage/clone traitent `Flashcard` **et** `RevisionItem` uniformément (cf. D5/A7). _(devoirs : voir B3, non branché)_
+- [x] Schémas Pydantic : `RevisionSetCreate/Update/Response`, `RevisionItemCreate/Update/Response` (payload validé par type).
 
 **Étapes (frontend)**
-- [ ] `stores/revision.ts` : CRUD ensembles typés + items (`type`, `tuning`).
-- [ ] Réconcilier `RevisionItemModal.vue` (PR #48) : un ensemble = un seul type ; les flashcards passent par le flux deck existant, les autres types par `revision_sets`.
+- [x] `stores/revision.ts` : CRUD ensembles typés + items (`type`, `tuning`).
+- [x] Réconcilier `RevisionItemModal.vue` (PR #48) : un ensemble = un seul type ; les flashcards passent par le flux deck existant, les autres types par `revision_sets`.
 
 **Tests à définir**
 - Backend : création d'ensembles homogènes par type ; rejet d'un item de type ≠ ensemble ; **migration de réconciliation** (deck PR #48 mixte → flashcards pures + RevisionSets, idempotence) ; `tuning` modifie l'intervalle.
@@ -114,14 +115,14 @@
 
 **Objectif** : flashcards = recto/verso uniquement, + mode inversé + courbe + tuning.
 
-**État actuel** : ✅ deck, ✅ recto/verso, ✅ SM-2 · ⬜ inversé · ⬜ courbe · ⬜ tuning (socle A0).
+**État actuel** : ✅ **Fait** (PR #55, ex-#51 `feature/flashcard-advanced`, 2026-06-15). _Implémenté sur `Deck`/`Flashcard` (D3c), pas sur `RevisionItem` : `Deck.reversed`/`tuning_default`, `Flashcard.tuning`/`reverse_of_id`, miroir matérialisé, endpoint history sur `decks/:id/cards/:card_id`. Migration `c3d4e5f6a7b8`._
 
 **Étapes**
-- [ ] (backend) `reversed` sur l'ensemble flashcard : à la création/édition, matérialiser/retirer les `RevisionItem` inversés (`reverse_of_id`). Étude planifie recto→verso et verso→recto séparément.
-- [ ] (backend) Endpoint courbe d'apprentissage par carte : `GET /revision/items/:id/history` → série `(date, grade, interval)` depuis `StudySession`.
-- [ ] (frontend) Toggle « mode inversé » à la création d'un ensemble flashcard.
-- [ ] (frontend) Composant `LearningCurve.vue` (Chart.js, déjà au stack) sur la fiche carte.
-- [ ] (frontend) Réglage `tuning` par carte (slider « réviser plus/moins souvent »).
+- [x] (backend) `reversed` sur l'ensemble flashcard : à la création/édition, matérialiser/retirer les cartes miroir (`reverse_of_id`). Étude planifie recto→verso et verso→recto séparément. _(porté sur `Deck`/`Flashcard`, pas `RevisionItem`)_
+- [x] (backend) Endpoint courbe d'apprentissage par carte : `GET /decks/:id/cards/:card_id/history` → série `(date, grade)` depuis `StudySession`.
+- [x] (frontend) Toggle « mode inversé » à la création/édition d'un deck.
+- [x] (frontend) Composant `LearningCurve.vue` (sparkline SVG sans dépendance) sur la fiche carte.
+- [x] (frontend) Réglage `tuning` par carte (slider « réviser plus/moins souvent »).
 
 **Tests** : inversé crée les items réciproques ; suppression nettoie les inversés ; history renvoie la série ordonnée ; tuning persiste et change l'échéance.
 **Commits** : `feat(flashcard): mode inversé`, `feat(flashcard): courbe d'apprentissage`, `feat(flashcard): tuning par carte`.
@@ -131,13 +132,13 @@
 
 **Objectif** : QCM = ensemble de questions ; réponses uniques **ou** multiples ; points par question.
 
-**État actuel** : 🟡 item `qcm` existe (payload options/correct) mais sans points ni multi propre, et mélangé (♻️ A0).
+**État actuel** : ✅ **Fait** (PR #56, ex-#52 `feature/revision-qcm`, 2026-06-15). Passage scoré pondéré + multi tout-ou-rien, SM-2 par question, `QcmRun.vue`.
 
 **Étapes**
-- [ ] (backend) `payload` qcm : `options[].correct` multiple + `points` (int, défaut 1) par question. Validation : ≥2 options, ≥1 correcte.
-- [ ] (backend) Logique de correction : score = somme pondérée ; tout-ou-rien sur multi (config possible). Endpoint « passage » : `POST /revision/sets/:id/run` → score pondéré + détail par question, et mise à jour SM-2 par item.
-- [ ] (frontend) Éditeur QCM (questions, options, cases « correcte(s) », points) — distinct du flux flashcard.
-- [ ] (frontend) Étude QCM : sélection (mono/multi), barème, score final pondéré.
+- [x] (backend) `payload` qcm : `options[].correct` multiple + `points` (int, défaut 1) par question. Validation : ≥2 options, ≥1 correcte.
+- [x] (backend) Logique de correction : score = somme pondérée ; tout-ou-rien sur multi. Endpoint « passage » : `POST /revision/sets/:id/run` → score pondéré + détail par question, et mise à jour SM-2 par item.
+- [x] (frontend) Éditeur QCM (barème/points dans `RevisionItemModal`) — distinct du flux flashcard.
+- [x] (frontend) Étude QCM : sélection (mono/multi), barème, score final pondéré (`QcmRun.vue`).
 
 **Tests** : score pondéré (mono & multi) ; rejet question sans bonne réponse ; points custom respectés.
 **Commits** : `feat(qcm): points & réponses multiples`, `feat(qcm): passage scoré`.
@@ -147,9 +148,9 @@
 
 **Objectif** : entité Vrai/Faux indépendante (ensemble d'affirmations + verdict + justification).
 
-**État actuel** : 🟡 item `vf` (payload assertion/correct/justification), à isoler en entité (A0).
+**État actuel** : ✅ **Fait** (PR #53 `feature/revision-typed-study`, 2026-06-15). Étude VF dans `RevisionStudy.vue` + SM-2.
 
-**Étapes** : [ ] éditeur VF dédié · [ ] étude VF (verdict + feedback + justification) · [ ] SM-2 par item.
+**Étapes** : [x] éditeur VF dédié · [x] étude VF (verdict + feedback + justification) · [x] SM-2 par item.
 **Tests** : correction verdict ; justification révélée à la complétion.
 **Commits** : `feat(vf): entité vrai/faux`. **PR** : `feature/revision-vf` (peut être groupée avec A4–A6).
 
@@ -157,9 +158,9 @@
 
 **Objectif** : entité Association (lier des éléments entre eux).
 
-**État actuel** : 🟡 item `assoc` (payload pairs).
+**État actuel** : ✅ **Fait** (PR #53 `feature/revision-typed-study`, 2026-06-15). Appariement ordre-indifférent dans `RevisionStudy.vue` + SM-2.
 
-**Étapes** : [ ] éditeur paires gauche/droite · [ ] étude par appariement interactif (drag/clic) + correction · [ ] SM-2.
+**Étapes** : [x] éditeur paires gauche/droite · [x] étude par appariement interactif (menus) + correction (ordre indifférent) · [x] SM-2.
 **Tests** : correction d'appariement (ordre indifférent) ; appariement partiel.
 **Commits** : `feat(association): entité association`. **PR** : `feature/revision-assoc`.
 
@@ -167,9 +168,9 @@
 
 **Objectif** : entité Définition (terme → définition).
 
-**État actuel** : ⬜ (n'existe que comme balise note `[term]{def:...}`).
+**État actuel** : ✅ **Fait** (socle A0 #49 + étude PR #53 `feature/revision-typed-study`, 2026-06-15). Type `definition` au socle, auto-évaluation (révéler + answer) dans `RevisionStudy.vue` + SM-2.
 
-**Étapes** : [ ] type `definition` au socle · [ ] éditeur terme/définition · [ ] étude (révéler la définition, auto-éval) · [ ] SM-2.
+**Étapes** : [x] type `definition` au socle · [x] éditeur terme/définition · [x] étude (révéler la définition, auto-éval) · [x] SM-2.
 **Tests** : création/affichage ; SM-2.
 **Commits** : `feat(definition): entité définition`. **PR** : `feature/revision-definition`.
 
@@ -177,9 +178,9 @@
 
 **Objectif** : entité Ordre (remettre une suite d'actions dans le bon ordre).
 
-**État actuel** : 🟡 item `ordre` (payload steps).
+**État actuel** : ✅ **Fait** (PR #53 `feature/revision-typed-study`, 2026-06-15). Réordonnancement ▲▼ + correction stricte dans `RevisionStudy.vue` + SM-2.
 
-**Étapes** : [ ] éditeur étapes ordonnées · [ ] étude : éléments en désordre + réordonnancement (drag/▲▼) + correction stricte · [ ] SM-2.
+**Étapes** : [x] éditeur étapes ordonnées · [x] étude : éléments en désordre + réordonnancement (▲▼) + correction stricte · [x] SM-2.
 **Tests** : correction d'ordre exact ; présentation mélangée déterministe en test.
 **Commits** : `feat(ordre): entité ordre`. **PR** : `feature/revision-ordre`.
 
@@ -187,13 +188,13 @@
 
 **Objectif** : par item ET par ensemble : nb de révisions, % réussite, % rétention, date de maîtrise estimée, courbe.
 
-**État actuel** : 🟡 `/stats/decks/:id` existe ; pas par item ni générique.
+**État actuel** : ✅ **Fait** (PR #54 `feature/stats-elements`, 2026-06-15). `revision_stats_service`, endpoints item/ensemble, `RevisionSetStats.vue`.
 
 **Étapes**
-- [ ] (backend) Généraliser `StudySession.flashcard_id` → `item_id` (+ discriminant de type) (migration) couvrant flashcards **et** `RevisionItem`.
-- [ ] (backend) Calcul des indicateurs **D5** depuis l'historique : rétention réelle (True Retention, mûrs), récupérabilité **R** (Ebbinghaus/FSRS), stabilité **S** & difficulté **D** (proxys SM-2), taux de rechute, sangsues (leeches), maturité, date de maîtrise (projection S), latence médiane, séries historiques (courbe d'apprentissage/oubli).
-- [ ] (backend) `GET /stats/items/:id` (indicateurs + série) et `GET /stats/sets/:id` (agrégats ensemble, **SQL** anti-N+1 + `test_*_query_budget`).
-- [ ] (frontend) Panneau stats par élément : KPI + `LearningCurve` + **verdicts actionnables** (« sangsues à reformuler », « rétention < cible », « à risque aujourd'hui »).
+- [x] (backend) `StudySession.item_id` (+ discriminant de type) couvrant flashcards **et** `RevisionItem` (posé au socle A0).
+- [x] (backend) Calcul des indicateurs **D5** depuis l'historique : rétention réelle (True Retention, mûrs), récupérabilité **R** (Ebbinghaus), stabilité **S** & difficulté **D** (proxys SM-2), sangsues (leeches), maturité, date de maîtrise (projection SM-2), séries historiques.
+- [x] (backend) `GET /stats/items/:id` (indicateurs + série) et `GET /stats/sets/:id` (agrégats ensemble, **SQL** anti-N+1).
+- [x] (frontend) Panneau stats par élément : KPI + mini-courbe SVG + **verdicts actionnables** (`RevisionSetStats.vue`).
 
 **Tests** : calculs (%réussite, %rétention) sur jeu de sessions fixé ; date de maîtrise déterministe ; isolation `user_id`.
 **Commits** : `feat(stats): stats par item et par ensemble`. **PR** : `feature/stats-elements`.
@@ -202,7 +203,7 @@
 
 **Objectif** : vue d'avancement/rétention agrégée de tous les éléments d'un classeur (et sous-arbre).
 
-**État actuel** : ⬜.
+**État actuel** : ⬜ **À faire — prochaine étape** (clôt la Partie A ; réutilise `revision_stats_service` de A7).
 
 **Étapes**
 - [ ] (backend) `GET /stats/binders/:id` : agrégat sur tous les ensembles du classeur + descendants (réutilise A7), en **agrégats SQL** (éviter N+1) + `test_*_query_budget`.
@@ -355,3 +356,9 @@
 
 - **2026-06-15** — Création de `REFACTO_FONCTIONNALITES.md` (ce plan). État des lieux établi ; décisions d'architecture D1–D7 posées (en attente de validation, notamment **D3a** réconciliation de la PR #48 : QCM/VF/etc. deviennent des entités indépendantes, le mot « flashcard » est réservé au recto/verso). Aucune implémentation démarrée.
 - **2026-06-15** — Décisions validées par le porteur produit : **D3c retenu** (le `Deck`/`Flashcard` reste strictement flashcard recto/verso ; nouvelles tables `revision_sets`/`revision_items` pour qcm/vf/association/définition/ordre ; réconciliation = annuler le mélange typé de la PR #48). **D4** (tuning par item), **D6** (QCM tout-ou-rien configurable), **D7** (mode inversé matérialisé) confirmés. **D5 enrichi** : stats actionnables fondées sur des indicateurs connus (modèle DSR/FSRS — stabilité/difficulté/récupérabilité, courbe d'oubli d'Ebbinghaus, True Retention & sangsues d'Anki, SM-2 conservé comme planificateur). Plan déplacé dans `docs/` et commité sur `docs/refacto-plan` (`main` protégé par convention). Toujours aucune implémentation de code.
+- **2026-06-15** — **A0 livré** (PR #49 `feature/revision-foundation`, mergée). Tables `revision_sets`/`revision_items`, `revision_service`, `tuning` SM-2, `StudySession.item_id`/`item_type`, migrations `a1b2c3d4e5f6` (socle) + `b2c3d4e5f6a7` (réconciliation PR #48, idempotente). Front : `stores/revision.ts`, `RevisionItemModal` réconcilié.
+- **2026-06-15** — **A1 livré** (PR #55, ex-#51 `feature/flashcard-advanced`, mergée). Mode inversé matérialisé + `tuning` + courbe d'apprentissage, **portés sur `Deck`/`Flashcard`** (D3c) plutôt que `RevisionItem` : `Deck.reversed`/`tuning_default`, `Flashcard.tuning`/`reverse_of_id`, `GET /decks/:id/cards/:card_id/history`, `LearningCurve.vue` (SVG). Migration `c3d4e5f6a7b8`.
+- **2026-06-15** — **A2 livré** (PR #56, ex-#52 `feature/revision-qcm`, mergée). QCM scoré : `POST /revision/sets/:id/run`, pondération `points`, multi tout-ou-rien, SM-2 par question, `QcmRun.vue`. Pas de migration.
+- **2026-06-15** — **A3–A6 livrés** (PR #53 `feature/revision-typed-study`, mergée). Étude + correction + SM-2 de VF / Association (ordre indifférent) / Définition (auto-éval) / Ordre (strict), `RevisionStudy.vue` + `POST /revision/sets/:id/study/grade/:item_id`. Pas de migration.
+- **2026-06-15** — **A7 livré** (PR #54 `feature/stats-elements`, mergée). `revision_stats_service` (D : difficulté, R : Ebbinghaus, S : stabilité, True Retention, sangsues, maturité, date de maîtrise), `GET /stats/items/:id` + `GET /stats/sets/:id` (anti-N+1), `RevisionSetStats.vue` (KPI + verdicts + mini-courbe). Pas de migration.
+- **2026-06-15** — **Note de process** : merge de la pile de PR (#49→#54). #51/#52 fermées en cascade par GitHub (suppression de leur branche de base) → recréées en #55/#56 vers `main`. Les enfants ont ensuite été re-ciblés sur `main` **avant** merge du parent pour éviter la cascade. Conflits limités à `docs/FEATURES.md` / `docs/development_journal.md` (ajouts conservés des deux côtés). **Reste : A8 (prochain), puis C1/C2 et extensions B3/B4/B5.**
