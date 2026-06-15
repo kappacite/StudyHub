@@ -59,10 +59,15 @@
         >
           <div>
             <div class="flex items-start justify-between gap-3">
-              <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 uppercase tracking-wider">
-                {{ deck.card_count }} cartes
-              </span>
-              
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 uppercase tracking-wider">
+                  {{ deck.card_count }} cartes
+                </span>
+                <span v-if="deck.reversed" class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 uppercase tracking-wider" title="Mode inversé activé">
+                  ⇄ Inversé
+                </span>
+              </div>
+
               <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
                   @click.stop="openEditDeckModal(deck)" 
@@ -183,23 +188,40 @@
               <!-- SM-2 Stats badge -->
               <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
                 Intervalle : {{ card.interval }}j | EF : {{ card.ease_factor.toFixed(2) }}
+                <template v-if="(card.tuning ?? 1) !== 1"> | ×{{ card.tuning }}</template>
               </span>
-              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  @click="openEditCardModal(card)" 
-                  class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+              <div class="flex items-center gap-1">
+                <button
+                  @click="toggleHistory(card)"
+                  class="p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                  :class="historyCardId === card.id ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'"
+                  title="Courbe d'apprentissage"
+                >
+                  <Activity class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  @click="openEditCardModal(card)"
+                  class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Modifier"
                 >
                   <Edit class="w-3.5 h-3.5" />
                 </button>
-                <button 
-                  @click="deleteCard(card.id)" 
-                  class="p-1 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                <button
+                  @click="deleteCard(card.id)"
+                  class="p-1 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Supprimer"
                 >
                   <Trash2 class="w-3.5 h-3.5" />
                 </button>
               </div>
+            </div>
+
+            <!-- Courbe d'apprentissage (dépliée à la demande) -->
+            <div v-if="historyCardId === card.id" class="mt-3 pt-3 border-t border-slate-50 dark:border-slate-800/40 text-indigo-500">
+              <div v-if="historyLoading" class="flex items-center gap-2 text-xs text-slate-400 py-3 justify-center">
+                <RefreshCw class="w-3.5 h-3.5 animate-spin" /> Chargement…
+              </div>
+              <LearningCurve v-else :entries="historyEntries" />
             </div>
           </div>
 
@@ -235,6 +257,20 @@
               <label for="deck-desc" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Description</label>
               <textarea id="deck-desc" v-model="deckForm.description" rows="3" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium" placeholder="Ex: Verbes irréguliers et vocabulaire utile pour voyager."></textarea>
             </div>
+            <div class="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-3">
+              <input id="deck-reversed" type="checkbox" v-model="deckForm.reversed" class="mt-0.5 accent-indigo-600 shrink-0" />
+              <label for="deck-reversed" class="cursor-pointer">
+                <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Mode inversé</span>
+                <span class="block text-xs text-slate-400">Réviser aussi chaque carte dans le sens verso → recto (suivi SM-2 distinct).</span>
+              </label>
+            </div>
+            <div>
+              <label for="deck-tuning" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                Fine-tuning par défaut — {{ tuningLabel(deckForm.tuning_default) }}
+              </label>
+              <input id="deck-tuning" type="range" min="0.5" max="2" step="0.1" v-model.number="deckForm.tuning_default" class="w-full accent-indigo-600" />
+              <div class="flex justify-between text-[10px] text-slate-400 mt-1"><span>plus fréquent</span><span>plus espacé</span></div>
+            </div>
             <div v-if="isEditingDeck">
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tags</label>
               <TagSelector v-model="deckForm.tags" @change="saveDeckTags" />
@@ -263,6 +299,13 @@
               <label for="card-back" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Verso (Réponse / Définition)</label>
               <textarea id="card-back" required v-model="cardForm.back" rows="3" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium" placeholder="Ex: La voiture"></textarea>
             </div>
+            <div v-if="isEditingCard">
+              <label for="card-tuning" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                Fine-tuning — {{ tuningLabel(cardForm.tuning) }}
+              </label>
+              <input id="card-tuning" type="range" min="0.5" max="2" step="0.1" v-model.number="cardForm.tuning" class="w-full accent-indigo-600" />
+              <div class="flex justify-between text-[10px] text-slate-400 mt-1"><span>réviser plus souvent</span><span>réviser moins souvent</span></div>
+            </div>
           </div>
           <div class="flex items-center justify-end gap-3 mt-6">
             <button type="button" @click="showCardModal = false" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800">Annuler</button>
@@ -285,11 +328,12 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDecksStore } from '../../stores/decks'
-import type { Deck, Flashcard } from '../../stores/decks'
+import type { Deck, Flashcard, CardHistoryEntry } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
-import { Plus, ChevronRight, Layers, Edit, Trash2, Upload } from '@lucide/vue'
+import LearningCurve from '../../components/decks/LearningCurve.vue'
+import { Plus, ChevronRight, Layers, Edit, Trash2, Upload, Activity, RefreshCw } from '@lucide/vue'
 import AnkiImportModal from '../../components/decks/AnkiImportModal.vue'
 
 const decksStore = useDecksStore()
@@ -304,12 +348,17 @@ const showAnkiModal = ref(false)
 // Deck Form Modal
 const showDeckModal = ref(false)
 const isEditingDeck = ref(false)
-const deckForm = ref<{ id: number; name: string; description: string; tags: Tag[] }>({ id: 0, name: '', description: '', tags: [] })
+const deckForm = ref<{ id: number; name: string; description: string; reversed: boolean; tuning_default: number; tags: Tag[] }>({ id: 0, name: '', description: '', reversed: false, tuning_default: 1.0, tags: [] })
 
 // Card Form Modal
 const showCardModal = ref(false)
 const isEditingCard = ref(false)
-const cardForm = ref({ id: 0, front: '', back: '' })
+const cardForm = ref({ id: 0, front: '', back: '', tuning: 1.0 })
+
+// Courbe d'apprentissage (historique par carte)
+const historyCardId = ref<number | null>(null)
+const historyEntries = ref<CardHistoryEntry[]>([])
+const historyLoading = ref(false)
 
 // Filtered cards for selected deck
 const currentCards = computed(() => {
@@ -353,22 +402,25 @@ function selectDeck(deck: Deck) {
 // Deck CRUD Methods
 function openCreateDeckModal() {
   isEditingDeck.value = false
-  deckForm.value = { id: 0, name: '', description: '', tags: [] }
+  deckForm.value = { id: 0, name: '', description: '', reversed: false, tuning_default: 1.0, tags: [] }
   showDeckModal.value = true
 }
 
 function openEditDeckModal(deck: Deck) {
   isEditingDeck.value = true
-  deckForm.value = { id: deck.id, name: deck.name, description: deck.description, tags: deck.tags || [] }
+  deckForm.value = { id: deck.id, name: deck.name, description: deck.description, reversed: deck.reversed, tuning_default: deck.tuning_default, tags: deck.tags || [] }
   showDeckModal.value = true
 }
 
 async function submitDeckForm() {
   if (isEditingDeck.value) {
-    await decksStore.updateDeck(deckForm.value.id, deckForm.value.name, deckForm.value.description)
+    await decksStore.updateDeck(deckForm.value.id, deckForm.value.name, deckForm.value.description, {
+      reversed: deckForm.value.reversed,
+      tuning_default: deckForm.value.tuning_default,
+    })
     await saveDeckTags(deckForm.value.tags)
   } else {
-    await decksStore.createDeck(deckForm.value.name, deckForm.value.description)
+    await decksStore.createDeck(deckForm.value.name, deckForm.value.description, null, deckForm.value.reversed, deckForm.value.tuning_default)
   }
   showDeckModal.value = false
 }
@@ -391,21 +443,21 @@ async function deleteDeck(deck: Deck) {
 // Card CRUD Methods
 function openCreateCardModal() {
   isEditingCard.value = false
-  cardForm.value = { id: 0, front: '', back: '' }
+  cardForm.value = { id: 0, front: '', back: '', tuning: 1.0 }
   showCardModal.value = true
 }
 
 function openEditCardModal(card: Flashcard) {
   isEditingCard.value = true
-  cardForm.value = { id: card.id, front: card.front, back: card.back }
+  cardForm.value = { id: card.id, front: card.front, back: card.back, tuning: card.tuning ?? 1.0 }
   showCardModal.value = true
 }
 
 async function submitCardForm() {
   if (!selectedDeck.value) return
-  
+
   if (isEditingCard.value) {
-    await decksStore.updateCard(cardForm.value.id, cardForm.value.front, cardForm.value.back)
+    await decksStore.updateCard(cardForm.value.id, cardForm.value.front, cardForm.value.back, cardForm.value.tuning)
   } else {
     await decksStore.createCard(selectedDeck.value.id, cardForm.value.front, cardForm.value.back)
   }
@@ -415,7 +467,33 @@ async function submitCardForm() {
 async function deleteCard(cardId: number) {
   if (confirm('Voulez-vous supprimer cette carte ?')) {
     await decksStore.deleteCard(cardId)
+    if (historyCardId.value === cardId) historyCardId.value = null
   }
+}
+
+async function toggleHistory(card: Flashcard) {
+  if (historyCardId.value === card.id) {
+    historyCardId.value = null
+    return
+  }
+  if (!selectedDeck.value) return
+  historyCardId.value = card.id
+  historyLoading.value = true
+  historyEntries.value = []
+  try {
+    historyEntries.value = await decksStore.fetchCardHistory(selectedDeck.value.id, card.id)
+  } catch (e) {
+    console.error('Erreur de chargement de la courbe', e)
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+// Libellé lisible du fine-tuning (multiplicateur SM-2).
+function tuningLabel(t: number): string {
+  if (t < 1) return `révision +fréquente (×${t})`
+  if (t > 1) return `révision +espacée (×${t})`
+  return 'normal (×1)'
 }
 </script>
 
