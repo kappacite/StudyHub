@@ -139,6 +139,71 @@ def test_user_cannot_hide_own_note(client, auth_headers, test_user, app):
     assert resp.status_code == 403
 
 
+def test_element_added_after_share_is_immediately_visible(client, auth_headers, test_user, app):
+    """B2 — partage par référence auto-actualisé : un élément ajouté au classeur
+    APRÈS le partage est immédiatement visible de l'élève, sans ré-action du prof."""
+    binder_uuid, _note, invite_code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+
+    _other_user(app, "eleve_b2@example.com", "eleveb2")
+    student = _login(client, "eleve_b2@example.com")
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student)
+
+    # Le prof ajoute une NOUVELLE note dans le classeur déjà partagé.
+    with app.app_context():
+        binder = Binder.query.filter_by(id=binder_uuid).first()
+        late_note = Note(
+            user_id=test_user["id"], binder_id=binder._id,
+            title="Chapitre 2 (ajouté après partage)", content="La mitose",
+        )
+        db.session.add(late_note)
+        # ... et un sous-classeur avec sa propre note (auto-MAJ des descendants).
+        child = Binder(user_id=test_user["id"], name="TD", parent_id=binder._id)
+        db.session.add(child)
+        db.session.commit()
+        deep_note = Note(user_id=test_user["id"], binder_id=child._id,
+                         title="Exercice 1", content="Énoncé")
+        db.session.add(deep_note)
+        db.session.commit()
+        late_uuid, deep_uuid = late_note.id, deep_note.id
+
+    # L'élève voit les deux nouvelles notes sans que le prof n'ait re-partagé.
+    notes = client.get("/api/v1/notes", headers=student).get_json()["data"]
+    ids = {n["id"] for n in notes}
+    assert late_uuid in ids, "note ajoutée après partage non visible (pas d'auto-MAJ)"
+    assert deep_uuid in ids, "note d'un sous-classeur ajouté après partage non visible"
+    assert all(n["read_only"] for n in notes if n["id"] in {late_uuid, deep_uuid})
+
+
+def test_binder_classes_indicator(client, auth_headers, test_user, app):
+    """B2 — indicateur « partagé » : un classeur partagé liste ses classes ;
+    un classeur non partagé renvoie une liste vide ; isolation propriétaire."""
+    binder_uuid, _note, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+
+    # Le prof voit la classe à laquelle son classeur est partagé.
+    resp = client.get(f"/api/v1/groups/binders/{binder_uuid}/classes", headers=auth_headers)
+    assert resp.status_code == 200
+    classes = resp.get_json()
+    assert len(classes) == 1
+    assert classes[0]["name"] == "Classe SVT"
+    assert classes[0]["permission"] == "read"
+
+    # Un classeur non partagé renvoie une liste vide.
+    with app.app_context():
+        solo = Binder(user_id=test_user["id"], name="Privé")
+        db.session.add(solo)
+        db.session.commit()
+        solo_uuid = solo.id
+    empty = client.get(f"/api/v1/groups/binders/{solo_uuid}/classes", headers=auth_headers)
+    assert empty.status_code == 200
+    assert empty.get_json() == []
+
+    # Un autre utilisateur ne peut pas interroger un classeur qui n'est pas le sien.
+    _other_user(app, "intrus@example.com", "intrus")
+    intruder = _login(client, "intrus@example.com")
+    forbidden = client.get(f"/api/v1/groups/binders/{binder_uuid}/classes", headers=intruder)
+    assert forbidden.status_code == 404
+
+
 def test_non_member_does_not_see_shared_notes(client, auth_headers, test_user, app):
     _binder, note_uuid, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
 

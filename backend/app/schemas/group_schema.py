@@ -33,6 +33,12 @@ class GroupBinderShareSchema(BaseModel):
     binder_id: str
     permission: str = Field("read", pattern="^(read|write)$")
 
+class BinderClassRefSchema(BaseModel):
+    """Classe (groupe) à laquelle un classeur est partagé — pour l'indicateur « partagé »."""
+    id: int
+    name: str
+    permission: str
+
 class GroupActivityResponseSchema(BaseModel):
     id: int
     user_id: int

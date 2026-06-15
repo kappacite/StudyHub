@@ -48,6 +48,19 @@
             <Globe class="w-4 h-4" />
             {{ currentBinder?.is_public ? 'Public' : 'Partager' }}
           </button>
+          <button
+            v-if="currentBinderId !== null"
+            @click="openClassShareModal"
+            class="inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-semibold transition-all active:scale-95"
+            :class="[
+              isSharedToClass
+                ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:border-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
+                : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-350'
+            ]"
+          >
+            <GraduationCap class="w-4 h-4" />
+            {{ isSharedToClass ? `Partagé (${sharedClasses.length})` : 'Classe' }}
+          </button>
 
           <div class="relative">
             <button
@@ -500,6 +513,60 @@
       </div>
     </div>
 
+    <!-- B2 — Partager le classeur à une classe (par référence, auto-actualisé) -->
+    <div v-if="showClassShareModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showClassShareModal = false"></div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
+        <h3 class="text-lg font-bold mb-2">Partager ce classeur à une classe</h3>
+        <p class="text-xs text-slate-450 dark:text-slate-500 mb-4">
+          Le classeur est partagé <strong>par référence</strong> : tout élément que vous y ajoutez ensuite
+          devient automatiquement visible des élèves, en lecture seule.
+        </p>
+
+        <div v-if="classShareBusy && myClasses.length === 0" class="py-8 text-center text-sm text-slate-400">
+          <Loader2 class="w-5 h-5 animate-spin inline" />
+        </div>
+        <div v-else-if="ownedClasses.length === 0" class="py-8 text-center text-sm text-slate-400">
+          Vous n'animez aucune classe pour l'instant.
+        </div>
+        <ul v-else class="space-y-2 max-h-72 overflow-y-auto">
+          <li
+            v-for="c in ownedClasses"
+            :key="c.id"
+            class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl"
+          >
+            <div class="min-w-0">
+              <p class="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{{ c.name }}</p>
+              <span class="text-[10px] text-slate-450">{{ c.members_count }} membre(s)</span>
+            </div>
+            <button
+              type="button"
+              :disabled="classShareBusy"
+              @click="toggleClassShare(c)"
+              class="px-3 py-1.5 border rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50 shrink-0"
+              :class="[
+                isClassShared(c.id)
+                  ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:border-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
+                  : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-white dark:hover:bg-slate-800'
+              ]"
+            >
+              {{ isClassShared(c.id) ? 'Partagé ✓' : 'Partager' }}
+            </button>
+          </li>
+        </ul>
+
+        <div class="flex items-center justify-end mt-6">
+          <button
+            type="button"
+            @click="showClassShareModal = false"
+            class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
+          >
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- New "jeu de révision" (empty deck) Modal -->
     <div v-if="showDeckModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showDeckModal = false"></div>
@@ -559,7 +626,9 @@ const REVISION_TYPE_LABELS: Record<RevisionType, string> = {
   definition: 'Définition',
   ordre: 'Ordre',
 }
-import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network, BarChart3, FolderMinus, FolderInput } from 'lucide-vue-next'
+import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, CheckSquare, ListOrdered, Network, BarChart3, FolderMinus, FolderInput, GraduationCap } from 'lucide-vue-next'
+import groupService, { type BinderClassRef } from '../../services/groupService'
+import classService, { type ClassInfo } from '../../services/classService'
 import type { BinderItemType } from '../../stores/binders'
 
 const bindersStore = useBindersStore()
@@ -865,6 +934,66 @@ async function saveShareSettings() {
   
   showShareModal.value = false
 }
+
+// --- B2 : partager le classeur à une classe (par référence, auto-actualisé) ----
+const showClassShareModal = ref(false)
+const myClasses = ref<ClassInfo[]>([])
+const sharedClasses = ref<BinderClassRef[]>([])
+const classShareBusy = ref(false)
+
+// Classes que l'utilisateur anime (créateur) — seules cibles de partage proposées.
+const ownedClasses = computed(() =>
+  myClasses.value.filter(c => c.created_by === currentUserId.value)
+)
+const isSharedToClass = computed(() => sharedClasses.value.length > 0)
+
+async function loadSharedClasses() {
+  if (currentBinderId.value === null || !isOwner.value) {
+    sharedClasses.value = []
+    return
+  }
+  try {
+    sharedClasses.value = await groupService.getBinderClasses(currentBinderId.value)
+  } catch {
+    sharedClasses.value = []
+  }
+}
+
+async function openClassShareModal() {
+  if (currentBinderId.value === null) return
+  showClassShareModal.value = true
+  classShareBusy.value = true
+  try {
+    myClasses.value = await classService.getMyClasses()
+    await loadSharedClasses()
+  } finally {
+    classShareBusy.value = false
+  }
+}
+
+function isClassShared(classId: number) {
+  return sharedClasses.value.some(c => c.id === classId)
+}
+
+async function toggleClassShare(c: ClassInfo) {
+  if (currentBinderId.value === null) return
+  classShareBusy.value = true
+  try {
+    if (isClassShared(c.id)) {
+      await groupService.unshareBinder(c.id, currentBinderId.value)
+    } else {
+      await groupService.shareBinder(c.id, currentBinderId.value, 'read')
+    }
+    await loadSharedClasses()
+  } catch {
+    alert('Action impossible sur cette classe.')
+  } finally {
+    classShareBusy.value = false
+  }
+}
+
+// Met à jour l'indicateur « partagé » au changement de classeur.
+watch(currentBinderId, loadSharedClasses, { immediate: true })
 </script>
 
 <style scoped>
