@@ -592,3 +592,7 @@ Deux bugs signalés sur la fonctionnalité professeur :
 Régression de la séparation : après avoir retiré les classes non animées de l'Espace Professeur, un élève ne voyait plus sa classe **nulle part** (la vue Groupes exclut les classes via `is_class`, et `StudentClassView` n'affichait que les devoirs).
 * `StudentClassView` : nouvelle section **« Mes classes »** listant les classes où l'utilisateur est inscrit comme élève (`my_role` member/follower), avec un raccourci « Question » (ouvre le fil Q&A de la classe). Le contenu partagé (cours/ensembles) reste accessible via Classeurs / Révisions.
 * Frontend uniquement, pas de migration. vue-tsc clean, Vitest 50.
+
+## [2026-06-16] Inversion : « Mes Classes » devient la vue principale
+
+La vue élève est recentrée sur les classes : `StudentClassView` s'intitule désormais **« Mes Classes »** (nav + titre + breadcrumb), avec les **devoirs** en **section interne** (« Mes devoirs ») sous la liste des classes et le tableau de bord perso. Auparavant c'était l'inverse (« Mes Devoirs » avec une section classes). Frontend uniquement, pas de migration. vue-tsc clean, Vitest 50.
