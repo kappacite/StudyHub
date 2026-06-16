@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { MotionPlugin } from '@vueuse/motion'
 import router from './router'
 import { useAuthStore } from './stores/auth'
 import './style.css'
@@ -15,6 +16,7 @@ app.directive('dompurify-html', (el, binding) => {
 })
 
 app.use(pinia)
+app.use(MotionPlugin)
 
 // Initialiser l'état auth à partir de localStorage
 const authStore = useAuthStore()

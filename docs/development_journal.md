@@ -596,3 +596,23 @@ Régression de la séparation : après avoir retiré les classes non animées de
 ## [2026-06-16] Inversion : « Mes Classes » devient la vue principale
 
 La vue élève est recentrée sur les classes : `StudentClassView` s'intitule désormais **« Mes Classes »** (nav + titre + breadcrumb), avec les **devoirs** en **section interne** (« Mes devoirs ») sous la liste des classes et le tableau de bord perso. Auparavant c'était l'inverse (« Mes Devoirs » avec une section classes). Frontend uniquement, pas de migration. vue-tsc clean, Vitest 50.
+
+## [2026-06-16] Refacto UI — Lot 0 : fondations (tokens + motion + primitives)
+
+Démarrage du refacto UI complet (direction **Soft & Friendly** : neutres *warm*, accents
+pastel, arrondis ; animations **subtiles & rapides**). Approche **incrémentale** : couche
+centralisée d'abord, migration des vues par lots ensuite. Doc : `docs/design-system.md`.
+
+* **Tokens** : couleurs centralisées en CSS custom properties (`--sh-*`) dans `src/style.css`
+  (`:root` clair + `.dark` sombre, palette warm : app `#FAFAF9`/`#17171D`), exposées comme
+  tokens Tailwind sémantiques dans `tailwind.config.js` (`bg-app`, `bg-surface(-soft)`,
+  `border-line(-soft)`, `text-ink(/-muted/-subtle)`, `primary(/-strong/-soft)`, `accent`,
+  `success/warning/danger/info` + `-soft`). Ombres douces (`shadow-soft*`), `prefers-reduced-motion`
+  neutralisé globalement. `body` et scrollbars passés sur les tokens.
+* **Motion** : `@vueuse/motion` (plugin dans `main.ts`) + presets `useMotionPresets.ts`
+  (`fadeUp`, `fadeUpOnce`, `pop`, `listItem(i)`), durées 200-300 ms ease-out.
+* **Primitives** `src/components/ui/base/` (typées, sans appel API) : `BaseButton`, `BaseCard`,
+  `BaseBadge`, `BaseInput`, `BaseField`, `BaseToggle`, `BaseModal` (HeadlessUI), `BaseEmptyState`,
+  `BaseSkeleton`, `StatCard` + barrel `index.ts`.
+* Aucune vue migrée à ce stade (effet global limité au fond/typo via tokens). vue-tsc clean,
+  `npm run build` OK. Pas de migration backend.
