@@ -616,3 +616,18 @@ centralisée d'abord, migration des vues par lots ensuite. Doc : `docs/design-sy
   `BaseSkeleton`, `StatCard` + barrel `index.ts`.
 * Aucune vue migrée à ce stade (effet global limité au fond/typo via tokens). vue-tsc clean,
   `npm run build` OK. Pas de migration backend.
+
+## [2026-06-16] Refacto UI — Lot 1 : shell + Dashboard + Auth (vitrine)
+
+Première migration visible, sur les écrans les plus vus.
+* **Shell** `components/layout/AppLayout.vue` : sidebar/header passés sur les tokens
+  (`bg-surface`, `border-line`, `text-ink*`, nav active `bg-primary-soft text-primary`),
+  toggle dark mode remplacé par `BaseToggle`, bouton login par `BaseButton`. Zen/immersive,
+  persistance `sh_theme` et responsive inchangés.
+* **Dashboard** `views/Dashboard/Dashboard.vue` : cartes → `BaseCard`, stats → `StatCard`
+  (accents sémantiques), boutons → `BaseButton`, heatmap/forecast/objectif/maturité recolorés
+  sur tokens (rampe `bg-primary/30→/50→/75→primary`), `quickActions` factorisé, motion
+  `fadeUp`/`listItem`. `FocusWidget` conservé (carte vibrante déjà cohérente, indépendante du mode).
+* **Auth** `Login.vue` + `Register.vue` : `BaseCard`/`BaseField`/`BaseInput`/`BaseButton`,
+  icônes Lucide (Mail/Lock/User), alertes en `danger-soft`, halos de fond en `primary`/`accent`.
+* vue-tsc clean, `npm run build` OK, Vitest 50. Pas de migration backend.
