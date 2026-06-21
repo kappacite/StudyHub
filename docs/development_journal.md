@@ -631,3 +631,36 @@ Première migration visible, sur les écrans les plus vus.
 * **Auth** `Login.vue` + `Register.vue` : `BaseCard`/`BaseField`/`BaseInput`/`BaseButton`,
   icônes Lucide (Mail/Lock/User), alertes en `danger-soft`, halos de fond en `primary`/`accent`.
 * vue-tsc clean, `npm run build` OK, Vitest 50. Pas de migration backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lots T / S0 / S1 / S2 (cœur) + correctif ensembles partagés
+
+Consolidation et sauvegarde du chantier de refonte structurelle resté en working tree
+(build + tests verts mais non commité). Découpé en commits cohérents sur
+`feature/ui-refactor-s0` ; aucun push.
+
+* **Correctif backend (`revision_service.py`)** : un élève qui révise un **ensemble
+  partagé** (cours) ne modifie plus l'échéancier SM-2 du propriétaire. L'état par item
+  (`next_review`/`interval`/`ease`) reste celui du prof ; l'élève voit tous les items
+  (`get_by_set`) et seule sa `StudySession` est enregistrée. Couvre étude SM-2, QCM typés
+  et autres types. +3 tests (`test_shared_revision_sets.py`).
+* **Lot T — re-theming** : direction visuelle « White/Pink × Material épuré » (primaire
+  Pink 400 `#F06292`, `danger` redevient rouge distinct). Tokens (`style.css` +
+  `tailwind.config.js`), primitives `ui/base/` (Button/Card/Modal) et composants `ui/*`
+  (NotificationBell, PomodoroTimer, SearchModal, TagSelector). `docs/design-system.md` MAJ.
+* **Lot S0 — socle structurel** : primitives présentationnelles `PageContainer`,
+  `PageHeader`, `Tabs`, `ListRow`, `SplitView` (+ tests `web/tests/ui/`). Routing 5 sections
+  canoniques (accueil/bibliotheque/reviser/classes/planning) + redirects des anciennes routes
+  liste, routes feuilles préservées. Nav `AppLayout` 5 sections + Communauté (actif par
+  préfixe). `ClassesLanding` (onglets Enseignant/Élève/Groupes). Anti-stranding temporaire
+  « examen blanc » (Reviews).
+* **Lot S1 — Accueil** : `views/Home/Accueil.vue` (fusion Dashboard + Focus, action-first) —
+  hero + CTA « Continuer à réviser », file `focus.items`, panneau « Aujourd'hui », progression.
+* **Lot S2 (cœur) — Bibliothèque** : `Binders.vue` refondu en `SplitView` (arbre + contenu
+  typé en `ListRow`, tokens `cat-*`), `PageHeader` (fil d'Ariane), `Tabs` par type (`?type=`).
+  Toutes les features préservées (owner/lecture-seule, clone, attache/détache, partage
+  communauté + classe, stats, filtres tags). **Reste** : ré-agencer les feuilles
+  (`Notes`/`NoteEdit`/`PdfReader`/`Diagrams`) avec `PageHeader`.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66**, backend `test_shared_revision_sets`
+  **3** ✅. Pas de migration backend.
