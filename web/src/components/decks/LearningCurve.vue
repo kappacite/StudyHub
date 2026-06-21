@@ -1,23 +1,23 @@
 <template>
   <div class="space-y-2">
     <div class="flex items-center justify-between">
-      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Courbe d'apprentissage</span>
-      <span class="text-[10px] text-slate-400">{{ points.length }} révision{{ points.length > 1 ? 's' : '' }}</span>
+      <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Courbe d'apprentissage</span>
+      <span class="text-[10px] text-ink-subtle">{{ points.length }} révision{{ points.length > 1 ? 's' : '' }}</span>
     </div>
 
-    <div v-if="points.length === 0" class="text-xs text-slate-400 italic py-3 text-center">
+    <div v-if="points.length === 0" class="text-xs text-ink-subtle italic py-3 text-center">
       Aucune révision pour l'instant.
     </div>
 
     <svg v-else :viewBox="`0 0 ${W} ${H}`" class="w-full h-24" preserveAspectRatio="none">
       <!-- Seuil de réussite (grade 3) -->
-      <line :x1="0" :y1="yFor(3)" :x2="W" :y2="yFor(3)" stroke="currentColor" class="text-slate-200 dark:text-slate-700" stroke-width="1" stroke-dasharray="3 3" />
+      <line :x1="0" :y1="yFor(3)" :x2="W" :y2="yFor(3)" stroke="currentColor" class="text-ink-subtle dark:text-ink" stroke-width="1" stroke-dasharray="3 3" />
       <!-- Ligne de progression -->
       <polyline
         :points="polyline"
         fill="none"
         stroke="currentColor"
-        class="text-indigo-500"
+        class="text-primary"
         stroke-width="2"
         stroke-linejoin="round"
         stroke-linecap="round"
@@ -29,12 +29,12 @@
         :cx="p.x"
         :cy="p.y"
         r="3"
-        :class="(points[i].grade ?? 0) >= 3 ? 'text-emerald-500' : 'text-rose-500'"
+        :class="(points[i].grade ?? 0) >= 3 ? 'text-success' : 'text-danger'"
         fill="currentColor"
       />
     </svg>
 
-    <div v-if="points.length" class="flex items-center justify-between text-[10px] text-slate-400">
+    <div v-if="points.length" class="flex items-center justify-between text-[10px] text-ink-subtle">
       <span>Échelle SM-2 : 0 (oubli) → 5 (facile)</span>
       <span>Réussite moyenne : {{ averageGrade }}/5</span>
     </div>

@@ -1,108 +1,108 @@
 <template>
   <div class="space-y-6 max-w-xl mx-auto animate-fade-in">
     <div class="flex items-center justify-between text-sm font-semibold">
-      <button @click="goBack" class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 flex items-center gap-1">
+      <button @click="goBack" class="text-ink-muted hover:text-primary dark:text-ink-subtle flex items-center gap-1">
         <ChevronLeft class="w-4 h-4" /> Retour
       </button>
-      <span class="text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+      <span class="text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider">
         {{ TYPE_LABELS[setType] || 'Révision' }} · {{ setName }}
       </span>
     </div>
 
-    <div v-if="loading" class="py-20 text-center text-sm font-semibold text-slate-400 uppercase tracking-widest">Chargement…</div>
+    <div v-if="loading" class="py-20 text-center text-sm font-semibold text-ink-subtle uppercase tracking-widest">Chargement…</div>
 
-    <div v-else-if="items.length === 0" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-10 text-center space-y-3">
-      <p class="text-sm text-slate-500 dark:text-slate-400">Rien à réviser pour l'instant. 🎉</p>
-      <button @click="goBack" class="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl">Retour</button>
+    <div v-else-if="items.length === 0" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-10 text-center space-y-3">
+      <p class="text-sm text-ink-muted dark:text-ink-subtle">Rien à réviser pour l'instant. 🎉</p>
+      <button @click="goBack" class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl">Retour</button>
     </div>
 
     <template v-else>
       <!-- Progress -->
       <div class="space-y-2">
-        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-ink-subtle">
           <span>{{ index + 1 }} / {{ items.length }}</span>
           <span>{{ correctCount }} bonne(s)</span>
         </div>
-        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-          <div class="bg-indigo-600 h-full rounded-full transition-all" :style="{ width: `${(index / items.length) * 100}%` }"></div>
+        <div class="w-full bg-surface-soft dark:bg-surface-soft rounded-full h-2 overflow-hidden">
+          <div class="bg-primary h-full rounded-full transition-all" :style="{ width: `${(index / items.length) * 100}%` }"></div>
         </div>
       </div>
 
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-5">
+      <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-5">
         <!-- VRAI / FAUX -->
         <template v-if="setType === 'vf'">
-          <p class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ current.payload.assertion }}</p>
+          <p class="text-lg font-bold text-ink dark:text-ink-subtle">{{ current.payload.assertion }}</p>
           <div v-if="phase === 'answer'" class="grid grid-cols-2 gap-3">
-            <button @click="submitVf(true)" class="py-3 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">Vrai</button>
-            <button @click="submitVf(false)" class="py-3 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/20">Faux</button>
+            <button @click="submitVf(true)" class="py-3 rounded-xl text-sm font-bold border border-line dark:border-line hover:bg-success-soft dark:hover:bg-success-soft">Vrai</button>
+            <button @click="submitVf(false)" class="py-3 rounded-xl text-sm font-bold border border-line dark:border-line hover:bg-danger-soft dark:hover:bg-danger-soft">Faux</button>
           </div>
           <div v-else class="space-y-2">
-            <p class="text-sm font-bold" :class="lastCorrect ? 'text-emerald-600' : 'text-rose-500'">
+            <p class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
               {{ lastCorrect ? 'Correct !' : 'Incorrect.' }} Réponse : {{ current.payload.correct ? 'Vrai' : 'Faux' }}
             </p>
-            <p v-if="current.payload.justification" class="text-sm text-slate-600 dark:text-slate-400">{{ current.payload.justification }}</p>
+            <p v-if="current.payload.justification" class="text-sm text-ink-muted dark:text-ink-subtle">{{ current.payload.justification }}</p>
           </div>
         </template>
 
         <!-- DEFINITION (auto-évaluation) -->
         <template v-else-if="setType === 'definition'">
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Terme</p>
-          <p class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ current.payload.term }}</p>
-          <button v-if="phase === 'answer'" @click="phase = 'reveal'" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700">Révéler la définition</button>
+          <p class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Terme</p>
+          <p class="text-lg font-bold text-ink dark:text-ink-subtle">{{ current.payload.term }}</p>
+          <button v-if="phase === 'answer'" @click="phase = 'reveal'" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong">Révéler la définition</button>
           <template v-else>
-            <p class="text-sm text-slate-700 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-3">{{ current.payload.definition }}</p>
-            <p class="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Votre auto-évaluation</p>
+            <p class="text-sm text-ink dark:text-ink-subtle border-t border-line dark:border-line pt-3">{{ current.payload.definition }}</p>
+            <p class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Votre auto-évaluation</p>
             <div class="grid grid-cols-3 gap-2">
-              <button @click="selfEval(1)" class="py-2.5 rounded-xl text-xs font-bold border border-rose-100 text-rose-600 hover:bg-rose-50 dark:border-rose-900/30 dark:bg-rose-950/10">À revoir</button>
-              <button @click="selfEval(3)" class="py-2.5 rounded-xl text-xs font-bold border border-amber-100 text-amber-600 hover:bg-amber-50 dark:border-amber-900/30 dark:bg-amber-950/10">Moyen</button>
-              <button @click="selfEval(5)" class="py-2.5 rounded-xl text-xs font-bold border border-emerald-100 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-950/10">Acquis</button>
+              <button @click="selfEval(1)" class="py-2.5 rounded-xl text-xs font-bold border border-danger text-danger hover:bg-danger-soft dark:border-danger dark:bg-danger-soft">À revoir</button>
+              <button @click="selfEval(3)" class="py-2.5 rounded-xl text-xs font-bold border border-warning text-warning hover:bg-warning-soft dark:border-warning dark:bg-warning-soft">Moyen</button>
+              <button @click="selfEval(5)" class="py-2.5 rounded-xl text-xs font-bold border border-success text-success hover:bg-success-soft dark:border-success dark:bg-success-soft">Acquis</button>
             </div>
           </template>
         </template>
 
         <!-- ASSOCIATION -->
         <template v-else-if="setType === 'association'">
-          <p class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ current.payload.title || 'Associez chaque élément' }}</p>
+          <p class="text-sm font-bold text-ink dark:text-ink-subtle">{{ current.payload.title || 'Associez chaque élément' }}</p>
           <div class="space-y-2">
             <div v-for="(left, i) in leftItems" :key="i" class="flex items-center gap-2">
-              <span class="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{{ left }}</span>
-              <span class="text-slate-400">→</span>
-              <select v-model="matches[left]" :disabled="phase === 'feedback'" class="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+              <span class="flex-1 text-sm font-medium text-ink dark:text-ink-subtle truncate">{{ left }}</span>
+              <span class="text-ink-subtle">→</span>
+              <select v-model="matches[left]" :disabled="phase === 'feedback'" class="flex-1 px-3 py-2 text-sm rounded-xl border border-line dark:border-line bg-surface dark:bg-surface-soft">
                 <option value="">—</option>
                 <option v-for="r in rightOptions" :key="r" :value="r">{{ r }}</option>
               </select>
             </div>
           </div>
-          <button v-if="phase === 'answer'" @click="submitAssoc" :disabled="!allMatched" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">Valider</button>
-          <p v-else class="text-sm font-bold" :class="lastCorrect ? 'text-emerald-600' : 'text-rose-500'">
+          <button v-if="phase === 'answer'" @click="submitAssoc" :disabled="!allMatched" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50">Valider</button>
+          <p v-else class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
             {{ lastCorrect ? 'Tout est correct !' : 'Des associations sont erronées.' }}
           </p>
         </template>
 
         <!-- ORDRE -->
         <template v-else-if="setType === 'ordre'">
-          <p class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ current.payload.title || 'Remettez dans le bon ordre' }}</p>
+          <p class="text-sm font-bold text-ink dark:text-ink-subtle">{{ current.payload.title || 'Remettez dans le bon ordre' }}</p>
           <ul class="space-y-2">
-            <li v-for="(step, i) in ordering" :key="step" class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-              <span class="text-xs font-bold text-slate-400 w-5">{{ i + 1 }}</span>
-              <span class="flex-1 text-sm text-slate-700 dark:text-slate-300">{{ step }}</span>
+            <li v-for="(step, i) in ordering" :key="step" class="flex items-center gap-2 p-2.5 rounded-xl border border-line dark:border-line">
+              <span class="text-xs font-bold text-ink-subtle w-5">{{ i + 1 }}</span>
+              <span class="flex-1 text-sm text-ink dark:text-ink-subtle">{{ step }}</span>
               <div v-if="phase === 'answer'" class="flex flex-col">
-                <button @click="move(i, -1)" :disabled="i === 0" class="text-slate-400 hover:text-indigo-600 disabled:opacity-30 leading-none">▲</button>
-                <button @click="move(i, 1)" :disabled="i === ordering.length - 1" class="text-slate-400 hover:text-indigo-600 disabled:opacity-30 leading-none">▼</button>
+                <button @click="move(i, -1)" :disabled="i === 0" class="text-ink-subtle hover:text-primary disabled:opacity-30 leading-none">▲</button>
+                <button @click="move(i, 1)" :disabled="i === ordering.length - 1" class="text-ink-subtle hover:text-primary disabled:opacity-30 leading-none">▼</button>
               </div>
-              <span v-else class="w-4 text-center" :class="step === (current.payload.steps || [])[i] ? 'text-emerald-500' : 'text-rose-500'">
+              <span v-else class="w-4 text-center" :class="step === (current.payload.steps || [])[i] ? 'text-success' : 'text-danger'">
                 {{ step === (current.payload.steps || [])[i] ? '✓' : '✕' }}
               </span>
             </li>
           </ul>
-          <button v-if="phase === 'answer'" @click="submitOrdre" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700">Valider</button>
-          <p v-else class="text-sm font-bold" :class="lastCorrect ? 'text-emerald-600' : 'text-rose-500'">
+          <button v-if="phase === 'answer'" @click="submitOrdre" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong">Valider</button>
+          <p v-else class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
             {{ lastCorrect ? 'Ordre correct !' : 'Ordre incorrect.' }}
           </p>
         </template>
 
         <!-- Bouton suivant (après correction / révélation auto-corrigée) -->
-        <button v-if="phase === 'feedback'" @click="next" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-slate-800 dark:bg-slate-700 hover:bg-slate-900">
+        <button v-if="phase === 'feedback'" @click="next" class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong">
           {{ index + 1 < items.length ? 'Suivant' : 'Terminer' }}
         </button>
       </div>
