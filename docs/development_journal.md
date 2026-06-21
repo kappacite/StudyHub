@@ -1,5 +1,20 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Fix fonctionnel — créer un diagramme depuis la Bibliothèque
+
+**Symptôme** : aucun moyen de créer un diagramme.
+
+**Cause racine** : l'éditeur `/diagrams` possède bien un bouton « Nouveau diagramme », mais il
+était **inatteignable** : la nav pointe vers la Bibliothèque, dont le menu « Ajouter » ne proposait
+que Sous-dossier / Élément existant / Note (pas Diagramme), et la section Diagrammes vide n'offrait
+aucune création. De plus, cliquer un diagramme existant routait vers `/diagrams` **sans son id**
+(ouvrait le premier, pas le bon).
+
+**Fix** (`Binders.vue`) : entrée « Diagramme » ajoutée au menu « Ajouter » → `addDiagram()` crée un
+diagramme rattaché au dossier courant (`binder_id` résolu côté service) puis ouvre l'éditeur via
+`/diagrams?id=…`. Clic sur un diagramme existant corrigé pour passer son id. Build + Vitest 66 verts.
+
+
 ## [2026-06-22] Fix fonctionnel — création de la première classe (œuf/poule)
 
 **Symptôme** : aucun moyen de créer une classe.
