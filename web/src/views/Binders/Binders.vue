@@ -1,641 +1,365 @@
 <template>
-  <div class="space-y-6 animate-fade-in">
-    <!-- Header with Breadcrumbs and actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <!-- Breadcrumb navigation -->
-      <div class="flex items-center gap-1.5 text-sm font-semibold">
-        <button 
-          @click="currentBinderId = null" 
-          class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1"
-        >
-          <FolderClosed class="w-4 h-4" />
-          Racine
-        </button>
-        
-        <template v-for="(crumb, idx) in breadcrumbs" :key="crumb.id">
-          <ChevronRight class="w-4 h-4 text-slate-400" />
-          <button 
-            @click="currentBinderId = crumb.id" 
-            class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
-            :class="[idx === breadcrumbs.length - 1 ? 'text-slate-800 dark:text-white font-bold pointer-events-none' : '']"
-          >
-            {{ crumb.name }}
-          </button>
-        </template>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-3">
+  <PageContainer size="wide">
+    <PageHeader title="Bibliothèque" :breadcrumbs="breadcrumbItems">
+      <template #actions>
         <template v-if="isOwner">
-          <button
-            v-if="currentBinderId !== null"
-            @click="router.push(`/revision/binders/${currentBinderId}/stats`)"
-            class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-850 transition-all active:scale-95"
-          >
-            <BarChart3 class="w-4 h-4" />
+          <BaseButton v-if="currentBinderId !== null" variant="secondary" size="sm" @click="router.push(`/revision/binders/${currentBinderId}/stats`)">
+            <template #icon><BarChart3 class="w-4 h-4" /></template>
             Stats
-          </button>
-          <button
+          </BaseButton>
+          <BaseButton
             v-if="currentBinderId !== null"
+            :variant="currentBinder?.is_public ? 'soft' : 'secondary'"
+            size="sm"
             @click="openShareModal"
-            class="inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-semibold transition-all active:scale-95"
-            :class="[
-              currentBinder?.is_public 
-                ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:border-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' 
-                : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-350'
-            ]"
           >
-            <Globe class="w-4 h-4" />
+            <template #icon><Globe class="w-4 h-4" /></template>
             {{ currentBinder?.is_public ? 'Public' : 'Partager' }}
-          </button>
-          <button
+          </BaseButton>
+          <BaseButton
             v-if="currentBinderId !== null"
+            :variant="isSharedToClass ? 'soft' : 'secondary'"
+            size="sm"
             @click="openClassShareModal"
-            class="inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-semibold transition-all active:scale-95"
-            :class="[
-              isSharedToClass
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:border-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
-                : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-350'
-            ]"
           >
-            <GraduationCap class="w-4 h-4" />
+            <template #icon><GraduationCap class="w-4 h-4" /></template>
             {{ isSharedToClass ? `Partagé (${sharedClasses.length})` : 'Classe' }}
-          </button>
+          </BaseButton>
 
           <div class="relative">
-            <button
-              @click="showAddMenu = !showAddMenu"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15"
-            >
-              <Plus class="w-4 h-4" />
+            <BaseButton size="sm" @click="showAddMenu = !showAddMenu">
+              <template #icon><Plus class="w-4 h-4" /></template>
               Ajouter
               <ChevronDown class="w-4 h-4" />
-            </button>
-
+            </BaseButton>
             <template v-if="showAddMenu">
               <div class="fixed inset-0 z-10" @click="showAddMenu = false"></div>
-              <div class="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl z-20 p-1.5 animate-scale-up">
-                <button v-for="item in addMenu" :key="item.label" @click="item.action" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
-                  <component :is="item.icon" class="w-4 h-4 text-indigo-500 shrink-0" />
+              <div class="absolute right-0 mt-2 w-60 bg-surface border border-line rounded-2xl shadow-elev-3 z-20 p-1.5 animate-pop-in">
+                <button v-for="item in addMenu" :key="item.label" @click="item.action" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-ink hover:bg-surface-soft transition-colors text-left">
+                  <component :is="item.icon" class="w-4 h-4 text-primary shrink-0" />
                   {{ item.label }}
                 </button>
               </div>
             </template>
           </div>
         </template>
-        <template v-else>
-          <button 
-            @click="cloneBinder"
-            :disabled="cloning"
-            class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15 disabled:opacity-50"
-          >
-            <Loader2 v-if="cloning" class="w-4 h-4 animate-spin" />
-            <Copy v-else class="w-4 h-4" />
-            {{ cloning ? 'Copie en cours...' : 'Créer une copie personnelle' }}
-          </button>
-        </template>
-      </div>
-    </div>
+        <BaseButton v-else :loading="cloning" @click="cloneBinder">
+          <template #icon><Copy class="w-4 h-4" /></template>
+          {{ cloning ? 'Copie en cours...' : 'Créer une copie personnelle' }}
+        </BaseButton>
+      </template>
 
-    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filtrer</span>
+      <template #tabs>
+        <Tabs v-model="activeType" :tabs="contentTabs" />
+      </template>
+    </PageHeader>
+
+    <!-- Filtre par tags -->
+    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface p-3">
+      <span class="text-xs font-bold uppercase tracking-wider text-ink-subtle">Filtrer</span>
       <button
         type="button"
-        class="rounded-xl px-3 py-1.5 text-xs font-bold"
-        :class="selectedTagId === null ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+        class="rounded-full px-3 py-1.5 text-xs font-bold transition-colors"
+        :class="selectedTagId === null ? 'bg-primary text-white' : 'bg-surface-soft text-ink-muted'"
         @click="filterByTag(null)"
-      >
-        Tous
-      </button>
+      >Tous</button>
       <button
         v-for="tag in tagsStore.tags"
         :key="tag.id"
         type="button"
-        class="rounded-xl px-3 py-1.5 text-xs font-bold"
-        :style="selectedTagId === tag.id ? { backgroundColor: tag.color || '#4F46E5', color: '#fff' } : undefined"
-        :class="selectedTagId === tag.id ? '' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+        class="rounded-full px-3 py-1.5 text-xs font-bold transition-colors"
+        :style="selectedTagId === tag.id ? { backgroundColor: tag.color || '#F06292', color: '#fff' } : undefined"
+        :class="selectedTagId === tag.id ? '' : 'bg-surface-soft text-ink-muted'"
         @click="filterByTag(tag.id)"
-      >
-        {{ tag.name }}
-      </button>
+      >{{ tag.name }}</button>
     </div>
 
-    <!-- Read only / Follow class warning banner -->
-    <div v-if="!isOwner" class="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-850 dark:text-amber-300">
+    <!-- Bandeau lecture seule -->
+    <div v-if="!isOwner" class="p-4 bg-warning-soft border border-warning/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-warning">
       <div class="flex items-center gap-2">
-        <Eye class="w-5 h-5 text-amber-500 flex-shrink-0" />
-        <span class="text-xs font-semibold">Vous visualisez ce dossier en lecture seule (cours suivi). Pour le modifier, veuillez créer une copie personnelle.</span>
+        <Eye class="w-5 h-5 shrink-0" />
+        <span class="text-xs font-semibold text-ink-muted">Vous visualisez ce dossier en lecture seule (cours suivi). Pour le modifier, créez une copie personnelle.</span>
       </div>
-      <button 
-        @click="cloneBinder"
-        :disabled="cloning"
-        class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-      >
-        <Loader2 v-if="cloning" class="w-3.5 h-3.5 animate-spin" />
-        <Copy v-else class="w-3.5 h-3.5" />
+      <BaseButton variant="soft" size="sm" :loading="cloning" @click="cloneBinder">
+        <template #icon><Copy class="w-3.5 h-3.5" /></template>
         Créer une copie
-      </button>
+      </BaseButton>
     </div>
 
-    <!-- Loading state -->
+    <!-- Loading -->
     <div v-if="bindersStore.loading" class="flex flex-col items-center justify-center py-20 gap-3">
-      <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      <span class="text-sm font-semibold text-slate-400 uppercase tracking-widest">Chargement...</span>
+      <span class="text-sm font-semibold text-ink-subtle uppercase tracking-widest">Chargement...</span>
     </div>
 
-    <div v-else class="space-y-8">
-      <!-- Direct Subfolders Section -->
-      <div>
-        <h3 class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Dossiers ({{ currentSubBinders.length }})</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div 
-            v-for="folder in currentSubBinders" 
-            :key="folder.id"
-            class="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-500/30 dark:hover:border-indigo-500/30 shadow-sm transition-all duration-200 group cursor-pointer"
-            @click="currentBinderId = folder.id"
-          >
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <FolderClosed class="w-5 h-5 fill-indigo-100 dark:fill-indigo-950/20" />
-              </div>
+    <SplitView v-else>
+      <!-- Colonne gauche : arbre des dossiers -->
+      <template #left>
+        <BaseCard padding="sm">
+          <div class="flex items-center justify-between mb-2 px-1">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-ink-subtle">Dossiers</h3>
+            <button v-if="isOwner" @click="openCreateModal" class="p-1 rounded-lg text-primary hover:bg-primary-soft transition-colors" title="Nouveau dossier">
+              <FolderPlus class="w-4 h-4" />
+            </button>
+          </div>
+          <div class="space-y-1">
+            <ListRow
+              v-for="folder in currentSubBinders"
+              :key="folder.id"
+              interactive
+              class="group"
+              @click="goTo(folder.id)"
+            >
+              <template #leading>
+                <div class="w-9 h-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
+                  <FolderClosed class="w-4.5 h-4.5" />
+                </div>
+              </template>
               <div class="min-w-0">
-                <span class="font-bold truncate text-sm text-slate-800 dark:text-slate-200">{{ folder.name }}</span>
-                <span v-if="folder.read_only" class="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">Cours</span>
+                <span class="font-semibold text-sm text-ink truncate block">{{ folder.name }}</span>
+                <span v-if="folder.read_only" class="text-[9px] font-bold uppercase tracking-wide text-warning">Cours</span>
                 <div v-if="folder.tags?.length" class="mt-1 flex flex-wrap gap-1">
                   <TagBadge v-for="tag in folder.tags" :key="tag.id" :tag="tag" />
                 </div>
               </div>
-            </div>
-            
-            <button 
-              v-if="isOwner"
-              @click.stop="confirmDelete(folder)" 
-              class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
-              title="Supprimer"
-            >
-              <Trash2 class="w-4 h-4" />
-            </button>
-          </div>
-
-          <div 
-            v-if="currentSubBinders.length === 0" 
-            class="col-span-full border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center text-slate-400"
-          >
-            <FolderClosed class="w-8 h-8 text-slate-300 dark:text-slate-700 mb-2" />
-            <p class="text-xs font-semibold uppercase tracking-wider">Aucun sous-dossier</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Associated Contents Section -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Associated Notes -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2 mb-4">
-            <FileText class="w-4 h-4 text-indigo-500" />
-            Notes associées ({{ currentNotes.length }})
-          </h3>
-          
-          <div class="space-y-3">
-            <div 
-              v-for="note in currentNotes" 
-              :key="note.id"
-              class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-slate-200 transition-colors cursor-pointer group"
-              @click="router.push(`/notes/${note.id}`)"
-            >
-              <div class="min-w-0">
-                <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">
-                  {{ note.title }}
-                  <span v-if="note.read_only" class="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">Cours · lecture seule</span>
-                </p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Mis à jour il y a 2h</p>
-              </div>
-              <div class="flex items-center gap-1 shrink-0">
+              <template #trailing>
                 <button
                   v-if="isOwner"
-                  @click.stop="detachItem('note', note.id)"
-                  class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all"
-                  title="Retirer du classeur (sans supprimer)"
+                  @click.stop="confirmDelete(folder)"
+                  class="opacity-0 group-hover:opacity-100 p-1.5 text-ink-subtle hover:text-danger rounded-lg hover:bg-danger-soft transition-all"
+                  title="Supprimer"
                 >
-                  <FolderMinus class="w-4 h-4" />
+                  <Trash2 class="w-4 h-4" />
                 </button>
-                <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-            <div
-              v-if="currentNotes.length === 0"
-              class="text-center py-8 text-slate-400 text-xs font-semibold uppercase tracking-wider"
-            >
-              Aucune note dans ce dossier
-            </div>
+              </template>
+            </ListRow>
+            <p v-if="currentSubBinders.length === 0" class="text-center py-6 text-ink-subtle text-xs font-semibold uppercase tracking-wider">
+              Aucun sous-dossier
+            </p>
           </div>
-        </div>
+        </BaseCard>
+      </template>
 
-        <!-- Jeux de révision -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
-              <Layers class="w-4 h-4 text-indigo-500" />
+      <!-- Colonne droite : contenu typé -->
+      <template #right>
+        <div class="space-y-6">
+          <!-- Notes -->
+          <BaseCard v-if="showSection('notes')">
+            <h3 class="font-bold text-sm text-ink flex items-center gap-2 mb-3">
+              <FileText class="w-4 h-4 text-cat-note" />
+              Notes ({{ currentNotes.length }})
+            </h3>
+            <div class="space-y-1">
+              <ListRow
+                v-for="note in currentNotes"
+                :key="note.id"
+                interactive
+                class="group"
+                :title="note.title"
+                @click="router.push(`/notes/${note.id}`)"
+              >
+                <template #leading><div class="w-9 h-9 rounded-xl bg-cat-note-soft text-cat-note flex items-center justify-center"><FileText class="w-4.5 h-4.5" /></div></template>
+                <template #trailing>
+                  <span v-if="note.read_only" class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-warning-soft text-warning">Cours</span>
+                  <button v-if="isOwner" @click.stop="detachItem('note', note.id)" class="opacity-0 group-hover:opacity-100 p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all" title="Retirer du classeur"><FolderMinus class="w-4 h-4" /></button>
+                  <ChevronRight class="w-4 h-4 text-ink-subtle" />
+                </template>
+              </ListRow>
+              <p v-if="currentNotes.length === 0" class="text-center py-6 text-ink-subtle text-xs font-semibold uppercase tracking-wider">Aucune note</p>
+            </div>
+          </BaseCard>
+
+          <!-- Decks -->
+          <BaseCard v-if="showSection('decks')">
+            <h3 class="font-bold text-sm text-ink flex items-center gap-2 mb-3">
+              <Layers class="w-4 h-4 text-cat-deck" />
               Jeux de révision ({{ currentDecks.length }})
             </h3>
-          </div>
-
-          <div class="space-y-3">
-            <div
-              v-for="deck in currentDecks"
-              :key="deck.id"
-              class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-slate-200 transition-colors cursor-pointer group"
-              @click="router.push(`/decks/${deck.id}/study`)"
-            >
-              <div class="min-w-0">
-                <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">{{ deck.name }}</p>
-                <p class="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wider mt-0.5">
-                  {{ deck.card_count }} item(s)
-                </p>
-              </div>
-              <div class="flex items-center gap-1">
-                <button
-                  v-if="isOwner"
-                  @click.stop="detachItem('deck', deck.id)"
-                  class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all"
-                  title="Retirer du classeur (sans supprimer)"
-                >
-                  <FolderMinus class="w-4 h-4" />
-                </button>
-                <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-            <div
-              v-if="currentDecks.length === 0"
-              class="text-center py-8 text-slate-400 text-xs font-semibold uppercase tracking-wider"
-            >
-              Aucun jeu de révision dans ce dossier
-            </div>
-          </div>
-        </div>
-
-        <!-- Ensembles de révision (QCM, V/F, association, définition, ordre) -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2 mb-4">
-            <FileQuestion class="w-4 h-4 text-indigo-500" />
-            Ensembles de révision ({{ currentSets.length }})
-          </h3>
-
-          <div class="space-y-3">
-            <div
-              v-for="set in currentSets"
-              :key="set.id"
-              class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-200 cursor-pointer group"
-              @click="openSet(set)"
-            >
-              <div class="min-w-0">
-                <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">{{ set.name }}</p>
-                <p class="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wider mt-0.5">
-                  {{ REVISION_TYPE_LABELS[set.type] }} · {{ set.item_count }} item(s)
-                </p>
-              </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <button
-                  @click.stop="router.push(`/revision/sets/${set.id}/stats`)"
-                  class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
-                  title="Statistiques"
-                >
-                  <BarChart3 class="w-4 h-4" />
-                </button>
-                <button
-                  v-if="isOwner"
-                  @click.stop="detachItem('set', set.id)"
-                  class="p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                  title="Retirer du classeur (sans supprimer)"
-                >
-                  <FolderMinus class="w-4 h-4" />
-                </button>
-                <span class="text-xs font-bold text-indigo-600 flex items-center gap-1">
-                  {{ set.type === 'qcm' ? 'Lancer' : 'Étudier' }}
-                  <ChevronRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </div>
-            </div>
-
-            <div
-              v-if="currentSets.length === 0"
-              class="text-center py-8 text-slate-400 text-xs font-semibold uppercase tracking-wider"
-            >
-              Aucun ensemble de révision dans ce dossier
-            </div>
-          </div>
-        </div>
-
-        <!-- Diagrammes associés -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2 mb-4">
-            <Activity class="w-4 h-4 text-indigo-500" />
-            Diagrammes associés ({{ currentDiagrams.length }})
-          </h3>
-
-          <div class="space-y-3">
-            <div
-              v-for="diagram in currentDiagrams"
-              :key="diagram.id"
-              class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-200 cursor-pointer group"
-              @click="router.push('/diagrams')"
-            >
-              <div class="flex items-center gap-3 min-w-0">
-                <Activity class="w-4 h-4 text-slate-400 shrink-0" />
-                <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">{{ diagram.title || 'Diagramme sans titre' }}</p>
-              </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <button
-                  v-if="isOwner"
-                  @click.stop="detachItem('diagram', diagram.id)"
-                  class="p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                  title="Retirer du classeur (sans supprimer)"
-                >
-                  <FolderMinus class="w-4 h-4" />
-                </button>
-                <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-            <div
-              v-if="currentDiagrams.length === 0"
-              class="text-center py-8 text-slate-400 text-xs font-semibold uppercase tracking-wider"
-            >
-              Aucun diagramme dans ce dossier
-            </div>
-          </div>
-        </div>
-
-        <!-- Documents PDF associés -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <h3 class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2 mb-4">
-            <FileDown class="w-4 h-4 text-indigo-500" />
-            Documents PDF ({{ currentPdfs.length }})
-          </h3>
-
-          <div class="space-y-3">
-            <div
-              v-for="pdf in currentPdfs"
-              :key="pdf.id"
-              class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-200 cursor-pointer group"
-              @click="router.push('/pdfs')"
-            >
-              <div class="flex items-center gap-3 min-w-0">
-                <FileDown class="w-4 h-4 text-slate-400 shrink-0" />
-                <p class="text-sm font-bold truncate text-slate-800 dark:text-slate-200">{{ pdf.name }}</p>
-              </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <button
-                  v-if="isOwner && !pdf.read_only"
-                  @click.stop="detachItem('pdf', pdf.id)"
-                  class="p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                  title="Retirer du classeur (sans supprimer)"
-                >
-                  <FolderMinus class="w-4 h-4" />
-                </button>
-                <ChevronRight class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-
-            <div
-              v-if="currentPdfs.length === 0"
-              class="text-center py-8 text-slate-400 text-xs font-semibold uppercase tracking-wider"
-            >
-              Aucun document PDF dans ce dossier
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Attach Existing Items Modal (C1) -->
-    <div v-if="showAttachModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showAttachModal = false"></div>
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-lg p-6 relative z-10 shadow-2xl animate-scale-up flex flex-col max-h-[80vh]">
-        <h3 class="font-bold text-lg text-slate-800 dark:text-white mb-1">Ajouter un élément existant</h3>
-        <p class="text-xs text-slate-400 mb-4">Déplace des éléments non rangés ou d'un autre classeur vers celui-ci.</p>
-
-        <div class="flex-1 overflow-y-auto -mx-2 px-2 space-y-4">
-          <div v-for="group in attachableGroups" :key="group.type">
-            <p v-if="group.items.length" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{{ group.label }}</p>
-            <label
-              v-for="it in group.items" :key="`${group.type}:${it.id}`"
-              class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
-            >
-              <input type="checkbox" :checked="isSelected(group.type, it.id)" @change="toggleSelect(group.type, it.id)"
-                     class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-              <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{{ it.label }}</span>
-            </label>
-          </div>
-          <p v-if="attachableGroups.every(g => g.items.length === 0)" class="text-center py-8 text-xs text-slate-400 uppercase tracking-wider">
-            Aucun élément disponible à rattacher.
-          </p>
-        </div>
-
-        <div class="flex items-center justify-end gap-3 mt-5">
-          <button @click="showAttachModal = false" class="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Annuler</button>
-          <button
-            @click="confirmAttach"
-            :disabled="selectedCount === 0 || attaching"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
-          >
-            <Loader2 v-if="attaching" class="w-4 h-4 animate-spin" />
-            Ajouter{{ selectedCount ? ` (${selectedCount})` : '' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Create Folder Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 z-50 flex items-center justify-center px-4"
-    >
-      <!-- Backdrop -->
-      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showModal = false"></div>
-      
-      <!-- Modal box -->
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
-        <h3 class="text-lg font-bold mb-4">Créer un nouveau dossier</h3>
-        
-        <form @submit.prevent="createFolder">
-          <div class="space-y-4">
-            <div>
-              <label for="folder-name" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Nom du dossier</label>
-              <input 
-                id="folder-name" 
-                type="text" 
-                required 
-                v-model="newFolderName"
-                placeholder="Ex: Anatomie, Semestre 2..."
-                class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tags</label>
-              <TagSelector v-model="folderTags" />
-            </div>
-          </div>
-
-          <div class="flex items-center justify-end gap-3 mt-6">
-            <button 
-              type="button" 
-              @click="showModal = false"
-              class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
-            >
-              Annuler
-            </button>
-            <button 
-              type="submit"
-              class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              Créer
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Share Folder Modal -->
-    <div 
-      v-if="showShareModal"
-      class="fixed inset-0 z-50 flex items-center justify-center px-4"
-    >
-      <!-- Backdrop -->
-      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showShareModal = false"></div>
-      
-      <!-- Modal box -->
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
-        <h3 class="text-lg font-bold mb-2">Partager sur l'Espace Communautaire</h3>
-        <p class="text-xs text-slate-450 dark:text-slate-500 mb-4">
-          Publiez ce classeur et toutes les ressources qu'il contient (notes, flashcards...) pour les rendre accessibles à la communauté.
-        </p>
-        
-        <form @submit.prevent="saveShareSettings">
-          <div class="space-y-4">
-            <!-- Toggle Visibilité -->
-            <div class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl">
-              <div>
-                <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">Statut de visibilité</label>
-                <span class="text-[10px] text-slate-450">{{ shareIsPublic ? 'Visible sur la Marketplace' : 'Visible uniquement par vous' }}</span>
-              </div>
-              <button 
-                type="button" 
-                @click="shareIsPublic = !shareIsPublic"
-                class="px-3 py-1.5 border rounded-xl text-xs font-bold transition-all active:scale-95"
-                :class="[
-                  shareIsPublic 
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:border-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' 
-                    : 'border-slate-200 dark:border-slate-800 text-slate-500'
-                ]"
+            <div class="space-y-1">
+              <ListRow
+                v-for="deck in currentDecks"
+                :key="deck.id"
+                interactive
+                class="group"
+                :title="deck.name"
+                :subtitle="`${deck.card_count} item(s)`"
+                @click="router.push(`/decks/${deck.id}/study`)"
               >
-                {{ shareIsPublic ? 'Public' : 'Privé' }}
-              </button>
+                <template #leading><div class="w-9 h-9 rounded-xl bg-cat-deck-soft text-cat-deck flex items-center justify-center"><Layers class="w-4.5 h-4.5" /></div></template>
+                <template #trailing>
+                  <button v-if="isOwner" @click.stop="detachItem('deck', deck.id)" class="opacity-0 group-hover:opacity-100 p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all" title="Retirer du classeur"><FolderMinus class="w-4 h-4" /></button>
+                  <ChevronRight class="w-4 h-4 text-ink-subtle" />
+                </template>
+              </ListRow>
+              <p v-if="currentDecks.length === 0" class="text-center py-6 text-ink-subtle text-xs font-semibold uppercase tracking-wider">Aucun jeu de révision</p>
             </div>
+          </BaseCard>
 
-            <!-- Description -->
-            <div>
-              <label for="share-description" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Description</label>
-              <textarea 
-                id="share-description" 
-                v-model="shareDescription"
-                placeholder="Décrivez le contenu de ce dossier..."
-                rows="3"
-                class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
-              ></textarea>
+          <!-- Ensembles de révision -->
+          <BaseCard v-if="showSection('sets')">
+            <h3 class="font-bold text-sm text-ink flex items-center gap-2 mb-3">
+              <FileQuestion class="w-4 h-4 text-cat-set" />
+              Ensembles de révision ({{ currentSets.length }})
+            </h3>
+            <div class="space-y-1">
+              <ListRow
+                v-for="set in currentSets"
+                :key="set.id"
+                interactive
+                class="group"
+                :title="set.name"
+                :subtitle="`${REVISION_TYPE_LABELS[set.type]} · ${set.item_count} item(s)`"
+                @click="openSet(set)"
+              >
+                <template #leading><div class="w-9 h-9 rounded-xl bg-cat-set-soft text-cat-set flex items-center justify-center"><FileQuestion class="w-4.5 h-4.5" /></div></template>
+                <template #trailing>
+                  <button @click.stop="router.push(`/revision/sets/${set.id}/stats`)" class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft" title="Statistiques"><BarChart3 class="w-4 h-4" /></button>
+                  <button v-if="isOwner" @click.stop="detachItem('set', set.id)" class="p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft" title="Retirer du classeur"><FolderMinus class="w-4 h-4" /></button>
+                  <ChevronRight class="w-4 h-4 text-ink-subtle" />
+                </template>
+              </ListRow>
+              <p v-if="currentSets.length === 0" class="text-center py-6 text-ink-subtle text-xs font-semibold uppercase tracking-wider">Aucun ensemble de révision</p>
             </div>
+          </BaseCard>
 
-            <!-- Tags -->
-            <div>
-              <label for="share-tags" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Mots-clés (tags, séparés par virgules)</label>
-              <input 
-                id="share-tags" 
-                type="text" 
-                v-model="shareTags"
-                placeholder="Ex: Chimie, Médecine, Semestre 1"
-                class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
-              />
+          <!-- Diagrammes -->
+          <BaseCard v-if="showSection('diagrams')">
+            <h3 class="font-bold text-sm text-ink flex items-center gap-2 mb-3">
+              <Activity class="w-4 h-4 text-cat-diagram" />
+              Diagrammes ({{ currentDiagrams.length }})
+            </h3>
+            <div class="space-y-1">
+              <ListRow
+                v-for="diagram in currentDiagrams"
+                :key="diagram.id"
+                interactive
+                class="group"
+                :title="diagram.title || 'Diagramme sans titre'"
+                @click="router.push('/diagrams')"
+              >
+                <template #leading><div class="w-9 h-9 rounded-xl bg-cat-diagram-soft text-cat-diagram flex items-center justify-center"><Activity class="w-4.5 h-4.5" /></div></template>
+                <template #trailing>
+                  <button v-if="isOwner" @click.stop="detachItem('diagram', diagram.id)" class="opacity-0 group-hover:opacity-100 p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all" title="Retirer du classeur"><FolderMinus class="w-4 h-4" /></button>
+                  <ChevronRight class="w-4 h-4 text-ink-subtle" />
+                </template>
+              </ListRow>
+              <p v-if="currentDiagrams.length === 0" class="text-center py-6 text-ink-subtle text-xs font-semibold uppercase tracking-wider">Aucun diagramme</p>
             </div>
-          </div>
+          </BaseCard>
 
-          <div class="flex items-center justify-end gap-3 mt-6">
-            <button 
-              type="button" 
-              @click="showShareModal = false"
-              class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
-            >
-              Annuler
-            </button>
-            <button 
-              type="submit"
-              class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all"
-            >
-              Enregistrer
-            </button>
-          </div>
-        </form>
+          <!-- PDF -->
+          <BaseCard v-if="showSection('pdfs')">
+            <h3 class="font-bold text-sm text-ink flex items-center gap-2 mb-3">
+              <FileDown class="w-4 h-4 text-cat-pdf" />
+              Documents PDF ({{ currentPdfs.length }})
+            </h3>
+            <div class="space-y-1">
+              <ListRow
+                v-for="pdf in currentPdfs"
+                :key="pdf.id"
+                interactive
+                class="group"
+                :title="pdf.name"
+                @click="router.push('/pdfs')"
+              >
+                <template #leading><div class="w-9 h-9 rounded-xl bg-cat-pdf-soft text-cat-pdf flex items-center justify-center"><FileDown class="w-4.5 h-4.5" /></div></template>
+                <template #trailing>
+                  <button v-if="isOwner && !pdf.read_only" @click.stop="detachItem('pdf', pdf.id)" class="opacity-0 group-hover:opacity-100 p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all" title="Retirer du classeur"><FolderMinus class="w-4 h-4" /></button>
+                  <ChevronRight class="w-4 h-4 text-ink-subtle" />
+                </template>
+              </ListRow>
+              <p v-if="currentPdfs.length === 0" class="text-center py-6 text-ink-subtle text-xs font-semibold uppercase tracking-wider">Aucun document PDF</p>
+            </div>
+          </BaseCard>
+        </div>
+      </template>
+    </SplitView>
+
+    <!-- Modale : rattacher un élément existant -->
+    <BaseModal :open="showAttachModal" title="Ajouter un élément existant" size="lg" @close="showAttachModal = false">
+      <p class="text-xs text-ink-muted -mt-2 mb-4">Déplace des éléments non rangés ou d'un autre classeur vers celui-ci.</p>
+      <div class="max-h-[55vh] overflow-y-auto -mx-2 px-2 space-y-4">
+        <div v-for="group in attachableGroups" :key="group.type">
+          <p v-if="group.items.length" class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-1.5">{{ group.label }}</p>
+          <label v-for="it in group.items" :key="`${group.type}:${it.id}`" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-soft cursor-pointer">
+            <input type="checkbox" :checked="isSelected(group.type, it.id)" @change="toggleSelect(group.type, it.id)" class="rounded border-line text-primary focus:ring-primary" />
+            <span class="text-sm font-semibold text-ink truncate">{{ it.label }}</span>
+          </label>
+        </div>
+        <p v-if="attachableGroups.every(g => g.items.length === 0)" class="text-center py-8 text-xs text-ink-subtle uppercase tracking-wider">Aucun élément disponible à rattacher.</p>
       </div>
-    </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="showAttachModal = false">Annuler</BaseButton>
+        <BaseButton :disabled="selectedCount === 0" :loading="attaching" @click="confirmAttach">Ajouter{{ selectedCount ? ` (${selectedCount})` : '' }}</BaseButton>
+      </template>
+    </BaseModal>
 
-    <!-- B2 — Partager le classeur à une classe (par référence, auto-actualisé) -->
-    <div v-if="showClassShareModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showClassShareModal = false"></div>
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
-        <h3 class="text-lg font-bold mb-2">Partager ce classeur à une classe</h3>
-        <p class="text-xs text-slate-450 dark:text-slate-500 mb-4">
-          Le classeur est partagé <strong>par référence</strong> : tout élément que vous y ajoutez ensuite
-          devient automatiquement visible des élèves, en lecture seule.
-        </p>
+    <!-- Modale : créer un dossier -->
+    <BaseModal :open="showModal" title="Créer un nouveau dossier" @close="showModal = false">
+      <form @submit.prevent="createFolder" class="space-y-4">
+        <BaseField label="Nom du dossier" for-id="folder-name">
+          <BaseInput id="folder-name" v-model="newFolderName" placeholder="Ex: Anatomie, Semestre 2..." />
+        </BaseField>
+        <BaseField label="Tags">
+          <TagSelector v-model="folderTags" />
+        </BaseField>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <BaseButton type="button" variant="ghost" @click="showModal = false">Annuler</BaseButton>
+          <BaseButton type="submit">Créer</BaseButton>
+        </div>
+      </form>
+    </BaseModal>
 
-        <div v-if="classShareBusy && myClasses.length === 0" class="py-8 text-center text-sm text-slate-400">
-          <Loader2 class="w-5 h-5 animate-spin inline" />
+    <!-- Modale : partage communautaire -->
+    <BaseModal :open="showShareModal" title="Partager sur l'Espace Communautaire" @close="showShareModal = false">
+      <p class="text-xs text-ink-muted -mt-2 mb-4">Publiez ce classeur et ses ressources pour les rendre accessibles à la communauté.</p>
+      <form @submit.prevent="saveShareSettings" class="space-y-4">
+        <div class="flex items-center justify-between p-3.5 bg-surface-soft border border-line rounded-2xl">
+          <div>
+            <span class="block text-xs font-bold text-ink">Statut de visibilité</span>
+            <span class="text-[10px] text-ink-subtle">{{ shareIsPublic ? 'Visible sur la Marketplace' : 'Visible uniquement par vous' }}</span>
+          </div>
+          <BaseButton type="button" size="sm" :variant="shareIsPublic ? 'soft' : 'secondary'" @click="shareIsPublic = !shareIsPublic">
+            {{ shareIsPublic ? 'Public' : 'Privé' }}
+          </BaseButton>
         </div>
-        <div v-else-if="ownedClasses.length === 0" class="py-8 text-center text-sm text-slate-400">
-          Vous n'animez aucune classe pour l'instant.
+        <BaseField label="Description" for-id="share-description">
+          <textarea id="share-description" v-model="shareDescription" rows="3" placeholder="Décrivez le contenu de ce dossier..." class="block w-full px-4 py-3 bg-surface border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm font-medium text-ink"></textarea>
+        </BaseField>
+        <BaseField label="Mots-clés (séparés par des virgules)" for-id="share-tags">
+          <BaseInput id="share-tags" v-model="shareTags" placeholder="Ex: Chimie, Médecine, Semestre 1" />
+        </BaseField>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <BaseButton type="button" variant="ghost" @click="showShareModal = false">Annuler</BaseButton>
+          <BaseButton type="submit">Enregistrer</BaseButton>
         </div>
-        <ul v-else class="space-y-2 max-h-72 overflow-y-auto">
-          <li
-            v-for="c in ownedClasses"
-            :key="c.id"
-            class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl"
-          >
-            <div class="min-w-0">
-              <p class="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{{ c.name }}</p>
-              <span class="text-[10px] text-slate-450">{{ c.members_count }} membre(s)</span>
-            </div>
-            <button
-              type="button"
-              :disabled="classShareBusy"
-              @click="toggleClassShare(c)"
-              class="px-3 py-1.5 border rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-50 shrink-0"
-              :class="[
-                isClassShared(c.id)
-                  ? 'border-indigo-500 bg-indigo-50 text-indigo-600 dark:border-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400'
-                  : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-white dark:hover:bg-slate-800'
-              ]"
-            >
-              {{ isClassShared(c.id) ? 'Partagé ✓' : 'Partager' }}
-            </button>
-          </li>
-        </ul>
+      </form>
+    </BaseModal>
 
-        <div class="flex items-center justify-end mt-6">
-          <button
-            type="button"
-            @click="showClassShareModal = false"
-            class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            Fermer
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+    <!-- Modale : partage à une classe -->
+    <BaseModal :open="showClassShareModal" title="Partager ce classeur à une classe" @close="showClassShareModal = false">
+      <p class="text-xs text-ink-muted -mt-2 mb-4">Le classeur est partagé <strong>par référence</strong> : tout élément ajouté ensuite devient automatiquement visible des élèves, en lecture seule.</p>
+      <div v-if="classShareBusy && myClasses.length === 0" class="py-8 text-center text-sm text-ink-subtle"><Loader2 class="w-5 h-5 animate-spin inline" /></div>
+      <div v-else-if="ownedClasses.length === 0" class="py-8 text-center text-sm text-ink-subtle">Vous n'animez aucune classe pour l'instant.</div>
+      <ul v-else class="space-y-2 max-h-72 overflow-y-auto">
+        <li v-for="c in ownedClasses" :key="c.id" class="flex items-center justify-between p-3 bg-surface-soft border border-line rounded-2xl">
+          <div class="min-w-0">
+            <p class="text-sm font-bold text-ink truncate">{{ c.name }}</p>
+            <span class="text-[10px] text-ink-subtle">{{ c.members_count }} membre(s)</span>
+          </div>
+          <BaseButton size="sm" :variant="isClassShared(c.id) ? 'soft' : 'secondary'" :disabled="classShareBusy" @click="toggleClassShare(c)">
+            {{ isClassShared(c.id) ? 'Partagé ✓' : 'Partager' }}
+          </BaseButton>
+        </li>
+      </ul>
+      <template #footer>
+        <BaseButton variant="ghost" @click="showClassShareModal = false">Fermer</BaseButton>
+      </template>
+    </BaseModal>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
@@ -649,6 +373,8 @@ import { useDecksStore } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
+import { PageContainer, PageHeader, Tabs, SplitView, ListRow, BaseCard, BaseButton, BaseModal, BaseField, BaseInput } from '../../components/ui/base'
+import type { TabItem } from '../../components/ui/base'
 import { useRevisionStore } from '../../stores/revision'
 import type { RevisionType } from '../../stores/revision'
 
@@ -674,6 +400,29 @@ const route = useRoute()
 
 const currentBinderId = ref<string | null>(null)
 
+// ─── Onglets de type de contenu (filtre du dossier courant) ─────────────────
+type ContentType = 'all' | 'notes' | 'decks' | 'sets' | 'diagrams' | 'pdfs'
+function isValidType(v: unknown): v is ContentType {
+  return v === 'all' || v === 'notes' || v === 'decks' || v === 'sets' || v === 'diagrams' || v === 'pdfs'
+}
+const activeType = ref<ContentType>(isValidType(route.query.type) ? route.query.type : 'all')
+function showSection(t: ContentType) {
+  return activeType.value === 'all' || activeType.value === t
+}
+watch(activeType, (t) => {
+  const q = t === 'all' ? undefined : t
+  if (route.query.type !== q) router.replace({ query: { ...route.query, type: q } })
+})
+
+const contentTabs = computed<TabItem[]>(() => [
+  { key: 'all', label: 'Tout' },
+  { key: 'notes', label: 'Notes', badge: currentNotes.value.length || undefined },
+  { key: 'decks', label: 'Decks', badge: currentDecks.value.length || undefined },
+  { key: 'sets', label: 'Ensembles', badge: currentSets.value.length || undefined },
+  { key: 'diagrams', label: 'Diagrammes', badge: currentDiagrams.value.length || undefined },
+  { key: 'pdfs', label: 'PDF', badge: currentPdfs.value.length || undefined },
+])
+
 async function fetchMissingBinder(binderId: string) {
   try {
     const response = await api.get(`/binders/${binderId}`)
@@ -684,6 +433,11 @@ async function fetchMissingBinder(binderId: string) {
   } catch (error) {
     console.error('Erreur lors du chargement du classeur', error)
   }
+}
+
+// Navigation par URL : /bibliotheque/:id — le watch ci-dessous synchronise l'état.
+function goTo(id: string | null) {
+  router.push(id ? `/bibliotheque/${id}` : '/bibliotheque')
 }
 
 watch(() => route.params.id, (newId) => {
@@ -703,12 +457,8 @@ const newFolderName = ref('')
 const folderTags = ref<Tag[]>([])
 const selectedTagId = ref<number | null>(null)
 
-// Menu d'ajout unifié
 const showAddMenu = ref(false)
 
-// La création d'éléments de révision (cartes, QCM, V/F, définition, ordre,
-// association) se fait désormais depuis le menu Révisions. Ici on n'organise que
-// le classeur : créer des sous-dossiers, des notes, et rattacher des éléments existants.
 const addMenu = [
   { label: 'Sous-dossier', icon: FolderPlus, action: () => closeMenuThen(openCreateModal) },
   { label: 'Élément existant', icon: FolderInput, action: () => closeMenuThen(openAttachModal) },
@@ -725,13 +475,11 @@ async function addNote() {
   router.push(`/notes/${note.id}?edit=true`)
 }
 
-// Refs pour le partage du classeur
 const showShareModal = ref(false)
 const shareIsPublic = ref(false)
 const shareDescription = ref('')
 const shareTags = ref('')
 
-// --- C1 : diagrammes & PDF du classeur (lecture/navigation) --------------------
 interface BinderDiagram { id: number; title: string; binder_id: string | null }
 interface BinderPdf { id: string; name: string; binder_id: string | null; read_only?: boolean }
 const allDiagrams = ref<BinderDiagram[]>([])
@@ -766,41 +514,18 @@ async function filterByTag(tagId: number | null) {
   await bindersStore.fetchBinders(tagId)
 }
 
-// Subfolders of the current binder
-const currentSubBinders = computed(() => {
-  return bindersStore.binders.filter(b => b.parent_id === currentBinderId.value)
-})
-
-// Notes belonging to the current binder
-const currentNotes = computed(() => {
-  return notesStore.notes.filter(n => n.binder_id === currentBinderId.value)
-})
-
-// Decks belonging to the current binder
-const currentDecks = computed(() => {
-  return decksStore.decks.filter(d => d.binder_id === currentBinderId.value)
-})
-
-// Revision sets (qcm/vf/…) belonging to the current binder
-const currentSets = computed(() => {
-  return revisionStore.sets.filter(s => s.binder_id === currentBinderId.value)
-})
-
-// Diagrams & PDFs belonging to the current binder (C1)
-const currentDiagrams = computed(() => {
-  return allDiagrams.value.filter(d => d.binder_id === currentBinderId.value)
-})
-const currentPdfs = computed(() => {
-  return allPdfs.value.filter(p => p.binder_id === currentBinderId.value)
-})
+const currentSubBinders = computed(() => bindersStore.binders.filter(b => b.parent_id === currentBinderId.value))
+const currentNotes = computed(() => notesStore.notes.filter(n => n.binder_id === currentBinderId.value))
+const currentDecks = computed(() => decksStore.decks.filter(d => d.binder_id === currentBinderId.value))
+const currentSets = computed(() => revisionStore.sets.filter(s => s.binder_id === currentBinderId.value))
+const currentDiagrams = computed(() => allDiagrams.value.filter(d => d.binder_id === currentBinderId.value))
+const currentPdfs = computed(() => allPdfs.value.filter(p => p.binder_id === currentBinderId.value))
 
 function openSet(set: { id: number; type: RevisionType }) {
-  // QCM → passage scoré ; autres types → étude générique (révéler/corriger + SM-2).
   const path = set.type === 'qcm' ? 'run' : 'study'
   router.push(`/revision/sets/${set.id}/${path}`)
 }
 
-// --- C1 : rattacher / détacher des éléments existants --------------------------
 const showAttachModal = ref(false)
 const attaching = ref(false)
 const selected = ref<Record<string, { type: BinderItemType; id: number | string }>>({})
@@ -808,26 +533,11 @@ const selected = ref<Record<string, { type: BinderItemType; id: number | string 
 const attachableGroups = computed(() => {
   const cur = currentBinderId.value
   return [
-    {
-      type: 'note' as BinderItemType, label: 'Notes',
-      items: notesStore.notes.filter(n => n.binder_id !== cur && !n.read_only).map(n => ({ id: n.id, label: n.title })),
-    },
-    {
-      type: 'deck' as BinderItemType, label: 'Jeux de révision',
-      items: decksStore.decks.filter(d => d.binder_id !== cur).map(d => ({ id: d.id, label: d.name })),
-    },
-    {
-      type: 'set' as BinderItemType, label: 'Ensembles de révision',
-      items: revisionStore.sets.filter(s => s.binder_id !== cur).map(s => ({ id: s.id, label: s.name })),
-    },
-    {
-      type: 'diagram' as BinderItemType, label: 'Diagrammes',
-      items: allDiagrams.value.filter(d => d.binder_id !== cur).map(d => ({ id: d.id, label: d.title || 'Diagramme sans titre' })),
-    },
-    {
-      type: 'pdf' as BinderItemType, label: 'Documents PDF',
-      items: allPdfs.value.filter(p => p.binder_id !== cur && !p.read_only).map(p => ({ id: p.id, label: p.name })),
-    },
+    { type: 'note' as BinderItemType, label: 'Notes', items: notesStore.notes.filter(n => n.binder_id !== cur && !n.read_only).map(n => ({ id: n.id, label: n.title })) },
+    { type: 'deck' as BinderItemType, label: 'Jeux de révision', items: decksStore.decks.filter(d => d.binder_id !== cur).map(d => ({ id: d.id, label: d.name })) },
+    { type: 'set' as BinderItemType, label: 'Ensembles de révision', items: revisionStore.sets.filter(s => s.binder_id !== cur).map(s => ({ id: s.id, label: s.name })) },
+    { type: 'diagram' as BinderItemType, label: 'Diagrammes', items: allDiagrams.value.filter(d => d.binder_id !== cur).map(d => ({ id: d.id, label: d.title || 'Diagramme sans titre' })) },
+    { type: 'pdf' as BinderItemType, label: 'Documents PDF', items: allPdfs.value.filter(p => p.binder_id !== cur && !p.read_only).map(p => ({ id: p.id, label: p.name })) },
   ]
 })
 
@@ -873,20 +583,19 @@ async function detachItem(type: BinderItemType, id: number | string) {
   }
 }
 
-// Breadcrumbs trace path from root
-const breadcrumbs = computed(() => {
-  if (currentBinderId.value === null) return []
-  
+// Fil d'Ariane (PageHeader) — navigation par URL.
+const breadcrumbItems = computed(() => {
+  const items: { label: string; to?: string }[] = [{ label: 'Racine', to: '/bibliotheque' }]
+  if (currentBinderId.value === null) return items
   const trail: Binder[] = []
   let current = bindersStore.binders.find(b => b.id === currentBinderId.value)
-  
   while (current) {
     trail.unshift(current)
     const parentId = current.parent_id
     current = parentId !== null ? bindersStore.binders.find(b => b.id === parentId) : undefined
   }
-  
-  return trail
+  trail.forEach(b => items.push({ label: b.name, to: `/bibliotheque/${b.id}` }))
+  return items
 })
 
 function openCreateModal() {
@@ -934,7 +643,7 @@ async function cloneBinder() {
     const response = await api.post(`/packages/${currentBinderId.value}/clone`)
     const cloned = response.data
     await bindersStore.fetchBinders()
-    router.push(`/binders/${cloned.id}`)
+    router.push(`/bibliotheque/${cloned.id}`)
   } catch (err) {
     console.error('Erreur lors du clonage du classeur', err)
     alert('Impossible de copier ce classeur.')
@@ -942,7 +651,6 @@ async function cloneBinder() {
     cloning.value = false
   }
 }
-
 
 function openShareModal() {
   if (!currentBinder.value) return
@@ -954,29 +662,21 @@ function openShareModal() {
 
 async function saveShareSettings() {
   if (!currentBinder.value) return
-  const tagsArray = shareTags.value.split(',')
-    .map(t => t.trim())
-    .filter(t => t.length > 0)
-  
+  const tagsArray = shareTags.value.split(',').map(t => t.trim()).filter(t => t.length > 0)
   await bindersStore.updateBinder(currentBinder.value.id, {
     is_public: shareIsPublic.value,
     description: shareDescription.value.trim() || null,
     tags: tagsArray.length > 0 ? tagsArray : null
   })
-  
   showShareModal.value = false
 }
 
-// --- B2 : partager le classeur à une classe (par référence, auto-actualisé) ----
 const showClassShareModal = ref(false)
 const myClasses = ref<ClassInfo[]>([])
 const sharedClasses = ref<BinderClassRef[]>([])
 const classShareBusy = ref(false)
 
-// Classes que l'utilisateur anime (créateur) — seules cibles de partage proposées.
-const ownedClasses = computed(() =>
-  myClasses.value.filter(c => c.created_by === currentUserId.value)
-)
+const ownedClasses = computed(() => myClasses.value.filter(c => c.created_by === currentUserId.value))
 const isSharedToClass = computed(() => sharedClasses.value.length > 0)
 
 async function loadSharedClasses() {
@@ -1024,26 +724,5 @@ async function toggleClassShare(c: ClassInfo) {
   }
 }
 
-// Met à jour l'indicateur « partagé » au changement de classeur.
 watch(currentBinderId, loadSharedClasses, { immediate: true })
 </script>
-
-<style scoped>
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.animate-scale-up {
-  animation: scaleUp 0.15s ease-out forwards;
-}
-</style>
