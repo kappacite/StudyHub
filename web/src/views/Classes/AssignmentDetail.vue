@@ -119,26 +119,38 @@ function getStatusLabel(status: string) {
 }
 
 function getStatusBadgeClass(status: string) {
-  if (status === 'completed') return 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30'
-  if (status === 'in_progress') return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30'
-  return 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800'
+  if (status === 'completed') return 'bg-success-soft text-success border-success/30'
+  if (status === 'in_progress') return 'bg-info-soft text-info border-info/30'
+  return 'bg-surface-soft text-ink-muted border-line'
+}
+
+function getStatusDotClass(status: string) {
+  if (status === 'completed') return 'bg-success'
+  if (status === 'in_progress') return 'bg-info'
+  return 'bg-ink-subtle'
 }
 
 function getScoreColorClass(score: number | null) {
-  if (score === null) return 'text-slate-400'
-  if (score >= 80) return 'text-green-600 dark:text-green-400'
-  if (score >= 50) return 'text-amber-600 dark:text-amber-400'
-  return 'text-red-500'
+  if (score === null) return 'text-ink-subtle'
+  if (score >= 80) return 'text-success'
+  if (score >= 50) return 'text-warning'
+  return 'text-danger'
+}
+
+function getScoreBarClass(score: number) {
+  if (score >= 80) return 'bg-success'
+  if (score >= 50) return 'bg-warning'
+  return 'bg-danger'
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-[#0B0F19] p-6">
-    <!-- Navigation Back -->
+  <div class="min-h-screen bg-app p-6">
+    <!-- Retour -->
     <div class="mb-6">
       <button
-        @click="router.push('/classes/teacher')"
-        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-650 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition"
+        @click="router.push('/classes?tab=teacher')"
+        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-line bg-surface text-ink-muted hover:bg-surface-soft text-xs font-semibold shadow-elev-1 transition"
       >
         <ChevronLeft class="w-4 h-4" />
         Retour à l'Espace Professeur
@@ -147,103 +159,99 @@ function getScoreColorClass(score: number | null) {
 
     <!-- Loading -->
     <div v-if="loading" class="flex items-center justify-center py-20">
-      <Loader2 class="w-8 h-8 text-amber-505 animate-spin text-amber-500" />
+      <Loader2 class="w-8 h-8 text-primary animate-spin" />
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="p-6 bg-red-50 border border-red-150 rounded-2xl dark:bg-red-950/20 dark:border-red-900/30 text-red-600 dark:text-red-400">
+    <div v-else-if="error" class="p-6 bg-danger-soft border border-danger/30 rounded-2xl text-danger">
       <p class="font-semibold flex items-center gap-2">
         <AlertCircle class="w-5 h-5" />
         {{ error }}
       </p>
     </div>
 
-    <!-- Detail Content -->
+    <!-- Contenu -->
     <div v-else-if="assignment" class="space-y-6">
-      <!-- Info Header Card -->
-      <div class="bg-white dark:bg-slate-800/60 rounded-3xl border border-slate-100 dark:border-slate-700/60 shadow-sm p-6 relative overflow-hidden">
-        <div class="absolute -right-10 -top-10 w-36 h-36 bg-amber-500/5 dark:bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
-        
+      <!-- Carte d'en-tête -->
+      <div class="bg-surface rounded-3xl border border-line shadow-elev-1 p-6 relative overflow-hidden">
+        <div class="absolute -right-10 -top-10 w-36 h-36 bg-primary/5 rounded-full blur-2xl pointer-events-none"></div>
+
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div class="space-y-3 max-w-2xl">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/30">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-accent-soft text-accent border border-accent/30">
               <ClipboardList class="w-3 h-3" />
               Détails du Devoir
             </span>
-            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ assignment.title }}</h1>
-            <p v-if="assignment.description" class="text-sm text-slate-500 dark:text-slate-400">{{ assignment.description }}</p>
-            
-            <div class="flex flex-wrap gap-4 text-xs font-medium text-slate-400 pt-1">
+            <h1 class="text-2xl font-bold text-ink">{{ assignment.title }}</h1>
+            <p v-if="assignment.description" class="text-sm text-ink-muted">{{ assignment.description }}</p>
+
+            <div class="flex flex-wrap gap-4 text-xs font-medium text-ink-subtle pt-1">
               <span class="flex items-center gap-1.5">
-                <BookOpen class="w-4 h-4 text-indigo-400" />
-                Classeur : <strong class="text-slate-600 dark:text-slate-350">{{ assignment.binder_name }}</strong>
+                <BookOpen class="w-4 h-4 text-primary" />
+                Classeur : <strong class="text-ink-muted">{{ assignment.binder_name }}</strong>
               </span>
               <span class="flex items-center gap-1.5">
-                <Calendar class="w-4 h-4 text-amber-500" />
-                Limite : <strong class="text-slate-600 dark:text-slate-350">{{ formatDate(assignment.due_date) }}</strong>
+                <Calendar class="w-4 h-4 text-accent" />
+                Limite : <strong class="text-ink-muted">{{ formatDate(assignment.due_date) }}</strong>
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Stats Grid -->
+      <!-- Grille de stats -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Card 1: Total Members -->
-        <div class="bg-white dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-700/60 p-5 shadow-sm flex items-center gap-4">
-          <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0">
+        <div class="bg-surface rounded-2xl border border-line p-5 shadow-elev-1 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-info-soft flex items-center justify-center text-info flex-shrink-0">
             <Users class="w-5 h-5" />
           </div>
           <div>
-            <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Élèves</span>
-            <h4 class="text-2xl font-black mt-0.5 text-slate-800 dark:text-white">{{ totalStudents }}</h4>
+            <span class="text-ink-subtle text-xs font-semibold uppercase tracking-wider">Total Élèves</span>
+            <h4 class="text-2xl font-black mt-0.5 text-ink">{{ totalStudents }}</h4>
           </div>
         </div>
 
-        <!-- Card 2: Completed -->
-        <div class="bg-white dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-700/60 p-5 shadow-sm flex items-center gap-4">
-          <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600 dark:text-green-400 flex-shrink-0">
+        <div class="bg-surface rounded-2xl border border-line p-5 shadow-elev-1 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center text-success flex-shrink-0">
             <CheckCircle2 class="w-5 h-5" />
           </div>
           <div>
-            <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Devoirs Remplis</span>
-            <h4 class="text-2xl font-black mt-0.5 text-slate-800 dark:text-white">{{ completedStudentsCount }}</h4>
+            <span class="text-ink-subtle text-xs font-semibold uppercase tracking-wider">Devoirs Remplis</span>
+            <h4 class="text-2xl font-black mt-0.5 text-ink">{{ completedStudentsCount }}</h4>
           </div>
         </div>
 
-        <!-- Card 3: Completion Rate -->
-        <div class="bg-white dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-700/60 p-5 shadow-sm flex items-center gap-4">
-          <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400 flex-shrink-0">
+        <div class="bg-surface rounded-2xl border border-line p-5 shadow-elev-1 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-accent-soft flex items-center justify-center text-accent flex-shrink-0">
             <BarChart3 class="w-5 h-5" />
           </div>
           <div>
-            <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider font-medium">Taux de Complétion</span>
-            <h4 class="text-2xl font-black mt-0.5 text-slate-800 dark:text-white">{{ completionRate }}%</h4>
+            <span class="text-ink-subtle text-xs font-semibold uppercase tracking-wider">Taux de Complétion</span>
+            <h4 class="text-2xl font-black mt-0.5 text-ink">{{ completionRate }}%</h4>
           </div>
         </div>
 
-        <!-- Card 4: Average Score -->
-        <div class="bg-white dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-700/60 p-5 shadow-sm flex items-center gap-4">
-          <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 flex-shrink-0">
+        <div class="bg-surface rounded-2xl border border-line p-5 shadow-elev-1 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center text-primary flex-shrink-0">
             <Award class="w-5 h-5" />
           </div>
           <div>
-            <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Moyenne de Classe</span>
-            <h4 class="text-2xl font-black mt-0.5 text-slate-800 dark:text-white">
+            <span class="text-ink-subtle text-xs font-semibold uppercase tracking-wider">Moyenne de Classe</span>
+            <h4 class="text-2xl font-black mt-0.5 text-ink">
               {{ averageScore !== null ? `${averageScore}%` : '—' }}
             </h4>
           </div>
         </div>
       </div>
 
-      <!-- Students Progress Table -->
-      <div class="bg-white dark:bg-slate-800/60 rounded-3xl border border-slate-100 dark:border-slate-700/60 shadow-sm p-6 overflow-hidden">
-        <h3 class="font-bold text-slate-850 dark:text-white text-lg flex items-center gap-2 mb-6">
-          <Users class="w-5 h-5 text-amber-500" />
+      <!-- Table de progression -->
+      <div class="bg-surface rounded-3xl border border-line shadow-elev-1 p-6 overflow-hidden">
+        <h3 class="font-bold text-ink text-lg flex items-center gap-2 mb-6">
+          <Users class="w-5 h-5 text-primary" />
           Progression Individuelle
         </h3>
 
-        <div v-if="students.length === 0" class="text-center py-16 text-slate-400 dark:text-slate-650">
+        <div v-if="students.length === 0" class="text-center py-16 text-ink-subtle">
           <Users class="w-12 h-12 mx-auto mb-3 opacity-30" />
           Aucun élève n'a rejoint cette classe pour l'instant.
         </div>
@@ -251,7 +259,7 @@ function getScoreColorClass(score: number | null) {
         <div v-else class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="border-b border-slate-100 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-400">
+              <tr class="border-b border-line text-xs font-bold uppercase tracking-wider text-ink-subtle">
                 <th class="py-3 px-4">Élève</th>
                 <th class="py-3 px-4">Statut</th>
                 <th class="py-3 px-4">Cartes révisées</th>
@@ -260,38 +268,32 @@ function getScoreColorClass(score: number | null) {
                 <th class="py-3 px-4">Rendu le</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-50 dark:divide-slate-700/50">
+            <tbody class="divide-y divide-line-soft">
               <tr
                 v-for="student in students"
                 :key="student.user_id"
-                class="hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition"
+                class="hover:bg-surface-soft transition"
               >
-                <!-- Name -->
-                <td class="py-4 px-4 font-semibold text-sm text-slate-800 dark:text-white">
+                <!-- Nom -->
+                <td class="py-4 px-4 font-semibold text-sm text-ink">
                   {{ student.username }}
                 </td>
 
-                <!-- Status -->
+                <!-- Statut -->
                 <td class="py-4 px-4">
                   <span
                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border"
                     :class="getStatusBadgeClass(getStudentStatus(student))"
                   >
-                    <span
-                      class="w-1.5 h-1.5 rounded-full"
-                      :class="[
-                        getStudentStatus(student) === 'completed' ? 'bg-green-500' :
-                        getStudentStatus(student) === 'in_progress' ? 'bg-blue-500' : 'bg-slate-400'
-                      ]"
-                    ></span>
+                    <span class="w-1.5 h-1.5 rounded-full" :class="getStatusDotClass(getStudentStatus(student))"></span>
                     {{ getStatusLabel(getStudentStatus(student)) }}
                   </span>
                 </td>
 
-                <!-- Cards Reviewed -->
-                <td class="py-4 px-4 text-xs font-semibold text-slate-550 dark:text-slate-400">
+                <!-- Cartes révisées -->
+                <td class="py-4 px-4 text-xs font-semibold text-ink-muted">
                   <span class="flex items-center gap-1.5">
-                    <BookOpen class="w-3.5 h-3.5 text-indigo-400" />
+                    <BookOpen class="w-3.5 h-3.5 text-primary" />
                     {{ student.cards_reviewed }} cartes
                   </span>
                 </td>
@@ -299,57 +301,50 @@ function getScoreColorClass(score: number | null) {
                 <!-- Score -->
                 <td class="py-4 px-4">
                   <div class="flex items-center gap-2">
-                    <span
-                      class="text-sm font-bold"
-                      :class="getScoreColorClass(student.score_pct)"
-                    >
+                    <span class="text-sm font-bold" :class="getScoreColorClass(student.score_pct)">
                       {{ student.score_pct !== null ? `${Math.round(student.score_pct)}%` : '—' }}
                     </span>
-                    <!-- Miniature progress bar -->
-                    <div v-if="student.score_pct !== null" class="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                    <div v-if="student.score_pct !== null" class="w-16 h-1.5 rounded-full bg-surface-soft overflow-hidden">
                       <div
                         class="h-full rounded-full transition-all"
-                        :class="[
-                          student.score_pct >= 80 ? 'bg-green-500' :
-                          student.score_pct >= 50 ? 'bg-amber-500' : 'bg-red-500'
-                        ]"
+                        :class="getScoreBarClass(student.score_pct)"
                         :style="{ width: student.score_pct + '%' }"
                       ></div>
                     </div>
                   </div>
                 </td>
 
-                <!-- Teacher grade -->
+                <!-- Note prof -->
                 <td class="py-4 px-4">
                   <div class="flex items-center gap-1.5">
                     <input
                       v-model.number="gradeFor(student.user_id).score"
                       type="number" min="0" max="100" placeholder="—"
-                      class="w-16 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      class="w-16 px-2 py-1 rounded-lg border border-line bg-surface-soft text-ink text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                     <input
                       v-model="gradeFor(student.user_id).feedback"
                       type="text" placeholder="Commentaire…"
-                      class="w-28 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      class="w-28 px-2 py-1 rounded-lg border border-line bg-surface-soft text-ink text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                     <button
                       @click="saveGrade(student)" :disabled="savingId === student.user_id"
-                      class="p-1.5 rounded-lg text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition flex-shrink-0"
+                      class="p-1.5 rounded-lg text-ink-subtle hover:text-success hover:bg-success-soft transition flex-shrink-0"
                       :title="student.graded_at ? 'Note enregistrée' : 'Enregistrer la note'"
                     >
                       <Loader2 v-if="savingId === student.user_id" class="w-4 h-4 animate-spin" />
-                      <Check v-else class="w-4 h-4" :class="student.graded_at ? 'text-green-500' : ''" />
+                      <Check v-else class="w-4 h-4" :class="student.graded_at ? 'text-success' : ''" />
                     </button>
                   </div>
                 </td>
 
-                <!-- Completed At -->
-                <td class="py-4 px-4 text-xs font-semibold text-slate-450 dark:text-slate-400">
+                <!-- Rendu le -->
+                <td class="py-4 px-4 text-xs font-semibold text-ink-subtle">
                   <span v-if="student.completed_at" class="flex items-center gap-1.5">
-                    <Clock class="w-3.5 h-3.5 text-slate-400" />
+                    <Clock class="w-3.5 h-3.5 text-ink-subtle" />
                     {{ formatSimpleDate(student.completed_at) }}
                   </span>
-                  <span v-else class="text-slate-350 dark:text-slate-600">—</span>
+                  <span v-else class="text-ink-subtle">—</span>
                 </td>
               </tr>
             </tbody>

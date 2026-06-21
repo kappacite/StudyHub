@@ -181,11 +181,13 @@ PackagePreview`, `Notes/PublicNote` en `PageHeader`/`BaseCard`/`ListRow` ; clone
 > **État S7 (🔄)** : **faits** — `Marketplace/PackagePreview` et `Notes/PublicNote` tokenisés
 > (chrome ; le HTML de rendu markdown de `PublicNote` — placeholders QCM/VF à couleurs
 > fonctionnelles — laissé tel quel) ; `prefers-reduced-motion` déjà présent (`style.css`) ;
-> `/binders`→`/bibliotheque` post-clone corrigé. **Restent (migration prudente + revue visuelle)** :
-> `TeacherDashboard` (1064 l), `GroupDetail`, `AssignmentDetail`/`AssignmentBuilder`,
-> `NoteEdit` (zen), corps éditeur `Diagrams`, onglet Flashcards de `Reviews` en `ListRow` +
-> corps onglets IA + runners ; puis **audits transverses** (dark mode, contraste AA des pastels,
-> responsive 375 px, smoke test Capacitor) — à faire avec vérification visuelle humaine.
+> `/binders`→`/bibliotheque` post-clone corrigé. `GroupDetail` + `AssignmentDetail` aussi réécrits
+> en tokens (statuts/scores/rôles sémantiques ; back→`/classes?tab=teacher`).
+> **Restent (migration prudente + revue visuelle)** :
+> `TeacherDashboard` (1064 l), `AssignmentBuilder`, `NoteEdit` (zen), corps éditeur `Diagrams`,
+> onglet Flashcards de `Reviews` en `ListRow` + corps onglets IA + runners ; puis **audits
+> transverses** (dark mode, contraste AA des pastels, responsive 375 px, smoke test Capacitor)
+> — à faire avec vérification visuelle humaine.
 
 ## Lot S7 — Finition (audit transverse)
 
