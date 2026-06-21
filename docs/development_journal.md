@@ -700,3 +700,19 @@ S3 (PR #74) mergé. Enchaînement S4 (branche `feature/ui-refactor-s4`).
 * **Restent pour S7** : `TeacherDashboard` (1064 l / 136 couleurs brutes), `GroupDetail`,
   `AssignmentDetail`/`AssignmentBuilder` — gros et complexes, migration prudente.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S5 (complet) : Planning
+
+S4 (PR #75) mergé. Enchaînement S5 (branche `feature/ui-refactor-s5`).
+
+* **`PlanningPage.vue`** : `PageContainer` + `PageHeader` ; toggle Semaine/Mois + bouton Aujourd'hui +
+  navigation période déplacés en `#actions` et tokenisés. Cartes résumé en `BaseCard`, carte guide
+  en dégradé `primary→primary-strong`. Modale de révision anticipée → `BaseModal` (anciennes
+  animations custom retirées). Store `planning` inchangé.
+* **`WeekCalendar.vue` / `MonthCalendar.vue`** : tokenisés ; couleurs de **charge** mappées
+  sémantiquement (`<10`→success, `≤25`→warning, `>25`→danger) ; surbrillance « aujourd'hui »
+  indigo→`primary` ; tooltip du mois laissé volontairement sombre.
+* **Lot complet** (pas de report S7). Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅.
+  Aucun changement backend.

@@ -30,7 +30,7 @@ Légende : ✅ fait · 🔄 en cours · ⏳ à faire
 | **S2** | Bibliothèque — `Binders.vue` refondu en `SplitView` (arbre + contenu typé, tabs `?type=`) | 🔄 | `feature/ui-refactor-s0` |
 | **S3** | Réviser — `PageHeader`+sélecteurs tokenisés, bandeau « À réviser maintenant » (focus) + CTA « Tout réviser », entrée Examen | 🔄 | `feature/ui-refactor-s3` |
 | **S4** | Classes — `StudentClassView` + `GroupsList` migrés (tokens, sous-en-tête) ; gros enfants restants | 🔄 | `feature/ui-refactor-s4` |
-| **S5** | Planning (allégé) | ⏳ | `feature/ui-refactor-s5` |
+| **S5** | Planning — `PlanningPage` (PageHeader + toggle/nav) + `Week/MonthCalendar` tokenisés (charge→success/warning/danger) | ✅ | `feature/ui-refactor-s5` |
 | **S6** | Communauté / Public | ⏳ | `feature/ui-refactor-s6` |
 | **S7** | Finition (audit transverse) | ⏳ | `feature/ui-refactor-s7` |
 
