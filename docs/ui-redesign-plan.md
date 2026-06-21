@@ -28,7 +28,7 @@ Légende : ✅ fait · 🔄 en cours · ⏳ à faire
 > liens Dashboard/Binders) tant que Bibliothèque/Réviser n'agrègent pas leur contenu.
 | **S1** | Accueil (fusion Dashboard + Focus, action-first) — `Home/Accueil.vue`, `/focus`→`/accueil` | ✅ | `feature/ui-refactor-s0` |
 | **S2** | Bibliothèque — `Binders.vue` refondu en `SplitView` (arbre + contenu typé, tabs `?type=`) | 🔄 | `feature/ui-refactor-s0` |
-| **S3** | Réviser (file due + modes en onglets) | ⏳ | `feature/ui-refactor-s3` |
+| **S3** | Réviser — `PageHeader`+sélecteurs tokenisés, bandeau « À réviser maintenant » (focus) + CTA « Tout réviser », entrée Examen | 🔄 | `feature/ui-refactor-s3` |
 | **S4** | Classes (fusion réelle Teacher/Student/Groups) | ⏳ | `feature/ui-refactor-s4` |
 | **S5** | Planning (allégé) | ⏳ | `feature/ui-refactor-s5` |
 | **S6** | Communauté / Public | ⏳ | `feature/ui-refactor-s6` |
@@ -135,6 +135,12 @@ type (Tout/Notes/PDF/Diagrammes/Ensembles/Decks, `?type=`) ; contenu en `ListRow
 (communauté `is_public`, classe `groupService.shareBinder`), owner vs read-only, stats binder.
 Feuilles ré-agencées avec `PageHeader` : `Notes`, `NoteEdit` (zen, ~68ch), `PdfReader`, `Diagrams`.
 Ajouter tokens `cat-*` si absents.
+
+> **État S3 (🔄)** : cœur fait — `Reviews.vue` (route `reviser`) passé en `PageContainer`+`PageHeader`,
+> sélecteurs catégories/sous-onglets tokenisés (dans `#actions`), **bandeau « À réviser maintenant »**
+> branché sur le store `focus` (totalDue/lateCount, CTA « Tout réviser » → `startUnifiedReview`) et
+> **entrée Examen** (→ `/exam/setup`) intégrée (anti-stranding S0 retiré). **Reste (S7)** : onglet
+> Flashcards en `ListRow` (Étudier/Stats/⋯) et re-skin des corps d'onglets IA + runners.
 
 ## Lot S3 — Réviser (file due + modes en onglets)
 

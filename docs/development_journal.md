@@ -668,3 +668,19 @@ Consolidation et sauvegarde du chantier de refonte structurelle resté en workin
   et le corps éditeur de `Diagrams`.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66**, backend `test_shared_revision_sets`
   **3** ✅. Pas de migration backend. Branche `feature/ui-refactor-s0` **poussée**.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S3 (cœur) : Réviser
+
+PR #73 (Lots 0/1/T/S0/S1/S2) mergée sur `main` (CI 6 checks verts, dont E2E Playwright).
+Enchaînement sur S3 (branche `feature/ui-refactor-s3`).
+
+* **`Reviews.vue`** (route `reviser`) : `PageContainer` + `PageHeader` ; sélecteurs catégories
+  (Classiques/IA) et sous-onglets déplacés en `#actions` et **tokenisés** (primary/surface/ink).
+* **Bandeau « À réviser maintenant »** branché sur le store `focus` (réutilise le pattern d'`Accueil`) :
+  `totalDue`/`lateCount`, CTA **« Tout réviser »** → `focus.startUnifiedReview()` puis route vers
+  l'item actif. **Entrée Examen** (`/exam/setup`) intégrée au bandeau ; code anti-stranding S0 retiré.
+* **Reste pour S7** : onglet Flashcards en `ListRow` (Étudier/Stats/⋯) et re-skin des corps d'onglets
+  IA (feuille blanche/Feynman/quiz) + runners.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
