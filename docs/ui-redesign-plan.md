@@ -182,12 +182,14 @@ PackagePreview`, `Notes/PublicNote` en `PageHeader`/`BaseCard`/`ListRow` ; clone
 > (chrome ; le HTML de rendu markdown de `PublicNote` — placeholders QCM/VF à couleurs
 > fonctionnelles — laissé tel quel) ; `prefers-reduced-motion` déjà présent (`style.css`) ;
 > `/binders`→`/bibliotheque` post-clone corrigé. `GroupDetail` + `AssignmentDetail` aussi réécrits
-> en tokens (statuts/scores/rôles sémantiques ; back→`/classes?tab=teacher`).
-> **Restent (migration prudente + revue visuelle)** :
-> `TeacherDashboard` (1064 l), `AssignmentBuilder`, `NoteEdit` (zen), corps éditeur `Diagrams`,
-> onglet Flashcards de `Reviews` en `ListRow` + corps onglets IA + runners ; puis **audits
-> transverses** (dark mode, contraste AA des pastels, responsive 375 px, smoke test Capacitor)
-> — à faire avec vérification visuelle humaine.
+> en tokens (statuts/scores/rôles sémantiques ; back→`/classes?tab=teacher`). `AssignmentBuilder`
+> (modale création devoir) aussi migré (amber→primary).
+> **Restent — à faire avec VÉRIFICATION VISUELLE HUMAINE** (gros/complexes/fonctionnels) :
+> `TeacherDashboard` (**1064 l, 136 couleurs brutes, 6 sous-onglets dont analytics/graphes** —
+> pas de mapping mécanique propre, plus gros risque visuel du projet), `NoteEdit` (mode zen),
+> corps éditeur `Diagrams` (couleurs nœuds en data), onglet Flashcards de `Reviews` en `ListRow` +
+> corps onglets IA + runners ; puis **audits transverses** (dark mode, contraste AA des pastels,
+> responsive 375 px, smoke test Capacitor).
 
 ## Lot S7 — Finition (audit transverse)
 

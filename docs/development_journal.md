@@ -763,6 +763,16 @@ S7-slice (PR #78) mergé. Continuation : `GroupDetail` + `AssignmentDetail`.
 * **`Classes/AssignmentDetail.vue`** : page réécrite en tokens (en-tête, 4 cartes stats, table de
   progression + notation prof) ; statuts→`success`/`info`/neutre, scores→`success`/`warning`/`danger`,
   accents→`primary`/`accent`. Back→`/classes?tab=teacher`. Notation inchangée.
-* **Restent (revue visuelle)** : `TeacherDashboard`, `AssignmentBuilder`, `NoteEdit` (zen), corps
-  éditeur `Diagrams`, onglets Reviews (Flashcards/IA) + runners ; puis audits dark/AA/responsive/Capacitor.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S7 (suite) : AssignmentBuilder
+
+* **`components/classes/AssignmentBuilder.vue`** : modale de création de devoir réécrite en tokens
+  (amber→`primary` pour cohérence avec les autres vues Classes ; slate→tokens ; red→`danger`).
+  Logique (composition multi-activités, objectifs, création) inchangée.
+* **Arrêt volontaire sur `TeacherDashboard`** (1064 l / 136 couleurs brutes / 6 sous-onglets dont
+  analytics) : pas de mapping mécanique propre, plus gros risque visuel du projet → à migrer avec
+  **revue visuelle humaine**, comme `NoteEdit` (zen), corps éditeur `Diagrams`, onglets/runners `Reviews`.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
