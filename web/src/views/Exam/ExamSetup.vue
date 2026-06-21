@@ -62,32 +62,32 @@ async function handleStart() {
   <div class="max-w-xl mx-auto py-8 px-4">
     <!-- Header -->
     <div class="text-center mb-8">
-      <div class="inline-flex p-3 bg-indigo-50 dark:bg-indigo-950/45 rounded-2xl text-indigo-600 dark:text-indigo-400 mb-3 shadow-md shadow-indigo-500/5">
+      <div class="inline-flex p-3 bg-primary-soft dark:bg-primary-soft rounded-2xl text-primary dark:text-primary mb-3 shadow-md shadow-elev-primary">
         <ShieldAlert class="w-8 h-8" />
       </div>
-      <h1 class="text-2xl font-black text-slate-800 dark:text-white">Simulateur de Mode Examen</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+      <h1 class="text-2xl font-black text-ink dark:text-white">Simulateur de Mode Examen</h1>
+      <p class="text-sm text-ink-muted dark:text-ink-subtle mt-2 leading-relaxed">
         Évaluez-vous dans des conditions réelles. Un mélange chronométré de vos cartes mémoires et de vos questions de QCM sans aucun accès aux fiches de révision.
       </p>
     </div>
 
     <!-- Form -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-8 shadow-sm space-y-6">
+    <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 shadow-sm space-y-6">
       
       <!-- Classeur cible -->
       <div>
-        <label class="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
+        <label class="block text-xs font-bold text-ink-subtle dark:text-ink-muted uppercase tracking-widest mb-2">
           Classeur d'examen
         </label>
         <select
           v-model="binderId"
-          class="w-full bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          class="w-full bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl px-4 py-3 text-sm text-ink dark:text-ink-subtle focus:outline-none focus:ring-1 focus:ring-primary"
         >
           <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">
             📁 {{ b.name }}
           </option>
         </select>
-        <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5">
+        <p class="text-[10px] text-ink-subtle dark:text-ink-muted mt-1.5">
           L'examen piochera dans ce classeur et l'ensemble de ses sous-classeurs.
         </p>
       </div>
@@ -95,13 +95,13 @@ async function handleStart() {
       <!-- Durée & Limites -->
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
+          <label class="block text-xs font-bold text-ink-subtle dark:text-ink-muted uppercase tracking-widest mb-2">
             Durée maximum
           </label>
           <div class="relative">
             <select
               v-model.number="durationMinutes"
-              class="w-full bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              class="w-full bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl pl-9 pr-4 py-3 text-sm text-ink dark:text-ink-subtle focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option :value="15">15 min</option>
               <option :value="30">30 min</option>
@@ -110,18 +110,18 @@ async function handleStart() {
               <option :value="90">1h30</option>
               <option :value="120">2 heures</option>
             </select>
-            <Clock class="w-4 h-4 text-indigo-500 absolute left-3 top-3.5" />
+            <Clock class="w-4 h-4 text-primary absolute left-3 top-3.5" />
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
+          <label class="block text-xs font-bold text-ink-subtle dark:text-ink-muted uppercase tracking-widest mb-2">
             Limite de questions
           </label>
           <div class="relative">
             <select
               v-model.number="questionLimit"
-              class="w-full bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl pl-9 pr-4 py-3 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              class="w-full bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl pl-9 pr-4 py-3 text-sm text-ink dark:text-ink-subtle focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option :value="10">10 questions</option>
               <option :value="20">20 questions</option>
@@ -129,49 +129,49 @@ async function handleStart() {
               <option :value="40">40 questions</option>
               <option :value="50">50 questions</option>
             </select>
-            <Settings class="w-4 h-4 text-indigo-500 absolute left-3 top-3.5" />
+            <Settings class="w-4 h-4 text-primary absolute left-3 top-3.5" />
           </div>
         </div>
       </div>
 
       <!-- Types de ressources -->
       <div>
-        <span class="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">
+        <span class="block text-xs font-bold text-ink-subtle dark:text-ink-muted uppercase tracking-widest mb-3">
           Ressources à inclure
         </span>
         <div class="space-y-3">
           <label class="flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer"
-            :class="[includeFlashcards ? 'border-indigo-500/30 bg-indigo-50/10 dark:bg-indigo-950/5' : 'border-slate-100 dark:border-slate-850']"
+            :class="[includeFlashcards ? 'border-primary bg-primary-soft dark:bg-primary-soft' : 'border-line dark:border-line']"
           >
             <input 
               v-model="includeFlashcards" 
               type="checkbox"
-              class="rounded border-slate-350 text-indigo-600 focus:ring-indigo-500"
+              class="rounded border-line text-primary focus:ring-primary"
             />
             <div>
-              <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Cartes Mémoires (Flashcards)</p>
-              <p class="text-[11px] text-slate-400 dark:text-slate-500">Mélange de vos cartes dues ou prêtes du classeur</p>
+              <p class="text-sm font-bold text-ink dark:text-ink-subtle">Cartes Mémoires (Flashcards)</p>
+              <p class="text-[11px] text-ink-subtle dark:text-ink-muted">Mélange de vos cartes dues ou prêtes du classeur</p>
             </div>
           </label>
 
           <label class="flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer"
-            :class="[includeQcm ? 'border-indigo-500/30 bg-indigo-50/10 dark:bg-indigo-950/5' : 'border-slate-100 dark:border-slate-850']"
+            :class="[includeQcm ? 'border-primary bg-primary-soft dark:bg-primary-soft' : 'border-line dark:border-line']"
           >
             <input 
               v-model="includeQcm" 
               type="checkbox"
-              class="rounded border-slate-350 text-indigo-600 focus:ring-indigo-500"
+              class="rounded border-line text-primary focus:ring-primary"
             />
             <div>
-              <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Questions de QCM (IA)</p>
-              <p class="text-[11px] text-slate-400 dark:text-slate-500">Intègre les questions générées à partir de vos fiches de cours</p>
+              <p class="text-sm font-bold text-ink dark:text-ink-subtle">Questions de QCM (IA)</p>
+              <p class="text-[11px] text-ink-subtle dark:text-ink-muted">Intègre les questions générées à partir de vos fiches de cours</p>
             </div>
           </label>
         </div>
       </div>
 
       <!-- Erreur -->
-      <div v-if="errorMsg" class="p-4 bg-rose-50/50 dark:bg-rose-950/10 border border-rose-250 dark:border-rose-950/20 text-rose-800 dark:text-rose-400 rounded-2xl text-xs leading-relaxed">
+      <div v-if="errorMsg" class="p-4 bg-danger-soft dark:bg-danger-soft border border-danger dark:border-danger text-danger dark:text-danger rounded-2xl text-xs leading-relaxed">
         {{ errorMsg }}
       </div>
 
@@ -179,7 +179,7 @@ async function handleStart() {
       <button
         @click="handleStart"
         :disabled="loading || !binderId"
-        class="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-600/15 disabled:opacity-50 disabled:pointer-events-none active:scale-98 transition-all"
+        class="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-primary hover:bg-primary-strong text-white rounded-2xl font-bold shadow-lg shadow-elev-primary disabled:opacity-50 disabled:pointer-events-none active:scale-98 transition-all"
       >
         <Sparkles class="w-5 h-5 animate-pulse" />
         Lancer la session d'examen
