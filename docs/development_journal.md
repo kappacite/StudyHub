@@ -732,3 +732,20 @@ S5 (PR #76) mergé. Enchaînement S6 (branche `feature/ui-refactor-s6`).
   badges/tags tokenisés, bouton « Suivre » done→`success`. Logique (search/follow/pagination) inchangée.
 * **Restent pour S7** : `Marketplace/PackagePreview` et `Notes/PublicNote` (pages de détail).
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S7 (slice) : pages publiques de détail
+
+S6 (PR #77) mergé. Slice S7 (branche `feature/ui-refactor-s7`) : finir la section Communauté.
+
+* **`Marketplace/PackagePreview.vue`** : tokenisé (sidebar `BaseCard`, sommaire, bandeau lecture
+  seule→`warning`, bouton import→`BaseButton`) ; route post-clone `/binders`→`/bibliotheque`.
+* **`Notes/PublicNote.vue`** : chrome tokenisée (méta, lien de partage `BaseButton`, blocs
+  contexte→`warning`/définitions→`success`, article, CTA→`primary`). Le HTML généré par
+  `renderMarkup` (placeholders QCM/VF/assoc à couleurs fonctionnelles) est **laissé tel quel**.
+* `prefers-reduced-motion` déjà présent dans `style.css` (rien à ajouter).
+* **Restent (revue visuelle requise)** : `TeacherDashboard`, `GroupDetail`, `AssignmentDetail`/
+  `Builder`, `NoteEdit` (zen), corps éditeur `Diagrams`, onglets Reviews (Flashcards/IA) + runners ;
+  puis audits dark/AA/responsive/Capacitor.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.

@@ -31,8 +31,8 @@ Légende : ✅ fait · 🔄 en cours · ⏳ à faire
 | **S3** | Réviser — `PageHeader`+sélecteurs tokenisés, bandeau « À réviser maintenant » (focus) + CTA « Tout réviser », entrée Examen | 🔄 | `feature/ui-refactor-s3` |
 | **S4** | Classes — `StudentClassView` + `GroupsList` migrés (tokens, sous-en-tête) ; gros enfants restants | 🔄 | `feature/ui-refactor-s4` |
 | **S5** | Planning — `PlanningPage` (PageHeader + toggle/nav) + `Week/MonthCalendar` tokenisés (charge→success/warning/danger) | ✅ | `feature/ui-refactor-s5` |
-| **S6** | Communauté/Public — `PublicLayout` + `Marketplace/Home` + `Explore` migrés ; détails (`PackagePreview`,`PublicNote`)→S7 | 🔄 | `feature/ui-refactor-s6` |
-| **S7** | Finition (audit transverse) | ⏳ | `feature/ui-refactor-s7` |
+| **S6** | Communauté/Public — `PublicLayout`+`Home`+`Explore`+`PackagePreview`+`PublicNote` migrés | ✅ | `feature/ui-refactor-s6/s7` |
+| **S7** | Finition — `PackagePreview`/`PublicNote` faits ; `prefers-reduced-motion` déjà OK ; reste composants lourds + audit visuel | 🔄 | `feature/ui-refactor-s7` |
 
 **Reprise rapide** : `git checkout feature/ui-refactor-s0` → continuer à la 1re ligne 🔄/⏳.
 Mettre à jour ce tableau à chaque sous-étape terminée.
@@ -177,6 +177,15 @@ Progression/Analytics/Roster/Q&A), `StudentClassView` (devoirs par statut, Q&A, 
 
 `PublicLayout` (header simplifié, « Espace personnel »→`/accueil`) ; `Marketplace/Home|Explore|
 PackagePreview`, `Notes/PublicNote` en `PageHeader`/`BaseCard`/`ListRow` ; clone/follow inchangés.
+
+> **État S7 (🔄)** : **faits** — `Marketplace/PackagePreview` et `Notes/PublicNote` tokenisés
+> (chrome ; le HTML de rendu markdown de `PublicNote` — placeholders QCM/VF à couleurs
+> fonctionnelles — laissé tel quel) ; `prefers-reduced-motion` déjà présent (`style.css`) ;
+> `/binders`→`/bibliotheque` post-clone corrigé. **Restent (migration prudente + revue visuelle)** :
+> `TeacherDashboard` (1064 l), `GroupDetail`, `AssignmentDetail`/`AssignmentBuilder`,
+> `NoteEdit` (zen), corps éditeur `Diagrams`, onglet Flashcards de `Reviews` en `ListRow` +
+> corps onglets IA + runners ; puis **audits transverses** (dark mode, contraste AA des pastels,
+> responsive 375 px, smoke test Capacitor) — à faire avec vérification visuelle humaine.
 
 ## Lot S7 — Finition (audit transverse)
 
