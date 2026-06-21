@@ -1,5 +1,19 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Fix fonctionnel — création de la première classe (œuf/poule)
+
+**Symptôme** : aucun moyen de créer une classe.
+
+**Cause racine** : dans `ClassesLanding`, l'onglet « Enseignant » (qui héberge le bouton
+« Créer une classe ») n'était affiché que si `isTeacher` = l'utilisateur administre **déjà** une
+classe. Un nouvel utilisateur sans classe ne pouvait donc jamais accéder à l'onglet → ne pouvait
+jamais en créer une.
+
+**Fix** : l'onglet « Enseignant » est désormais **toujours visible** (son empty state invite déjà à
+créer un premier espace). `isTeacher` ne sert plus qu'à choisir l'onglet par défaut. Suppression de
+la rétrogradation `?tab=teacher → student`. Build + Vitest 66 verts.
+
+
 ## [2026-06-22] Fix fonctionnel — rattachement deck ↔ classeur (binder_uuid)
 
 **Symptôme** : ajouter un deck à un dossier via « Ajouter › Élément existant » semblait
