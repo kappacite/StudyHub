@@ -660,7 +660,11 @@ Consolidation et sauvegarde du chantier de refonte structurelle resté en workin
 * **Lot S2 (cœur) — Bibliothèque** : `Binders.vue` refondu en `SplitView` (arbre + contenu
   typé en `ListRow`, tokens `cat-*`), `PageHeader` (fil d'Ariane), `Tabs` par type (`?type=`).
   Toutes les features préservées (owner/lecture-seule, clone, attache/détache, partage
-  communauté + classe, stats, filtres tags). **Reste** : ré-agencer les feuilles
-  (`Notes`/`NoteEdit`/`PdfReader`/`Diagrams`) avec `PageHeader`.
+  communauté + classe, stats, filtres tags).
+* **Lot S2 (feuilles)** : `Notes.vue` et `PDFs.vue` ré-agencés (PageHeader + BaseCard/BaseModal +
+  tokens, accents `cat-note`/`cat-pdf`, badge « Cours partagé » préservé) ; `Diagrams.vue` —
+  tête `PageHeader` + bascule Visuel/Mermaid + filtres tokenisés, **corps de l'éditeur laissé tel
+  quel** (couleurs fonctionnelles en data + canevas SVG). **Restent pour S7** : `NoteEdit` (zen)
+  et le corps éditeur de `Diagrams`.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66**, backend `test_shared_revision_sets`
-  **3** ✅. Pas de migration backend.
+  **3** ✅. Pas de migration backend. Branche `feature/ui-refactor-s0` **poussée**.
