@@ -29,7 +29,7 @@ Légende : ✅ fait · 🔄 en cours · ⏳ à faire
 | **S1** | Accueil (fusion Dashboard + Focus, action-first) — `Home/Accueil.vue`, `/focus`→`/accueil` | ✅ | `feature/ui-refactor-s0` |
 | **S2** | Bibliothèque — `Binders.vue` refondu en `SplitView` (arbre + contenu typé, tabs `?type=`) | 🔄 | `feature/ui-refactor-s0` |
 | **S3** | Réviser — `PageHeader`+sélecteurs tokenisés, bandeau « À réviser maintenant » (focus) + CTA « Tout réviser », entrée Examen | 🔄 | `feature/ui-refactor-s3` |
-| **S4** | Classes (fusion réelle Teacher/Student/Groups) | ⏳ | `feature/ui-refactor-s4` |
+| **S4** | Classes — `StudentClassView` + `GroupsList` migrés (tokens, sous-en-tête) ; gros enfants restants | 🔄 | `feature/ui-refactor-s4` |
 | **S5** | Planning (allégé) | ⏳ | `feature/ui-refactor-s5` |
 | **S6** | Communauté / Public | ⏳ | `feature/ui-refactor-s6` |
 | **S7** | Finition (audit transverse) | ⏳ | `feature/ui-refactor-s7` |
@@ -149,6 +149,12 @@ réviser » ; `PageHeader`+`Tabs` (Flashcards SM-2/QCM-Typés/Feuille blanche IA
 contenu Classiques/IA. Onglet Flashcards = gestion des decks en `ListRow` (Étudier/Stats/⋯). Onglet
 Examen = carte → `/exam/setup`. Runners ré-agencés (routes inchangées) : `StudyDeck`/`QcmRun`/
 `RevisionStudy` ; `ExamSetup`/`ExamSession`(immersif)/`ExamResults`.
+
+> **État S4 (🔄)** : `ClassesLanding` (coquille S0) inchangée. **Migrés** : `StudentClassView`
+> (sous-en-tête + stats + devoirs par statut → tokens success/danger/info, Q&A) et `GroupsList`
+> (cartes + modales `BaseModal`, violet→primary) — wrappers page autonomes retirés (montés dans
+> `ClassesLanding`). **Restent (S7)** : `TeacherDashboard` (1064 l, 136 couleurs brutes),
+> `GroupDetail`, `AssignmentDetail`/`AssignmentBuilder` — gros/complexes, migration prudente.
 
 ## Lot S4 — Classes (fusion réelle Teacher/Student/Groups)
 
