@@ -716,3 +716,19 @@ S4 (PR #75) mergé. Enchaînement S5 (branche `feature/ui-refactor-s5`).
   indigo→`primary` ; tooltip du mois laissé volontairement sombre.
 * **Lot complet** (pas de report S7). Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅.
   Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S6 (cœur) : Communauté / Public
+
+S5 (PR #76) mergé. Enchaînement S6 (branche `feature/ui-refactor-s6`).
+
+* **`PublicLayout.vue`** : coquille publique tokenisée (header sticky, nav, footer) ; logo + CTA
+  « Espace Personnel » indigo/purple→`primary` (via `BaseButton`) ; bascule thème conservée.
+* **`Marketplace/Home.vue`** : landing — hero indigo→`primary`, 6 cartes feature factorisées en
+  `v-for` avec accents par tokens (`cat-deck`/`success`/`cat-diagram`/`cat-pdf`/`accent`/`info`),
+  bandeau stats `bg-primary`. CTA → `BaseButton`.
+* **`Marketplace/Explore.vue`** : barre recherche + filtres + grilles packs/cours en `BaseCard`,
+  badges/tags tokenisés, bouton « Suivre » done→`success`. Logique (search/follow/pagination) inchangée.
+* **Restent pour S7** : `Marketplace/PackagePreview` et `Notes/PublicNote` (pages de détail).
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
