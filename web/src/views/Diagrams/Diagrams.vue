@@ -40,12 +40,12 @@
     <!-- Layout principal en grille -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       <!-- 1. PANNEAU GAUCHE : LISTE DES DIAGRAMMES (3 colonnes) -->
-      <div class="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm space-y-4">
+      <div class="lg:col-span-3 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-5 shadow-sm space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-wider">Mes Diagrammes</h3>
+          <h3 class="font-extrabold text-sm text-ink dark:text-white uppercase tracking-wider">Mes Diagrammes</h3>
           <button 
             @click="createNewDiagram"
-            class="p-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 rounded-xl transition-all active:scale-90"
+            class="p-1.5 bg-primary-soft hover:bg-primary-soft dark:bg-primary-soft dark:hover:bg-primary-soft text-primary dark:text-primary rounded-xl transition-all active:scale-90"
             title="Créer un nouveau diagramme"
           >
             <Plus class="w-4 h-4" />
@@ -54,7 +54,7 @@
 
         <!-- Chargement -->
         <div v-if="loadingList" class="flex justify-center py-8">
-          <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg class="animate-spin h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -69,26 +69,26 @@
             class="p-3.5 border rounded-2xl cursor-pointer transition-all flex items-center justify-between group"
             :class="[
               selectedDiagram?.id === diag.id 
-                ? 'border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold' 
-                : 'border-slate-100 hover:border-slate-200 dark:border-slate-800 dark:hover:border-slate-700 text-slate-700 dark:text-slate-350'
+                ? 'border-primary bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary font-bold' 
+                : 'border-line hover:border-line dark:border-line dark:hover:border-line text-ink dark:text-ink-subtle'
             ]"
           >
             <div class="flex items-center gap-2.5 min-w-0">
-              <Activity class="w-4 h-4 flex-shrink-0 text-slate-400" :class="{ 'text-indigo-500': selectedDiagram?.id === diag.id }" />
+              <Activity class="w-4 h-4 flex-shrink-0 text-ink-subtle" :class="{ 'text-primary': selectedDiagram?.id === diag.id }" />
               <span class="text-xs truncate font-semibold">{{ diag.title || 'Diagramme sans titre' }}</span>
             </div>
 
             <!-- Bouton de suppression -->
             <button 
               @click.stop="deleteDiagram(diag)"
-              class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all"
+              class="opacity-0 group-hover:opacity-100 p-1 text-ink-subtle hover:text-danger rounded-lg hover:bg-danger-soft dark:hover:bg-danger-soft transition-all"
               title="Supprimer le diagramme"
             >
               <Trash2 class="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div v-if="diagrams.length === 0" class="text-center py-8 text-xs text-slate-400 italic">
+          <div v-if="diagrams.length === 0" class="text-center py-8 text-xs text-ink-subtle italic">
             Aucun diagramme enregistré. Cliquez sur le bouton + pour commencer !
           </div>
         </div>
@@ -99,14 +99,14 @@
         <!-- Message si aucun diagramme sélectionné -->
         <div 
           v-if="!selectedDiagram" 
-          class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-16 flex flex-col items-center justify-center text-center text-slate-400 bg-white dark:bg-slate-900"
+          class="border-2 border-dashed border-line dark:border-line rounded-3xl p-16 flex flex-col items-center justify-center text-center text-ink-subtle bg-surface dark:bg-surface-soft"
         >
-          <Activity class="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
-          <h4 class="font-bold text-slate-850 dark:text-slate-200">Aucun diagramme en cours d'édition</h4>
+          <Activity class="w-12 h-12 text-ink-subtle dark:text-ink mb-3" />
+          <h4 class="font-bold text-ink dark:text-ink-subtle">Aucun diagramme en cours d'édition</h4>
           <p class="text-xs mt-1">Sélectionnez un diagramme dans la liste latérale ou créez-en un nouveau.</p>
           <button 
             @click="createNewDiagram"
-            class="mt-4 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all"
+            class="mt-4 px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all"
           >
             Nouveau diagramme
           </button>
@@ -115,13 +115,13 @@
         <!-- Éditeur actif -->
         <div v-else class="space-y-4">
           <!-- Barre d'outils du diagramme en cours d'édition -->
-          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-3 w-full sm:w-auto">
-              <span class="text-xs font-bold text-slate-450 uppercase tracking-wider">Titre :</span>
+              <span class="text-xs font-bold text-ink-muted uppercase tracking-wider">Titre :</span>
               <input 
                 type="text" 
                 v-model="selectedDiagram.title"
-                class="flex-1 sm:w-64 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+                class="flex-1 sm:w-64 px-3 py-1.5 text-xs bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary font-bold"
                 placeholder="Nom du diagramme..."
               />
             </div>
@@ -132,7 +132,7 @@
             <!-- Intégration de l'ID du diagramme pour insertion dans les notes -->
             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
               <span 
-                class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-slate-500 font-mono font-bold select-all cursor-help"
+                class="text-[10px] bg-surface-soft dark:bg-surface-soft px-2.5 py-1 rounded-lg text-ink-muted font-mono font-bold select-all cursor-help"
                 title="Copiez cette balise et collez-la dans n'importe quelle note de cours pour y afficher ce diagramme."
               >
                 Code note : [diagram:{{ selectedDiagram.id }}]
@@ -141,7 +141,7 @@
               <button 
                 @click="saveDiagram"
                 :disabled="saving"
-                class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/10 disabled:opacity-50 active:scale-95 transition-all"
+                class="inline-flex items-center gap-1.5 px-4 py-2 bg-success hover:bg-success text-white rounded-xl text-xs font-bold shadow-md shadow-soft-lg disabled:opacity-50 active:scale-95 transition-all"
               >
                 <Save class="w-3.5 h-3.5" />
                 {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
@@ -152,45 +152,45 @@
           <!-- TAB 1: CRÉATEUR VISUEL INTERACTIF -->
           <div v-if="activeTab === 'visual'" class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
             <!-- Palette de formes (3 cols) -->
-            <div class="md:col-span-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm space-y-4">
+            <div class="md:col-span-3 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-5 shadow-sm space-y-4">
               <div>
-                <h4 class="font-bold text-xs text-slate-850 dark:text-white uppercase tracking-wider">Ajouter des formes</h4>
-                <p class="text-[9px] text-slate-400 mt-0.5">Glissez ou cliquez pour insérer sur le plan</p>
+                <h4 class="font-bold text-xs text-ink dark:text-white uppercase tracking-wider">Ajouter des formes</h4>
+                <p class="text-[9px] text-ink-subtle mt-0.5">Glissez ou cliquez pour insérer sur le plan</p>
               </div>
 
               <div class="grid grid-cols-1 gap-2">
                 <button 
                   @click="addNode('rect')"
-                  class="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
+                  class="flex items-center gap-3 p-2.5 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl text-left transition-colors"
                 >
-                  <div class="h-8 w-12 rounded-lg border-2 border-indigo-600 bg-indigo-500 shadow-sm"></div>
+                  <div class="h-8 w-12 rounded-lg border-2 border-primary bg-primary shadow-sm"></div>
                   <span class="text-[11px] font-bold">Concept (Rectangle)</span>
                 </button>
 
                 <button 
                   @click="addNode('circle')"
-                  class="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
+                  class="flex items-center gap-3 p-2.5 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl text-left transition-colors"
                 >
-                  <div class="h-10 w-10 rounded-full border-2 border-emerald-600 bg-emerald-500 shadow-sm"></div>
+                  <div class="h-10 w-10 rounded-full border-2 border-success bg-success shadow-sm"></div>
                   <span class="text-[11px] font-bold">Événement (Cercle)</span>
                 </button>
 
                 <button 
                   @click="addNode('diamond')"
-                  class="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-850 rounded-xl text-left transition-colors"
+                  class="flex items-center gap-3 p-2.5 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl text-left transition-colors"
                 >
-                  <div class="mx-2 h-8 w-8 rotate-45 border-2 border-amber-600 bg-amber-500 shadow-sm"></div>
+                  <div class="mx-2 h-8 w-8 rotate-45 border-2 border-warning bg-warning shadow-sm"></div>
                   <span class="text-[11px] font-bold">Décision (Losange)</span>
                 </button>
               </div>
 
               <!-- Contrôles d'occlusion et d'image d'arrière-plan -->
-              <div class="h-[1px] bg-slate-100 dark:bg-slate-800"></div>
+              <div class="h-[1px] bg-surface-soft dark:bg-surface-soft"></div>
 
               <div class="space-y-4">
                 <div>
-                  <h4 class="font-bold text-xs text-slate-850 dark:text-white uppercase tracking-wider">Image d'arrière-plan</h4>
-                  <p class="text-[9px] text-slate-400 mt-0.5">Importez une image pour l'occulter</p>
+                  <h4 class="font-bold text-xs text-ink dark:text-white uppercase tracking-wider">Image d'arrière-plan</h4>
+                  <p class="text-[9px] text-ink-subtle mt-0.5">Importez une image pour l'occulter</p>
                 </div>
                 
                 <input 
@@ -204,14 +204,14 @@
                 <div class="flex gap-2">
                   <button 
                     @click="fileInput?.click()" 
-                    class="flex-1 px-3 py-2 text-xs font-bold border border-slate-200 dark:border-slate-850 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-slate-700 dark:text-slate-200"
+                    class="flex-1 px-3 py-2 text-xs font-bold border border-line dark:border-line rounded-xl hover:bg-surface-soft dark:hover:bg-surface-soft transition-colors text-ink dark:text-ink-subtle"
                   >
                     {{ backgroundImage ? 'Changer l\'image' : 'Importer image' }}
                   </button>
                   <button 
                     v-if="backgroundImage"
                     @click="backgroundImage = null" 
-                    class="p-2 text-rose-500 border border-rose-100 dark:border-rose-950/20 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/25 transition-colors"
+                    class="p-2 text-danger border border-danger dark:border-danger rounded-xl hover:bg-danger-soft dark:hover:bg-danger-soft transition-colors"
                     title="Supprimer l'image"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
@@ -224,8 +224,8 @@
                     class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border rounded-xl transition-all"
                     :class="[
                       drawingMode === 'mask' 
-                        ? 'bg-rose-600 border-rose-700 text-white shadow-sm hover:bg-rose-700' 
-                        : 'border-slate-250 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-350'
+                        ? 'bg-danger border-danger text-white shadow-sm hover:bg-danger-strong' 
+                        : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle'
                     ]"
                   >
                     <Sparkles class="w-3.5 h-3.5" />
@@ -234,30 +234,30 @@
                 </div>
               </div>
 
-              <div class="h-[1px] bg-slate-100 dark:bg-slate-800"></div>
+              <div class="h-[1px] bg-surface-soft dark:bg-surface-soft"></div>
 
               <!-- Options du nœud sélectionné -->
               <div v-if="selectedNode" class="space-y-4">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Élément sélectionné</h4>
+                <h4 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider">Élément sélectionné</h4>
                 
                 <div>
-                  <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Texte</label>
+                  <label class="block text-[9px] font-bold text-ink-subtle mb-1 uppercase">Texte</label>
                   <input 
                     type="text" 
                     v-model="selectedNode.label"
-                    class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+                    class="w-full px-2.5 py-1.5 text-xs bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Couleur</label>
+                  <label class="block text-[9px] font-bold text-ink-subtle mb-1 uppercase">Couleur</label>
                   <div class="flex flex-wrap gap-2">
                     <button 
                       v-for="color in colors" 
                       :key="color.bg"
                       @click="selectedNode.color = color.bg"
                       class="h-8 w-8 rounded-full border-2 shadow-sm transition-transform hover:scale-105"
-                      :class="[color.bg, selectedNode.color === color.bg ? 'border-slate-900 scale-110 ring-2 ring-indigo-200 dark:border-white dark:ring-indigo-900' : 'border-white dark:border-slate-900']"
+                      :class="[color.bg, selectedNode.color === color.bg ? 'border-line scale-110 ring-2 ring-primary dark:border-white dark:ring-primary' : 'border-white dark:border-line']"
                       :title="color.name"
                     ></button>
                   </div>
@@ -266,8 +266,8 @@
                 <div class="space-y-2 pt-2">
                   <button 
                     @click="startLinking"
-                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border border-slate-250 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
-                    :class="[linkingSourceId === selectedNode.id ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : '']"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border border-line dark:border-line rounded-xl hover:bg-surface-soft dark:hover:bg-surface-soft transition-colors"
+                    :class="[linkingSourceId === selectedNode.id ? 'bg-primary-soft text-primary border-primary' : '']"
                   >
                     <LinkIcon class="w-3.5 h-3.5" />
                     {{ linkingSourceId === selectedNode.id ? 'Cible : cliquez sur une forme' : 'Relier à...' }}
@@ -275,7 +275,7 @@
                   
                   <button 
                     @click="deleteSelectedNode"
-                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-600 border border-rose-100 hover:bg-rose-50 dark:border-rose-950/20 dark:hover:bg-rose-950/30 rounded-xl transition-colors"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-danger border border-danger hover:bg-danger-soft dark:border-danger dark:hover:bg-danger-soft rounded-xl transition-colors"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                     Supprimer la forme
@@ -285,14 +285,14 @@
 
               <!-- Options du masque sélectionné -->
               <div v-else-if="selectedMask" class="space-y-4">
-                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-rose-500">Masque sélectionné</h4>
+                <h4 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider text-danger">Masque sélectionné</h4>
                 
                 <div>
-                  <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Texte masqué</label>
+                  <label class="block text-[9px] font-bold text-ink-subtle mb-1 uppercase">Texte masqué</label>
                   <input 
                     type="text" 
                     v-model="selectedMask.label"
-                    class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500 font-semibold"
+                    class="w-full px-2.5 py-1.5 text-xs bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-danger font-semibold"
                     placeholder="ex: Le Noyau"
                   />
                 </div>
@@ -300,7 +300,7 @@
                 <div class="pt-2">
                   <button 
                     @click="deleteSelectedMask"
-                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-600 border border-rose-100 hover:bg-rose-50 dark:border-rose-950/20 dark:hover:bg-rose-950/30 rounded-xl transition-colors"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-danger border border-danger hover:bg-danger-soft dark:border-danger dark:hover:bg-danger-soft rounded-xl transition-colors"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                     Supprimer le masque
@@ -308,22 +308,22 @@
                 </div>
               </div>
 
-              <div v-else class="text-center py-4 text-slate-400 text-xs italic">
+              <div v-else class="text-center py-4 text-ink-subtle text-xs italic">
                 Sélectionnez une forme ou un masque sur le canevas pour l'éditer.
               </div>
             </div>
 
             <!-- Canevas d'édition (9 cols) -->
-            <div class="md:col-span-9 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-2 shadow-sm flex flex-col overflow-hidden">
-              <div class="px-4 py-1.5 border-b border-slate-50 dark:border-slate-800/50 flex items-center justify-between text-[9px] text-slate-450 font-bold uppercase tracking-wider select-none">
+            <div class="md:col-span-9 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-2 shadow-sm flex flex-col overflow-hidden">
+              <div class="px-4 py-1.5 border-b border-line-soft dark:border-line flex items-center justify-between text-[9px] text-ink-muted font-bold uppercase tracking-wider select-none">
                 <span>Plan interactif</span>
-                <span v-if="drawingMode === 'mask'" class="text-rose-500 font-extrabold animate-pulse">Mode Masque actif : Cliquez-glissez pour dessiner un masque</span>
+                <span v-if="drawingMode === 'mask'" class="text-danger font-extrabold animate-pulse">Mode Masque actif : Cliquez-glissez pour dessiner un masque</span>
                 <span v-else>Clic : Sélectionner / Déplacer | Option Relier pour lier</span>
               </div>
 
               <!-- Zone SVG interactive -->
               <div 
-                class="relative w-full h-[450px] bg-slate-50/50 dark:bg-slate-950/15 overflow-hidden select-none"
+                class="relative w-full h-[450px] bg-surface-soft dark:bg-surface-soft overflow-hidden select-none"
                 :class="[drawingMode === 'mask' ? 'cursor-cell' : 'cursor-crosshair']"
                 @mousedown="onCanvasMouseDown"
                 @mousemove="onCanvasMouseMove"
@@ -335,7 +335,7 @@
                   <defs>
                     <pattern id="canvas-grid" width="20" height="20" patternUnits="userSpaceOnUse">
                       <rect width="20" height="20" fill="none" />
-                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5" class="text-slate-200/50 dark:text-slate-800/40" />
+                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5" class="text-ink-subtle dark:text-ink" />
                     </pattern>
                     <marker 
                       id="arrow" 
@@ -425,7 +425,7 @@
                     class="w-28 h-10 rounded-xl border flex items-center justify-center text-center px-2 text-[10px] font-bold text-white shadow transition-all"
                     :class="[
                       node.color,
-                      selectedNodeId === node.id ? 'ring-2 ring-indigo-500 scale-105 ring-offset-2 dark:ring-offset-slate-900' : ''
+                      selectedNodeId === node.id ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
                     ]"
                   >
                     {{ node.label }}
@@ -437,7 +437,7 @@
                     class="w-14 h-14 rounded-full border flex items-center justify-center text-center p-2 text-[9px] font-extrabold text-white shadow transition-all"
                     :class="[
                       node.color,
-                      selectedNodeId === node.id ? 'ring-2 ring-indigo-500 scale-105 ring-offset-2 dark:ring-offset-slate-900' : ''
+                      selectedNodeId === node.id ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
                     ]"
                   >
                     {{ node.label }}
@@ -451,7 +451,7 @@
                   >
                     <div 
                       class="absolute inset-0 rotate-45 border rounded-lg shadow transition-all"
-                      :class="[node.color, selectedNodeId === node.id ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900' : '']"
+                      :class="[node.color, selectedNodeId === node.id ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
                     ></div>
                     <span class="relative z-10 text-[8px] font-extrabold text-white px-2 leading-tight">{{ node.label }}</span>
                   </div>
@@ -463,28 +463,28 @@
           <!-- TAB 2: CODE MERMAID EDITOR -->
           <div v-else class="grid grid-cols-1 md:grid-cols-12 gap-6">
             <!-- Code Editor (4 cols) -->
-            <div class="md:col-span-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm flex flex-col space-y-3">
+            <div class="md:col-span-4 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-5 shadow-sm flex flex-col space-y-3">
               <div>
-                <h4 class="font-bold text-xs text-slate-850 dark:text-white uppercase tracking-wider">Code Mermaid</h4>
-                <p class="text-[9px] text-slate-400 mt-0.5">Décrivez votre schéma textuellement</p>
+                <h4 class="font-bold text-xs text-ink dark:text-white uppercase tracking-wider">Code Mermaid</h4>
+                <p class="text-[9px] text-ink-subtle mt-0.5">Décrivez votre schéma textuellement</p>
               </div>
               <textarea 
                 v-model="mermaidCode" 
                 rows="15" 
-                class="w-full p-4 font-mono text-xs bg-slate-50 border border-slate-205 dark:bg-slate-950/40 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-350 resize-y"
+                class="w-full p-4 font-mono text-xs bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary text-ink dark:text-ink-subtle resize-y"
               ></textarea>
             </div>
 
             <!-- Visual Preview Simulation (8 cols) -->
-            <div class="md:col-span-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm flex flex-col min-h-[400px]">
-              <h3 class="font-bold text-xs text-slate-800 dark:text-white uppercase tracking-wider border-b border-slate-50 dark:border-slate-800/50 pb-3 mb-4">
+            <div class="md:col-span-8 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-5 shadow-sm flex flex-col min-h-[400px]">
+              <h3 class="font-bold text-xs text-ink dark:text-white uppercase tracking-wider border-b border-line-soft dark:border-line pb-3 mb-4">
                 Aperçu du Rendu
               </h3>
-              <div class="flex-1 flex items-center justify-center p-4 border border-dashed border-slate-100 dark:border-slate-850 rounded-2xl bg-slate-50/30 dark:bg-slate-950/20 overflow-auto">
+              <div class="flex-1 flex items-center justify-center p-4 border border-dashed border-line dark:border-line rounded-2xl bg-surface-soft dark:bg-surface-soft overflow-auto">
                 <div class="text-center space-y-2">
-                  <Activity class="w-8 h-8 text-indigo-500 mx-auto animate-pulse" />
-                  <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Rendu du schéma Mermaid</p>
-                  <pre class="text-[10px] text-slate-400 font-mono bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg select-all max-w-sm truncate">{{ mermaidCode }}</pre>
+                  <Activity class="w-8 h-8 text-primary mx-auto animate-pulse" />
+                  <p class="text-xs font-semibold text-ink-muted dark:text-ink-subtle">Rendu du schéma Mermaid</p>
+                  <pre class="text-[10px] text-ink-subtle font-mono bg-surface-soft dark:bg-surface-soft px-3 py-1.5 rounded-lg select-all max-w-sm truncate">{{ mermaidCode }}</pre>
                 </div>
               </div>
             </div>
