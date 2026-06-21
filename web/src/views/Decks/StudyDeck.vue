@@ -4,55 +4,55 @@
     <div class="flex items-center justify-between text-sm font-semibold">
       <button 
         @click="goBack" 
-        class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1"
+        class="text-ink-muted hover:text-primary dark:text-ink-subtle dark:hover:text-primary flex items-center gap-1"
       >
         <ChevronLeft class="w-4 h-4" />
         {{ isFocusMode ? 'Retour au Focus' : ($route.query.advance === 'true' ? 'Retour au Planning' : 'Retour aux decks') }}
       </button>
-      <span class="text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+      <span class="text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider">
         {{ deckName }}
       </span>
     </div>
 
     <!-- Loading state -->
     <div v-if="loading" class="flex flex-col items-center justify-center py-20 gap-3">
-      <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      <span class="text-sm font-semibold text-slate-400 uppercase tracking-widest">Préparation de la session...</span>
+      <span class="text-sm font-semibold text-ink-subtle uppercase tracking-widest">Préparation de la session...</span>
     </div>
 
     <!-- Completed State -->
     <div 
       v-else-if="studyCards.length === 0" 
-      class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-10 shadow-sm text-center space-y-6"
+      class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-10 shadow-sm text-center space-y-6"
     >
-      <div class="mx-auto w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 flex items-center justify-center">
+      <div class="mx-auto w-16 h-16 rounded-2xl bg-success-soft dark:bg-success-soft text-success flex items-center justify-center">
         <Sparkles class="w-8 h-8 animate-pulse" />
       </div>
       <div>
-        <h2 class="text-xl font-bold text-slate-800 dark:text-white">Session terminée ! 🎉</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Félicitations, vous avez révisé toutes les cartes prévues pour aujourd'hui dans ce deck.</p>
+        <h2 class="text-xl font-bold text-ink dark:text-white">Session terminée ! 🎉</h2>
+        <p class="text-sm text-ink-muted dark:text-ink-subtle mt-2">Félicitations, vous avez révisé toutes les cartes prévues pour aujourd'hui dans ce deck.</p>
       </div>
       <button 
         v-if="isFocusMode"
         @click="handleNextFocusItem"
-        class="w-full px-4 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/10"
+        class="w-full px-4 py-3 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md shadow-elev-primary"
       >
         {{ focusStore.reviewQueue.length > 0 ? 'Continuer les révisions' : 'Retour au Focus' }}
       </button>
       <button 
         v-else-if="$route.query.advance === 'true'"
         @click="router.push('/planning')"
-        class="w-full px-4 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/10"
+        class="w-full px-4 py-3 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md shadow-elev-primary"
       >
         Retour au Planning
       </button>
       <button 
         v-else
         @click="router.push('/decks')"
-        class="w-full px-4 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/10"
+        class="w-full px-4 py-3 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md shadow-elev-primary"
       >
         Retour à la liste
       </button>
@@ -62,13 +62,13 @@
     <div v-else class="space-y-8">
       <!-- Session progress -->
       <div class="space-y-2">
-        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-ink-subtle">
           <span>Carte {{ currentIndex + 1 }} sur {{ totalCards }}</span>
           <span>{{ Math.round(((currentIndex) / totalCards) * 100) }}% complété</span>
         </div>
-        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+        <div class="w-full bg-surface-soft dark:bg-surface-soft rounded-full h-2 overflow-hidden">
           <div 
-            class="bg-indigo-600 h-full rounded-full transition-all duration-300"
+            class="bg-primary h-full rounded-full transition-all duration-300"
             :style="{ width: `${((currentIndex) / totalCards) * 100}%` }"
           ></div>
         </div>
@@ -84,21 +84,21 @@
           :class="[isFlipped ? 'rotate-y-180' : '']"
         >
           <!-- Front Face -->
-          <div class="absolute inset-0 w-full h-full backface-hidden bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-3xl flex flex-col justify-between">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Question / Terme</span>
+          <div class="absolute inset-0 w-full h-full backface-hidden bg-surface dark:bg-surface-soft border border-line dark:border-line p-8 rounded-3xl flex flex-col justify-between">
+            <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Question / Terme</span>
             <div class="flex-1 flex items-center justify-center text-center">
-              <p class="text-xl font-bold leading-normal text-slate-800 dark:text-slate-100">{{ currentCard.front }}</p>
+              <p class="text-xl font-bold leading-normal text-ink dark:text-ink-subtle">{{ currentCard.front }}</p>
             </div>
-            <p class="text-center text-xs text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider mt-4">Cliquer sur la carte pour révéler la réponse</p>
+            <p class="text-center text-xs text-ink-subtle dark:text-ink-muted font-semibold uppercase tracking-wider mt-4">Cliquer sur la carte pour révéler la réponse</p>
           </div>
 
           <!-- Back Face -->
-          <div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-white dark:bg-slate-900 border border-indigo-500/20 dark:border-indigo-500/10 p-8 rounded-3xl flex flex-col justify-between shadow-indigo-500/5">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Réponse / Définition</span>
+          <div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-surface dark:bg-surface-soft border border-primary dark:border-primary p-8 rounded-3xl flex flex-col justify-between shadow-elev-primary">
+            <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Réponse / Définition</span>
             <div class="flex-1 flex items-center justify-center text-center px-4">
-              <p class="text-lg font-medium leading-relaxed text-slate-700 dark:text-slate-300">{{ currentCard.back }}</p>
+              <p class="text-lg font-medium leading-relaxed text-ink dark:text-ink-subtle">{{ currentCard.back }}</p>
             </div>
-            <p class="text-center text-xs text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider mt-4">Vous connaissiez la réponse ? Évaluez-vous ci-dessous</p>
+            <p class="text-center text-xs text-ink-subtle dark:text-ink-muted font-semibold uppercase tracking-wider mt-4">Vous connaissiez la réponse ? Évaluez-vous ci-dessous</p>
           </div>
         </div>
       </div>
@@ -106,7 +106,7 @@
       <!-- Rating controls (shown when answer is revealed) -->
       <transition name="slide-up">
         <div v-if="showRating" class="space-y-4">
-          <h3 class="text-center text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Qualité de réponse (Algorithme SM-2)</h3>
+          <h3 class="text-center text-xs font-semibold text-ink-subtle dark:text-ink-muted uppercase tracking-widest">Qualité de réponse (Algorithme SM-2)</h3>
           
           <div class="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
             <button 
