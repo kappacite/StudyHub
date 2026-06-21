@@ -1,5 +1,18 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] UX — cartes de la vue Planning « semaine » trop étroites
+
+**Symptôme** : en vue semaine, les cartes-jours sont trop étroites.
+
+**Cause** : `WeekCalendar` forçait `md:grid-cols-7` (7 colonnes côté à côte ⇒ ≈1/7 de largeur),
+et le nom de deck était tronqué dur à `max-w-[80px]`.
+
+**Fix** : grille responsive plafonnée à **4 colonnes** (`sm:2 lg:3 xl:4`) — la semaine s'étale sur
+2 rangées mais chaque carte est ≈1/4 de largeur (bien plus lisible). Le nom de deck prend la largeur
+disponible (`flex-1 min-w-0`) au lieu de `max-w-[80px]`. Build + Vitest 66 verts. ⚠️ Rendu non
+vérifié en headless.
+
+
 ## [2026-06-22] Fix fonctionnel — créer un diagramme depuis la Bibliothèque
 
 **Symptôme** : aucun moyen de créer un diagramme.

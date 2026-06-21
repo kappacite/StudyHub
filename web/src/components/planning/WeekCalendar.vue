@@ -1,5 +1,7 @@
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+  <!-- Grille plafonnée à 4 colonnes : la semaine s'étale sur 2 rangées mais chaque
+       carte est nettement plus large (≈1/4 vs 1/7) et donc lisible. -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
     <div
       v-for="day in days"
       :key="day.date"
@@ -37,7 +39,7 @@
           :key="item.deck_id"
           class="flex items-center justify-between text-xs p-2 rounded-xl bg-surface-soft border border-line group hover:bg-surface transition-all"
         >
-          <span class="font-bold text-ink-muted truncate max-w-[80px]" :title="item.deck_name">
+          <span class="font-bold text-ink-muted truncate flex-1 min-w-0 mr-2" :title="item.deck_name">
             {{ item.deck_name }}
           </span>
           <span class="px-1.5 py-0.5 rounded-lg text-[9px] font-bold bg-primary-soft text-primary">
