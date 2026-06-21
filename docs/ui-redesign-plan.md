@@ -40,9 +40,14 @@ Mettre à jour ce tableau à chaque sous-étape terminée.
 > **État S2 (🔄)** : le **cœur est fait** — `Binders.vue` (route `bibliotheque/:id?`) est
 > refondu en `SplitView` (arbre `#left` + contenu typé `#right`), `PageHeader` (fil d'Ariane),
 > `Tabs` par type (`?type=`), `ListRow` + tokens `cat-*`, et **toutes** les features préservées
-> (owner vs lecture-seule, clone, attache/détache, partage communauté + classe, stats). **Reste
-> à faire** : ré-agencer les **feuilles** avec `PageHeader` (`Notes`, `NoteEdit` zen ~68ch,
-> `PdfReader`, `Diagrams`). Lots T, S0 et S1 sont désormais **commités** sur `feature/ui-refactor-s0`.
+> (owner vs lecture-seule, clone, attache/détache, partage communauté + classe, stats).
+> **Feuilles ré-agencées** : `Notes.vue` ✅ (PageHeader + BaseCard + tokens, accent `cat-note`),
+> `PDFs.vue` ✅ (liste + lecteur + modale d'édition, accent `cat-pdf`), `Diagrams.vue` 🔄 (tête
+> `PageHeader` + barre de filtres tokenisées ; **corps de l'éditeur visuel laissé tel quel** —
+> couleurs fonctionnelles stockées en data + canevas SVG, à reprendre en passe soignée S7).
+> **Reste** : `NoteEdit.vue` (mode **zen** ~68ch — mode spécial préservé, migration prudente
+> reportée à S7) et le corps éditeur de `Diagrams.vue`. Lots T, S0, S1 et S2(cœur) **commités**
+> sur `feature/ui-refactor-s0` (poussés).
 
 ---
 
