@@ -190,8 +190,10 @@ PackagePreview`, `Notes/PublicNote` en `PageHeader`/`BaseCard`/`ListRow` ; clone
 > au passage : classes Tailwind invalides (`slate-455/350/105/750`, `green-650`, `blue-650`).
 > `NoteEdit` aussi migré (**template seul** ; indigo marque→`primary` ; `<script>` à couleurs
 > fonctionnelles pilotées par données + scrims de modale laissés intacts ; modes préservés).
+> `Diagrams` aussi migré (**template seul** ; chrome indigo→`primary`, rose→`danger` ; canevas SVG
+> préservé — palette nœuds `const colors`, masques `fill-rose`, connecteurs `#6366f1`).
 > **Restent — à faire avec VÉRIFICATION VISUELLE HUMAINE** (complexes/fonctionnels) :
-> corps éditeur `Diagrams` (couleurs nœuds en data), onglet Flashcards de `Reviews` en `ListRow` +
+> onglet Flashcards de `Reviews` en `ListRow` +
 > corps onglets IA + runners ; puis **audits transverses** (dark mode, contraste AA des pastels,
 > responsive 375 px, smoke test Capacitor).
 

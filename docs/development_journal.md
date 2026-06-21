@@ -819,3 +819,21 @@ Reprise de la boucle sur les morceaux reportés (risque visuel assumé, validati
 * **Restent (revue visuelle requise)** : corps éditeur `Diagrams` (couleurs nœuds en data),
   onglets/runners `Reviews` ; puis audits dark/AA/responsive 375 px/Capacitor.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S8 (suite) : Diagrams (chrome, canevas préservé)
+
+* **`Diagrams/Diagrams.vue`** (926 l) : **seul le `<template>` (l. 1-496) est migré** en tokens.
+  Marque éditeur **indigo→`primary`** ; emerald→`success`, amber→`warning`, **rose→`danger`**
+  (boutons supprimer / erreurs) ; slate→`ink`/`surface`/`line`. Sélection de nœud `ring-indigo`→
+  `ring-primary`, `ring-offset-slate-900`→`ring-offset-surface`.
+* **Canevas SVG & données préservés (volontaire)** : palette de nœuds `const colors` (dans le
+  `<script>`, hors périmètre), bindings `node.color`/`color.bg`, **masques d'occlusion**
+  (`fill-rose-*`/`stroke-rose-*` — rendu de révision, jamais mappés), connecteurs `#6366f1` et
+  inline-styles hex (attributs SVG, non-classes), grille (`text-slate-200/50`). Règle : on ne mappe
+  **jamais** `fill-`/`stroke-`/`decoration-` ici. Scrims `bg-slate-900/<op>` et `placeholder-slate-*`
+  conservés.
+* **Restent (revue visuelle requise)** : onglets/runners `Reviews` (Flashcards `ListRow` + corps IA) ;
+  puis audits dark/AA/responsive 375 px/Capacitor.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
