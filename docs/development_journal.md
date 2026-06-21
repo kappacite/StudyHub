@@ -1,5 +1,22 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Fix fonctionnel — rattachement deck ↔ classeur (binder_uuid)
+
+**Symptôme** : ajouter un deck à un dossier via « Ajouter › Élément existant » semblait
+sans effet — le deck n'apparaissait jamais dans le classeur après validation.
+
+**Cause racine** : `DeckResponse.binder_id` lit `Field(validation_alias="binder_uuid")`, mais
+le modèle `Deck` était le **seul** modèle rattachable (note/diagram/pdf/revision/exam/group) à
+ne PAS exposer la propriété `binder_uuid`. Résultat : l'API renvoyait toujours `binder_id: null`
+pour les decks ; le filtre client de la Bibliothèque (`deck.binder_id === currentBinderId`) ne
+matchait jamais. Le rattachement en base fonctionnait pourtant (le filtrage serveur
+`GET /decks?binder_id=` était correct — d'où le test existant vert qui masquait le bug).
+
+**Fix** : ajout de la propriété `binder_uuid` sur `Deck` (mirroir de Note/Diagram). Test de
+régression `test_attached_deck_response_exposes_binder_uuid` (assert `deck.binder_id == UUID`
+après attach). Suite backend complète verte. Aucune migration (pas de schéma DB modifié).
+
+
 Ce document répertorie chronologiquement les travaux, correctifs, décisions d'architecture et changements apportés au projet StudyHub.
 
 ---
