@@ -1,7 +1,7 @@
 <template>
-  <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-6">
+  <div class="bg-surface border border-line rounded-3xl p-6 shadow-elev-1 space-y-6">
     <!-- Grid Header -->
-    <div class="grid grid-cols-7 gap-2 text-center text-xs font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest pb-2 border-b border-slate-50 dark:border-slate-800/40">
+    <div class="grid grid-cols-7 gap-2 text-center text-xs font-black text-ink-subtle uppercase tracking-widest pb-2 border-b border-line-soft">
       <span>Lun</span>
       <span>Mar</span>
       <span>Mer</span>
@@ -14,28 +14,28 @@
     <!-- Calendar Grid -->
     <div class="grid grid-cols-7 gap-2.5">
       <!-- Padded cells before the first day -->
-      <div 
-        v-for="p in paddingCells" 
+      <div
+        v-for="p in paddingCells"
         :key="`pad-${p}`"
-        class="aspect-square bg-slate-50/30 dark:bg-slate-800/10 rounded-2xl border border-dashed border-slate-100/50 dark:border-slate-800/10 opacity-30"
+        class="aspect-square bg-surface-soft rounded-2xl border border-dashed border-line opacity-30"
       ></div>
 
       <!-- Real day cells -->
-      <div 
-        v-for="day in days" 
+      <div
+        v-for="day in days"
         :key="day.date"
         class="aspect-square relative flex flex-col justify-between p-2 rounded-2xl border transition-all duration-200 group cursor-pointer"
         :class="[
-          isToday(day.date) 
-            ? 'border-indigo-500 bg-indigo-500/5 dark:bg-indigo-500/10' 
-            : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/10 dark:bg-slate-900',
-          day.total_due > 0 ? 'hover:shadow-md' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'
+          isToday(day.date)
+            ? 'border-primary bg-primary-soft/40'
+            : 'border-line bg-surface',
+          day.total_due > 0 ? 'hover:shadow-elev-2' : 'hover:bg-surface-soft'
         ]"
       >
         <!-- Day number -->
-        <span 
+        <span
           class="text-xs font-bold self-end"
-          :class="isToday(day.date) ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-500 dark:text-slate-400'"
+          :class="isToday(day.date) ? 'text-primary font-black' : 'text-ink-muted'"
         >
           {{ formatDateNum(day.date) }}
         </span>
@@ -63,7 +63,7 @@
               class="flex items-center justify-between text-[11px]"
             >
               <span class="truncate max-w-[120px] font-semibold text-slate-200">{{ item.deck_name }}</span>
-              <span class="font-bold text-indigo-400">{{ item.count }} cartes</span>
+              <span class="font-bold text-primary">{{ item.count }} cartes</span>
             </div>
             <div v-if="day.breakdown.length === 0" class="text-[10px] italic text-slate-550">
               Aucune révision prévue.
@@ -72,7 +72,7 @@
           <!-- Tiny footer text inside popover if applicable -->
           <div 
             v-if="day.total_due > 0 && isFutureDay(day.date)" 
-            class="mt-2 pt-1.5 border-t border-slate-800 text-[9px] text-indigo-400 font-bold text-center uppercase tracking-wider"
+            class="mt-2 pt-1.5 border-t border-white/15 text-[9px] text-primary font-bold text-center uppercase tracking-wider"
           >
             Cliquer pour réviser tôt
           </div>
@@ -135,11 +135,11 @@ function formatFullDate(dateStr: string): string {
 // Heatmap colors based on study load
 function getLoadClasses(count: number): string {
   if (count < 10) {
-    return 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-500/10'
+    return 'bg-success-soft text-success border border-success/30'
   }
   if (count <= 25) {
-    return 'bg-amber-500/20 text-amber-600 border border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-500/10'
+    return 'bg-warning-soft text-warning border border-warning/30'
   }
-  return 'bg-rose-500/20 text-rose-600 border border-rose-500/30 dark:bg-rose-950/40 dark:text-rose-450 dark:border-rose-500/10'
+  return 'bg-danger-soft text-danger border border-danger/30'
 }
 </script>
