@@ -7,8 +7,10 @@ from app.dao.deck_dao import DeckDAO
 from app.dao.diagram_dao import DiagramDAO
 from app.dao.pdf_dao import PDFDAO
 from app.dao.revision_dao import RevisionSetDAO
+from app.dao.flashcard_dao import FlashcardDAO
 from app.services.binder_service import BinderService
 from app.services.binder_items_service import BinderItemsService
+from app.services.flashcard_service import FlashcardService
 from app.schemas.binder_schema import BinderCreate, BinderUpdate, BinderItemsRequest
 from app.middlewares.auth_middleware import jwt_required_middleware
 from app.api.v1.tags import remove_entity_tag, set_entity_tags
@@ -22,6 +24,7 @@ binder_items_service = BinderItemsService(
     binder_dao, NoteDAO(db.session), DeckDAO(db.session),
     RevisionSetDAO(db.session), DiagramDAO(db.session), PDFDAO(db.session),
 )
+flashcard_service = FlashcardService(FlashcardDAO(db.session), DeckDAO(db.session))
 
 @binders_bp.route("", methods=["GET"])
 @jwt_required_middleware
@@ -113,6 +116,15 @@ def detach_binder_items(binder_id):
     payload = BinderItemsRequest.model_validate(request.get_json() or {})
     detached = binder_items_service.detach(user_id, payload.items)
     return jsonify({"detached": detached}), 200
+
+
+@binders_bp.route("/<binder_id>/study", methods=["GET"])
+@jwt_required_middleware
+def get_binder_study(binder_id):
+    """Cartes dues du jour agrégées sur tous les decks du classeur (réviser un dossier)."""
+    user_id = int(get_jwt_identity())
+    cards = flashcard_service.get_binder_study_cards(user_id, binder_id)
+    return jsonify([c.model_dump() for c in cards]), 200
 
 
 @binders_bp.route("/<binder_id>/tags", methods=["POST"])

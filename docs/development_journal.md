@@ -1,5 +1,25 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Feature — réviser un dossier entier
+
+**Besoin** : pouvoir réviser tout un classeur d'un coup (cartes dues de tous ses decks).
+
+**Backend** : nouvel endpoint `GET /binders/<id>/study` → `FlashcardService.get_binder_study_cards`
+agrège, via la relation `binder.decks`, les cartes dues (réutilise `get_study_cards` deck par deck,
+avec son filtrage de types et ses contrôles d'appartenance). Chaque carte renvoie son `deck_id`.
+Tests `test_binder_study.py` (agrégation multi-decks, exclusion des autres classeurs, isolation
+inter-utilisateurs).
+
+**Frontend** : route `StudyBinder` (`/bibliotheque/:id/reviser`) réutilisant le runner
+`StudyDeck.vue` en **mode dossier** (fetch `/binders/:id/study`, titre = nom du dossier, retour vers
+le dossier). Bouton **« Réviser ce dossier »** dans l'en-tête de la Bibliothèque (visible quand le
+dossier contient des decks). `rateCard` notifie désormais le SM-2 via `currentCard.deck_id` (et non
+un id de route) — correct en mode deck, dossier (multi-decks) **et** révision anticipée (corrige un
+bug latent où la révision anticipée multi-decks notifiait le mauvais deck).
+
+Build + Vitest 66 verts ; suite backend complète verte.
+
+
 ## [2026-06-22] UX — cartes de la vue Planning « semaine » trop étroites
 
 **Symptôme** : en vue semaine, les cartes-jours sont trop étroites.

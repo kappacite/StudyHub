@@ -26,6 +26,15 @@
             {{ isSharedToClass ? `Partagé (${sharedClasses.length})` : 'Classe' }}
           </BaseButton>
 
+          <BaseButton
+            v-if="currentBinderId && currentDecks.length > 0"
+            size="sm"
+            @click="reviseBinder"
+          >
+            <template #icon><Brain class="w-4 h-4" /></template>
+            Réviser ce dossier
+          </BaseButton>
+
           <div class="relative">
             <BaseButton size="sm" @click="showAddMenu = !showAddMenu">
               <template #icon><Plus class="w-4 h-4" /></template>
@@ -385,7 +394,7 @@ const REVISION_TYPE_LABELS: Record<RevisionType, string> = {
   definition: 'Définition',
   ordre: 'Ordre',
 }
-import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, BarChart3, FolderMinus, FolderInput, GraduationCap, Activity, FileDown } from 'lucide-vue-next'
+import { FolderClosed, Plus, ChevronRight, ChevronDown, FileText, Layers, Trash2, Globe, Copy, Eye, Loader2, FolderPlus, FileQuestion, BarChart3, FolderMinus, FolderInput, GraduationCap, Activity, FileDown, Brain } from 'lucide-vue-next'
 import groupService, { type BinderClassRef } from '../../services/groupService'
 import classService, { type ClassInfo } from '../../services/classService'
 import type { BinderItemType } from '../../stores/binders'
@@ -496,6 +505,14 @@ async function addDiagram() {
   } catch (e) {
     console.error('Erreur lors de la création du diagramme', e)
   }
+}
+
+function reviseBinder() {
+  if (!currentBinderId.value) return
+  // Réviser tout le dossier : runner StudyDeck en mode « dossier » (cartes dues
+  // agrégées sur tous les decks du classeur). Le nom alimente l'en-tête du runner.
+  const name = bindersStore.binders.find(b => b.id === currentBinderId.value)?.name || 'Dossier'
+  router.push(`/bibliotheque/${currentBinderId.value}/reviser?name=${encodeURIComponent(name)}`)
 }
 
 const showShareModal = ref(false)

@@ -133,6 +133,7 @@ import { useDecksStore } from '../../stores/decks'
 import type { Flashcard } from '../../stores/decks'
 import { useFocusStore } from '../../stores/focus'
 import { usePlanningStore } from '../../stores/planning'
+import api from '../../services/api'
 import { ChevronLeft, Sparkles } from '@lucide/vue'
 
 const decksStore = useDecksStore()
@@ -140,6 +141,11 @@ const focusStore = useFocusStore()
 const planningStore = usePlanningStore()
 const router = useRouter()
 const route = useRoute()
+
+// Mode « dossier » : on révise toutes les cartes dues des decks d'un classeur.
+// route.params.id est alors l'UUID du classeur (pas un id de deck numérique).
+const isBinderMode = computed(() => route.name === 'StudyBinder')
+const binderId = computed(() => String(route.params.id))
 
 const deckId = ref(Number(route.params.id))
 const deckName = ref('Deck')
@@ -174,16 +180,23 @@ async function loadSession() {
   studyCards.value = []
   
   try {
-    const deck = await decksStore.fetchDeckById(deckId.value)
-    if (deck) {
-      deckName.value = deck.name
-    }
-    
-    if (route.query.advance === 'true') {
-      studyCards.value = [...planningStore.advanceReviewCards]
+    if (isBinderMode.value) {
+      // Révision d'un dossier entier : cartes dues agrégées sur tous ses decks.
+      deckName.value = (route.query.name as string) || 'Dossier'
+      const res = await api.get<Flashcard[]>(`/binders/${binderId.value}/study`)
+      studyCards.value = res.data
     } else {
-      // Fetch cards scheduled for study today
-      studyCards.value = await decksStore.fetchStudyCards(deckId.value)
+      const deck = await decksStore.fetchDeckById(deckId.value)
+      if (deck) {
+        deckName.value = deck.name
+      }
+
+      if (route.query.advance === 'true') {
+        studyCards.value = [...planningStore.advanceReviewCards]
+      } else {
+        // Fetch cards scheduled for study today
+        studyCards.value = await decksStore.fetchStudyCards(deckId.value)
+      }
     }
     totalCards.value = studyCards.value.length
   } catch (error) {
@@ -201,6 +214,8 @@ watch(() => route.params.id, (newId) => {
   if (route.name === 'StudyDeck') {
     deckId.value = Number(newId)
     loadSession()
+  } else if (route.name === 'StudyBinder') {
+    loadSession()
   }
 })
 
@@ -209,6 +224,8 @@ function goBack() {
     router.push('/focus')
   } else if (route.query.advance === 'true') {
     router.push('/planning')
+  } else if (isBinderMode.value) {
+    router.push(`/bibliotheque/${binderId.value}`)
   } else {
     router.push('/decks')
   }
@@ -232,15 +249,18 @@ function flipCard() {
 }
 
 async function rateCard(score: number) {
-  if (!deckId.value || !currentCard.value?.id) {
-    console.error('Identifiants manquants pour la notation :', { deckId: deckId.value, cardId: currentCard.value?.id })
+  // On notifie le SM-2 sur le deck d'origine de la CARTE (et non un id de route) :
+  // correct en mode deck, dossier (multi-decks) et révision anticipée.
+  const card = currentCard.value
+  if (!card?.id || !card?.deck_id) {
+    console.error('Identifiants manquants pour la notation :', { cardId: card?.id, deckId: card?.deck_id })
     return
   }
 
   loading.value = true
   try {
     // Submit score to trigger SM-2 recalculations
-    await decksStore.answerCard(deckId.value, currentCard.value.id, score)
+    await decksStore.answerCard(card.deck_id, card.id, score)
 
     isFlipped.value = false
 
