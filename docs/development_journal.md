@@ -903,5 +903,13 @@ bruts dans les templates), hors plan S0→S7. Migration en tokens, **une sous-PR
 * **Module Focus** : `FocusPage` (188), `FocusWidget` (90). SVG de marque du widget→
   `fill-primary`/`stroke-primary`. Tooltip sombre délibéré `bg-slate-950` de `FocusPage` laissé tel
   quel (pas de token « surface inversée »). Vérif : build OK, Vitest **66** ✅.
-* **À suivre (sous-PR)** : divers (`PdfReader`, `Login`, `Register`, `MonthCalendar`, `AppLayout`).
-  Puis audits humains.
+* **Divers** : `PdfReader` (37), `Login` (65), `Register` (72), `MonthCalendar` (90),
+  `AppLayout` (194). Nuance morte `slate-855`→`surface-soft` (MonthCalendar). Vérif : build OK,
+  Vitest **66** ✅.
+* **✅ Couverture app complète.** Balayage repo-wide final : **tous les templates `.vue` sont
+  tokenisés**, à l'exception **volontaire** des scrims de modale (`bg-slate-9x0/<op>`), des masques
+  d'occlusion `Diagrams` (`fill-rose-*`), du tooltip inversé `FocusPage` (`bg-slate-950`), et des
+  couleurs **pilotées par données / `<script>` / canevas** (échelles SM-2, surlignage correct/
+  incorrect, palette de nœuds) — toutes préservées intentionnellement.
+* **Reste uniquement** : audits transverses NON automatisables (revue humaine) — dark mode,
+  contraste AA des pastels, responsive 375 px, smoke test Capacitor.
