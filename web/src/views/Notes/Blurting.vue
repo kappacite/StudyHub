@@ -1,19 +1,19 @@
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-[#070913] flex flex-col animate-fade-in">
+  <div class="min-h-screen bg-surface-soft dark:bg-[#070913] flex flex-col animate-fade-in">
     <!-- Header de la session -->
-    <header class="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800/80 px-6 py-4 sticky top-0 z-30">
+    <header class="bg-surface dark:bg-surface-soft border-b border-line dark:border-line px-6 py-4 sticky top-0 z-30">
       <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <button 
             @click="goBack"
-            class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+            class="p-2 text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle rounded-xl hover:bg-surface-soft dark:hover:bg-surface-soft transition-all"
             :title="isFocusMode ? 'Retour au Focus' : 'Retour à la note'"
           >
             <ChevronLeft class="w-5 h-5" />
           </button>
           <div>
-            <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Méthode de la page blanche (IA)</span>
-            <h1 class="text-base font-bold text-slate-800 dark:text-white line-clamp-1">
+            <span class="text-[10px] font-bold text-primary uppercase tracking-wider">Méthode de la page blanche (IA)</span>
+            <h1 class="text-base font-bold text-ink dark:text-white line-clamp-1">
               {{ noteTitle || 'Chargement de la note...' }}
             </h1>
           </div>
@@ -21,9 +21,9 @@
 
         <!-- Chronomètre et état -->
         <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800/40">
-            <Clock class="w-4.5 h-4.5 text-indigo-500" :class="{ 'animate-pulse': step === 'writing' }" />
-            <span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-350">
+          <div class="flex items-center gap-2 bg-surface-soft dark:bg-surface-soft px-4 py-2 rounded-2xl border border-line dark:border-line">
+            <Clock class="w-4.5 h-4.5 text-primary" :class="{ 'animate-pulse': step === 'writing' }" />
+            <span class="text-sm font-mono font-bold text-ink dark:text-ink-subtle">
               {{ formatTime(timerSeconds) }}
             </span>
           </div>
@@ -32,7 +32,7 @@
             v-if="step === 'writing'"
             @click="submitForAnalysis"
             :disabled="!blurtingText.trim() || analyzing"
-            class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/15 disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all"
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-strong text-white rounded-xl text-sm font-bold shadow-lg shadow-elev-primary disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all"
           >
             <Sparkles class="w-4 h-4" />
             Lancer l'analyse IA
@@ -41,7 +41,7 @@
           <button
             v-if="step === 'results'"
             @click="resetSession"
-            class="inline-flex items-center gap-2 px-5 py-2.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-sm font-bold transition-all text-slate-700 dark:text-slate-300"
+            class="inline-flex items-center gap-2 px-5 py-2.5 border border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft rounded-xl text-sm font-bold transition-all text-ink dark:text-ink-subtle"
           >
             <RotateCcw class="w-4 h-4" />
             Recommencer
@@ -50,7 +50,7 @@
           <button
             v-if="step === 'results' && isFocusMode"
             @click="handleNextFocusItem"
-            class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/15 active:scale-95 transition-all"
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-strong text-white rounded-xl text-sm font-bold shadow-lg shadow-elev-primary active:scale-95 transition-all"
           >
             {{ focusStore.reviewQueue.length > 0 ? 'Continuer' : 'Terminer' }}
             <ArrowRight class="w-4 h-4" />
@@ -63,12 +63,12 @@
     <main class="flex-1 max-w-7xl mx-auto w-full p-6 flex flex-col">
       <!-- ÉTAPE 1 : RÉDACTION (PAGE BLANCHE) -->
       <div v-if="step === 'writing'" class="flex-1 flex flex-col gap-6">
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <BookOpen class="w-4 h-4 text-indigo-500" />
+        <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm">
+          <h2 class="text-sm font-bold text-ink dark:text-ink-subtle flex items-center gap-2">
+            <BookOpen class="w-4 h-4 text-primary" />
             Consignes de l'exercice
           </h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+          <p class="text-xs text-ink-muted dark:text-ink-subtle mt-2 leading-relaxed">
             Fermez vos yeux, respirez un grand coup et essayez de rédiger ci-dessous tout ce dont vous vous souvenez de votre cours
             <strong>{{ noteTitle }}</strong>. Pas besoin de faire de belles phrases ni d'ordonner parfaitement vos propos. L'IA se chargera
             d'extraire et de cartographier vos connaissances, de repérer vos lacunes, et de générer des flashcards d'apprentissage ciblées.
@@ -76,22 +76,22 @@
         </div>
 
         <!-- Zone de saisie plein écran -->
-        <div class="flex-1 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/80 rounded-3xl p-6 shadow-lg shadow-slate-100/50 dark:shadow-none flex flex-col">
+        <div class="flex-1 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-lg shadow-soft-lg dark:shadow-none flex flex-col">
           <textarea
             v-model="blurtingText"
             placeholder="Écrivez ici de mémoire tout ce que vous avez retenu de votre note de cours..."
-            class="flex-1 w-full p-4 bg-transparent outline-none border-0 focus:ring-0 text-base leading-relaxed text-slate-800 dark:text-slate-200 resize-none font-sans"
+            class="flex-1 w-full p-4 bg-transparent outline-none border-0 focus:ring-0 text-base leading-relaxed text-ink dark:text-ink-subtle resize-none font-sans"
             :disabled="analyzing"
           ></textarea>
           
-          <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-4 mt-4 text-xs font-semibold text-slate-400">
+          <div class="flex items-center justify-between border-t border-line dark:border-line pt-4 mt-4 text-xs font-semibold text-ink-subtle">
             <span>{{ wordCount }} mots rédigés</span>
-            <div v-if="analyzing" class="text-indigo-500 flex flex-col items-end gap-1 text-right animate-pulse">
+            <div v-if="analyzing" class="text-primary flex flex-col items-end gap-1 text-right animate-pulse">
               <span class="flex items-center gap-2">
                 <Sparkles class="w-4 h-4 animate-spin" />
                 Analyse de votre mémoire en cours...
               </span>
-              <span class="text-[10px] text-slate-400 dark:text-slate-500 italic font-medium max-w-md transition-all duration-500">
+              <span class="text-[10px] text-ink-subtle dark:text-ink-muted italic font-medium max-w-md transition-all duration-500">
                 {{ tips[currentTipIndex] }}
               </span>
             </div>
@@ -104,11 +104,11 @@
         <!-- Colonne Gauche : Score & Feedback & Concepts -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Bilan de rétention -->
-          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/85 rounded-3xl p-8 shadow-sm flex flex-col md:flex-row items-center gap-8">
+          <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 shadow-sm flex flex-col md:flex-row items-center gap-8">
             <!-- Jauge Circulaire Animée -->
             <div class="relative w-36 h-36 flex items-center justify-center">
               <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8" class="text-slate-100 dark:text-slate-800" fill="transparent" />
+                <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8" class="text-ink-subtle dark:text-ink" fill="transparent" />
                 <circle 
                   cx="50" 
                   cy="50" 
@@ -123,28 +123,28 @@
                 />
               </svg>
               <div class="absolute flex flex-col items-center">
-                <span class="text-3xl font-extrabold text-slate-850 dark:text-white">{{ resultData.retention_score }}%</span>
-                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Rétention</span>
+                <span class="text-3xl font-extrabold text-ink dark:text-white">{{ resultData.retention_score }}%</span>
+                <span class="text-[10px] text-ink-subtle font-bold uppercase tracking-wider">Rétention</span>
               </div>
             </div>
 
             <!-- Feedback de l'IA -->
             <div class="flex-1 space-y-2">
-              <h2 class="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                <Brain class="w-5 h-5 text-indigo-500" />
+              <h2 class="text-lg font-extrabold text-ink dark:text-white flex items-center gap-2">
+                <Brain class="w-5 h-5 text-primary" />
                 Bilan de votre tuteur
               </h2>
-              <p class="text-sm text-slate-600 dark:text-slate-350 leading-relaxed italic">
+              <p class="text-sm text-ink-muted dark:text-ink-subtle leading-relaxed italic">
                 " {{ resultData.general_feedback }} "
               </p>
             </div>
           </div>
 
           <!-- Concepts clés -->
-          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/85 rounded-3xl p-6 shadow-sm space-y-4">
-            <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Cartographie des concepts du cours</h2>
+          <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-ink dark:text-ink-subtle uppercase tracking-wider">Cartographie des concepts du cours</h2>
             
-            <div class="divide-y divide-slate-100 dark:divide-slate-800/60">
+            <div class="divide-y divide-line dark:divide-line">
               <div 
                 v-for="(concept, i) in resultData.concepts" 
                 :key="i"
@@ -152,14 +152,14 @@
               >
                 <!-- Statut de mémorisation -->
                 <span class="mt-1 flex-shrink-0">
-                  <CheckCircle2 v-if="concept.status === 'mastered'" class="w-5 h-5 text-emerald-500" />
-                  <AlertTriangle v-else-if="concept.status === 'incorrect'" class="w-5 h-5 text-amber-500" />
-                  <XCircle v-else class="w-5 h-5 text-rose-500" />
+                  <CheckCircle2 v-if="concept.status === 'mastered'" class="w-5 h-5 text-success" />
+                  <AlertTriangle v-else-if="concept.status === 'incorrect'" class="w-5 h-5 text-warning" />
+                  <XCircle v-else class="w-5 h-5 text-danger" />
                 </span>
 
                 <div class="space-y-1">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <h3 class="text-sm font-bold text-slate-850 dark:text-white">{{ concept.name }}</h3>
+                    <h3 class="text-sm font-bold text-ink dark:text-white">{{ concept.name }}</h3>
                     <span 
                       class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
                       :class="getStatusBadgeClass(concept.status)"
@@ -167,7 +167,7 @@
                       {{ getStatusText(concept.status) }}
                     </span>
                   </div>
-                  <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <p class="text-xs text-ink-muted dark:text-ink-subtle leading-relaxed">
                     {{ concept.explanation }}
                   </p>
                 </div>
@@ -178,13 +178,13 @@
 
         <!-- Colonne Droite : Génération de Flashcards -->
         <div class="space-y-6">
-          <div class="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/85 rounded-3xl p-6 shadow-sm flex flex-col gap-6 sticky top-28">
+          <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm flex flex-col gap-6 sticky top-28">
             <div class="space-y-2">
-              <h2 class="text-sm font-bold text-slate-850 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <Sparkles class="w-4 h-4 text-emerald-500" />
+              <h2 class="text-sm font-bold text-ink dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <Sparkles class="w-4 h-4 text-success" />
                 Flashcards suggérées
               </h2>
-              <p class="text-xs text-slate-400 dark:text-slate-500">
+              <p class="text-xs text-ink-subtle dark:text-ink-muted">
                 L'IA a généré ces cartes basées sur vos lacunes pour vous aider à les surmonter.
               </p>
             </div>
@@ -194,33 +194,33 @@
               <div 
                 v-for="(card, index) in resultData.suggested_flashcards" 
                 :key="index"
-                class="p-3 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-start gap-3 hover:border-slate-200 dark:hover:border-slate-700 transition-colors"
+                class="p-3 border border-line dark:border-line rounded-2xl flex items-start gap-3 hover:border-line dark:hover:border-line transition-colors"
               >
                 <input 
                   type="checkbox" 
                   v-model="selectedCards[index]"
-                  class="mt-1 h-4.5 w-4.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  class="mt-1 h-4.5 w-4.5 rounded border-line text-primary focus:ring-primary"
                 />
                 <div class="text-xs space-y-1">
-                  <div class="font-bold text-slate-700 dark:text-slate-350">Recto : {{ card.front }}</div>
-                  <div class="text-slate-450 dark:text-slate-500 italic">Verso : {{ card.back }}</div>
+                  <div class="font-bold text-ink dark:text-ink-subtle">Recto : {{ card.front }}</div>
+                  <div class="text-ink-muted dark:text-ink-muted italic">Verso : {{ card.back }}</div>
                 </div>
               </div>
 
-              <div v-if="resultData.suggested_flashcards.length === 0" class="text-center py-6 text-xs text-slate-400 italic">
+              <div v-if="resultData.suggested_flashcards.length === 0" class="text-center py-6 text-xs text-ink-subtle italic">
                 Aucune flashcard suggérée (Félicitations, vous maîtrisez tout le cours !)
               </div>
             </div>
 
             <!-- Sélecteur de deck d'intégration -->
-            <div class="border-t border-slate-100 dark:border-slate-800/80 pt-4 space-y-4">
+            <div class="border-t border-line dark:border-line pt-4 space-y-4">
               <div class="space-y-2">
-                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Importer dans un deck</label>
+                <label class="text-xs font-bold text-ink-muted uppercase tracking-wider">Importer dans un deck</label>
                 
                 <div class="flex flex-col gap-2">
                   <select 
                     v-model="targetDeckId"
-                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold"
+                    class="w-full px-3 py-2 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold"
                   >
                     <option :value="null" disabled>Sélectionner un deck...</option>
                     <option v-for="deck in decksStore.decks" :key="deck.id" :value="deck.id">
@@ -229,8 +229,8 @@
                   </select>
 
                   <div class="flex items-center gap-2">
-                    <span class="text-[10px] text-slate-400 font-bold uppercase">Ou</span>
-                    <hr class="flex-1 border-slate-100 dark:border-slate-800" />
+                    <span class="text-[10px] text-ink-subtle font-bold uppercase">Ou</span>
+                    <hr class="flex-1 border-line dark:border-line" />
                   </div>
 
                   <!-- Option de création rapide de deck -->
@@ -239,12 +239,12 @@
                       type="text" 
                       v-model="newDeckName"
                       placeholder="Nouveau deck..."
-                      class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                      class="flex-1 px-3 py-1.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs"
                     />
                     <button 
                       @click="createNewDeck"
                       :disabled="!newDeckName.trim() || creatingDeck"
-                      class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 text-xs font-bold rounded-xl active:scale-95 transition-all"
+                      class="px-3 py-1.5 bg-surface-soft hover:bg-line dark:bg-surface-soft dark:hover:bg-line text-ink dark:text-ink-subtle text-xs font-bold rounded-xl active:scale-95 transition-all"
                     >
                       Créer
                     </button>
@@ -256,7 +256,7 @@
               <button 
                 @click="importFlashcards"
                 :disabled="selectedCardsCount === 0 || !targetDeckId || importing"
-                class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-extrabold disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all shadow-md shadow-emerald-600/10"
+                class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-success hover:bg-success text-white rounded-2xl text-xs font-extrabold disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all shadow-md shadow-soft-lg"
               >
                 <Plus v-if="!importing" class="w-4 h-4" />
                 <svg v-else class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
