@@ -28,8 +28,10 @@ type TabKey = 'teacher' | 'student' | 'groups'
 const route = useRoute()
 const router = useRouter()
 
-// L'onglet « Enseignant » n'apparaît que si l'utilisateur administre au moins une classe
-// (propriétaire ou admin) — il n'existe pas de rôle global dans le store auth.
+// `isTeacher` (administre au moins une classe) ne sert qu'à choisir l'onglet par défaut :
+// l'onglet « Enseignant » est TOUJOURS visible, sinon un utilisateur sans classe ne pourrait
+// jamais créer sa première (le bouton « Créer une classe » vit dans TeacherDashboard, dont
+// l'empty state invite justement à créer).
 const isTeacher = ref(false)
 
 const allTabs: Record<TabKey, TabItem> = {
@@ -39,7 +41,7 @@ const allTabs: Record<TabKey, TabItem> = {
 }
 
 const visibleTabs = computed<TabItem[]>(() =>
-  (isTeacher.value ? ['teacher', 'student', 'groups'] : ['student', 'groups']).map(k => allTabs[k as TabKey])
+  (['teacher', 'student', 'groups'] as TabKey[]).map(k => allTabs[k])
 )
 
 function isValidTab(value: unknown): value is TabKey {
@@ -63,14 +65,9 @@ onMounted(async () => {
     isTeacher.value = false
   }
 
-  // Si l'onglet demandé est « teacher » mais l'utilisateur n'administre rien, ou si aucun
-  // onglet valide n'est fourni, choisir un défaut cohérent.
-  if (!isValidTab(route.query.tab)) {
-    activeTab.value = isTeacher.value ? 'teacher' : 'student'
-  } else if (route.query.tab === 'teacher' && !isTeacher.value) {
-    activeTab.value = 'student'
-  } else {
-    activeTab.value = route.query.tab
-  }
+  // Onglet demandé honoré tel quel (tous valides désormais) ; sinon défaut selon le profil.
+  activeTab.value = isValidTab(route.query.tab)
+    ? route.query.tab
+    : (isTeacher.value ? 'teacher' : 'student')
 })
 </script>
