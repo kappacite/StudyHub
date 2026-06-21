@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, ForeignKey, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -31,3 +32,9 @@ class Deck(db.Model):
     tags = relationship("Tag", secondary="deck_tags", back_populates="decks")
     # NB : le nombre de cartes (`card_count` de DeckResponse) est injecté par le
     # service via un COUNT groupé — pas de propriété `len(self.cards)` ici (over-fetch).
+
+    @property
+    def binder_uuid(self) -> Optional[str]:
+        # DeckResponse.binder_id lit cet alias : on expose l'UUID public du
+        # classeur (et non la PK interne), comme Note/Diagram/Pdf/RevisionSet.
+        return self.binder.id if self.binder else None

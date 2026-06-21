@@ -25,6 +25,22 @@ def test_attach_existing_items_moves_them_into_binder(client, auth_headers):
     assert any(d["id"] == deck["id"] for d in client.get(f"/api/v1/decks?binder_id={binder_id}", headers=auth_headers).json["data"])
 
 
+def test_attached_deck_response_exposes_binder_uuid(client, auth_headers):
+    """Régression : DeckResponse.binder_id doit renvoyer l'UUID du classeur après
+    rattachement (le front filtre côté client sur `deck.binder_id`). Sans la propriété
+    `binder_uuid` sur le modèle Deck, ce champ restait toujours null → le deck
+    n'apparaissait jamais dans le dossier."""
+    binder_id = _binder(client, auth_headers)
+    deck = client.post("/api/v1/decks", json={"name": "D"}, headers=auth_headers).json
+    assert deck["binder_id"] is None
+
+    client.post(f"/api/v1/binders/{binder_id}/items",
+                json={"items": [{"type": "deck", "id": deck["id"]}]}, headers=auth_headers)
+
+    refetched = client.get(f"/api/v1/decks/{deck['id']}", headers=auth_headers).json
+    assert refetched["binder_id"] == binder_id
+
+
 def test_detach_keeps_element_but_removes_from_binder(client, auth_headers):
     binder_id = _binder(client, auth_headers)
     note = client.post("/api/v1/notes", json={"title": "N", "content": "x", "binder_id": binder_id}, headers=auth_headers).json
