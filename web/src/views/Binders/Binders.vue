@@ -238,7 +238,7 @@
                 interactive
                 class="group"
                 :title="diagram.title || 'Diagramme sans titre'"
-                @click="router.push('/diagrams')"
+                @click="router.push(`/diagrams?id=${diagram.id}`)"
               >
                 <template #leading><div class="w-9 h-9 rounded-xl bg-cat-diagram-soft text-cat-diagram flex items-center justify-center"><Activity class="w-4.5 h-4.5" /></div></template>
                 <template #trailing>
@@ -463,6 +463,7 @@ const addMenu = [
   { label: 'Sous-dossier', icon: FolderPlus, action: () => closeMenuThen(openCreateModal) },
   { label: 'Élément existant', icon: FolderInput, action: () => closeMenuThen(openAttachModal) },
   { label: 'Note', icon: FileText, action: () => closeMenuThen(addNote) },
+  { label: 'Diagramme', icon: Activity, action: () => closeMenuThen(addDiagram) },
 ]
 
 function closeMenuThen(fn: () => void) {
@@ -473,6 +474,28 @@ function closeMenuThen(fn: () => void) {
 async function addNote() {
   const note = await notesStore.createNote('Nouvelle note', '', currentBinderId.value)
   router.push(`/notes/${note.id}?edit=true`)
+}
+
+async function addDiagram() {
+  // Crée un diagramme rattaché au dossier courant puis ouvre l'éditeur (?id=…).
+  // L'éditeur (/diagrams) sélectionne le diagramme via route.query.id.
+  const defaultCode = JSON.stringify({
+    type: 'visual',
+    nodes: [{ id: 1, label: 'Concept central', type: 'rect', x: 250, y: 150, color: 'bg-indigo-600' }],
+    connections: [],
+    backgroundImage: null,
+    masks: [],
+  })
+  try {
+    const res = await api.post('/diagrams', {
+      title: 'Nouveau diagramme',
+      code: defaultCode,
+      binder_id: currentBinderId.value,
+    })
+    router.push(`/diagrams?id=${res.data.id}`)
+  } catch (e) {
+    console.error('Erreur lors de la création du diagramme', e)
+  }
 }
 
 const showShareModal = ref(false)
