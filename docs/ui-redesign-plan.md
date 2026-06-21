@@ -31,7 +31,7 @@ Légende : ✅ fait · 🔄 en cours · ⏳ à faire
 | **S3** | Réviser — `PageHeader`+sélecteurs tokenisés, bandeau « À réviser maintenant » (focus) + CTA « Tout réviser », entrée Examen | 🔄 | `feature/ui-refactor-s3` |
 | **S4** | Classes — `StudentClassView` + `GroupsList` migrés (tokens, sous-en-tête) ; gros enfants restants | 🔄 | `feature/ui-refactor-s4` |
 | **S5** | Planning — `PlanningPage` (PageHeader + toggle/nav) + `Week/MonthCalendar` tokenisés (charge→success/warning/danger) | ✅ | `feature/ui-refactor-s5` |
-| **S6** | Communauté / Public | ⏳ | `feature/ui-refactor-s6` |
+| **S6** | Communauté/Public — `PublicLayout` + `Marketplace/Home` + `Explore` migrés ; détails (`PackagePreview`,`PublicNote`)→S7 | 🔄 | `feature/ui-refactor-s6` |
 | **S7** | Finition (audit transverse) | ⏳ | `feature/ui-refactor-s7` |
 
 **Reprise rapide** : `git checkout feature/ui-refactor-s0` → continuer à la 1re ligne 🔄/⏳.
@@ -166,6 +166,12 @@ Progression/Analytics/Roster/Q&A), `StudentClassView` (devoirs par statut, Q&A, 
 
 `PlanningPage` : `PageContainer`+`PageHeader` (Tabs Semaine/Mois + action Avancer) ; `MonthCalendar`/
 `WeekCalendar` ré-agencés ; store `planning` inchangé.
+
+> **État S6 (🔄)** : **migrés** — `PublicLayout` (coquille : header/footer tokenisés, logo/CTA
+> indigo→primary, « Espace personnel »→`/accueil` déjà OK), `Marketplace/Home` (landing : hero +
+> 6 cartes feature via tokens `cat-*`/sémantiques + stats), `Marketplace/Explore` (recherche +
+> grilles packs/cours en `BaseCard`, follow done→success). **Restent (S7)** : `PackagePreview` et
+> `Notes/PublicNote` (pages de détail). clone/follow inchangés.
 
 ## Lot S6 — Communauté / Public
 
