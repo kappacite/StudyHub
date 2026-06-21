@@ -35,7 +35,7 @@
           :to="item.path"
           class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 group"
           :class="[
-            $route.path === item.path
+            isNavActive(item)
               ? 'bg-primary-soft text-primary'
               : 'text-ink-muted hover:bg-surface-soft hover:text-ink'
           ]"
@@ -45,7 +45,7 @@
           <component
             :is="item.icon"
             class="w-5 h-5 transition-transform duration-200 group-hover:scale-110"
-            :class="[$route.path === item.path ? 'text-primary' : 'text-ink-subtle group-hover:text-ink-muted']"
+            :class="[isNavActive(item) ? 'text-primary' : 'text-ink-subtle group-hover:text-ink-muted']"
           />
           {{ item.name }}
         </router-link>
@@ -202,23 +202,18 @@ import PomodoroTimer from '../ui/PomodoroTimer.vue'
 import NotificationBell from '../ui/NotificationBell.vue'
 import BaseToggle from '../ui/base/BaseToggle.vue'
 import BaseButton from '../ui/base/BaseButton.vue'
-import { 
-  LayoutDashboard, 
-  FolderClosed, 
-  FileText, 
-  Activity, 
-  FileDown, 
+import {
+  Home,
+  FolderClosed,
   LogOut,
   LogIn,
-  Sun, 
-  Moon, 
-  Menu, 
+  Sun,
+  Moon,
+  Menu,
   Calendar,
   Brain,
-  Flame,
   Search,
-  ShieldAlert,
-  UsersRound,
+  Compass,
   GraduationCap
 } from '@lucide/vue'
 
@@ -242,33 +237,35 @@ const isEditMode = computed(() => {
   return route.name === 'NoteEdit' && route.query.edit === 'true'
 })
 
+// Refonte 5 sections par intention + lien Communauté. L'état actif se calcule par
+// PRÉFIXE (match[]) pour que les routes feuilles (ex. /notes/123, /decks/5/study)
+// allument la bonne section.
 const navItems = [
-  { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Priorités (Focus)', path: '/focus', icon: Flame },
-  { name: 'Planning', path: '/planning', icon: Calendar },
-  { name: 'Classeurs', path: '/binders', icon: FolderClosed },
-  { name: 'Révisions', path: '/reviews', icon: Brain },
-  { name: 'Notes', path: '/notes', icon: FileText },
-  { name: 'Diagrammes', path: '/diagrams', icon: Activity },
-  { name: 'PDFs', path: '/pdfs', icon: FileDown },
-  { name: 'Groupes', path: '/groups', icon: UsersRound },
-  { name: 'Espace Professeur', path: '/classes/teacher', icon: GraduationCap },
-  { name: 'Mes Classes', path: '/classes/student', icon: GraduationCap },
-  { name: 'Mode Examen', path: '/exam/setup', icon: ShieldAlert }
+  { name: 'Accueil', path: '/accueil', icon: Home, match: ['/accueil', '/focus'] },
+  { name: 'Bibliothèque', path: '/bibliotheque', icon: FolderClosed, match: ['/bibliotheque', '/notes', '/pdfs', '/diagrams'] },
+  { name: 'Réviser', path: '/reviser', icon: Brain, match: ['/reviser', '/decks', '/revision', '/exam'] },
+  { name: 'Planning', path: '/planning', icon: Calendar, match: ['/planning'] },
+  { name: 'Classes', path: '/classes', icon: GraduationCap, match: ['/classes', '/groups'] },
+  { name: 'Communauté', path: '/explore', icon: Compass, match: ['/explore', '/package'] },
 ]
+
+function isNavActive(item: { match: string[] }) {
+  return item.match.some(m => route.path === m || route.path.startsWith(m + '/'))
+}
 
 const currentRouteName = computed(() => {
   const name = route.name as string
   if (!name) return ''
+  if (name === 'Accueil') return 'Accueil'
+  if (name === 'Bibliotheque') return 'Bibliothèque'
   if (name === 'StudyDeck') return 'Flashcards (Étude)'
   if (name === 'NoteEdit') return 'Édition de Note'
-  if (name === 'Reviews') return 'Espace Révisions'
+  if (name === 'Reviser') return 'Espace Révisions'
+  if (name === 'Classes') return 'Classes'
   if (name === 'Planning') return 'Planning des révisions'
   if (name === 'ExamSetup') return 'Configuration Examen'
   if (name === 'ExamSession') return 'Session d\'Examen'
   if (name === 'ExamResults') return 'Résultats d\'Examen'
-  if (name === 'TeacherDashboard') return 'Espace Professeur'
-  if (name === 'StudentClassView') return 'Mes Classes'
   if (name === 'AssignmentDetail') return 'Détails du devoir'
   return name
 })

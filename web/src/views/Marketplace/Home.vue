@@ -144,7 +144,7 @@ import { Sparkles, ArrowRight, Brain, BookOpen, Activity, FileDown, Folder, Glob
 const router = useRouter()
 
 function goToDashboard() {
-  router.push('/dashboard')
+  router.push('/accueil')
 }
 
 function goToExplore() {

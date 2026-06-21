@@ -5,6 +5,15 @@
       <div>
         <h1 class="text-2xl font-bold tracking-tight">Espace Révisions 🧠</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Multipliez l'efficacité de votre apprentissage grâce aux meilleures techniques cognitives.</p>
+        <!-- Anti-stranding S0 : l'entrée « Mode Examen » a quitté la nav ; sera intégrée
+             comme onglet Examen lors du lot S3. -->
+        <router-link
+          to="/exam/setup"
+          class="inline-flex items-center gap-2 mt-3 px-4 py-2 text-xs font-bold rounded-full bg-primary text-white hover:bg-primary-strong shadow-elev-primary transition-all active:scale-95"
+        >
+          <ShieldAlert class="w-4 h-4" />
+          Lancer un examen blanc
+        </router-link>
       </div>
       
       <!-- Category selector (Classiques vs IA) -->
@@ -948,7 +957,8 @@ import {
   Compass,
   Settings,
   Trash2,
-  Plus
+  Plus,
+  ShieldAlert
 } from '@lucide/vue'
 
 const router = useRouter()

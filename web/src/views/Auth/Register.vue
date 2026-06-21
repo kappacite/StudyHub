@@ -94,7 +94,7 @@ async function onSubmit() {
   
   try {
     await authStore.register(email.value, username.value, password.value)
-    router.push('/dashboard')
+    router.push('/accueil')
   } catch (err: any) {
     error.value = err.message || 'Une erreur s\'est produite.'
   } finally {
