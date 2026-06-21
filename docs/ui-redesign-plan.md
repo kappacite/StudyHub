@@ -192,10 +192,12 @@ PackagePreview`, `Notes/PublicNote` en `PageHeader`/`BaseCard`/`ListRow` ; clone
 > fonctionnelles pilotées par données + scrims de modale laissés intacts ; modes préservés).
 > `Diagrams` aussi migré (**template seul** ; chrome indigo→`primary`, rose→`danger` ; canevas SVG
 > préservé — palette nœuds `const colors`, masques `fill-rose`, connecteurs `#6366f1`).
-> **Restent — à faire avec VÉRIFICATION VISUELLE HUMAINE** (complexes/fonctionnels) :
-> onglet Flashcards de `Reviews` en `ListRow` +
-> corps onglets IA + runners ; puis **audits transverses** (dark mode, contraste AA des pastels,
-> responsive 375 px, smoke test Capacitor).
+> `Reviews` aussi migré (**templates seuls** ; hub + runners/stats/modales : `RevisionStudy`,
+> `QcmRun`, `RevisionBinderStats`/`SetStats`, `RevisionItemModal`, `AnkiImportModal`,
+> `LearningCurve` ; indigo→`primary` ; constructeurs de surlignage `<script>` + scrims préservés).
+> **✅ Migration mécanique S8 terminée.** **Restent uniquement les audits transverses NON
+> automatisables (VÉRIFICATION VISUELLE HUMAINE)** : dark mode, contraste AA des pastels,
+> responsive 375 px, smoke test Capacitor.
 
 ## Lot S7 — Finition (audit transverse)
 

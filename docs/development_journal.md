@@ -855,3 +855,19 @@ Reprise de la boucle sur les morceaux reportés (risque visuel assumé, validati
   `RevisionBinderStats`/`SetStats`, `RevisionItemModal`, `AnkiImportModal`, `LearningCurve`) ;
   puis audits dark/AA/responsive 375 px/Capacitor.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S8 (fin code) : Reviews — runners/stats/modales
+
+* Migration `<template>` (tokens) de **7 fichiers du module Révision** : `RevisionStudy`, `QcmRun`,
+  `RevisionBinderStats`, `RevisionSetStats`, `RevisionItemModal`, `AnkiImportModal`, `LearningCurve`.
+  Marque **indigo→`primary`** ; emerald→`success`, rose→`danger`, amber→`warning`, blue→`info` ;
+  slate→`ink`/`surface`/`line`. Détails : CTA « Suivant » du runner (fond sombre neutre)→`primary` ;
+  cases à cocher `accent-indigo/emerald-600`→`accent-primary`/`accent-success` ; scrim de modale
+  `bg-slate-950/40` **préservé**.
+* **Fin de la migration mécanique S8.** Tout le périmètre « gros/complexes » est tokenisé
+  (TeacherDashboard, NoteEdit, Diagrams, Reviews hub + runners). **Restent uniquement les audits
+  transverses NON automatisables** (revue humaine) : dark mode, contraste AA des pastels, responsive
+  375 px, smoke test Capacitor.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.

@@ -2,9 +2,9 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
     <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="$emit('close')"></div>
 
-    <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl w-full max-w-lg p-6 relative z-10 shadow-2xl max-h-[88vh] overflow-y-auto">
-      <h3 class="text-lg font-bold mb-1 text-slate-800 dark:text-white">Ajouter un élément de révision</h3>
-      <p class="text-xs text-slate-400 mb-4">Choisissez un type, il sera révisé en répétition espacée (SM-2).</p>
+    <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl w-full max-w-lg p-6 relative z-10 shadow-2xl max-h-[88vh] overflow-y-auto">
+      <h3 class="text-lg font-bold mb-1 text-ink dark:text-white">Ajouter un élément de révision</h3>
+      <p class="text-xs text-ink-subtle mb-4">Choisissez un type, il sera révisé en répétition espacée (SM-2).</p>
 
       <!-- Type selector -->
       <div class="flex flex-wrap gap-2 mb-5">
@@ -15,8 +15,8 @@
           @click="itemType = t.value"
           class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all"
           :class="itemType === t.value
-            ? 'bg-indigo-600 text-white border-transparent'
-            : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+            ? 'bg-primary text-white border-transparent'
+            : 'bg-surface-soft dark:bg-surface-soft text-ink-muted dark:text-ink-subtle border-line dark:border-line'"
         >
           {{ t.label }}
         </button>
@@ -51,12 +51,12 @@
           <div>
             <label :class="labelCls">Options (cochez la/les bonne(s))</label>
             <div v-for="(opt, i) in qcmOptions" :key="i" class="flex items-center gap-2 mb-2">
-              <input type="checkbox" v-model="opt.correct" class="accent-emerald-600 shrink-0" />
+              <input type="checkbox" v-model="opt.correct" class="accent-success shrink-0" />
               <input v-model="opt.text" type="text" :class="inputCls" :placeholder="`Option ${i + 1}`" />
-              <button type="button" @click="qcmOptions.splice(i, 1)" :disabled="qcmOptions.length <= 2" class="text-slate-400 hover:text-rose-500 disabled:opacity-30 shrink-0 px-1">✕</button>
+              <button type="button" @click="qcmOptions.splice(i, 1)" :disabled="qcmOptions.length <= 2" class="text-ink-subtle hover:text-danger disabled:opacity-30 shrink-0 px-1">✕</button>
             </div>
-            <button type="button" @click="qcmOptions.push({ text: '', correct: false })" class="text-xs font-bold text-indigo-600 hover:text-indigo-700">+ Ajouter une option</button>
-            <p class="text-[10px] text-slate-400 mt-1">Cochez plusieurs cases pour une question à réponses multiples (correction tout-ou-rien).</p>
+            <button type="button" @click="qcmOptions.push({ text: '', correct: false })" class="text-xs font-bold text-primary hover:text-primary">+ Ajouter une option</button>
+            <p class="text-[10px] text-ink-subtle mt-1">Cochez plusieurs cases pour une question à réponses multiples (correction tout-ou-rien).</p>
           </div>
           <div>
             <label :class="labelCls">Barème (points)</label>
@@ -70,8 +70,8 @@
           <div>
             <label :class="labelCls">Verdict</label>
             <div class="flex gap-2">
-              <button type="button" @click="vfCorrect = true" class="flex-1 py-2 rounded-xl text-xs font-bold border" :class="vfCorrect ? 'bg-emerald-600 text-white border-transparent' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'">Vrai</button>
-              <button type="button" @click="vfCorrect = false" class="flex-1 py-2 rounded-xl text-xs font-bold border" :class="!vfCorrect ? 'bg-rose-600 text-white border-transparent' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'">Faux</button>
+              <button type="button" @click="vfCorrect = true" class="flex-1 py-2 rounded-xl text-xs font-bold border" :class="vfCorrect ? 'bg-success text-white border-transparent' : 'bg-surface-soft dark:bg-surface-soft text-ink-muted border-line dark:border-line'">Vrai</button>
+              <button type="button" @click="vfCorrect = false" class="flex-1 py-2 rounded-xl text-xs font-bold border" :class="!vfCorrect ? 'bg-danger text-white border-transparent' : 'bg-surface-soft dark:bg-surface-soft text-ink-muted border-line dark:border-line'">Faux</button>
             </div>
           </div>
           <div><label :class="labelCls">Justification (optionnel)</label><textarea v-model="vfJustification" rows="2" :class="inputCls" placeholder="Ex: Elle a la forme d'un géoïde."></textarea></div>
@@ -89,11 +89,11 @@
           <div>
             <label :class="labelCls">Étapes (dans le bon ordre)</label>
             <div v-for="(step, i) in ordreSteps" :key="i" class="flex items-center gap-2 mb-2">
-              <span class="text-xs font-bold text-slate-400 w-4 shrink-0">{{ i + 1 }}</span>
+              <span class="text-xs font-bold text-ink-subtle w-4 shrink-0">{{ i + 1 }}</span>
               <input v-model="step.value" type="text" :class="inputCls" :placeholder="`Étape ${i + 1}`" />
-              <button type="button" @click="ordreSteps.splice(i, 1)" :disabled="ordreSteps.length <= 2" class="text-slate-400 hover:text-rose-500 disabled:opacity-30 shrink-0 px-1">✕</button>
+              <button type="button" @click="ordreSteps.splice(i, 1)" :disabled="ordreSteps.length <= 2" class="text-ink-subtle hover:text-danger disabled:opacity-30 shrink-0 px-1">✕</button>
             </div>
-            <button type="button" @click="ordreSteps.push({ value: '' })" class="text-xs font-bold text-indigo-600 hover:text-indigo-700">+ Ajouter une étape</button>
+            <button type="button" @click="ordreSteps.push({ value: '' })" class="text-xs font-bold text-primary hover:text-primary">+ Ajouter une étape</button>
           </div>
         </template>
 
@@ -104,19 +104,19 @@
             <label :class="labelCls">Associations</label>
             <div v-for="(p, i) in assocPairs" :key="i" class="flex items-center gap-2 mb-2">
               <input v-model="p.left" type="text" :class="inputCls" placeholder="Élément" />
-              <span class="text-slate-400 shrink-0">→</span>
+              <span class="text-ink-subtle shrink-0">→</span>
               <input v-model="p.right" type="text" :class="inputCls" placeholder="Correspondance" />
-              <button type="button" @click="assocPairs.splice(i, 1)" :disabled="assocPairs.length <= 2" class="text-slate-400 hover:text-rose-500 disabled:opacity-30 shrink-0 px-1">✕</button>
+              <button type="button" @click="assocPairs.splice(i, 1)" :disabled="assocPairs.length <= 2" class="text-ink-subtle hover:text-danger disabled:opacity-30 shrink-0 px-1">✕</button>
             </div>
-            <button type="button" @click="assocPairs.push({ left: '', right: '' })" class="text-xs font-bold text-indigo-600 hover:text-indigo-700">+ Ajouter une paire</button>
+            <button type="button" @click="assocPairs.push({ left: '', right: '' })" class="text-xs font-bold text-primary hover:text-primary">+ Ajouter une paire</button>
           </div>
         </template>
 
-        <p v-if="error" class="text-xs text-rose-500">{{ error }}</p>
+        <p v-if="error" class="text-xs text-danger">{{ error }}</p>
 
         <div class="flex items-center justify-end gap-3 pt-2">
-          <button type="button" @click="$emit('close')" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800">Annuler</button>
-          <button type="submit" :disabled="!canSubmit || saving" class="px-4 py-2 text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" @click="$emit('close')" class="px-4 py-2 text-sm font-semibold rounded-xl text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft">Annuler</button>
+          <button type="submit" :disabled="!canSubmit || saving" class="px-4 py-2 text-sm font-bold rounded-xl text-white bg-primary hover:bg-primary-strong disabled:opacity-50 disabled:cursor-not-allowed">
             {{ saving ? 'Ajout…' : 'Ajouter' }}
           </button>
         </div>
