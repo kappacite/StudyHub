@@ -255,27 +255,39 @@ class RevisionService:
     # --- Étude (SM-2) --------------------------------------------------------
 
     def get_study_items(self, user_id: int, set_id: int) -> List[RevisionItemResponse]:
-        self._get_set_or_404(set_id, user_id, write_required=False)
-        items = self._item_dao.get_items_to_study(set_id)
+        rset = self._get_set_or_404(set_id, user_id, write_required=False)
+        if rset.user_id == user_id:
+            items = self._item_dao.get_items_to_study(set_id)
+        else:
+            # Ensemble partagé (cours) : l'état SM-2 par item (next_review) appartient
+            # au propriétaire. L'élève révise donc TOUS les items ; sa progression est
+            # suivie séparément via StudySession (par utilisateur).
+            items = self._item_dao.get_by_set(set_id)
         return [RevisionItemResponse.model_validate(i) for i in items]
 
     def answer_item(self, user_id: int, set_id: int, item_id: int, score: int) -> RevisionItemResponse:
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
         item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
 
-        tuning = (rset.tuning_default or 1.0) * (item.tuning or 1.0)
-        ease_factor, interval, repetitions, next_review = calculate_sm2(
-            score=score,
-            ease_factor=item.ease_factor,
-            interval=item.interval,
-            repetitions=item.repetitions,
-            tuning=tuning,
-        )
-        item.ease_factor = ease_factor
-        item.interval = interval
-        item.repetitions = repetitions
-        item.next_review = next_review
-        updated = self._item_dao.update(item)
+        # L'état SM-2 par item n'est planifié que pour le propriétaire de l'ensemble.
+        # Un élève qui révise un ensemble partagé (cours) ne doit pas modifier
+        # l'échéancier du prof — seule sa StudySession est enregistrée.
+        if rset.user_id == user_id:
+            tuning = (rset.tuning_default or 1.0) * (item.tuning or 1.0)
+            ease_factor, interval, repetitions, next_review = calculate_sm2(
+                score=score,
+                ease_factor=item.ease_factor,
+                interval=item.interval,
+                repetitions=item.repetitions,
+                tuning=tuning,
+            )
+            item.ease_factor = ease_factor
+            item.interval = interval
+            item.repetitions = repetitions
+            item.next_review = next_review
+            updated = self._item_dao.update(item)
+        else:
+            updated = item
 
         # Historique unifié (D5) : on renseigne item_id + item_type.
         study_session = StudySession(
@@ -330,19 +342,21 @@ class RevisionService:
                 selected_option_ids=selected_ids,
             ))
 
-            # Mise à jour SM-2 par question (réussi → 5, raté → 1).
+            # Mise à jour SM-2 par question (réussi → 5, raté → 1) — uniquement pour
+            # le propriétaire ; un élève sur un QCM partagé ne touche pas l'échéancier.
             grade = 5 if is_correct else 1
-            ease_factor, interval, repetitions, next_review = calculate_sm2(
-                score=grade,
-                ease_factor=item.ease_factor,
-                interval=item.interval,
-                repetitions=item.repetitions,
-                tuning=tuning * (item.tuning or 1.0),
-            )
-            item.ease_factor = ease_factor
-            item.interval = interval
-            item.repetitions = repetitions
-            item.next_review = next_review
+            if rset.user_id == user_id:
+                ease_factor, interval, repetitions, next_review = calculate_sm2(
+                    score=grade,
+                    ease_factor=item.ease_factor,
+                    interval=item.interval,
+                    repetitions=item.repetitions,
+                    tuning=tuning * (item.tuning or 1.0),
+                )
+                item.ease_factor = ease_factor
+                item.interval = interval
+                item.repetitions = repetitions
+                item.next_review = next_review
             self._item_dao.db.add(StudySession(
                 user_id=user_id,
                 module=rset.type,
@@ -369,18 +383,25 @@ class RevisionService:
 
         is_correct = check_answer(rset.type, item.payload or {}, answer or {})
         grade = 5 if is_correct else 2
-        ease_factor, interval, repetitions, next_review = calculate_sm2(
-            score=grade,
-            ease_factor=item.ease_factor,
-            interval=item.interval,
-            repetitions=item.repetitions,
-            tuning=(rset.tuning_default or 1.0) * (item.tuning or 1.0),
-        )
-        item.ease_factor = ease_factor
-        item.interval = interval
-        item.repetitions = repetitions
-        item.next_review = next_review
-        updated = self._item_dao.update(item)
+
+        # L'état SM-2 par item n'est planifié que pour le propriétaire de l'ensemble.
+        # Un élève qui révise un ensemble partagé (cours) ne doit pas modifier
+        # l'échéancier du prof — seule sa StudySession est enregistrée.
+        if rset.user_id == user_id:
+            ease_factor, interval, repetitions, next_review = calculate_sm2(
+                score=grade,
+                ease_factor=item.ease_factor,
+                interval=item.interval,
+                repetitions=item.repetitions,
+                tuning=(rset.tuning_default or 1.0) * (item.tuning or 1.0),
+            )
+            item.ease_factor = ease_factor
+            item.interval = interval
+            item.repetitions = repetitions
+            item.next_review = next_review
+            updated = self._item_dao.update(item)
+        else:
+            updated = item
 
         self._item_dao.db.add(StudySession(
             user_id=user_id,

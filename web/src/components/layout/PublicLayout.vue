@@ -174,7 +174,7 @@ function toggleDarkMode() {
 }
 
 function goToPersonalSpace() {
-  router.push('/dashboard')
+  router.push('/accueil')
 }
 
 function goToPersonalSpaceMobile() {

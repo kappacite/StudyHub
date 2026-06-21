@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen flex bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#0B0F19] dark:text-slate-100">
-    
+  <div class="min-h-screen flex bg-app text-ink transition-colors duration-300">
+
     <!-- Sidebar -->
-    <aside 
+    <aside
       v-if="!$route.meta.immersive"
-      class="fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-white border-r border-slate-100 transition-all duration-300 dark:bg-[#111827] dark:border-slate-800"
+      class="fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-surface border-r border-line transition-all duration-300"
       :class="[
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
         isZenMode ? 'lg:fixed lg:shadow-2xl' : 'lg:static',
@@ -14,7 +14,7 @@
       ]"
     >
       <!-- Logo (cliquable → /) -->
-      <router-link to="/" class="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer" @click="isMobileMenuOpen = false">
+      <router-link to="/" class="flex items-center gap-3 px-6 py-5 border-b border-line hover:bg-surface-soft transition-colors cursor-pointer" @click="isMobileMenuOpen = false">
         <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.62 48.62 0 0112 20.9c.38 0 .758-.004 1.136-.011a60.9 60.9 0 00-.5-6.32 48.56 48.56 0 01-8.376-4.422z" />
@@ -23,7 +23,7 @@
         </div>
         <div>
           <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">StudyHub</h1>
-          <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Tout-en-un</span>
+          <span class="text-[10px] font-semibold text-ink-subtle uppercase tracking-widest">Tout-en-un</span>
         </div>
       </router-link>
 
@@ -35,80 +35,71 @@
           :to="item.path"
           class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 group"
           :class="[
-            $route.path === item.path 
-              ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' 
-              : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
+            isNavActive(item)
+              ? 'bg-primary-soft text-primary'
+              : 'text-ink-muted hover:bg-surface-soft hover:text-ink'
           ]"
           @click="isMobileMenuOpen = false"
           @click.capture="isZenSidebarOpen = false"
         >
-          <component 
-            :is="item.icon" 
+          <component
+            :is="item.icon"
             class="w-5 h-5 transition-transform duration-200 group-hover:scale-110"
-            :class="[$route.path === item.path ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300']"
+            :class="[isNavActive(item) ? 'text-primary' : 'text-ink-subtle group-hover:text-ink-muted']"
           />
           {{ item.name }}
         </router-link>
       </nav>
 
       <!-- Sidebar Footer (User Profile & Dark Mode) -->
-      <div class="p-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+      <div class="p-4 border-t border-line space-y-4">
         <!-- Quick Settings / Theme toggler -->
         <div class="flex items-center justify-between px-2">
-          <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Mode Sombre</span>
-          <button 
-            @click="toggleDarkMode" 
-            class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-slate-200 dark:bg-indigo-600"
-          >
-            <span 
-              class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out flex items-center justify-center"
-              :class="[isDarkMode ? 'translate-x-5' : 'translate-x-0']"
-            >
-              <Sun v-if="!isDarkMode" class="w-3 h-3 text-amber-500" />
-              <Moon v-else class="w-3 h-3 text-indigo-600" />
-            </span>
-          </button>
+          <span class="text-xs font-semibold text-ink-subtle uppercase tracking-wider">Mode Sombre</span>
+          <BaseToggle :model-value="isDarkMode" @update:model-value="toggleDarkMode">
+            <template #default="{ checked }">
+              <Sun v-if="!checked" class="w-3 h-3 text-accent" />
+              <Moon v-else class="w-3 h-3 text-primary" />
+            </template>
+          </BaseToggle>
         </div>
 
         <!-- User profile snippet -->
-        <div v-if="authStore.isAuthenticated" class="flex items-center gap-3 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40">
-          <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 font-semibold dark:bg-indigo-950/60 dark:text-indigo-400">
+        <div v-if="authStore.isAuthenticated" class="flex items-center gap-3 p-2 rounded-xl bg-surface-soft">
+          <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-soft text-primary font-semibold">
             {{ userInitials }}
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold truncate">{{ authStore.user?.username }}</p>
-            <p class="text-[11px] text-slate-400 truncate dark:text-slate-500">{{ authStore.user?.email }}</p>
+            <p class="text-sm font-semibold truncate text-ink">{{ authStore.user?.username }}</p>
+            <p class="text-[11px] text-ink-subtle truncate">{{ authStore.user?.email }}</p>
           </div>
-          <button 
-            @click="handleLogout" 
-            class="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors"
+          <button
+            @click="handleLogout"
+            class="p-1.5 text-ink-subtle hover:text-danger hover:bg-danger-soft rounded-lg transition-colors"
             title="Se déconnecter"
           >
             <LogOut class="w-4 h-4" />
           </button>
         </div>
-        <div v-else class="p-3">
-          <button 
-            @click="router.push('/login')" 
-            class="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
-          >
-            <LogIn class="w-4 h-4" />
+        <div v-else class="p-1">
+          <BaseButton variant="primary" block @click="router.push('/login')">
+            <template #icon><LogIn class="w-4 h-4" /></template>
             Se connecter
-          </button>
+          </BaseButton>
         </div>
       </div>
     </aside>
 
     <!-- Mobile menu backdrop -->
-    <div 
-      v-if="isMobileMenuOpen" 
-      class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+    <div
+      v-if="isMobileMenuOpen"
+      class="fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm lg:hidden"
       @click="isMobileMenuOpen = false"
     ></div>
 
-    <div 
-      v-if="isZenSidebarOpen && !$route.meta.immersive" 
-      class="fixed inset-0 z-40 hidden bg-slate-900/20 backdrop-blur-[1px] lg:block"
+    <div
+      v-if="isZenSidebarOpen && !$route.meta.immersive"
+      class="fixed inset-0 z-40 hidden bg-ink/20 backdrop-blur-[1px] lg:block"
       @click="isZenSidebarOpen = false"
     ></div>
 
@@ -123,9 +114,9 @@
       ></div>
 
       <!-- Navbar / Top Header -->
-      <header 
+      <header
         v-if="!$route.meta.immersive"
-        class="flex items-center justify-between px-6 py-4 bg-white/85 backdrop-blur border-b border-slate-100 z-30 transition-all duration-300 dark:bg-[#111827]/85 dark:border-slate-800"
+        class="flex items-center justify-between px-6 py-4 bg-surface/85 backdrop-blur border-b border-line z-30 transition-all duration-300"
         :class="[
           isZenMode 
             ? 'fixed top-0 left-0 right-0 shadow-lg' 
@@ -138,35 +129,35 @@
         @mouseleave="isZenMode ? isHeaderHovered = false : null"
       >
         <div class="flex items-center gap-4">
-          <button 
-            @click="isMobileMenuOpen = !isMobileMenuOpen" 
-            class="p-2 -ml-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-100 rounded-lg lg:hidden"
+          <button
+            @click="isMobileMenuOpen = !isMobileMenuOpen"
+            class="p-2 -ml-2 text-ink-muted hover:text-ink hover:bg-surface-soft rounded-lg lg:hidden"
           >
             <Menu class="w-6 h-6" />
           </button>
-          <h2 class="text-lg font-bold text-slate-800 dark:text-white capitalize">
+          <h2 class="text-lg font-bold text-ink capitalize">
             {{ currentRouteName }}
           </h2>
         </div>
 
         <div class="flex items-center gap-4">
           <!-- Global Search Button -->
-          <button 
-            @click="isSearchOpen = true" 
-            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100 dark:bg-slate-800/40 dark:border-slate-800 dark:hover:bg-slate-800/80 text-xs font-semibold text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+          <button
+            @click="isSearchOpen = true"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-soft border border-line hover:bg-surface text-xs font-semibold text-ink-muted cursor-pointer transition-colors"
             title="Recherche globale (Ctrl+K)"
           >
-            <Search class="w-4 h-4 text-indigo-500" />
+            <Search class="w-4 h-4 text-primary" />
             <span class="hidden md:inline">Rechercher...</span>
-            <kbd class="hidden sm:inline-block px-1.5 py-0.5 ml-1 text-[10px] font-bold text-slate-400 bg-slate-200/50 rounded dark:bg-slate-700/50 dark:text-slate-500">⌘K</kbd>
+            <kbd class="hidden sm:inline-block px-1.5 py-0.5 ml-1 text-[10px] font-bold text-ink-subtle bg-line/50 rounded">⌘K</kbd>
           </button>
 
           <!-- Notifications -->
           <NotificationBell v-if="authStore.isAuthenticated" />
 
           <!-- Calendar shortcut or current date -->
-          <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-xs font-semibold text-slate-500 dark:bg-slate-800/40 dark:border-slate-800 dark:text-slate-400">
-            <Calendar class="w-4 h-4 text-indigo-500" />
+          <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-soft border border-line text-xs font-semibold text-ink-muted">
+            <Calendar class="w-4 h-4 text-primary" />
             {{ currentDate }}
           </div>
         </div>
@@ -177,9 +168,9 @@
         class="flex-1 transition-all duration-300"
         :class="[
           $route.meta.immersive
-            ? 'p-0 bg-slate-50 dark:bg-[#070913] overflow-y-auto'
-            : isZenMode 
-              ? (isEditMode ? 'p-0 bg-white dark:bg-slate-900 overflow-hidden' : 'p-4 md:p-8 lg:p-12 bg-slate-100 dark:bg-[#070913] overflow-y-auto') 
+            ? 'p-0 bg-app overflow-y-auto'
+            : isZenMode
+              ? (isEditMode ? 'p-0 bg-surface overflow-hidden' : 'p-4 md:p-8 lg:p-12 bg-app overflow-y-auto')
               : 'p-6 overflow-y-auto'
         ]"
       >
@@ -209,23 +200,20 @@ import { useAuthStore } from '../../stores/auth'
 import SearchModal from '../ui/SearchModal.vue'
 import PomodoroTimer from '../ui/PomodoroTimer.vue'
 import NotificationBell from '../ui/NotificationBell.vue'
-import { 
-  LayoutDashboard, 
-  FolderClosed, 
-  FileText, 
-  Activity, 
-  FileDown, 
+import BaseToggle from '../ui/base/BaseToggle.vue'
+import BaseButton from '../ui/base/BaseButton.vue'
+import {
+  Home,
+  FolderClosed,
   LogOut,
   LogIn,
-  Sun, 
-  Moon, 
-  Menu, 
+  Sun,
+  Moon,
+  Menu,
   Calendar,
   Brain,
-  Flame,
   Search,
-  ShieldAlert,
-  UsersRound,
+  Compass,
   GraduationCap
 } from '@lucide/vue'
 
@@ -249,33 +237,35 @@ const isEditMode = computed(() => {
   return route.name === 'NoteEdit' && route.query.edit === 'true'
 })
 
+// Refonte 5 sections par intention + lien Communauté. L'état actif se calcule par
+// PRÉFIXE (match[]) pour que les routes feuilles (ex. /notes/123, /decks/5/study)
+// allument la bonne section.
 const navItems = [
-  { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Priorités (Focus)', path: '/focus', icon: Flame },
-  { name: 'Planning', path: '/planning', icon: Calendar },
-  { name: 'Classeurs', path: '/binders', icon: FolderClosed },
-  { name: 'Révisions', path: '/reviews', icon: Brain },
-  { name: 'Notes', path: '/notes', icon: FileText },
-  { name: 'Diagrammes', path: '/diagrams', icon: Activity },
-  { name: 'PDFs', path: '/pdfs', icon: FileDown },
-  { name: 'Groupes', path: '/groups', icon: UsersRound },
-  { name: 'Espace Professeur', path: '/classes/teacher', icon: GraduationCap },
-  { name: 'Mes Classes', path: '/classes/student', icon: GraduationCap },
-  { name: 'Mode Examen', path: '/exam/setup', icon: ShieldAlert }
+  { name: 'Accueil', path: '/accueil', icon: Home, match: ['/accueil', '/focus'] },
+  { name: 'Bibliothèque', path: '/bibliotheque', icon: FolderClosed, match: ['/bibliotheque', '/notes', '/pdfs', '/diagrams'] },
+  { name: 'Réviser', path: '/reviser', icon: Brain, match: ['/reviser', '/decks', '/revision', '/exam'] },
+  { name: 'Planning', path: '/planning', icon: Calendar, match: ['/planning'] },
+  { name: 'Classes', path: '/classes', icon: GraduationCap, match: ['/classes', '/groups'] },
+  { name: 'Communauté', path: '/explore', icon: Compass, match: ['/explore', '/package'] },
 ]
+
+function isNavActive(item: { match: string[] }) {
+  return item.match.some(m => route.path === m || route.path.startsWith(m + '/'))
+}
 
 const currentRouteName = computed(() => {
   const name = route.name as string
   if (!name) return ''
+  if (name === 'Accueil') return 'Accueil'
+  if (name === 'Bibliotheque') return 'Bibliothèque'
   if (name === 'StudyDeck') return 'Flashcards (Étude)'
   if (name === 'NoteEdit') return 'Édition de Note'
-  if (name === 'Reviews') return 'Espace Révisions'
+  if (name === 'Reviser') return 'Espace Révisions'
+  if (name === 'Classes') return 'Classes'
   if (name === 'Planning') return 'Planning des révisions'
   if (name === 'ExamSetup') return 'Configuration Examen'
   if (name === 'ExamSession') return 'Session d\'Examen'
   if (name === 'ExamResults') return 'Résultats d\'Examen'
-  if (name === 'TeacherDashboard') return 'Espace Professeur'
-  if (name === 'StudentClassView') return 'Mes Classes'
   if (name === 'AssignmentDetail') return 'Détails du devoir'
   return name
 })

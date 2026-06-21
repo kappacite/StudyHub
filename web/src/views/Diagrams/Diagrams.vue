@@ -1,43 +1,36 @@
 <template>
-  <div class="space-y-6 animate-fade-in">
-    <!-- Header principal -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-xl font-bold">Créateur de Diagrammes & Cartes Mentales</h1>
-        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
-          Concevez des schémas visuels en plaçant des formes, en créant des liaisons et en les organisant à la main.
-        </p>
-      </div>
+  <PageContainer size="wide">
+    <PageHeader
+      title="Créateur de Diagrammes & Cartes Mentales"
+      subtitle="Concevez des schémas visuels en plaçant des formes, en créant des liaisons et en les organisant à la main."
+    >
+      <!-- Bascule Créateur Visuel vs Code Mermaid -->
+      <template v-if="selectedDiagram" #actions>
+        <div class="flex items-center gap-1 bg-surface-soft p-1 rounded-full border border-line">
+          <button
+            @click="activeTab = 'visual'"
+            class="px-4 py-1.5 text-xs font-bold rounded-full transition-colors"
+            :class="activeTab === 'visual' ? 'bg-primary text-white shadow-elev-primary' : 'text-ink-muted hover:text-ink'"
+          >Créateur Visuel</button>
+          <button
+            @click="activeTab = 'mermaid'"
+            class="px-4 py-1.5 text-xs font-bold rounded-full transition-colors"
+            :class="activeTab === 'mermaid' ? 'bg-primary text-white shadow-elev-primary' : 'text-ink-muted hover:text-ink'"
+          >Mode Code Mermaid</button>
+        </div>
+      </template>
+    </PageHeader>
 
-      <!-- Tab Switcher (Créateur Visuel vs Code Mermaid) -->
-      <div v-if="selectedDiagram" class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-        <button 
-          @click="activeTab = 'visual'"
-          class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
-          :class="[activeTab === 'visual' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']"
-        >
-          Créateur Visuel
-        </button>
-        <button 
-          @click="activeTab = 'mermaid'"
-          class="px-4 py-2 text-xs font-bold rounded-lg transition-all"
-          :class="[activeTab === 'mermaid' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']"
-        >
-          Mode Code Mermaid
-        </button>
-      </div>
-    </div>
-
-    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filtrer</span>
-      <button type="button" class="rounded-xl px-3 py-1.5 text-xs font-bold" :class="selectedTagId === null ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'" @click="filterByTag(null)">Tous</button>
+    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface p-3">
+      <span class="text-xs font-bold uppercase tracking-wider text-ink-subtle">Filtrer</span>
+      <button type="button" class="rounded-full px-3 py-1.5 text-xs font-bold transition-colors" :class="selectedTagId === null ? 'bg-primary text-white' : 'bg-surface-soft text-ink-muted'" @click="filterByTag(null)">Tous</button>
       <button
         v-for="tag in tagsStore.tags"
         :key="tag.id"
         type="button"
-        class="rounded-xl px-3 py-1.5 text-xs font-bold"
-        :style="selectedTagId === tag.id ? { backgroundColor: tag.color || '#4F46E5', color: '#fff' } : undefined"
-        :class="selectedTagId === tag.id ? '' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+        class="rounded-full px-3 py-1.5 text-xs font-bold transition-colors"
+        :style="selectedTagId === tag.id ? { backgroundColor: tag.color || '#F06292', color: '#fff' } : undefined"
+        :class="selectedTagId === tag.id ? '' : 'bg-surface-soft text-ink-muted'"
         @click="filterByTag(tag.id)"
       >
         {{ tag.name }}
@@ -499,7 +492,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
@@ -508,8 +501,9 @@ import { useRoute } from 'vue-router'
 import api from '../../services/api'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagSelector from '../../components/ui/TagSelector.vue'
-import { 
-  Plus, 
+import { PageContainer, PageHeader } from '../../components/ui/base'
+import {
+  Plus,
   Trash2, 
   Save, 
   Link as LinkIcon, 
@@ -930,14 +924,3 @@ function deleteSelectedMask() {
   selectedMaskId.value = null
 }
 </script>
-
-<style scoped>
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-</style>

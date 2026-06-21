@@ -74,6 +74,50 @@ def test_shared_revision_set_visible_to_student_read_only(client, auth_headers, 
     assert all(s["id"] != set_id for s in out_sets)
 
 
+def test_student_can_study_all_items_of_shared_set(client, auth_headers, test_user, app):
+    """L'élève révise TOUS les items d'un ensemble partagé même si le prof les a
+    déjà planifiés au futur ; sa notation n'altère pas l'échéancier du prof."""
+    class_id, _sid, sh = _class_with_student(client, auth_headers, app, "eleve_study@test.com")
+
+    with app.app_context():
+        binder = Binder(user_id=test_user["id"], name="Cours Histoire")
+        db.session.add(binder)
+        db.session.commit()
+        binder_uuid = binder.id
+
+    set_id = client.post("/api/v1/revision/sets", json={
+        "name": "Vrai/Faux Histoire", "type": "vf", "binder_id": binder_uuid,
+    }, headers=auth_headers).json["id"]
+    item = client.post(f"/api/v1/revision/sets/{set_id}/items", json={"payload": {
+        "assertion": "La Révolution française a commencé en 1789.", "correct": True,
+    }}, headers=auth_headers).json
+    client.post(f"/api/v1/groups/{class_id}/binders",
+                json={"binder_id": binder_uuid, "permission": "read"}, headers=auth_headers)
+
+    # Le prof révise son item (bonne réponse) → next_review poussé au futur.
+    client.post(f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
+                json={"answer": {"value": True}}, headers=auth_headers)
+
+    # L'élève voit quand même l'item à étudier (état SM-2 du prof ignoré).
+    to_study = client.get(f"/api/v1/revision/sets/{set_id}/study", headers=sh)
+    assert to_study.status_code == 200
+    assert any(i["id"] == item["id"] for i in to_study.json), "l'élève ne voit aucun item à réviser"
+
+    # Échéancier du prof avant notation élève.
+    from app.models.revision import RevisionItem
+    with app.app_context():
+        before = db.session.get(RevisionItem, item["id"]).next_review
+
+    # L'élève note l'item : sa StudySession est créée, l'item du prof est inchangé.
+    graded = client.post(f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
+                         json={"answer": {"value": False}}, headers=sh)
+    assert graded.status_code == 200
+
+    with app.app_context():
+        after = db.session.get(RevisionItem, item["id"]).next_review
+        assert after == before, "la notation de l'élève ne doit pas modifier l'échéancier du prof"
+
+
 def test_assignment_on_empty_revision_set_is_todo(client, auth_headers, app):
     """#4 — un devoir ciblant un ensemble VIDE ne doit pas être marqué « fait »."""
     class_id, _sid, sh = _class_with_student(client, auth_headers, app, "eleve_empty@test.com")

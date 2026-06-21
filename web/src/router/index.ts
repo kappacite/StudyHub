@@ -45,24 +45,45 @@ const routes: Array<RouteRecordRaw> = [
     path: '/',
     component: () => import('../components/layout/AppLayout.vue'),
     children: [
+      // ─── Sections canoniques (refonte 5 sections) ───────────────────────
       {
-        path: 'dashboard',
-        name: 'Dashboard',
-        component: () => import('../views/Dashboard/Dashboard.vue'),
+        path: 'accueil',
+        name: 'Accueil',
+        // S1 : Accueil = fusion Dashboard + Focus (vue action-first).
+        component: () => import('../views/Home/Accueil.vue'),
         meta: { requiresAuth: true }
       },
       {
-        path: 'focus',
-        name: 'Focus',
-        component: () => import('../views/Focus/FocusPage.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'binders/:id?',
-        name: 'Binders',
+        path: 'bibliotheque/:id?',
+        name: 'Bibliotheque',
         component: () => import('../views/Binders/Binders.vue'),
         meta: { requiresAuth: true }
       },
+      {
+        path: 'reviser',
+        name: 'Reviser',
+        component: () => import('../views/Reviews/Reviews.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'classes',
+        name: 'Classes',
+        component: () => import('../views/Classes/ClassesLanding.vue'),
+        meta: { requiresAuth: true }
+      },
+
+      // ─── Redirections des anciennes routes liste → sections ─────────────
+      // Activées en S0 : cibles déjà fonctionnelles, aucun router.push interne cassé.
+      { path: 'dashboard', redirect: { name: 'Accueil' } },
+      { path: 'focus', redirect: { name: 'Accueil' } },
+      { path: 'binders/:id?', redirect: to => ({ name: 'Bibliotheque', params: to.params, query: to.query }) },
+      { path: 'reviews', redirect: { name: 'Reviser' } },
+      { path: 'classes/teacher', redirect: { name: 'Classes', query: { tab: 'teacher' } } },
+      { path: 'classes/student', redirect: { name: 'Classes', query: { tab: 'student' } } },
+      { path: 'groups', redirect: { name: 'Classes', query: { tab: 'groups' } } },
+
+      // ─── Routes encore réelles (redirect différé à leur lot) ────────────
+      // /decks (S3), /notes /pdfs /diagrams (S2).
       {
         path: 'decks',
         name: 'Decks',
@@ -97,12 +118,6 @@ const routes: Array<RouteRecordRaw> = [
         path: 'revision/binders/:id/stats',
         name: 'RevisionBinderStats',
         component: () => import('../views/Reviews/RevisionBinderStats.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'reviews',
-        name: 'Reviews',
-        component: () => import('../views/Reviews/Reviews.vue'),
         meta: { requiresAuth: true }
       },
       {
@@ -172,27 +187,11 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true }
       },
       {
-        path: 'groups',
-        name: 'Groups',
-        component: () => import('../views/Groups/GroupsList.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
+        // Feuille préservée : GroupsList est aussi monté dans l'onglet Groupes de Classes,
+        // mais le détail d'un groupe garde sa route propre.
         path: 'groups/:id',
         name: 'GroupDetail',
         component: () => import('../views/Groups/GroupDetail.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'classes/teacher',
-        name: 'TeacherDashboard',
-        component: () => import('../views/Classes/TeacherDashboard.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'classes/student',
-        name: 'StudentClassView',
-        component: () => import('../views/Classes/StudentClassView.vue'),
         meta: { requiresAuth: true }
       },
       {
@@ -205,7 +204,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/dashboard'
+    redirect: { name: 'Accueil' }
   }
 ]
 
@@ -231,7 +230,7 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login')
   } else if (to.meta.guestOnly && isAuthenticated) {
-    next('/dashboard')
+    next({ name: 'Accueil' })
   } else {
     next()
   }

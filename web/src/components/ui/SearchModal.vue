@@ -2,24 +2,24 @@
   <Transition name="fade-backdrop">
     <div 
       v-if="isOpen" 
-      class="fixed inset-0 z-[100] flex items-start justify-center bg-slate-900/60 backdrop-blur-sm p-4 md:p-10 no-print"
+      class="fixed inset-0 z-[100] flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 md:p-10 no-print"
       @click.self="close"
     >
       <Transition name="scale-up">
         <div 
           v-if="isOpen"
-          class="w-full max-w-3xl bg-white dark:bg-[#111827] rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden max-h-[85vh] mt-10 md:mt-16"
+          class="w-full max-w-3xl bg-surface rounded-2xl shadow-elev-3 border border-line flex flex-col overflow-hidden max-h-[85vh] mt-10 md:mt-16"
           @click.stop
         >
           <!-- Search Header Input -->
-          <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-            <Search class="w-5 h-5 text-indigo-500 flex-shrink-0 animate-pulse" />
+          <div class="flex items-center gap-3 px-4 py-3 border-b border-line">
+            <Search class="w-5 h-5 text-primary flex-shrink-0 animate-pulse" />
             <input
               ref="searchInput"
               v-model="query"
               type="text"
               placeholder="Rechercher des notes, decks, cartes, diagrammes..."
-              class="flex-1 min-w-0 bg-transparent outline-none border-none py-1 text-base font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
+              class="flex-1 min-w-0 bg-transparent outline-none border-none py-1 text-base font-semibold text-ink placeholder-ink-subtle"
               @keydown.down.prevent="moveDown"
               @keydown.up.prevent="moveUp"
               @keydown.enter.prevent="selectCurrent"
@@ -27,7 +27,7 @@
             />
             <button 
               @click="close" 
-              class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              class="p-1 rounded-lg text-ink-subtle hover:text-ink hover:bg-surface-soft transition-colors"
             >
               <X class="w-5 h-5" />
             </button>
@@ -36,26 +36,26 @@
           <!-- Search Results Area -->
           <div class="flex-1 overflow-y-auto p-4 space-y-6">
             <!-- Loading State -->
-            <div v-if="isLoading" class="flex flex-col items-center justify-center py-12 text-slate-400">
-              <Loader2 class="w-8 h-8 text-indigo-500 animate-spin mb-3" />
+            <div v-if="isLoading" class="flex flex-col items-center justify-center py-12 text-ink-subtle">
+              <Loader2 class="w-8 h-8 text-primary animate-spin mb-3" />
               <span class="text-sm font-semibold">Recherche en cours...</span>
             </div>
 
             <!-- Error State -->
-            <div v-else-if="error" class="p-4 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-xl text-sm font-semibold border border-rose-100 dark:border-rose-950/50">
+            <div v-else-if="error" class="p-4 bg-danger-soft text-danger rounded-xl text-sm font-semibold border border-danger/30">
               {{ error }}
             </div>
 
             <!-- Empty / Query Too Short Info State -->
-            <div v-else-if="query.trim().length < 2" class="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500">
-              <Search class="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
+            <div v-else-if="query.trim().length < 2" class="flex flex-col items-center justify-center py-12 text-ink-subtle">
+              <Search class="w-12 h-12 text-ink-subtle/60 mb-3" />
               <p class="text-sm font-semibold text-center">Entrez au moins 2 caractères pour rechercher</p>
               <p class="text-xs mt-1 text-center">Recherche rapide dans le contenu de tous vos modules.</p>
             </div>
 
             <!-- No Results Found State -->
-            <div v-else-if="total === 0" class="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500">
-              <Search class="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
+            <div v-else-if="total === 0" class="flex flex-col items-center justify-center py-12 text-ink-subtle">
+              <Search class="w-12 h-12 text-ink-subtle/60 mb-3" />
               <p class="text-sm font-semibold text-center">Aucun résultat trouvé pour "{{ query }}"</p>
               <p class="text-xs mt-1 text-center">Essayez d'autres mots clés ou vérifiez l'orthographe.</p>
             </div>
@@ -64,7 +64,7 @@
             <div v-else class="space-y-6">
               <!-- Notes Section -->
               <div v-if="results.notes.length > 0">
-                <h3 class="flex items-center gap-1.5 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">
+                <h3 class="flex items-center gap-1.5 text-xs font-bold text-ink-subtle uppercase tracking-widest mb-3">
                   <FileText class="w-3.5 h-3.5" />
                   Notes ({{ results.notes.length }})
                 </h3>
@@ -74,15 +74,15 @@
                     :key="note.id"
                     :class="[
                       'p-3 rounded-xl cursor-pointer transition-all border border-transparent flex flex-col',
-                      getAbsoluteIndex('notes', i) === selectedIndex 
-                        ? 'bg-indigo-50/70 border-indigo-100 text-indigo-900 dark:bg-indigo-950/40 dark:border-indigo-900/60 dark:text-indigo-200' 
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'
+                      getAbsoluteIndex('notes', i) === selectedIndex
+                        ? 'bg-primary-soft border-primary/30 text-primary'
+                        : 'hover:bg-surface-soft'
                     ]"
                     @click="navigateTo(note, 'note')"
                     @mouseenter="selectedIndex = getAbsoluteIndex('notes', i)"
                   >
                     <div class="flex items-center justify-between gap-4">
-                      <span class="font-bold text-sm text-slate-800 dark:text-slate-200">{{ note.title }}</span>
+                      <span class="font-bold text-sm text-ink">{{ note.title }}</span>
                       <div class="flex flex-wrap gap-1">
                         <TagBadge 
                           v-for="tag in note.tags" 
@@ -93,7 +93,7 @@
                       </div>
                     </div>
                     <p 
-                      class="text-xs mt-1.5 text-slate-500 dark:text-slate-400 line-clamp-2 search-excerpt"
+                      class="text-xs mt-1.5 text-ink-muted line-clamp-2 search-excerpt"
                       v-dompurify-html="note.excerpt"
                     ></p>
                   </div>
@@ -102,7 +102,7 @@
 
               <!-- Decks Section -->
               <div v-if="results.decks.length > 0">
-                <h3 class="flex items-center gap-1.5 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">
+                <h3 class="flex items-center gap-1.5 text-xs font-bold text-ink-subtle uppercase tracking-widest mb-3">
                   <Layers class="w-3.5 h-3.5" />
                   Decks ({{ results.decks.length }})
                 </h3>
@@ -112,15 +112,15 @@
                     :key="deck.id"
                     :class="[
                       'p-3 rounded-xl cursor-pointer transition-all border border-transparent flex flex-col',
-                      getAbsoluteIndex('decks', i) === selectedIndex 
-                        ? 'bg-indigo-50/70 border-indigo-100 text-indigo-900 dark:bg-indigo-950/40 dark:border-indigo-900/60 dark:text-indigo-200' 
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'
+                      getAbsoluteIndex('decks', i) === selectedIndex
+                        ? 'bg-primary-soft border-primary/30 text-primary'
+                        : 'hover:bg-surface-soft'
                     ]"
                     @click="navigateTo(deck, 'deck')"
                     @mouseenter="selectedIndex = getAbsoluteIndex('decks', i)"
                   >
                     <div class="flex items-center justify-between gap-4">
-                      <span class="font-bold text-sm text-slate-800 dark:text-slate-200">{{ deck.name }}</span>
+                      <span class="font-bold text-sm text-ink">{{ deck.name }}</span>
                       <div class="flex flex-wrap gap-1">
                         <TagBadge 
                           v-for="tag in deck.tags" 
@@ -132,7 +132,7 @@
                     </div>
                     <p 
                       v-if="deck.excerpt" 
-                      class="text-xs mt-1.5 text-slate-500 dark:text-slate-400 line-clamp-2 search-excerpt"
+                      class="text-xs mt-1.5 text-ink-muted line-clamp-2 search-excerpt"
                       v-dompurify-html="deck.excerpt"
                     ></p>
                   </div>
@@ -141,7 +141,7 @@
 
               <!-- Flashcards Section -->
               <div v-if="results.flashcards.length > 0">
-                <h3 class="flex items-center gap-1.5 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">
+                <h3 class="flex items-center gap-1.5 text-xs font-bold text-ink-subtle uppercase tracking-widest mb-3">
                   <Brain class="w-3.5 h-3.5" />
                   Flashcards ({{ results.flashcards.length }})
                 </h3>
@@ -151,27 +151,27 @@
                     :key="card.id"
                     :class="[
                       'p-3 rounded-xl cursor-pointer transition-all border border-transparent flex justify-between items-center gap-4',
-                      getAbsoluteIndex('flashcards', i) === selectedIndex 
-                        ? 'bg-indigo-50/70 border-indigo-100 text-indigo-900 dark:bg-indigo-950/40 dark:border-indigo-900/60 dark:text-indigo-200' 
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'
+                      getAbsoluteIndex('flashcards', i) === selectedIndex
+                        ? 'bg-primary-soft border-primary/30 text-primary'
+                        : 'hover:bg-surface-soft'
                     ]"
                     @click="navigateTo(card, 'flashcard')"
                     @mouseenter="selectedIndex = getAbsoluteIndex('flashcards', i)"
                   >
                     <div class="flex flex-col min-w-0">
-                      <span class="font-semibold text-sm text-slate-800 dark:text-slate-200 truncate">{{ card.front }}</span>
-                      <span class="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 mt-0.5 uppercase tracking-wide">
+                      <span class="font-semibold text-sm text-ink truncate">{{ card.front }}</span>
+                      <span class="text-[10px] font-bold text-primary mt-0.5 uppercase tracking-wide">
                         {{ card.deck_name }}
                       </span>
                     </div>
-                    <ChevronRight class="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <ChevronRight class="w-4 h-4 text-ink-subtle flex-shrink-0" />
                   </div>
                 </div>
               </div>
 
               <!-- Diagrams Section -->
               <div v-if="results.diagrams.length > 0">
-                <h3 class="flex items-center gap-1.5 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">
+                <h3 class="flex items-center gap-1.5 text-xs font-bold text-ink-subtle uppercase tracking-widest mb-3">
                   <Activity class="w-3.5 h-3.5" />
                   Diagrammes ({{ results.diagrams.length }})
                 </h3>
@@ -181,15 +181,15 @@
                     :key="diag.id"
                     :class="[
                       'p-3 rounded-xl cursor-pointer transition-all border border-transparent flex justify-between items-center gap-4',
-                      getAbsoluteIndex('diagrams', i) === selectedIndex 
-                        ? 'bg-indigo-50/70 border-indigo-100 text-indigo-900 dark:bg-indigo-950/40 dark:border-indigo-900/60 dark:text-indigo-200' 
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'
+                      getAbsoluteIndex('diagrams', i) === selectedIndex
+                        ? 'bg-primary-soft border-primary/30 text-primary'
+                        : 'hover:bg-surface-soft'
                     ]"
                     @click="navigateTo(diag, 'diagram')"
                     @mouseenter="selectedIndex = getAbsoluteIndex('diagrams', i)"
                   >
-                    <span class="font-semibold text-sm text-slate-800 dark:text-slate-200">{{ diag.title }}</span>
-                    <ChevronRight class="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <span class="font-semibold text-sm text-ink">{{ diag.title }}</span>
+                    <ChevronRight class="w-4 h-4 text-ink-subtle flex-shrink-0" />
                   </div>
                 </div>
               </div>
@@ -197,16 +197,16 @@
           </div>
 
           <!-- Footer Shortcut info -->
-          <div class="px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 font-medium no-print">
+          <div class="px-4 py-3 bg-surface-soft border-t border-line flex items-center justify-between text-[11px] text-ink-subtle font-medium no-print">
             <div class="flex items-center gap-3">
               <span class="flex items-center gap-1">
-                <kbd class="px-1.5 py-0.5 bg-slate-200/60 dark:bg-slate-800 rounded font-bold">↵</kbd> Ouvrir
+                <kbd class="px-1.5 py-0.5 bg-surface border border-line rounded font-bold">↵</kbd> Ouvrir
               </span>
               <span class="flex items-center gap-1">
-                <kbd class="px-1.5 py-0.5 bg-slate-200/60 dark:bg-slate-800 rounded font-bold">↑↓</kbd> Naviguer
+                <kbd class="px-1.5 py-0.5 bg-surface border border-line rounded font-bold">↑↓</kbd> Naviguer
               </span>
               <span class="flex items-center gap-1">
-                <kbd class="px-1.5 py-0.5 bg-slate-200/60 dark:bg-slate-800 rounded font-bold">Echap</kbd> Fermer
+                <kbd class="px-1.5 py-0.5 bg-surface border border-line rounded font-bold">Echap</kbd> Fermer
               </span>
             </div>
             <div v-if="total > 0">
@@ -363,14 +363,14 @@ function navigateTo(item: any, type: string) {
 
 /* Customize excerpt <mark> tags inside search results */
 :deep(.search-excerpt mark) {
-  background-color: rgba(99, 102, 241, 0.25);
-  color: rgb(79, 70, 229);
+  background-color: rgba(240, 98, 146, 0.22);
+  color: rgb(216, 27, 96);
   font-weight: 700;
   border-radius: 4px;
   padding: 0 2px;
 }
 .dark :deep(.search-excerpt mark) {
-  background-color: rgba(129, 140, 248, 0.3);
-  color: rgb(165, 180, 252);
+  background-color: rgba(244, 143, 177, 0.28);
+  color: rgb(248, 187, 208);
 }
 </style>

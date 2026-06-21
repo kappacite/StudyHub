@@ -19,6 +19,7 @@
     "@capacitor/local-notifications": "^8.2.0",
     "@capacitor/preferences": "^8.0.1",
     "@headlessui/vue": "^1.7.23",
+    "@vueuse/motion": "^3.0.3",
     "axios": "^1.16.1",
     "dompurify": "^3.4.10",
     "highlight.js": "^11.11.1",

@@ -596,3 +596,75 @@ Régression de la séparation : après avoir retiré les classes non animées de
 ## [2026-06-16] Inversion : « Mes Classes » devient la vue principale
 
 La vue élève est recentrée sur les classes : `StudentClassView` s'intitule désormais **« Mes Classes »** (nav + titre + breadcrumb), avec les **devoirs** en **section interne** (« Mes devoirs ») sous la liste des classes et le tableau de bord perso. Auparavant c'était l'inverse (« Mes Devoirs » avec une section classes). Frontend uniquement, pas de migration. vue-tsc clean, Vitest 50.
+
+## [2026-06-16] Refacto UI — Lot 0 : fondations (tokens + motion + primitives)
+
+Démarrage du refacto UI complet (direction **Soft & Friendly** : neutres *warm*, accents
+pastel, arrondis ; animations **subtiles & rapides**). Approche **incrémentale** : couche
+centralisée d'abord, migration des vues par lots ensuite. Doc : `docs/design-system.md`.
+
+* **Tokens** : couleurs centralisées en CSS custom properties (`--sh-*`) dans `src/style.css`
+  (`:root` clair + `.dark` sombre, palette warm : app `#FAFAF9`/`#17171D`), exposées comme
+  tokens Tailwind sémantiques dans `tailwind.config.js` (`bg-app`, `bg-surface(-soft)`,
+  `border-line(-soft)`, `text-ink(/-muted/-subtle)`, `primary(/-strong/-soft)`, `accent`,
+  `success/warning/danger/info` + `-soft`). Ombres douces (`shadow-soft*`), `prefers-reduced-motion`
+  neutralisé globalement. `body` et scrollbars passés sur les tokens.
+* **Motion** : `@vueuse/motion` (plugin dans `main.ts`) + presets `useMotionPresets.ts`
+  (`fadeUp`, `fadeUpOnce`, `pop`, `listItem(i)`), durées 200-300 ms ease-out.
+* **Primitives** `src/components/ui/base/` (typées, sans appel API) : `BaseButton`, `BaseCard`,
+  `BaseBadge`, `BaseInput`, `BaseField`, `BaseToggle`, `BaseModal` (HeadlessUI), `BaseEmptyState`,
+  `BaseSkeleton`, `StatCard` + barrel `index.ts`.
+* Aucune vue migrée à ce stade (effet global limité au fond/typo via tokens). vue-tsc clean,
+  `npm run build` OK. Pas de migration backend.
+
+## [2026-06-16] Refacto UI — Lot 1 : shell + Dashboard + Auth (vitrine)
+
+Première migration visible, sur les écrans les plus vus.
+* **Shell** `components/layout/AppLayout.vue` : sidebar/header passés sur les tokens
+  (`bg-surface`, `border-line`, `text-ink*`, nav active `bg-primary-soft text-primary`),
+  toggle dark mode remplacé par `BaseToggle`, bouton login par `BaseButton`. Zen/immersive,
+  persistance `sh_theme` et responsive inchangés.
+* **Dashboard** `views/Dashboard/Dashboard.vue` : cartes → `BaseCard`, stats → `StatCard`
+  (accents sémantiques), boutons → `BaseButton`, heatmap/forecast/objectif/maturité recolorés
+  sur tokens (rampe `bg-primary/30→/50→/75→primary`), `quickActions` factorisé, motion
+  `fadeUp`/`listItem`. `FocusWidget` conservé (carte vibrante déjà cohérente, indépendante du mode).
+* **Auth** `Login.vue` + `Register.vue` : `BaseCard`/`BaseField`/`BaseInput`/`BaseButton`,
+  icônes Lucide (Mail/Lock/User), alertes en `danger-soft`, halos de fond en `primary`/`accent`.
+* vue-tsc clean, `npm run build` OK, Vitest 50. Pas de migration backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lots T / S0 / S1 / S2 (cœur) + correctif ensembles partagés
+
+Consolidation et sauvegarde du chantier de refonte structurelle resté en working tree
+(build + tests verts mais non commité). Découpé en commits cohérents sur
+`feature/ui-refactor-s0` ; aucun push.
+
+* **Correctif backend (`revision_service.py`)** : un élève qui révise un **ensemble
+  partagé** (cours) ne modifie plus l'échéancier SM-2 du propriétaire. L'état par item
+  (`next_review`/`interval`/`ease`) reste celui du prof ; l'élève voit tous les items
+  (`get_by_set`) et seule sa `StudySession` est enregistrée. Couvre étude SM-2, QCM typés
+  et autres types. +3 tests (`test_shared_revision_sets.py`).
+* **Lot T — re-theming** : direction visuelle « White/Pink × Material épuré » (primaire
+  Pink 400 `#F06292`, `danger` redevient rouge distinct). Tokens (`style.css` +
+  `tailwind.config.js`), primitives `ui/base/` (Button/Card/Modal) et composants `ui/*`
+  (NotificationBell, PomodoroTimer, SearchModal, TagSelector). `docs/design-system.md` MAJ.
+* **Lot S0 — socle structurel** : primitives présentationnelles `PageContainer`,
+  `PageHeader`, `Tabs`, `ListRow`, `SplitView` (+ tests `web/tests/ui/`). Routing 5 sections
+  canoniques (accueil/bibliotheque/reviser/classes/planning) + redirects des anciennes routes
+  liste, routes feuilles préservées. Nav `AppLayout` 5 sections + Communauté (actif par
+  préfixe). `ClassesLanding` (onglets Enseignant/Élève/Groupes). Anti-stranding temporaire
+  « examen blanc » (Reviews).
+* **Lot S1 — Accueil** : `views/Home/Accueil.vue` (fusion Dashboard + Focus, action-first) —
+  hero + CTA « Continuer à réviser », file `focus.items`, panneau « Aujourd'hui », progression.
+* **Lot S2 (cœur) — Bibliothèque** : `Binders.vue` refondu en `SplitView` (arbre + contenu
+  typé en `ListRow`, tokens `cat-*`), `PageHeader` (fil d'Ariane), `Tabs` par type (`?type=`).
+  Toutes les features préservées (owner/lecture-seule, clone, attache/détache, partage
+  communauté + classe, stats, filtres tags).
+* **Lot S2 (feuilles)** : `Notes.vue` et `PDFs.vue` ré-agencés (PageHeader + BaseCard/BaseModal +
+  tokens, accents `cat-note`/`cat-pdf`, badge « Cours partagé » préservé) ; `Diagrams.vue` —
+  tête `PageHeader` + bascule Visuel/Mermaid + filtres tokenisés, **corps de l'éditeur laissé tel
+  quel** (couleurs fonctionnelles en data + canevas SVG). **Restent pour S7** : `NoteEdit` (zen)
+  et le corps éditeur de `Diagrams`.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66**, backend `test_shared_revision_sets`
+  **3** ✅. Pas de migration backend. Branche `feature/ui-refactor-s0` **poussée**.

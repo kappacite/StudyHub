@@ -2,50 +2,47 @@
   <div>
     <!-- Loading State -->
     <div v-if="loading" class="flex flex-col items-center justify-center py-40 gap-3">
-      <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      <span class="text-sm font-semibold text-slate-400 uppercase tracking-widest">Chargement du tableau de bord...</span>
+      <span class="text-sm font-semibold text-ink-subtle uppercase tracking-widest">Chargement du tableau de bord...</span>
     </div>
 
-    <div v-else class="space-y-8 animate-fade-in">
+    <div v-else class="space-y-8">
       <!-- Welcome section -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/10 rounded-3xl dark:from-indigo-950/20 dark:border-indigo-900/30">
+      <div v-motion="fadeUp" class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/10 rounded-3xl">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">Ravi de te revoir, {{ authStore.user?.username }} ! 👋</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Prêt pour une nouvelle session d'apprentissage aujourd'hui ?</p>
+          <h1 class="text-2xl font-bold tracking-tight text-ink">Ravi de te revoir, {{ authStore.user?.username }} ! 👋</h1>
+          <p class="text-sm text-ink-muted mt-1">Prêt pour une nouvelle session d'apprentissage aujourd'hui ?</p>
         </div>
-      <div class="flex items-center gap-3">
-        <!-- Streak display -->
-        <div class="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 rounded-2xl">
-          <Flame class="w-5 h-5 text-amber-500 fill-amber-500 animate-pulse" />
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Série d'étude</p>
-            <p class="text-sm font-bold leading-none">{{ streak }} Jour(s) de suite</p>
+        <div class="flex items-center gap-3">
+          <!-- Streak display -->
+          <div class="flex items-center gap-2 px-4 py-2 bg-accent-soft border border-accent/20 rounded-2xl">
+            <Flame class="w-5 h-5 text-accent fill-accent animate-pulse" />
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wider text-accent">Série d'étude</p>
+              <p class="text-sm font-bold leading-none text-ink">{{ streak }} Jour(s) de suite</p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
     <!-- Focus Summary Widget -->
     <FocusWidget />
 
     <!-- Quick stats widgets -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div 
-        v-for="stat in stats" 
+      <StatCard
+        v-for="(stat, i) in stats"
         :key="stat.title"
-        class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm flex items-center gap-4 transition-transform hover:-translate-y-1 duration-200"
+        v-motion="listItem(i)"
+        :label="stat.title"
+        :value="stat.value"
+        :accent="stat.accent"
       >
-        <div class="w-12 h-12 rounded-xl flex items-center justify-center" :class="stat.bg">
-          <component :is="stat.icon" class="w-6 h-6" :class="stat.color" />
-        </div>
-        <div>
-          <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{{ stat.title }}</p>
-          <p class="text-xl font-bold mt-0.5">{{ stat.value }}</p>
-        </div>
-      </div>
+        <template #icon><component :is="stat.icon" class="w-5 h-5" /></template>
+      </StatCard>
     </div>
 
     <!-- Main Dashboard Grid -->
@@ -53,217 +50,193 @@
       <!-- Heatmap / Goal Tracker (Left & Middle columns) -->
       <div class="lg:col-span-2 space-y-8">
         <!-- Heatmap -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
+        <BaseCard>
           <div class="flex items-center justify-between mb-6">
-            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              <Calendar class="w-5 h-5 text-indigo-500" />
+            <h3 class="font-bold text-ink flex items-center gap-2">
+              <Calendar class="w-5 h-5 text-primary" />
               Activité d'étude (365 jours)
             </h3>
-            <span class="text-xs font-semibold text-slate-400">Total : {{ totalSessionsCount }} sessions</span>
+            <span class="text-xs font-semibold text-ink-subtle">Total : {{ totalSessionsCount }} sessions</span>
           </div>
-          
+
           <!-- Heatmap grid simulation -->
           <div class="overflow-x-auto pb-2">
             <div class="flex flex-col gap-1 min-w-[620px]">
               <div class="flex gap-1" v-for="row in 7" :key="row">
                 <!-- Row header (day name) -->
-                <div class="w-8 text-[10px] text-slate-400 dark:text-slate-500 flex items-center font-medium">
+                <div class="w-8 text-[10px] text-ink-subtle flex items-center font-medium">
                   {{ dayNames[row - 1] }}
                 </div>
                 <!-- Box cells -->
-                <div 
-                  v-for="col in 52" 
-                  :key="col" 
+                <div
+                  v-for="col in 52"
+                  :key="col"
                   class="w-3.5 h-3.5 rounded-sm transition-colors duration-200 hover:scale-125 cursor-pointer"
                   :class="getCellColor(row, col)"
                   :title="getTooltipText(row, col)"
                 ></div>
               </div>
             </div>
-            <div class="flex items-center justify-end gap-1.5 mt-4 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+            <div class="flex items-center justify-end gap-1.5 mt-4 text-[10px] text-ink-subtle font-semibold uppercase tracking-wider">
               <span>Moins</span>
-              <div class="w-3 h-3 rounded-sm bg-slate-100 dark:bg-slate-800"></div>
-              <div class="w-3 h-3 rounded-sm bg-indigo-200 dark:bg-indigo-900/50"></div>
-              <div class="w-3 h-3 rounded-sm bg-indigo-400 dark:bg-indigo-700"></div>
-              <div class="w-3 h-3 rounded-sm bg-indigo-600 dark:bg-indigo-500"></div>
+              <div class="w-3 h-3 rounded-sm bg-surface-soft"></div>
+              <div class="w-3 h-3 rounded-sm bg-primary/30"></div>
+              <div class="w-3 h-3 rounded-sm bg-primary/60"></div>
+              <div class="w-3 h-3 rounded-sm bg-primary"></div>
               <span>Plus</span>
             </div>
           </div>
-        </div>
+        </BaseCard>
 
         <!-- Weekly goals -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6">
-            <Sparkles class="w-5 h-5 text-indigo-500" />
+        <BaseCard>
+          <h3 class="font-bold text-ink flex items-center gap-2 mb-6">
+            <Sparkles class="w-5 h-5 text-primary" />
             Objectif Hebdomadaire
           </h3>
           <div class="space-y-4">
             <div class="flex items-center justify-between text-sm">
-              <span class="font-semibold">Temps d'étude hebdo</span>
-              <span class="text-slate-500 dark:text-slate-400 font-medium">{{ weeklyStudyHoursFormatted }} / {{ weeklyGoalHours }}h</span>
+              <span class="font-semibold text-ink">Temps d'étude hebdo</span>
+              <span class="text-ink-muted font-medium">{{ weeklyStudyHoursFormatted }} / {{ weeklyGoalHours }}h</span>
             </div>
-            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
-              <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full" :style="{ width: weeklyGoalPercent + '%' }"></div>
+            <div class="w-full bg-surface-soft rounded-full h-3 overflow-hidden">
+              <div class="bg-primary h-full rounded-full transition-all duration-500" :style="{ width: weeklyGoalPercent + '%' }"></div>
             </div>
-            <p class="text-xs text-slate-400 dark:text-slate-500">{{ weeklyGoalStatusText }}</p>
+            <p class="text-xs text-ink-subtle">{{ weeklyGoalStatusText }}</p>
           </div>
-        </div>
+        </BaseCard>
 
         <!-- Section de Statistiques de Cartes (Maturité & Prévisions) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Maturity Distribution -->
-          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6">
-              <Layers class="w-5 h-5 text-indigo-500" />
+          <BaseCard>
+            <h3 class="font-bold text-ink flex items-center gap-2 mb-6">
+              <Layers class="w-5 h-5 text-primary" />
               Maturité des Cartes
             </h3>
             <div class="space-y-4">
               <!-- Horizonal stacked bar -->
-              <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-4 overflow-hidden flex">
-                <div 
+              <div class="w-full bg-surface-soft rounded-full h-4 overflow-hidden flex">
+                <div
                   v-if="maturityLearningPercent > 0"
-                  class="bg-amber-500 h-full transition-all duration-300" 
+                  class="bg-accent h-full transition-all duration-300"
                   :style="{ width: maturityLearningPercent + '%' }"
                   title="En cours d'apprentissage"
                 ></div>
-                <div 
+                <div
                   v-if="maturityYoungPercent > 0"
-                  class="bg-indigo-500 h-full transition-all duration-300" 
+                  class="bg-primary h-full transition-all duration-300"
                   :style="{ width: maturityYoungPercent + '%' }"
                   title="Jeunes cartes"
                 ></div>
-                <div 
+                <div
                   v-if="maturityMaturePercent > 0"
-                  class="bg-emerald-500 h-full transition-all duration-300" 
+                  class="bg-success h-full transition-all duration-300"
                   :style="{ width: maturityMaturePercent + '%' }"
                   title="Cartes matures"
                 ></div>
               </div>
-              
+
               <!-- Legend and counts -->
               <div class="grid grid-cols-3 gap-2 text-center mt-2">
-                <div class="p-2 bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/10 rounded-2xl">
-                  <span class="block text-[10px] font-bold text-amber-600 dark:text-amber-400">Appr.</span>
-                  <span class="block text-sm font-black text-slate-800 dark:text-white mt-0.5">{{ dashboardData?.maturity_distribution?.learning || 0 }}</span>
+                <div class="p-2 bg-accent-soft rounded-2xl">
+                  <span class="block text-[10px] font-bold text-accent">Appr.</span>
+                  <span class="block text-sm font-black text-ink mt-0.5">{{ dashboardData?.maturity_distribution?.learning || 0 }}</span>
                 </div>
-                <div class="p-2 bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/10 rounded-2xl">
-                  <span class="block text-[10px] font-bold text-indigo-600 dark:text-indigo-400">Jeunes</span>
-                  <span class="block text-sm font-black text-slate-800 dark:text-white mt-0.5">{{ dashboardData?.maturity_distribution?.young || 0 }}</span>
+                <div class="p-2 bg-primary-soft rounded-2xl">
+                  <span class="block text-[10px] font-bold text-primary">Jeunes</span>
+                  <span class="block text-sm font-black text-ink mt-0.5">{{ dashboardData?.maturity_distribution?.young || 0 }}</span>
                 </div>
-                <div class="p-2 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/10 rounded-2xl">
-                  <span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Matures</span>
-                  <span class="block text-sm font-black text-slate-800 dark:text-white mt-0.5">{{ dashboardData?.maturity_distribution?.mature || 0 }}</span>
+                <div class="p-2 bg-success-soft rounded-2xl">
+                  <span class="block text-[10px] font-bold text-success">Matures</span>
+                  <span class="block text-sm font-black text-ink mt-0.5">{{ dashboardData?.maturity_distribution?.mature || 0 }}</span>
                 </div>
               </div>
             </div>
-          </div>
+          </BaseCard>
 
           <!-- 7-day Forecast -->
-          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6">
-              <Calendar class="w-5 h-5 text-indigo-500" />
+          <BaseCard>
+            <h3 class="font-bold text-ink flex items-center gap-2 mb-6">
+              <Calendar class="w-5 h-5 text-primary" />
               Prévisions (7j)
             </h3>
-            <div class="h-28 flex items-end justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-1 relative">
-              <div 
-                v-for="item in forecastList" 
-                :key="item.date" 
+            <div class="h-28 flex items-end justify-between gap-1.5 border-b border-line pb-1 relative">
+              <div
+                v-for="item in forecastList"
+                :key="item.date"
                 class="flex-1 flex flex-col items-center group cursor-pointer relative"
               >
                 <!-- Popover value on hover -->
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-slate-950 dark:bg-slate-800 text-white dark:text-slate-200 text-[8px] font-bold px-1 py-0.5 rounded -translate-y-5 z-10 whitespace-nowrap shadow absolute">
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-ink text-app text-[8px] font-bold px-1 py-0.5 rounded -translate-y-5 z-10 whitespace-nowrap shadow absolute">
                   {{ item.count }}
                 </span>
                 <!-- Bar -->
-                <div 
-                  class="w-full bg-gradient-to-t from-indigo-500 to-indigo-600 rounded-t-md transition-all duration-500 group-hover:brightness-110"
+                <div
+                  class="w-full bg-primary rounded-t-md transition-all duration-500 group-hover:brightness-110"
                   :style="{ height: getForecastBarHeight(item.count) + 'px' }"
                 ></div>
                 <!-- Label -->
-                <span class="text-[8px] font-bold text-slate-400 dark:text-slate-500 mt-1">
+                <span class="text-[8px] font-bold text-ink-subtle mt-1">
                   {{ formatForecastDate(item.date) }}
                 </span>
               </div>
             </div>
-            <div v-if="forecastList.length === 0" class="text-center py-4 text-slate-400 text-[10px] italic">
+            <div v-if="forecastList.length === 0" class="text-center py-4 text-ink-subtle text-[10px] italic">
               Aucune prévision.
             </div>
-          </div>
+          </BaseCard>
         </div>
       </div>
 
       <!-- Quick actions / Recent Decks (Right column) -->
       <div class="space-y-8">
         <!-- Quick Actions -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6">
-            <Activity class="w-5 h-5 text-indigo-500" />
+        <BaseCard>
+          <h3 class="font-bold text-ink flex items-center gap-2 mb-6">
+            <Activity class="w-5 h-5 text-primary" />
             Actions rapides
           </h3>
           <div class="grid grid-cols-2 gap-4">
-            <button 
-              @click="router.push('/notes')" 
-              class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-800 rounded-2xl text-center transition-colors group"
+            <button
+              v-for="action in quickActions"
+              :key="action.label"
+              @click="router.push(action.to)"
+              class="flex flex-col items-center justify-center p-4 bg-surface-soft hover:bg-primary-soft border border-line rounded-2xl text-center transition-colors group"
             >
-              <FileText class="w-6 h-6 text-indigo-500 group-hover:scale-110 transition-transform" />
-              <span class="text-xs font-semibold mt-2">Créer Note</span>
-            </button>
-            <button 
-              @click="router.push('/decks')" 
-              class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-800 rounded-2xl text-center transition-colors group"
-            >
-              <Layers class="w-6 h-6 text-indigo-500 group-hover:scale-110 transition-transform" />
-              <span class="text-xs font-semibold mt-2">Réviser Deck</span>
-            </button>
-            <button 
-              @click="router.push('/pdfs')" 
-              class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-800 rounded-2xl text-center transition-colors group"
-            >
-              <FileDown class="w-6 h-6 text-indigo-500 group-hover:scale-110 transition-transform" />
-              <span class="text-xs font-semibold mt-2">Importer PDF</span>
-            </button>
-            <button 
-              @click="router.push('/diagrams')" 
-              class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-800 rounded-2xl text-center transition-colors group"
-            >
-              <Activity class="w-6 h-6 text-indigo-500 group-hover:scale-110 transition-transform" />
-              <span class="text-xs font-semibold mt-2">Nouveau Schéma</span>
+              <component :is="action.icon" class="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
+              <span class="text-xs font-semibold mt-2 text-ink">{{ action.label }}</span>
             </button>
           </div>
-        </div>
+        </BaseCard>
 
         <!-- Recent review / Decks Study list -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
-            <Layers class="w-5 h-5 text-indigo-500" />
+        <BaseCard>
+          <h3 class="font-bold text-ink flex items-center gap-2 mb-4">
+            <Layers class="w-5 h-5 text-primary" />
             Révisions requises
           </h3>
-          
+
           <div class="space-y-4">
-            <div 
-              v-for="deck in dueDecks" 
+            <div
+              v-for="deck in dueDecks"
               :key="deck.id"
-              class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800"
+              class="flex items-center justify-between p-3 rounded-2xl bg-surface-soft border border-line"
             >
               <div>
-                <p class="text-sm font-bold truncate max-w-[140px]">{{ deck.name }}</p>
-                <p class="text-[11px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wider mt-0.5">
+                <p class="text-sm font-bold truncate max-w-[140px] text-ink">{{ deck.name }}</p>
+                <p class="text-[11px] text-primary font-semibold uppercase tracking-wider mt-0.5">
                   {{ deck.due_count }} carte(s) à réviser
                 </p>
               </div>
-              <button 
-                @click="router.push(`/decks/${deck.id}/study`)"
-                class="px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all"
-              >
-                Réviser
-              </button>
+              <BaseButton size="sm" @click="router.push(`/decks/${deck.id}/study`)">Réviser</BaseButton>
             </div>
-            
-            <div v-if="dueDecks.length === 0" class="text-center py-6 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+
+            <div v-if="dueDecks.length === 0" class="text-center py-6 text-ink-subtle text-xs font-semibold uppercase tracking-wider">
               Tout est à jour ! 🎉
             </div>
           </div>
-        </div>
+        </BaseCard>
       </div>
     </div>
   </div>
@@ -276,17 +249,19 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useDecksStore } from '../../stores/decks'
 import FocusWidget from '../../components/dashboard/FocusWidget.vue'
+import { BaseCard, BaseButton, StatCard } from '../../components/ui/base'
+import { fadeUp, listItem } from '../../composables/useMotionPresets'
 import api from '../../services/api'
-import { 
-  Flame, 
-  Clock, 
-  CheckCircle2, 
-  Layers, 
-  Calendar, 
-  Sparkles, 
-  Activity, 
-  FileText, 
-  FileDown 
+import {
+  Flame,
+  Clock,
+  CheckCircle2,
+  Layers,
+  Calendar,
+  Sparkles,
+  Activity,
+  FileText,
+  FileDown
 } from '@lucide/vue'
 
 const authStore = useAuthStore()
@@ -321,11 +296,18 @@ const formattedStudyTime = computed(() => {
 })
 
 const stats = computed(() => [
-  { title: 'Cartes révisées', value: totalReviewed.value.toString(), icon: CheckCircle2, bg: 'bg-emerald-50 dark:bg-emerald-950/20', color: 'text-emerald-500' },
-  { title: 'Taux de réussite', value: successRate.value, icon: Sparkles, bg: 'bg-indigo-50 dark:bg-indigo-950/20', color: 'text-indigo-500' },
-  { title: 'Temps d\'étude', value: formattedStudyTime.value, icon: Clock, bg: 'bg-purple-50 dark:bg-purple-950/20', color: 'text-purple-500' },
-  { title: 'Decks actifs', value: decksStore.decks.length.toString(), icon: Layers, bg: 'bg-amber-50 dark:bg-amber-950/20', color: 'text-amber-500' }
+  { title: 'Cartes révisées', value: totalReviewed.value.toString(), icon: CheckCircle2, accent: 'success' as const },
+  { title: 'Taux de réussite', value: successRate.value, icon: Sparkles, accent: 'primary' as const },
+  { title: 'Temps d\'étude', value: formattedStudyTime.value, icon: Clock, accent: 'info' as const },
+  { title: 'Decks actifs', value: decksStore.decks.length.toString(), icon: Layers, accent: 'accent' as const }
 ])
+
+const quickActions = [
+  { label: 'Créer Note', to: '/notes', icon: FileText },
+  { label: 'Réviser Deck', to: '/decks', icon: Layers },
+  { label: 'Importer PDF', to: '/pdfs', icon: FileDown },
+  { label: 'Nouveau Schéma', to: '/diagrams', icon: Activity },
+]
 
 // Weekly goals connection
 const weeklyStudySeconds = ref(0)
@@ -408,11 +390,11 @@ function getCellColor(row: number, col: number) {
   const data = heatmapData.value[dateStr]
   const val = data ? data.count : 0
   
-  if (val <= 0) return 'bg-slate-100 dark:bg-slate-800'
-  if (val === 1) return 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-400'
-  if (val === 2) return 'bg-indigo-300 dark:bg-indigo-800 text-indigo-300'
-  if (val === 3) return 'bg-indigo-500 dark:bg-indigo-600 text-indigo-100'
-  return 'bg-indigo-700 dark:bg-indigo-400 text-white'
+  if (val <= 0) return 'bg-surface-soft'
+  if (val === 1) return 'bg-primary/30'
+  if (val === 2) return 'bg-primary/50'
+  if (val === 3) return 'bg-primary/75'
+  return 'bg-primary'
 }
 
 function getTooltipText(row: number, col: number): string {
