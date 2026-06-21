@@ -897,5 +897,8 @@ bruts dans les templates), hors plan S0→S7. Migration en tokens, **une sous-PR
 * **Module Notes-runners** : `NoteQuiz` (566), `NoteEvaluation` (264), `Blurting` (274).
   Spinner `NoteQuiz` corrigé (`border-primary/30 border-t-primary`) ; `dark:hover:bg-slate-700`
   (nuance hors set) → `dark:hover:bg-line`. Vérif : build OK, Vitest **66** ✅.
-* **À suivre (sous-PR)** : Exam (`ExamSession`/`Results`/`Setup`), Focus (`FocusPage`/`FocusWidget`),
-  divers (`PdfReader`, `Login`, `Register`, `MonthCalendar`, `AppLayout`). Puis audits humains.
+* **Module Exam** : `ExamSession` (437), `ExamResults` (233), `ExamSetup` (190). CTA sombre de
+  `ExamSession`→`primary` ; hovers slate hors set (`650`, `700/50`)→`*-line`. Vérif : build OK,
+  Vitest **66** ✅.
+* **À suivre (sous-PR)** : Focus (`FocusPage`/`FocusWidget`), divers (`PdfReader`, `Login`,
+  `Register`, `MonthCalendar`, `AppLayout`). Puis audits humains.
