@@ -60,6 +60,14 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true }
       },
       {
+        // Réviser un dossier entier : agrège les cartes dues de tous ses decks.
+        // Réutilise le runner StudyDeck (mode « dossier »).
+        path: 'bibliotheque/:id/reviser',
+        name: 'StudyBinder',
+        component: () => import('../views/Decks/StudyDeck.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'reviser',
         name: 'Reviser',
         component: () => import('../views/Reviews/Reviews.vue'),

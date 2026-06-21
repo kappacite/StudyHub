@@ -128,6 +128,17 @@ class FlashcardService:
                 
         return [FlashcardResponse.model_validate(c) for c in filtered_cards]
 
+    def get_binder_study_cards(self, user_id: int, binder_id) -> List[FlashcardResponse]:
+        """Cartes dues du jour agrégées sur tous les decks d'un classeur (révision
+        d'un dossier entier). Chaque carte porte son `deck_id` ; le front notifie la
+        réponse SM-2 via ce deck_id, deck par deck."""
+        from app.utils.security import check_binder_access
+        binder = check_binder_access(self._flashcard_dao.db, binder_id, user_id, write_required=False)
+        cards: List[FlashcardResponse] = []
+        for deck in binder.decks:
+            cards.extend(self.get_study_cards(user_id, deck.id))
+        return cards
+
     def _card_tuning(self, card: Flashcard) -> float:
         """Tuning effectif d'une carte = tuning du deck × tuning de la carte (D4)."""
         deck = self._deck_dao.get_by_id(card.deck_id)
