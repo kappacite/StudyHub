@@ -900,5 +900,8 @@ bruts dans les templates), hors plan S0→S7. Migration en tokens, **une sous-PR
 * **Module Exam** : `ExamSession` (437), `ExamResults` (233), `ExamSetup` (190). CTA sombre de
   `ExamSession`→`primary` ; hovers slate hors set (`650`, `700/50`)→`*-line`. Vérif : build OK,
   Vitest **66** ✅.
-* **À suivre (sous-PR)** : Focus (`FocusPage`/`FocusWidget`), divers (`PdfReader`, `Login`,
-  `Register`, `MonthCalendar`, `AppLayout`). Puis audits humains.
+* **Module Focus** : `FocusPage` (188), `FocusWidget` (90). SVG de marque du widget→
+  `fill-primary`/`stroke-primary`. Tooltip sombre délibéré `bg-slate-950` de `FocusPage` laissé tel
+  quel (pas de token « surface inversée »). Vérif : build OK, Vitest **66** ✅.
+* **À suivre (sous-PR)** : divers (`PdfReader`, `Login`, `Register`, `MonthCalendar`, `AppLayout`).
+  Puis audits humains.
