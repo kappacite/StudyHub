@@ -184,9 +184,12 @@ PackagePreview`, `Notes/PublicNote` en `PageHeader`/`BaseCard`/`ListRow` ; clone
 > `/binders`→`/bibliotheque` post-clone corrigé. `GroupDetail` + `AssignmentDetail` aussi réécrits
 > en tokens (statuts/scores/rôles sémantiques ; back→`/classes?tab=teacher`). `AssignmentBuilder`
 > (modale création devoir) aussi migré (amber→primary).
-> **Restent — à faire avec VÉRIFICATION VISUELLE HUMAINE** (gros/complexes/fonctionnels) :
-> `TeacherDashboard` (**1064 l, 136 couleurs brutes, 6 sous-onglets dont analytics/graphes** —
-> pas de mapping mécanique propre, plus gros risque visuel du projet), `NoteEdit` (mode zen),
+> **Lot S8** : `TeacherDashboard` migré en tokens (amber/orange marque→`primary` ; amber statut→
+> `warning` ; gamification→`accent` ; vert/rouge/bleu+indigo→`success`/`danger`/`info` ; barres
+> en cours→`primary`, terminé→`success` ; slate→`ink`/`surface`/`line`). Bug pré-existant corrigé
+> au passage : classes Tailwind invalides (`slate-455/350/105/750`, `green-650`, `blue-650`).
+> **Restent — à faire avec VÉRIFICATION VISUELLE HUMAINE** (complexes/fonctionnels) :
+> `NoteEdit` (mode zen),
 > corps éditeur `Diagrams` (couleurs nœuds en data), onglet Flashcards de `Reviews` en `ListRow` +
 > corps onglets IA + runners ; puis **audits transverses** (dark mode, contraste AA des pastels,
 > responsive 375 px, smoke test Capacitor).

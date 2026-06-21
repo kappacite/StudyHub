@@ -776,3 +776,26 @@ S7-slice (PR #78) mergé. Continuation : `GroupDetail` + `AssignmentDetail`.
   analytics) : pas de mapping mécanique propre, plus gros risque visuel du projet → à migrer avec
   **revue visuelle humaine**, comme `NoteEdit` (zen), corps éditeur `Diagrams`, onglets/runners `Reviews`.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S8 : TeacherDashboard (reprise du « reste »)
+
+Reprise de la boucle sur les morceaux reportés (risque visuel assumé, validation a posteriori).
+
+* **`Classes/TeacherDashboard.vue`** : migration complète en tokens sémantiques. Mapping :
+  amber/orange **marque** (loaders, icônes de chrome, boutons, onglet actif, bandeau, barre de
+  complétion)→`primary` ; amber **statut** (échéance proche, score moyen)→`warning` ; amber
+  **gamification** (rang #1 leaderboard, tag « IA »)→`accent` ; vert→`success`, rouge→`danger`,
+  bleu **+ indigo** (« déposer un cours », unifié avec son déclencheur)→`info` ; barres de
+  progression en cours→`primary`, terminé→`success`. Slate : 900/white→`ink`, 400/500/600→
+  `ink-muted`, captions→`ink-subtle` ; fonds page→`app`, panneaux→`surface-soft`, modales→
+  `surface`, inputs→`surface-soft` ; bordures→`line`/`line-soft`. `placeholder-slate-400` conservé
+  (convention S7). Logique (onglets, CRUD classes/devoirs, analytics, Q&A) **inchangée**.
+* **Bug pré-existant corrigé** : classes Tailwind invalides présentes dans `main`
+  (`slate-455`, `slate-350`, `slate-105`, `slate-750`, `green-650`, `blue-650`) — vestiges d'un
+  remplacement numérique mal ciblé d'une passe antérieure, rendues mortes (aucun style généré).
+  Remplacées par des tokens valides ; **règle retenue : jamais de remplacement de fragment numérique**.
+* **Restent (revue visuelle requise)** : `NoteEdit` (zen), corps éditeur `Diagrams` (couleurs nœuds
+  en data), onglets/runners `Reviews` ; puis audits dark/AA/responsive 375 px/Capacitor.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
