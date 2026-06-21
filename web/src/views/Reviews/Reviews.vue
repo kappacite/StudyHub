@@ -1,54 +1,62 @@
 <template>
-  <div class="space-y-8 animate-fade-in pb-16">
-    <!-- Header Page -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/10 rounded-3xl dark:from-indigo-950/20 dark:border-indigo-900/30">
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight">Espace Révisions 🧠</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Multipliez l'efficacité de votre apprentissage grâce aux meilleures techniques cognitives.</p>
-        <!-- Anti-stranding S0 : l'entrée « Mode Examen » a quitté la nav ; sera intégrée
-             comme onglet Examen lors du lot S3. -->
+  <PageContainer>
+    <PageHeader
+      title="Espace Révisions 🧠"
+      subtitle="Multipliez l'efficacité de votre apprentissage grâce aux meilleures techniques cognitives."
+    >
+      <template #actions>
+        <div class="flex flex-col items-end gap-2">
+          <!-- Catégories : Classiques vs IA -->
+          <div class="flex p-1 bg-surface-soft border border-line rounded-full gap-1">
+            <button
+              v-for="cat in categories"
+              :key="cat.id"
+              @click="selectCategory(cat.id)"
+              class="px-4 py-2 text-xs font-bold rounded-full transition-colors"
+              :class="activeCategory === cat.id ? 'bg-primary text-white shadow-elev-primary' : 'text-ink-muted hover:text-ink'"
+            >{{ cat.name }}</button>
+          </div>
+          <!-- Sous-onglets de la catégorie active -->
+          <div class="flex flex-wrap justify-end p-1 bg-surface-soft border border-line rounded-full gap-1">
+            <button
+              v-for="tab in currentTabs"
+              :key="tab.id"
+              @click="activeTab = tab.id"
+              class="px-3.5 py-1.5 text-xs font-bold rounded-full transition-colors"
+              :class="activeTab === tab.id ? 'bg-surface text-primary shadow-elev-1' : 'text-ink-muted hover:text-ink'"
+            >{{ tab.name }}</button>
+          </div>
+        </div>
+      </template>
+    </PageHeader>
+
+    <!-- Bandeau : à réviser maintenant (file unifiée focus) -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-primary/20 bg-primary-soft/60 p-5">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-primary text-white flex items-center justify-center shrink-0">
+          <Flame class="w-5 h-5" />
+        </div>
+        <div>
+          <p class="text-sm font-bold text-ink">
+            {{ focusStore.totalDue > 0 ? `${focusStore.totalDue} élément(s) à réviser maintenant` : 'Tout est à jour 🎉' }}
+          </p>
+          <p class="text-xs text-ink-muted">
+            {{ focusStore.lateCount > 0 ? `${focusStore.lateCount} en retard` : 'File unifiée : flashcards, ensembles typés et feuilles blanches.' }}
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
         <router-link
           to="/exam/setup"
-          class="inline-flex items-center gap-2 mt-3 px-4 py-2 text-xs font-bold rounded-full bg-primary text-white hover:bg-primary-strong shadow-elev-primary transition-all active:scale-95"
+          class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-full bg-surface text-ink border border-line hover:bg-surface-soft transition-colors"
         >
           <ShieldAlert class="w-4 h-4" />
-          Lancer un examen blanc
+          Examen blanc
         </router-link>
-      </div>
-      
-      <!-- Category selector (Classiques vs IA) -->
-      <div class="flex flex-col items-end gap-2">
-        <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl gap-1">
-          <button
-            v-for="cat in categories"
-            :key="cat.id"
-            @click="selectCategory(cat.id)"
-            class="px-4 py-2 text-xs font-bold rounded-xl transition-all"
-            :class="[
-              activeCategory === cat.id
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
-            ]"
-          >
-            {{ cat.name }}
-          </button>
-        </div>
-        <!-- Sub-tabs of the active category -->
-        <div class="flex flex-wrap justify-end p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl gap-1">
-          <button
-            v-for="tab in currentTabs"
-            :key="tab.id"
-            @click="activeTab = tab.id"
-            class="px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all"
-            :class="[
-              activeTab === tab.id
-                ? 'bg-white text-indigo-600 shadow-sm dark:bg-slate-700 dark:text-white'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
-            ]"
-          >
-            {{ tab.name }}
-          </button>
-        </div>
+        <BaseButton :disabled="focusStore.totalDue === 0" @click="continueReview">
+          <template #icon><Compass class="w-4 h-4" /></template>
+          {{ focusStore.totalDue > 0 ? 'Tout réviser' : 'Rien à réviser' }}
+        </BaseButton>
       </div>
     </div>
 
@@ -933,7 +941,7 @@
     />
 
   </div>
-</div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
@@ -946,6 +954,9 @@ import { useRevisionStore } from '../../stores/revision'
 import type { RevisionType } from '../../stores/revision'
 import api from '../../services/api'
 import RevisionItemModal from '../../components/decks/RevisionItemModal.vue'
+import { PageContainer, PageHeader, BaseButton } from '../../components/ui/base'
+import { useFocusStore } from '../../stores/focus'
+import type { FocusItem } from '../../services/focusService'
 import {
   Layers,
   FileText,
@@ -966,6 +977,18 @@ const decksStore = useDecksStore()
 const notesStore = useNotesStore()
 const bindersStore = useBindersStore()
 const revisionStore = useRevisionStore()
+const focusStore = useFocusStore()
+
+// Bandeau « à réviser maintenant » : file unifiée (réutilise le store focus).
+function studyItem(item: FocusItem) {
+  if (item.type === 'deck') router.push(`/decks/${item.id}/study?focus=true`)
+  else if (item.type === 'note') router.push(`/notes/${item.id}/blurting?focus=true&from=focus`)
+  else if (item.type === 'assignment') router.push(`/bibliotheque/${item.id}`)
+}
+function continueReview() {
+  const first = focusStore.startUnifiedReview()
+  if (first) studyItem(first)
+}
 
 // C2 — deux catégories : Classiques (flashcards + types de révision) et IA.
 const SET_TYPE_LABELS: Record<RevisionType, string> = {
@@ -1725,7 +1748,8 @@ onMounted(async () => {
       decksStore.fetchDecks(),
       notesStore.fetchNotes(),
       bindersStore.fetchBinders(),
-      revisionStore.fetchSets()
+      revisionStore.fetchSets(),
+      focusStore.loadFocusData()
     ])
     // Fetch deck due counts
     await fetchDecksStats()
