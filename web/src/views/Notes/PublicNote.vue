@@ -1,22 +1,20 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-[#0B0F19] dark:to-indigo-950/10">
-    
-
+  <div class="min-h-screen bg-app">
 
     <!-- Loading -->
     <div v-if="loading" class="flex flex-col items-center justify-center py-32 gap-4">
-      <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-      <span class="text-sm text-slate-400 font-medium">Chargement de la note...</span>
+      <div class="w-10 h-10 border-4 border-primary-soft border-t-primary rounded-full animate-spin"></div>
+      <span class="text-sm text-ink-subtle font-medium">Chargement de la note...</span>
     </div>
 
     <!-- Erreur -->
     <div v-else-if="error" class="flex flex-col items-center justify-center py-32 gap-4 text-center px-6">
-      <div class="w-16 h-16 rounded-2xl bg-rose-100 dark:bg-rose-950/30 flex items-center justify-center">
-        <Lock class="w-8 h-8 text-rose-500" />
+      <div class="w-16 h-16 rounded-2xl bg-danger-soft flex items-center justify-center">
+        <Lock class="w-8 h-8 text-danger" />
       </div>
-      <h1 class="text-xl font-bold text-slate-800 dark:text-white">Note introuvable</h1>
-      <p class="text-slate-500 dark:text-slate-400 max-w-sm">Cette note n'existe pas ou n'est plus partagée publiquement.</p>
-      <router-link to="/" class="mt-2 text-indigo-600 hover:text-indigo-700 font-semibold text-sm">← Retour à l'accueil</router-link>
+      <h1 class="text-xl font-bold text-ink">Note introuvable</h1>
+      <p class="text-ink-muted max-w-sm">Cette note n'existe pas ou n'est plus partagée publiquement.</p>
+      <router-link to="/" class="mt-2 text-primary hover:text-primary-strong font-semibold text-sm">← Retour à l'accueil</router-link>
     </div>
 
     <!-- Note content -->
@@ -25,74 +23,73 @@
       <!-- Meta -->
       <div class="mb-8">
         <div class="flex items-center gap-2 mb-4">
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-success-soft text-success text-xs font-bold rounded-full">
             <Globe class="w-3 h-3" />
             Note publique
           </span>
-          <span class="text-xs text-slate-400 dark:text-slate-500">
+          <span class="text-xs text-ink-subtle">
             Modifiée le {{ formatDate(note.updated_at) }}
           </span>
         </div>
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-white leading-tight">{{ note.title }}</h1>
+        <h1 class="text-3xl font-bold text-ink leading-tight">{{ note.title }}</h1>
       </div>
 
-      <!-- Copy link -->
-      <div class="mb-8 p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center gap-3 shadow-sm">
-        <Link2 class="w-4 h-4 text-slate-400 shrink-0" />
-        <span class="text-xs text-slate-500 dark:text-slate-400 font-mono flex-1 truncate">{{ shareUrl }}</span>
-        <button
-          @click="copyLink"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-all active:scale-95"
-        >
-          <Check v-if="copied" class="w-3.5 h-3.5" />
-          <Copy v-else class="w-3.5 h-3.5" />
+      <!-- Lien de partage -->
+      <div class="mb-8 p-4 bg-surface border border-line rounded-2xl flex items-center gap-3 shadow-elev-1">
+        <Link2 class="w-4 h-4 text-ink-subtle shrink-0" />
+        <span class="text-xs text-ink-muted font-mono flex-1 truncate">{{ shareUrl }}</span>
+        <BaseButton size="sm" @click="copyLink">
+          <template #icon>
+            <Check v-if="copied" class="w-3.5 h-3.5" />
+            <Copy v-else class="w-3.5 h-3.5" />
+          </template>
           {{ copied ? 'Copié !' : 'Copier' }}
-        </button>
+        </BaseButton>
       </div>
 
-      <!-- 1. Context Block -->
-      <div 
+      <!-- 1. Bloc Contexte -->
+      <div
         v-if="parsedNote.context"
-        class="mb-6 bg-amber-50/50 border-l-4 border-amber-500 rounded-r-2xl p-5 dark:bg-amber-950/10 dark:border-amber-700/50"
+        class="mb-6 bg-warning-soft border-l-4 border-warning rounded-r-2xl p-5"
       >
-        <h3 class="text-xs font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+        <h3 class="text-xs font-bold text-warning flex items-center gap-1.5 uppercase tracking-wider mb-2">
           <Compass class="w-4 h-4" />
           Contexte de la note
         </h3>
-        <div 
+        <div
           v-dompurify-html="renderMarkup(parsedNote.context)"
           class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert"
         ></div>
       </div>
 
-      <!-- 2. Legacy Definitions Block -->
-      <div 
+      <!-- 2. Bloc Définitions -->
+      <div
         v-if="parsedNote.definition"
-        class="mb-6 bg-emerald-50/30 border-l-4 border-emerald-500 rounded-r-2xl p-5 dark:bg-emerald-950/10 dark:border-emerald-700/50"
+        class="mb-6 bg-success-soft border-l-4 border-success rounded-r-2xl p-5"
       >
-        <h3 class="text-xs font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+        <h3 class="text-xs font-bold text-success flex items-center gap-1.5 uppercase tracking-wider mb-2">
           <BookOpen class="w-4 h-4" />
           Définitions clés
         </h3>
-        <div 
+        <div
           v-dompurify-html="renderMarkup(parsedNote.definition)"
           class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert"
         ></div>
       </div>
 
-      <!-- Note body rendered as markdown -->
-      <article 
-        class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-slate-300 markdown-body bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-8 shadow-sm"
+      <!-- Corps de la note (markdown) -->
+      <article
+        class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm markdown-body bg-surface border border-line rounded-3xl p-8 shadow-elev-1"
         v-dompurify-html="renderMarkup(parsedNote.body)"
       ></article>
 
-      <!-- CTA footer -->
-      <div class="mt-12 p-8 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl text-center text-white shadow-xl shadow-indigo-500/20">
+      <!-- CTA -->
+      <div class="mt-12 p-8 bg-gradient-to-br from-primary to-primary-strong rounded-3xl text-center text-white shadow-elev-primary">
         <h2 class="text-xl font-bold mb-2">Envie de créer tes propres notes ?</h2>
-        <p class="text-indigo-200 text-sm mb-6">StudyHub est gratuit et tout-en-un : notes, flashcards, diagrammes, PDF...</p>
+        <p class="text-white/80 text-sm mb-6">StudyHub est gratuit et tout-en-un : notes, flashcards, diagrammes, PDF...</p>
         <router-link
           to="/register"
-          class="inline-flex items-center gap-2 px-6 py-3 bg-white text-indigo-700 hover:bg-indigo-50 font-bold rounded-xl transition-all shadow active:scale-95"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-surface text-primary hover:bg-surface-soft font-bold rounded-xl transition-all shadow active:scale-95"
         >
           Créer un compte gratuitement
           <ArrowRight class="w-4 h-4" />
@@ -106,6 +103,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowRight, Globe, Lock, Link2, Copy, Check, Compass, BookOpen } from '@lucide/vue'
+import { BaseButton } from '../../components/ui/base'
 import api from '../../services/api'
 import { marked } from 'marked'
 import katex from 'katex'
