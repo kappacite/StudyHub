@@ -1,15 +1,15 @@
 <template>
-  <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl shadow-sm overflow-hidden">
+  <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl shadow-sm overflow-hidden">
     <!-- Toolbar -->
-    <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-      <span class="text-sm font-bold text-slate-800 dark:text-white truncate">{{ pdfStore.activePdf?.name }}</span>
+    <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-line dark:border-line">
+      <span class="text-sm font-bold text-ink dark:text-white truncate">{{ pdfStore.activePdf?.name }}</span>
       <div class="flex items-center gap-2">
         <a
           v-if="pdfStore.activePdfUrl"
           :href="pdfStore.activePdfUrl"
           target="_blank"
           rel="noopener"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line dark:border-line text-xs font-semibold text-ink-muted dark:text-ink-subtle hover:bg-surface-soft dark:hover:bg-surface-soft transition"
         >
           <ExternalLink class="w-3.5 h-3.5" />
           Ouvrir dans un onglet
@@ -18,9 +18,9 @@
     </div>
 
     <!-- Viewer -->
-    <div class="relative bg-slate-100 dark:bg-slate-950" style="height: 75vh;">
+    <div class="relative bg-surface-soft dark:bg-surface-soft" style="height: 75vh;">
       <div v-if="pdfStore.opening" class="absolute inset-0 flex items-center justify-center">
-        <Loader2 class="w-8 h-8 text-indigo-500 animate-spin" />
+        <Loader2 class="w-8 h-8 text-primary animate-spin" />
       </div>
       <iframe
         v-else-if="pdfStore.activePdfUrl"
@@ -28,7 +28,7 @@
         class="w-full h-full"
         title="Document PDF"
       ></iframe>
-      <div v-else class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+      <div v-else class="absolute inset-0 flex flex-col items-center justify-center text-ink-subtle">
         <FileText class="w-10 h-10 mb-2 opacity-50" />
         <p class="text-xs font-semibold uppercase tracking-wider">Document indisponible</p>
       </div>

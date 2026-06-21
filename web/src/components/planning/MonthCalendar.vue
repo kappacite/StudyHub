@@ -52,8 +52,8 @@
         </div>
 
         <!-- Tooltip/Popover on hover -->
-        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-slate-950/90 dark:bg-slate-855/95 backdrop-blur-md text-white rounded-2xl p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-30 scale-95 group-hover:scale-100 origin-bottom">
-          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-slate-950/90 dark:bg-surface-soft backdrop-blur-md text-white rounded-2xl p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-30 scale-95 group-hover:scale-100 origin-bottom">
+          <p class="text-[10px] font-black text-ink-subtle uppercase tracking-widest mb-1.5">
             {{ formatFullDate(day.date) }}
           </p>
           <div class="space-y-1">
@@ -62,10 +62,10 @@
               :key="item.deck_id"
               class="flex items-center justify-between text-[11px]"
             >
-              <span class="truncate max-w-[120px] font-semibold text-slate-200">{{ item.deck_name }}</span>
+              <span class="truncate max-w-[120px] font-semibold text-ink-subtle">{{ item.deck_name }}</span>
               <span class="font-bold text-primary">{{ item.count }} cartes</span>
             </div>
-            <div v-if="day.breakdown.length === 0" class="text-[10px] italic text-slate-550">
+            <div v-if="day.breakdown.length === 0" class="text-[10px] italic text-ink-muted">
               Aucune révision prévue.
             </div>
           </div>
