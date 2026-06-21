@@ -684,3 +684,19 @@ Enchaînement sur S3 (branche `feature/ui-refactor-s3`).
 * **Reste pour S7** : onglet Flashcards en `ListRow` (Étudier/Stats/⋯) et re-skin des corps d'onglets
   IA (feuille blanche/Feynman/quiz) + runners.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S4 (cœur) : Classes (vues élève)
+
+S3 (PR #74) mergé. Enchaînement S4 (branche `feature/ui-refactor-s4`).
+
+* **`StudentClassView.vue`** : wrapper page autonome (`min-h-screen bg-slate-50 p-6`) retiré (monté
+  dans `ClassesLanding`) ; sous-en-tête + cartes stats + filtres + liste devoirs migrés en tokens.
+  Couleurs de **statut** mappées sémantiquement : done→`success`, late→`danger`, in_progress→`info`,
+  todo→neutre (`accentBarClass` ajouté). Q&A tokenisé. Accent sky→`primary`.
+* **`GroupsList.vue`** : wrapper page retiré ; cartes en `BaseCard`, modales create/join en
+  `BaseModal`/`BaseField`, accent violet/purple→`primary`. Logique (create/join/copy/nav) inchangée.
+* **Restent pour S7** : `TeacherDashboard` (1064 l / 136 couleurs brutes), `GroupDetail`,
+  `AssignmentDetail`/`AssignmentBuilder` — gros et complexes, migration prudente.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
