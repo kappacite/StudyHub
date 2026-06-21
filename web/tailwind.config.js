@@ -50,15 +50,27 @@ export default {
           DEFAULT: 'rgb(var(--sh-info) / <alpha-value>)',
           soft: 'rgb(var(--sh-info-soft) / <alpha-value>)',
         },
+        // Couleurs de catégorie de contenu (Bibliothèque).
+        'cat-note': { DEFAULT: 'rgb(var(--sh-cat-note) / <alpha-value>)', soft: 'rgb(var(--sh-cat-note-soft) / <alpha-value>)' },
+        'cat-pdf': { DEFAULT: 'rgb(var(--sh-cat-pdf) / <alpha-value>)', soft: 'rgb(var(--sh-cat-pdf-soft) / <alpha-value>)' },
+        'cat-diagram': { DEFAULT: 'rgb(var(--sh-cat-diagram) / <alpha-value>)', soft: 'rgb(var(--sh-cat-diagram-soft) / <alpha-value>)' },
+        'cat-deck': { DEFAULT: 'rgb(var(--sh-cat-deck) / <alpha-value>)', soft: 'rgb(var(--sh-cat-deck-soft) / <alpha-value>)' },
+        'cat-set': { DEFAULT: 'rgb(var(--sh-cat-set) / <alpha-value>)', soft: 'rgb(var(--sh-cat-set-soft) / <alpha-value>)' },
       },
       fontFamily: {
         sans: ['Inter', 'Inter Variable', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       boxShadow: {
-        // Élévations douces et basses (Soft & Friendly) — jamais d'ombre dure.
-        soft: '0 1px 2px rgb(0 0 0 / 0.04), 0 4px 16px -4px rgb(0 0 0 / 0.06)',
-        'soft-lg': '0 2px 8px rgb(0 0 0 / 0.05), 0 12px 32px -8px rgb(0 0 0 / 0.10)',
+        // Échelle d'élévation Material épuré (ombres douces, jamais dures).
+        'elev-1': '0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.10)',
+        'elev-2': '0 2px 6px rgb(0 0 0 / 0.08), 0 4px 12px -2px rgb(0 0 0 / 0.10)',
+        'elev-3': '0 8px 24px -6px rgb(0 0 0 / 0.18)',
+        'elev-primary': '0 6px 20px -6px rgb(var(--sh-primary) / 0.45)',
+        // Alias rétro-compat : les composants existants (shadow-soft*) héritent
+        // automatiquement de la nouvelle échelle d'élévation.
+        soft: '0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.10)',
+        'soft-lg': '0 2px 6px rgb(0 0 0 / 0.08), 0 4px 12px -2px rgb(0 0 0 / 0.10)',
         'soft-primary': '0 6px 20px -6px rgb(var(--sh-primary) / 0.45)',
       },
       keyframes: {

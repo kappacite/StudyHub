@@ -4,55 +4,68 @@
 
 @layer base {
   /* ──────────────────────────────────────────────────────────────────
-     Design tokens — Soft & Friendly (neutres « warm », accents pastel).
+     Design tokens — White/Pink × Material épuré.
+     Primaire = Pink 400 (#F06292). Danger = rouge (séparé du rose marque).
      Valeurs en "R G B" pour permettre l'alpha Tailwind (rgb(var(--x)/.5)).
      Réglez le thème ici : ça se propage à tous les tokens sémantiques.
      ────────────────────────────────────────────────────────────────── */
   :root {
-    --sh-app: 250 250 249;          /* off-white warm (stone-50) */
-    --sh-surface: 255 255 255;      /* cartes */
-    --sh-surface-soft: 245 245 244; /* fonds imbriqués (stone-100) */
+    --sh-app: 253 247 249;          /* blanc tiède rosé (#FDF7F9) */
+    --sh-surface: 255 255 255;      /* cartes (élévation 0) */
+    --sh-surface-soft: 252 241 244; /* fonds imbriqués / hover (Pink 50, #FCF1F4) */
 
-    --sh-line: 231 229 228;         /* bordures (stone-200) */
-    --sh-line-soft: 245 245 244;    /* bordures discrètes */
+    --sh-line: 244 224 231;         /* bordures (#F4E0E7) */
+    --sh-line-soft: 250 238 242;    /* bordures discrètes */
 
-    --sh-ink: 41 37 36;             /* texte principal (stone-800) */
-    --sh-ink-muted: 120 113 108;    /* texte secondaire (stone-500) */
-    --sh-ink-subtle: 168 162 158;   /* texte ténu (stone-400) */
+    --sh-ink: 40 30 35;             /* texte principal (#281E23) */
+    --sh-ink-muted: 124 110 116;    /* texte secondaire */
+    --sh-ink-subtle: 176 160 167;   /* texte ténu */
 
-    --sh-primary: 79 70 229;        /* indigo-600 (solide + lien) */
-    --sh-primary-strong: 67 56 202; /* indigo-700 (hover) */
-    --sh-primary-soft: 238 242 255; /* indigo-50 (fond teinté) */
+    --sh-primary: 240 98 146;       /* Pink 400 (#F06292) — marque + lien */
+    --sh-primary-strong: 216 27 96; /* Pink 600 (#D81B60) — hover/pressed */
+    --sh-primary-soft: 252 228 236; /* Pink 50 (#FCE4EC) — fond teinté */
 
-    --sh-accent: 217 119 6;         /* miel (amber-600) — gamification */
-    --sh-accent-soft: 254 243 199;  /* amber-100 */
+    --sh-accent: 255 167 38;        /* amber (#FFA726) — gamification */
+    --sh-accent-soft: 255 243 224;  /* amber-50 */
 
-    --sh-success: 22 163 74;        /* green-600 */
-    --sh-success-soft: 220 252 231; /* green-100 */
-    --sh-warning: 217 119 6;        /* amber-600 */
-    --sh-warning-soft: 254 243 199; /* amber-100 */
-    --sh-danger: 225 29 72;         /* rose-600 (lisible) */
-    --sh-danger-strong: 190 18 60;  /* rose-700 */
-    --sh-danger-soft: 255 228 230;  /* rose-100 (corail doux) */
+    --sh-success: 46 174 110;       /* vert lisible */
+    --sh-success-soft: 220 247 233;
+    --sh-warning: 245 158 11;       /* amber-500 */
+    --sh-warning-soft: 254 243 199;
+    --sh-danger: 220 38 38;         /* red-600 — erreur (distinct du rose) */
+    --sh-danger-strong: 185 28 28;  /* red-700 */
+    --sh-danger-soft: 254 226 226;  /* red-100 */
     --sh-info: 2 132 199;           /* sky-600 */
     --sh-info-soft: 224 242 254;    /* sky-100 */
+
+    /* Couleurs de catégorie de contenu (Bibliothèque) — icônes & pastilles. */
+    --sh-cat-note: 139 92 246;      /* violet-500 */
+    --sh-cat-note-soft: 237 233 254;
+    --sh-cat-pdf: 239 68 68;        /* red-500 */
+    --sh-cat-pdf-soft: 254 226 226;
+    --sh-cat-diagram: 13 148 136;   /* teal-600 */
+    --sh-cat-diagram-soft: 204 251 241;
+    --sh-cat-deck: 37 99 235;       /* blue-600 */
+    --sh-cat-deck-soft: 219 234 254;
+    --sh-cat-set: 217 119 6;        /* amber-600 */
+    --sh-cat-set-soft: 254 243 199;
   }
 
   .dark {
-    --sh-app: 23 23 29;             /* dark warm (#17171D) */
-    --sh-surface: 31 31 38;         /* cartes (#1F1F26) */
-    --sh-surface-soft: 38 38 46;    /* fonds imbriqués (#26262E) */
+    --sh-app: 26 22 24;             /* sombre tiède rosé (#1A1618) */
+    --sh-surface: 35 29 32;         /* cartes (#231D20) */
+    --sh-surface-soft: 44 36 40;    /* fonds imbriqués (#2C2428) */
 
-    --sh-line: 47 47 56;            /* bordures */
-    --sh-line-soft: 38 38 46;
+    --sh-line: 56 46 51;            /* bordures */
+    --sh-line-soft: 44 36 40;
 
-    --sh-ink: 237 235 233;          /* texte principal warm */
-    --sh-ink-muted: 161 156 152;
-    --sh-ink-subtle: 117 113 109;
+    --sh-ink: 240 232 235;          /* texte principal */
+    --sh-ink-muted: 176 162 168;
+    --sh-ink-subtle: 124 110 116;
 
-    --sh-primary: 129 140 248;      /* indigo-400 (contraste sur sombre) */
-    --sh-primary-strong: 165 180 252; /* indigo-300 (hover) */
-    --sh-primary-soft: 40 38 74;    /* indigo tamisé sombre */
+    --sh-primary: 244 143 177;      /* Pink 300 (contraste sur sombre) */
+    --sh-primary-strong: 248 187 208; /* Pink 200 (hover) */
+    --sh-primary-soft: 60 36 48;    /* rose tamisé sombre */
 
     --sh-accent: 251 191 36;        /* amber-400 */
     --sh-accent-soft: 61 44 10;     /* miel sombre */
@@ -61,11 +74,22 @@
     --sh-success-soft: 20 51 33;
     --sh-warning: 251 191 36;       /* amber-400 */
     --sh-warning-soft: 61 44 10;
-    --sh-danger: 251 113 133;       /* rose-400 (corail) */
-    --sh-danger-strong: 244 63 94;  /* rose-500 */
-    --sh-danger-soft: 60 23 32;
+    --sh-danger: 248 113 113;       /* red-400 */
+    --sh-danger-strong: 239 68 68;  /* red-500 */
+    --sh-danger-soft: 60 23 23;
     --sh-info: 56 189 248;          /* sky-400 */
     --sh-info-soft: 12 43 64;
+
+    --sh-cat-note: 167 139 250;     /* violet-400 */
+    --sh-cat-note-soft: 49 33 84;
+    --sh-cat-pdf: 248 113 113;      /* red-400 */
+    --sh-cat-pdf-soft: 60 23 23;
+    --sh-cat-diagram: 45 212 191;   /* teal-400 */
+    --sh-cat-diagram-soft: 12 51 47;
+    --sh-cat-deck: 96 165 250;      /* blue-400 */
+    --sh-cat-deck-soft: 23 37 64;
+    --sh-cat-set: 251 191 36;       /* amber-400 */
+    --sh-cat-set-soft: 61 44 10;
   }
 
   body {
@@ -148,18 +172,18 @@
   margin-bottom: 0.125rem !important;
 }
 .markdown-body blockquote {
-  @apply border-l-4 border-indigo-500 pl-4 italic text-slate-500 dark:text-slate-400 !important;
+  @apply border-l-4 border-primary pl-4 italic text-slate-500 dark:text-slate-400 !important;
   margin-top: 0.75rem !important;
   margin-bottom: 0.75rem !important;
 }
 .markdown-body hr {
   border: 0 !important;
   height: 2px !important;
-  background: linear-gradient(to right, transparent, #cbd5e1 15%, #818cf8 50%, #cbd5e1 85%, transparent) !important;
+  background: linear-gradient(to right, transparent, #f4e0e7 15%, #f06292 50%, #f4e0e7 85%, transparent) !important;
   @apply my-8 opacity-90 !important;
 }
 .dark .markdown-body hr {
-  background: linear-gradient(to right, transparent, #334155 15%, #6366f1 50%, #334155 85%, transparent) !important;
+  background: linear-gradient(to right, transparent, #382e33 15%, #f48fb1 50%, #382e33 85%, transparent) !important;
 }
 .markdown-body strong {
   @apply font-bold text-slate-900 dark:text-white;
@@ -176,7 +200,7 @@
   @apply bg-transparent p-0 text-xs;
 }
 .markdown-body code {
-  @apply font-mono text-xs bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded mx-0.5;
+  @apply font-mono text-xs bg-primary-soft text-primary px-1.5 py-0.5 rounded mx-0.5;
 }
 
 /* Markdown Tables */

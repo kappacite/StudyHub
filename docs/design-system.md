@@ -1,8 +1,10 @@
-# Design System StudyHub — « Soft & Friendly »
+# Design System StudyHub — « White/Pink × Material épuré »
 
-Direction esthétique du refacto UI : **moderne, simple, épurée, chaleureuse**, animations
-**subtiles & rapides** (≈200 ms, ease-out, pas de rebond marqué). Déploiement **incrémental** :
-on style via une couche centralisée (tokens + primitives + motion), puis on migre les vues par lots.
+Direction esthétique : **blanc/rose, épuré, inspiré Material** — élévation par ombres douces,
+coins arrondis, typographie claire, états hover/focus nets, animations **subtiles & rapides**
+(≈200 ms, ease-out, pas de rebond marqué, pas de ripple). Primaire = **Pink 400 `#F06292`**.
+Light **et** dark supportés. Déploiement **incrémental** : couche centralisée (tokens +
+primitives + motion), puis migration des vues par lots.
 
 ## 1. Tokens de design
 
@@ -11,20 +13,36 @@ Les couleurs sont des **CSS custom properties** définies dans `web/src/style.cs
 `web/tailwind.config.js` (`rgb(var(--sh-…) / <alpha-value>)`). **Régler le thème = éditer
 les variables**, jamais des couleurs brutes dans les vues.
 
-| Rôle | Token Tailwind | Exemple d'usage |
-|---|---|---|
-| Fond d'app | `bg-app` | `<main class="bg-app">` |
-| Surface (carte) | `bg-surface`, `bg-surface-soft` | cartes, champs |
-| Bordures | `border-line`, `border-line-soft` | contours discrets |
-| Texte | `text-ink`, `text-ink-muted`, `text-ink-subtle` | titres / secondaire / ténu |
-| Marque | `bg-primary`, `text-primary`, `bg-primary-soft`, `hover:bg-primary-strong` | boutons, liens, état actif |
-| Accent (gamification) | `bg-accent`, `text-accent`, `bg-accent-soft` | séries, objectifs |
-| Sémantiques | `success` · `warning` · `danger` (+`-strong`) · `info`, chacun + `-soft` | états |
+| Rôle | Token Tailwind | Light | Dark |
+|---|---|---|---|
+| Fond d'app | `bg-app` | `#FDF7F9` (blanc rosé) | `#1A1618` |
+| Surface (carte) | `bg-surface` / `bg-surface-soft` | `#FFFFFF` / `#FCF1F4` | `#231D20` / `#2C2428` |
+| Bordures | `border-line` / `border-line-soft` | `#F4E0E7` | `#382E33` |
+| Texte | `text-ink` / `-muted` / `-subtle` | `#281E23` / gris rosé | clair |
+| **Marque** | `bg-primary` / `text-primary` / `bg-primary-soft` / `hover:bg-primary-strong` | Pink 400 `#F06292` / soft `#FCE4EC` / strong `#D81B60` | Pink 300 `#F48FB1` |
+| Accent (gamification) | `bg-accent`, `text-accent`, `bg-accent-soft` | amber `#FFA726` | amber-400 |
+| Sémantiques | `success` · `warning` · `danger` (+`-strong`) · `info`, chacun + `-soft` | — | — |
+
+> ⚠️ **`danger` = ROUGE** (`#DC2626`), distinct du rose de marque. Ne jamais utiliser `danger`
+> comme accent décoratif : il signifie **erreur / destruction** uniquement. Pour un accent rose
+> décoratif, utiliser `primary` / `primary-soft`.
 
 Règle pastel : les fonds `*-soft` portent toujours un texte en teinte forte (`text-primary`
-sur `bg-primary-soft`, etc.) — jamais l'inverse (contraste).
+sur `bg-primary-soft`, etc.) — jamais l'inverse (contraste AA).
 
-Élévations douces : `shadow-soft`, `shadow-soft-lg`, `shadow-soft-primary`.
+### Élévation, formes, typo (Material épuré)
+
+- **Élévation** (ombres douces, jamais dures) : `shadow-elev-1` (cartes au repos),
+  `shadow-elev-2` (hover, menus), `shadow-elev-3` (modales, panneaux flottants),
+  `shadow-elev-primary` (CTA principal, ombre teintée rose). Alias rétro-compat :
+  `shadow-soft` → elev-1, `shadow-soft-lg` → elev-2, `shadow-soft-primary` → elev-primary.
+- **Formes** : cartes/panneaux `rounded-2xl` ; champs/inputs `rounded-xl` ;
+  boutons d'action / chips / badges / FAB `rounded-full` (pilule).
+- **Typographie** : **Inter**. Titres semi-bold (`font-bold`/`font-extrabold`), sur-titres de
+  section en `uppercase tracking-wider text-ink-subtle`, corps `text-ink-muted`.
+- **États** : hover = `bg-surface-soft` + léger lift (`-translate-y-0.5`) sur les cartes
+  interactives ; focus = `ring-2 ring-primary/40` ; transitions `duration-200 ease-out`.
+
 Animations utilitaires : `animate-fade-up`, `animate-pop-in`.
 
 ## 2. Motion
@@ -61,6 +79,11 @@ Composants typés, **sans appel API** (règle CLAUDE.md). Import : `@/components
 | `BaseEmptyState` | `title`, `description`, slots `#icon/#actions` | états vides |
 | `BaseSkeleton` | `rounded`, `customClass` | chargement |
 | `StatCard` | `label`, `value`, `accent`, slot `#icon` | métriques dashboard |
+| `PageContainer` | `size` (default/narrow/wide) | wrapper de page (`max-w` + `space-y-6`) |
+| `PageHeader` | `title`, `subtitle`, `breadcrumbs`, slots `#actions/#tabs` | en-tête de page |
+| `Tabs` | `v-model`, `tabs[{key,label,icon?,badge?}]` | segmented control présentationnel |
+| `ListRow` | `as` (div/button/router-link), `to`, `title`, `subtitle`, `interactive`, slots `#leading/#trailing` | ligne de liste |
+| `SplitView` | `leftWidth`, slots `#left/#right` | colonne latérale + contenu (responsive) |
 
 Exemple :
 
@@ -79,6 +102,11 @@ import { BaseButton, BaseCard, StatCard } from '@/components/ui/base'
 
 ## 4. Migration par lots
 
-Lot 0 (fondations, ce document) → Lot 1 shell + Dashboard → puis vues par domaine.
-Chaque lot : app fonctionnelle, vérif `npm run build` + visuel 375/1440 px en clair/sombre,
-zen mode (Notes) et immersive (Examen) préservés.
+**Lot T** (theming white/pink + Material, ce document) → **Lot S0** (socle structurel : routing
+5 sections + nav) → **S1** Accueil → **S2** Bibliothèque → **S3** Réviser → **S4** Classes →
+**S5** Planning → **S6** Communauté → **S7** finition. Plan détaillé : `docs/ui-redesign-plan.md`.
+
+Chaque lot : app fonctionnelle, vérif `npm run build` + `npm run test:run` + visuel 375/1440 px
+en clair/sombre, zen mode (Notes) et immersive (Examen) préservés. Les vues conservent encore
+des couleurs brutes (indigo/blue) tant que leur lot n'est pas passé — c'est attendu pendant la
+transition ; elles migrent vers les tokens lors de leur lot.

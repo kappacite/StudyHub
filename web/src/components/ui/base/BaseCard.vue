@@ -1,8 +1,8 @@
 <template>
   <component
     :is="as"
-    class="rounded-3xl bg-surface border border-line shadow-soft"
-    :class="[paddingClass, interactive ? 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg' : '']"
+    class="rounded-2xl bg-surface border border-line shadow-elev-1"
+    :class="[paddingClass, interactive ? 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elev-2' : '']"
   >
     <slot />
   </component>

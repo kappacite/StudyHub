@@ -17,7 +17,7 @@
             leave="duration-150 ease-in" leave-from="opacity-100 scale-100" leave-to="opacity-0 scale-96"
           >
             <DialogPanel
-              class="w-full rounded-3xl bg-surface border border-line shadow-soft-lg p-6 text-left align-middle"
+              class="w-full rounded-3xl bg-surface border border-line shadow-elev-3 p-6 text-left align-middle"
               :class="sizeClass"
             >
               <div v-if="title || $slots.title" class="flex items-start justify-between gap-4 mb-4">
