@@ -799,3 +799,23 @@ Reprise de la boucle sur les morceaux reportés (risque visuel assumé, validati
 * **Restent (revue visuelle requise)** : `NoteEdit` (zen), corps éditeur `Diagrams` (couleurs nœuds
   en data), onglets/runners `Reviews` ; puis audits dark/AA/responsive 375 px/Capacitor.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S8 (suite) : NoteEdit (template, modes préservés)
+
+* **`Notes/NoteEdit.vue`** (2693 l) : **seul le `<template>` (l. 1-1016) est migré** en tokens.
+  Famille de marque de l'éditeur **indigo→`primary`** ; emerald→`success`, rose→`danger`,
+  amber→`warning`, purple→`accent`, blue→`info` ; slate→`ink`/`surface`/`line` (fonds doux→
+  `*-soft`). Migration par **tokens complets** (script jeté, jamais de fragment numérique — cf.
+  classes mortes corrigées en S8/Teacher).
+* **Laissés intacts (volontaire)** : tout le `<script>` (l. 1018-2582) qui assemble des **couleurs
+  fonctionnelles pilotées par données** (échelle de difficulté SM-2 bleu→rose, variantes de modale
+  `iconBg`/`confirmBg`) — même règle que le HTML de rendu de `PublicNote` et les couleurs de nœuds
+  de `Diagrams`. **Scrims de modale `bg-slate-900/50|60`** conservés (overlay sombre translucide,
+  identique en clair/sombre). `placeholder-slate-*` conservés (convention S7).
+* Mode édition plein écran (font-mono, l. 52-384) et bascule Lecture/Révision Active : chrome
+  tokenisée, **comportement/layout inchangés**.
+* **Restent (revue visuelle requise)** : corps éditeur `Diagrams` (couleurs nœuds en data),
+  onglets/runners `Reviews` ; puis audits dark/AA/responsive 375 px/Capacitor.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.

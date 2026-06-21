@@ -4,19 +4,19 @@
     :class="[isEditMode ? 'h-full overflow-hidden' : 'min-h-full']"
   >
     <!-- Loading State -->
-    <div v-if="loading" class="flex-1 flex flex-col items-center justify-center py-20 gap-3 no-print bg-slate-50 dark:bg-[#070913] h-full w-full">
-      <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <div v-if="loading" class="flex-1 flex flex-col items-center justify-center py-20 gap-3 no-print bg-surface-soft dark:bg-[#070913] h-full w-full">
+      <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      <span class="text-sm font-semibold text-slate-400 uppercase tracking-widest text-slate-400">Ouverture de la note...</span>
+      <span class="text-sm font-semibold text-ink-subtle uppercase tracking-widest text-ink-subtle">Ouverture de la note...</span>
     </div>
 
     <!-- Main Content -->
     <div v-else class="flex-1 flex flex-col w-full animate-fade-in print:h-auto print:overflow-visible" :class="[isEditMode ? 'overflow-hidden' : '']">
 
       <!-- Bannière lecture seule : note partagée par un cours -->
-      <div v-if="isReadOnly" class="flex items-center justify-between gap-2 px-6 py-2 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400 text-xs font-semibold no-print">
+      <div v-if="isReadOnly" class="flex items-center justify-between gap-2 px-6 py-2 bg-warning-soft dark:bg-warning-soft border-b border-warning dark:border-warning text-warning dark:text-warning text-xs font-semibold no-print">
         <span class="flex items-center gap-2">
           <Eye class="w-4 h-4" />
           Note partagée par un cours — lecture seule.
@@ -24,7 +24,7 @@
         <span class="flex items-center gap-2">
           <button
             @click="hideFromView"
-            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-amber-300 dark:border-amber-800 font-semibold hover:bg-amber-100 dark:hover:bg-amber-950/40 active:scale-95 transition-all"
+            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-warning dark:border-warning font-semibold hover:bg-warning-soft dark:hover:bg-warning-soft active:scale-95 transition-all"
           >
             <EyeOff class="w-3.5 h-3.5" />
             Cacher
@@ -32,7 +32,7 @@
           <button
             @click="copyForEditing"
             :disabled="isCopying"
-            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 active:scale-95 transition-all disabled:opacity-50"
+            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-warning text-white font-semibold hover:bg-warning active:scale-95 transition-all disabled:opacity-50"
           >
             <Copy class="w-3.5 h-3.5" />
             {{ isCopying ? 'Copie…' : 'Copier pour modifier' }}
@@ -46,28 +46,28 @@
         <!-- Left Pane: PDF Visualizer removed -->
         
         <!-- Right Pane: Note Content -->
-        <div class="flex-1 flex flex-col overflow-hidden h-full print:h-auto print:overflow-visible bg-white dark:bg-slate-900">
+        <div class="flex-1 flex flex-col overflow-hidden h-full print:h-auto print:overflow-visible bg-surface dark:bg-surface-soft">
           
           <!-- 1. FULL VIEWPORT EDIT MODE -->
-          <div v-if="isEditMode" class="flex-1 flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
+          <div v-if="isEditMode" class="flex-1 flex flex-col bg-surface dark:bg-surface-soft overflow-hidden">
         
         <!-- Header Toolbar -->
-        <div class="flex flex-col border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 z-10 no-print">
+        <div class="flex flex-col border-b border-line dark:border-line bg-surface dark:bg-surface-soft z-10 no-print">
           
           <!-- Row 1: Global Actions & Title -->
-          <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-slate-50 dark:border-slate-850/60">
+          <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-line-soft dark:border-line">
             <div class="flex min-w-[18rem] flex-1 items-center gap-4">
               <!-- Sidebar toggle -->
               <button 
                 @click="toggleShortcutSidebar" 
-                class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-800 dark:text-slate-400 dark:hover:border-indigo-900 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-400"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-line text-ink-muted transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary dark:border-line dark:text-ink-subtle dark:hover:border-primary dark:hover:bg-primary-soft dark:hover:text-primary"
                 type="button"
                 title="Afficher la barre de raccourcis"
               >
                 <Menu class="h-5 w-5" />
               </button>
               
-              <div class="h-5 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
+              <div class="h-5 w-[1px] bg-line dark:bg-surface-soft"></div>
 
               <!-- Title Input (Direct inline edit) -->
               <input 
@@ -82,15 +82,15 @@
             <!-- Header Right Controls -->
             <div class="flex max-w-full flex-wrap items-center justify-end gap-2">
               <!-- Save Status -->
-              <span class="text-xs font-semibold text-slate-400 flex items-center gap-1.5 mr-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-500" :class="[isSaving ? 'animate-pulse' : '']"></span>
+              <span class="text-xs font-semibold text-ink-subtle flex items-center gap-1.5 mr-2">
+                <span class="w-2 h-2 rounded-full bg-success" :class="[isSaving ? 'animate-pulse' : '']"></span>
                 {{ saveStatus }}
               </span>
 
               <!-- Binder select -->
               <select 
                 v-model="binderId"
-                class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold transition-all"
+                class="px-2.5 py-1.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold transition-all"
                 @change="triggerAutoSave"
               >
                 <option :value="null">Général (Aucun)</option>
@@ -107,8 +107,8 @@
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
                 :class="[
                   showSettings 
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20 dark:text-indigo-400' 
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850'
+                    ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' 
+                    : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft'
                 ]"
               >
                 <Compass class="w-3.5 h-3.5" />
@@ -121,8 +121,8 @@
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
                 :class="[
                   isLivePreviewActive 
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20 dark:text-indigo-400' 
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-650 dark:text-slate-300'
+                    ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' 
+                    : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink-muted dark:text-ink-subtle'
                 ]"
                 type="button"
                 title="Afficher l'aperçu en temps réel côte à côte"
@@ -134,9 +134,9 @@
               <!-- View Toggler -->
               <button 
                 @click="toggleMode"
-                class="inline-flex items-center gap-2 px-4 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-850 transition-all text-slate-600 dark:text-slate-300"
+                class="inline-flex items-center gap-2 px-4 py-1.5 border border-line dark:border-line rounded-xl text-xs font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
               >
-                <Eye class="w-3.5 h-3.5 text-indigo-500" />
+                <Eye class="w-3.5 h-3.5 text-primary" />
                 Visualiser
               </button>
 
@@ -149,8 +149,8 @@
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
                   :class="[
                     isPublic
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:border-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-300'
+                      ? 'border-success bg-success-soft text-success dark:border-success dark:bg-success-soft dark:text-success'
+                      : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink-muted dark:text-ink-subtle'
                   ]"
                 >
                   <Globe class="w-3.5 h-3.5" />
@@ -161,30 +161,30 @@
                 <Transition name="popup">
                   <div
                     v-if="sharePopupVisible && isPublic"
-                    class="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl p-4 z-50"
+                    class="absolute right-0 top-full mt-2 w-80 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl shadow-xl p-4 z-50"
                   >
                     <div class="flex items-center justify-between mb-3">
-                      <span class="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                        <Globe class="w-3.5 h-3.5 text-emerald-500" />
+                      <span class="text-xs font-bold text-ink dark:text-ink-subtle flex items-center gap-1.5">
+                        <Globe class="w-3.5 h-3.5 text-success" />
                         Note publique
                       </span>
-                      <button @click="sharePopupVisible = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                      <button @click="sharePopupVisible = false" class="text-ink-subtle hover:text-ink-muted transition-colors">
                         <X class="w-4 h-4" />
                       </button>
                     </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">Toute personne avec ce lien peut lire cette note.</p>
-                    <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2">
-                      <span class="text-[10px] font-mono text-slate-500 dark:text-slate-400 flex-1 truncate">{{ shareUrl }}</span>
+                    <p class="text-[11px] text-ink-muted dark:text-ink-subtle mb-3">Toute personne avec ce lien peut lire cette note.</p>
+                    <div class="flex items-center gap-2 bg-surface-soft dark:bg-surface-soft rounded-xl px-3 py-2">
+                      <span class="text-[10px] font-mono text-ink-muted dark:text-ink-subtle flex-1 truncate">{{ shareUrl }}</span>
                       <button
                         @click="copyShareLink"
-                        class="shrink-0 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all active:scale-95"
+                        class="shrink-0 px-2.5 py-1 bg-primary hover:bg-primary-strong text-white text-xs font-bold rounded-lg transition-all active:scale-95"
                       >
                         {{ shareCopied ? 'Copié !' : 'Copier' }}
                       </button>
                     </div>
                     <button
                       @click="togglePublic"
-                      class="mt-3 w-full text-xs text-rose-500 hover:text-rose-600 font-semibold transition-colors"
+                      class="mt-3 w-full text-xs text-danger hover:text-danger font-semibold transition-colors"
                     >
                       Rendre privée
                     </button>
@@ -195,77 +195,77 @@
               <!-- Guide Button (Edit Mode) -->
               <button 
                 @click="showHelpModal = true"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-850 transition-all text-slate-600 dark:text-slate-355"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-line dark:border-line rounded-xl text-xs font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
                 type="button"
               >
-                <HelpCircle class="w-3.5 h-3.5 text-indigo-500" />
+                <HelpCircle class="w-3.5 h-3.5 text-primary" />
                 Guide
               </button>
             </div>
           </div>
 
           <!-- Row 2: Formatting Toolbar -->
-          <div class="flex flex-wrap items-center gap-1.5 px-6 py-2 bg-slate-50/50 dark:bg-slate-850/20">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Format</span>
+          <div class="flex flex-wrap items-center gap-1.5 px-6 py-2 bg-surface-soft dark:bg-surface-soft">
+            <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2">Format</span>
             <button 
               v-for="btn in formatButtons" 
               :key="btn.label" 
               type="button" 
               @click="insertText(btn.prefix, btn.suffix)"
-              class="p-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
+              class="p-2 text-xs font-semibold text-ink-muted dark:text-ink-subtle hover:text-primary hover:bg-surface dark:hover:bg-surface-soft rounded-lg transition-all"
               :title="btn.label"
             >
               {{ btn.label }}
             </button>
             
-            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
             
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">LaTeX</span>
+            <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2">LaTeX</span>
             <button 
               v-for="btn in latexButtons" 
               :key="btn.label" 
               type="button" 
               @click="insertText(btn.prefix, btn.suffix)"
-              class="p-2 text-xs font-mono font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
+              class="p-2 text-xs font-mono font-bold text-ink-muted dark:text-ink-subtle hover:text-primary hover:bg-surface dark:hover:bg-surface-soft rounded-lg transition-all"
               :title="btn.label"
             >
               {{ btn.label }}
             </button>
 
-            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
 
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Code</span>
+            <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2">Code</span>
             <button 
               v-for="btn in codeButtons" 
               :key="btn.label" 
               type="button" 
               @click="insertText(btn.prefix, btn.suffix)"
-              class="p-2 text-xs font-mono font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
+              class="p-2 text-xs font-mono font-bold text-ink-muted dark:text-ink-subtle hover:text-primary hover:bg-surface dark:hover:bg-surface-soft rounded-lg transition-all"
               :title="btn.label"
             >
               {{ btn.label }}
             </button>
 
-            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
             
             <!-- Smart Space: Definition Tooltip insertion -->
             <button 
               type="button" 
               @click="insertDefinitionTooltip"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/30 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-950/60 active:scale-95 transition-all"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-success dark:text-success bg-success-soft dark:bg-success-soft border border-success dark:border-success rounded-xl hover:bg-success-soft dark:hover:bg-success-soft active:scale-95 transition-all"
               title="Associer une définition en info-bulle au texte sélectionné"
             >
               <BookOpen class="w-3.5 h-3.5" />
               Définition (Info-bulle)
             </button>
 
-            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
 
             <!-- Insertion de diagramme -->
             <div class="relative inline-block">
               <select 
                 @change="insertDiagramTag($event)"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/30 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-950/60 transition-all focus:outline-none cursor-pointer"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft border border-primary dark:border-primary rounded-xl hover:bg-primary-soft dark:hover:bg-primary-soft transition-all focus:outline-none cursor-pointer"
               >
                 <option value="" disabled selected>Insérer un diagramme...</option>
                 <option v-for="diag in allUserDiagrams" :key="diag.id" :value="diag.id">
@@ -279,11 +279,11 @@
           <!-- Sliding/Collapsible Drawer for Context and Links -->
           <div 
             v-if="showSettings" 
-            class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-slate-50/80 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 transition-all duration-300 animate-slide-down"
+            class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface-soft dark:bg-surface-soft border-b border-line dark:border-line transition-all duration-300 animate-slide-down"
           >
             <!-- 1. Context Input Section -->
             <div class="space-y-2">
-              <h3 class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <h3 class="text-xs font-bold text-warning dark:text-warning uppercase tracking-wider flex items-center gap-1.5">
                 <Compass class="w-4 h-4" />
                 Contexte de la note
               </h3>
@@ -291,14 +291,14 @@
                 v-model="noteContext"
                 placeholder="Historique, cadre théorique ou d'apprentissage..."
                 rows="3"
-                class="w-full p-3 text-xs bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 resize-y"
+                class="w-full p-3 text-xs bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-ink dark:text-ink-subtle resize-y"
                 @input="triggerAutoSave"
               ></textarea>
             </div>
 
             <!-- 2. Linked Notes Section -->
             <div class="space-y-3">
-              <h3 class="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+              <h3 class="text-xs font-bold text-primary dark:text-primary uppercase tracking-wider flex items-center gap-1.5">
                 <LinkIcon class="w-4 h-4" />
                 Lier à d'autres notes
               </h3>
@@ -306,7 +306,7 @@
               <div class="flex gap-2">
                 <select 
                   v-model="selectedLinkTarget"
-                  class="flex-1 px-3 py-2 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold"
+                  class="flex-1 px-3 py-2 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold"
                 >
                   <option :value="null" disabled>Sélectionner une note...</option>
                   <option 
@@ -321,7 +321,7 @@
                 <button 
                   @click="addNoteLink"
                   type="button"
-                  class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl active:scale-95 transition-all shadow-sm"
+                  class="px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl active:scale-95 transition-all shadow-sm"
                 >
                   Lier
                 </button>
@@ -332,13 +332,13 @@
                 <span 
                   v-for="linkedId in noteLinks" 
                   :key="linkedId"
-                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-semibold rounded-lg shadow-sm"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface border border-line dark:bg-surface-soft dark:border-line text-ink dark:text-ink-subtle text-[11px] font-semibold rounded-lg shadow-sm"
                 >
                   {{ getNoteTitle(linkedId) }}
                   <button 
                     @click="removeNoteLink(linkedId)" 
                     type="button" 
-                    class="text-slate-400 hover:text-rose-500 transition-colors"
+                    class="text-ink-subtle hover:text-danger transition-colors"
                   >
                     ✕
                   </button>
@@ -350,18 +350,18 @@
         </div>
 
         <!-- Split Workspace (Editor + optional Live Preview) -->
-        <div class="flex-1 flex w-full overflow-hidden bg-white dark:bg-slate-900">
+        <div class="flex-1 flex w-full overflow-hidden bg-surface dark:bg-surface-soft">
           <!-- Left Pane: Editor -->
           <div 
             class="flex flex-col h-full overflow-hidden cursor-text"
-            :class="[isLivePreviewActive ? 'w-1/2 border-r border-slate-150 dark:border-slate-800/80' : 'w-full']"
+            :class="[isLivePreviewActive ? 'w-1/2 border-r border-line dark:border-line' : 'w-full']"
             @click="textareaRef?.focus()"
           >
             <textarea 
               ref="textareaRef"
               v-model="noteBody"
               placeholder="Rédigez vos notes ici en Markdown..."
-              class="w-full h-full p-8 md:p-12 outline-none border-0 focus:ring-0 text-base font-mono text-slate-700 dark:text-slate-300 resize-none overflow-y-auto leading-relaxed bg-transparent"
+              class="w-full h-full p-8 md:p-12 outline-none border-0 focus:ring-0 text-base font-mono text-ink dark:text-ink-subtle resize-none overflow-y-auto leading-relaxed bg-transparent"
               @input="triggerAutoSave"
               @mouseup="handleTextareaSelect($event)"
               @keyup="handleTextareaSelect($event)"
@@ -372,10 +372,10 @@
           <!-- Right Pane: Real-time Live Preview -->
           <div 
             v-if="isLivePreviewActive"
-            class="w-1/2 h-full p-8 md:p-12 overflow-y-auto bg-slate-50/30 dark:bg-slate-950/20 border-l border-slate-50 dark:border-slate-800/40 prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-slate-300 markdown-body"
+            class="w-1/2 h-full p-8 md:p-12 overflow-y-auto bg-surface-soft dark:bg-surface-soft border-l border-line-soft dark:border-line prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-ink-subtle markdown-body"
           >
-            <div class="border-b border-slate-100 dark:border-slate-800/60 pb-3 mb-6 no-print">
-              <span class="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 px-2.5 py-1 rounded-lg uppercase tracking-wider">Aperçu en temps réel</span>
+            <div class="border-b border-line dark:border-line pb-3 mb-6 no-print">
+              <span class="text-[10px] font-extrabold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider">Aperçu en temps réel</span>
             </div>
             <div v-dompurify-html="renderMarkup(noteBody)"></div>
           </div>
@@ -384,34 +384,34 @@
       </div>
 
       <!-- 2. CENTERED PREVIEW / READ MODE SHEET -->
-      <div v-else class="flex-1 bg-slate-50 dark:bg-[#070913] py-10 px-4 md:px-8 print:p-0 print:bg-white w-full">
+      <div v-else class="flex-1 bg-surface-soft dark:bg-[#070913] py-10 px-4 md:px-8 print:p-0 print:bg-surface w-full">
         
         <!-- Top Bar Actions inside Preview page sheet (Centered wrapper) -->
         <div class="max-w-4xl mx-auto flex items-center justify-between no-print mb-6">
           <div class="flex items-center gap-4">
             <button 
               @click="goBack" 
-              class="text-sm font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1"
+              class="text-sm font-semibold text-ink-muted hover:text-primary dark:text-ink-subtle dark:hover:text-primary flex items-center gap-1"
             >
               <ChevronLeft class="w-4 h-4" />
               Retour aux notes
             </button>
             
-            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
+            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft"></div>
 
             <!-- Mode Switcher: Lecture / Révision Active -->
-            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/50 dark:border-slate-700">
+            <div class="flex items-center bg-surface-soft dark:bg-surface-soft p-0.5 rounded-xl border border-line dark:border-line">
               <button 
                 @click="notesStore.isReviewModeActive = false"
                 class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-                :class="[!notesStore.isReviewModeActive ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400']"
+                :class="[!notesStore.isReviewModeActive ? 'bg-surface dark:bg-surface-soft text-primary shadow-sm' : 'text-ink-muted hover:text-ink dark:text-ink-subtle']"
               >
                 Lecture
               </button>
               <button 
                 @click="notesStore.isReviewModeActive = true"
                 class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1"
-                :class="[notesStore.isReviewModeActive ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400']"
+                :class="[notesStore.isReviewModeActive ? 'bg-surface dark:bg-surface-soft text-primary shadow-sm' : 'text-ink-muted hover:text-ink dark:text-ink-subtle']"
               >
                 <Brain class="w-3.5 h-3.5" />
                 Révision Active
@@ -423,35 +423,35 @@
             <!-- Réviser avec l'IA (regroupe Page blanche / QCM / Évaluation) -->
             <button
               @click="showAiModal = true"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-indigo-250 dark:border-indigo-900 rounded-xl text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 active:scale-95 transition-all"
+              class="inline-flex items-center gap-2 px-4 py-2 border border-primary dark:border-primary rounded-xl text-sm font-semibold text-primary dark:text-primary hover:bg-primary-soft dark:hover:bg-primary-soft active:scale-95 transition-all"
             >
-              <Sparkles class="w-4 h-4 text-indigo-500" />
+              <Sparkles class="w-4 h-4 text-primary" />
               Réviser avec l'IA
             </button>
 
             <!-- View Mode Toggler -->
             <button 
               @click="toggleMode"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-850 transition-all text-slate-700 dark:text-slate-300"
+              class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink dark:text-ink-subtle"
             >
-              <Edit3 class="w-4 h-4 text-indigo-500" />
+              <Edit3 class="w-4 h-4 text-primary" />
               Modifier la fiche
             </button>
 
             <!-- Guide Button (View Mode) -->
             <button 
               @click="showHelpModal = true"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-850 transition-all text-slate-650 dark:text-slate-300"
+              class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
               type="button"
             >
-              <HelpCircle class="w-4 h-4 text-indigo-500" />
+              <HelpCircle class="w-4 h-4 text-primary" />
               Guide
             </button>
             
             <!-- PDF / Print Trigger -->
             <button 
               @click="printNote"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-600/10"
+              class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-primary hover:bg-primary-strong active:scale-95 transition-all shadow-md shadow-elev-primary"
             >
               <FileDown class="w-4 h-4" />
               Exporter en PDF
@@ -460,16 +460,16 @@
         </div>
 
         <!-- Cohesive Paper Sheet -->
-        <div class="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-8 lg:p-12 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/40 space-y-6 print:border-none print:shadow-none print:p-0">
+        <div class="max-w-4xl mx-auto bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 lg:p-12 shadow-xl shadow-soft-lg dark:shadow-soft-lg space-y-6 print:border-none print:shadow-none print:p-0">
           
           <!-- Note Title -->
-          <div class="border-b border-slate-100 dark:border-slate-800/80 pb-6 print:mb-6">
-            <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white print:text-black">
+          <div class="border-b border-line dark:border-line pb-6 print:mb-6">
+            <h1 class="text-3xl font-extrabold text-ink dark:text-white print:text-black">
               {{ title || 'Note sans titre' }}
             </h1>
             <div class="flex items-center gap-3 mt-3 no-print">
-              <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Classeur :</span>
-              <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 uppercase tracking-wider">
+              <span class="text-xs font-semibold text-ink-subtle uppercase tracking-wider">Classeur :</span>
+              <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary uppercase tracking-wider">
                 {{ getBinderName(binderId) }}
               </span>
               <TagBadge v-for="tag in noteTags" :key="tag.id" :tag="tag" />
@@ -479,9 +479,9 @@
           <!-- 1. Context Block (Full width, integrated at the top of the paper) -->
           <div 
             v-if="noteContext"
-            class="bg-amber-50/50 border-l-4 border-amber-500 rounded-r-2xl p-5 dark:bg-amber-950/10 dark:border-amber-700/50 print:bg-[#fffbeb] print:border-amber-300"
+            class="bg-warning-soft border-l-4 border-warning rounded-r-2xl p-5 dark:bg-warning-soft dark:border-warning print:bg-[#fffbeb] print:border-warning"
           >
-            <h3 class="text-xs font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1.5 uppercase tracking-wider mb-2 no-print">
+            <h3 class="text-xs font-bold text-warning dark:text-warning flex items-center gap-1.5 uppercase tracking-wider mb-2 no-print">
               <Compass class="w-4 h-4" />
               Contexte de la note
             </h3>
@@ -494,9 +494,9 @@
           <!-- Legacy Definitions Block (for backward compatibility only if loaded) -->
           <div 
             v-if="noteDefinition"
-            class="bg-emerald-50/30 border-l-4 border-emerald-500 rounded-r-2xl p-5 dark:bg-emerald-950/10 dark:border-emerald-700/50 print:bg-[#ecfdf5] print:border-emerald-300"
+            class="bg-success-soft border-l-4 border-success rounded-r-2xl p-5 dark:bg-success-soft dark:border-success print:bg-[#ecfdf5] print:border-success"
           >
-            <h3 class="text-xs font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider mb-2">
+            <h3 class="text-xs font-bold text-success dark:text-success flex items-center gap-1.5 uppercase tracking-wider mb-2">
               <BookOpen class="w-4 h-4" />
               Définitions clés (Legacy)
             </h3>
@@ -508,16 +508,16 @@
 
           <!-- 2. Main Note Content Block -->
           <div 
-            class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-slate-300 print:text-black markdown-body"
+            class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-ink-subtle print:text-black markdown-body"
             @click="handleMarkdownClick"
           >
             <div v-dompurify-html="renderMarkup(noteBody)"></div>
           </div>
 
           <!-- 3. Linked Notes Block (Integrated at the bottom of the sheet) -->
-          <div v-if="noteLinks.length > 0" class="border-t border-slate-100 dark:border-slate-800 pt-6 no-print">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-3">
-              <LinkIcon class="w-4.5 h-4.5 text-indigo-500" />
+          <div v-if="noteLinks.length > 0" class="border-t border-line dark:border-line pt-6 no-print">
+            <h3 class="text-xs font-bold text-ink-subtle uppercase tracking-wider flex items-center gap-1.5 mb-3">
+              <LinkIcon class="w-4.5 h-4.5 text-primary" />
               Notes liées
             </h3>
             <div class="flex flex-wrap gap-2">
@@ -525,10 +525,10 @@
                 v-for="linkedId in noteLinks" 
                 :key="linkedId"
                 @click="navigateToNote(linkedId)"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-indigo-50 dark:bg-slate-850/40 dark:hover:bg-indigo-950/20 border border-slate-100 dark:border-slate-800 rounded-xl transition-all text-xs font-semibold"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl transition-all text-xs font-semibold"
               >
                 <span>{{ getNoteTitle(linkedId) }}</span>
-                <ChevronRight class="w-3.5 h-3.5 text-slate-400" />
+                <ChevronRight class="w-3.5 h-3.5 text-ink-subtle" />
               </button>
             </div>
           </div>
@@ -552,90 +552,90 @@
           v-if="showHelpModal" 
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
         >
-          <div class="bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 shadow-2xl flex flex-col justify-between">
+          <div class="bg-surface dark:bg-[#111827] border border-line dark:border-line rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 shadow-2xl flex flex-col justify-between">
             <div class="space-y-6">
               <!-- Header -->
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div class="flex items-center justify-between border-b border-line dark:border-line pb-3">
                 <div class="flex items-center gap-2">
-                  <HelpCircle class="w-5 h-5 text-indigo-500" />
-                  <h3 class="font-extrabold text-base text-slate-850 dark:text-white">Guide d'utilisation StudyHub</h3>
+                  <HelpCircle class="w-5 h-5 text-primary" />
+                  <h3 class="font-extrabold text-base text-ink dark:text-white">Guide d'utilisation StudyHub</h3>
                 </div>
                 <button 
                   @click="showHelpModal = false"
-                  class="p-1.5 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl text-slate-400 dark:text-slate-500 transition-colors"
+                  class="p-1.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded-xl text-ink-subtle dark:text-ink-muted transition-colors"
                 >
                   <X class="w-5 h-5" />
                 </button>
               </div>
 
               <!-- Content Sections -->
-              <div class="space-y-5 overflow-y-auto text-xs text-slate-600 dark:text-slate-350 leading-relaxed pr-1 max-h-[60vh]">
+              <div class="space-y-5 overflow-y-auto text-xs text-ink-muted dark:text-ink-subtle leading-relaxed pr-1 max-h-[60vh]">
                 <!-- Section 1: Placeholders -->
                 <div class="space-y-2">
-                  <h4 class="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider font-semibold">1. Syntaxes de Révision Intégrée (Active Reading)</h4>
+                  <h4 class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold">1. Syntaxes de Révision Intégrée (Active Reading)</h4>
                   <p>Incorporez des questions interactives de révision directe dans vos notes Markdown. Révisez-les en place via le mode « Révision Active » ; elles alimentent aussi les évaluations IA générées depuis la note :</p>
                   <ul class="list-disc pl-5 space-y-2.5 mt-1">
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Texte à trous (Cloze) :</strong> 
+                      <strong class="text-primary dark:text-primary">Texte à trous (Cloze) :</strong> 
                       Utilisez <code v-pre>{{trou::mot caché}}</code>.
-                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : La capitale de la France est <code v-pre>{{trou::Paris}}</code>.</p>
+                      <p class="text-[10px] text-ink-muted mt-0.5">Exemple : La capitale de la France est <code v-pre>{{trou::Paris}}</code>.</p>
                     </li>
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Question à choix multiples (QCM) :</strong> 
+                      <strong class="text-primary dark:text-primary">Question à choix multiples (QCM) :</strong> 
                       Utilisez <code v-pre>{{qcm::Question ?::Option1|*Bonne Option*|Option3}}</code> (entourez la bonne option d'astérisques).
-                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : <code v-pre>{{qcm::Combien de continents ?::4|5|*6|7*|8}}</code>.</p>
+                      <p class="text-[10px] text-ink-muted mt-0.5">Exemple : <code v-pre>{{qcm::Combien de continents ?::4|5|*6|7*|8}}</code>.</p>
                     </li>
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Ordre / Séquence :</strong>
+                      <strong class="text-primary dark:text-primary">Ordre / Séquence :</strong>
                       Utilisez <code v-pre>{{ordre::Titre::Étape 1 > Étape 2 > Étape 3}}</code> (étapes séparées par <code>></code>).
-                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : <code v-pre>{{ordre::Cycle de l'eau::Évaporation > Condensation > Précipitations}}</code>.</p>
+                      <p class="text-[10px] text-ink-muted mt-0.5">Exemple : <code v-pre>{{ordre::Cycle de l'eau::Évaporation > Condensation > Précipitations}}</code>.</p>
                     </li>
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Associations :</strong>
+                      <strong class="text-primary dark:text-primary">Associations :</strong>
                       Utilisez <code v-pre>{{assoc::Titre::Clé 1=Valeur 1 | Clé 2=Valeur 2}}</code> (paires <code>clé=valeur</code> séparées par <code>|</code>).
-                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : <code v-pre>{{assoc::Capitales::France=Paris | Italie=Rome}}</code>.</p>
+                      <p class="text-[10px] text-ink-muted mt-0.5">Exemple : <code v-pre>{{assoc::Capitales::France=Paris | Italie=Rome}}</code>.</p>
                     </li>
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Vrai / Faux :</strong>
+                      <strong class="text-primary dark:text-primary">Vrai / Faux :</strong>
                       Utilisez <code v-pre>{{vf::Affirmation::Vrai/Faux::Justification}}</code> (séparateur <code>::</code>).
-                      <p class="text-[10px] text-slate-450 mt-0.5">Exemple : <code v-pre>{{vf::La Terre est plate::Faux::Elle a la forme d'un géoïde.}}</code>.</p>
+                      <p class="text-[10px] text-ink-muted mt-0.5">Exemple : <code v-pre>{{vf::La Terre est plate::Faux::Elle a la forme d'un géoïde.}}</code>.</p>
                     </li>
                   </ul>
                 </div>
 
                 <!-- Section 2: Split Screen -->
-                <div class="space-y-2 border-t border-slate-100 dark:border-slate-800/60 pt-4">
-                  <h4 class="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider font-semibold">2. Écran Partagé & Liaisons PDF</h4>
+                <div class="space-y-2 border-t border-line dark:border-line pt-4">
+                  <h4 class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold">2. Écran Partagé & Liaisons PDF</h4>
                   <p>Étudiez vos PDF de cours tout en rédigeant ou révisant vos notes :</p>
                   <ul class="list-disc pl-5 space-y-2.5 mt-1">
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Démarrer l'écran partagé :</strong> 
-                      Sélectionnez un document PDF dans la liste déroulante <strong class="text-slate-800 dark:text-white font-semibold">"Aperçu PDF"</strong> en haut à droite de l'éditeur de notes. Le PDF s'affichera à gauche.
+                      <strong class="text-primary dark:text-primary">Démarrer l'écran partagé :</strong> 
+                      Sélectionnez un document PDF dans la liste déroulante <strong class="text-ink dark:text-white font-semibold">"Aperçu PDF"</strong> en haut à droite de l'éditeur de notes. Le PDF s'affichera à gauche.
                     </li>
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Créer une citation (Deep Link) :</strong> 
-                      Sélectionnez du texte dans le panneau PDF, puis cliquez sur le bouton <strong class="text-indigo-600 dark:text-indigo-400">"Citer"</strong> qui apparaît au-dessus du texte. Cela insère un lien spécial de type <code v-pre>pdf://</code> dans votre note.
+                      <strong class="text-primary dark:text-primary">Créer une citation (Deep Link) :</strong> 
+                      Sélectionnez du texte dans le panneau PDF, puis cliquez sur le bouton <strong class="text-primary dark:text-primary">"Citer"</strong> qui apparaît au-dessus du texte. Cela insère un lien spécial de type <code v-pre>pdf://</code> dans votre note.
                     </li>
                     <li>
-                      <strong class="text-indigo-600 dark:text-indigo-400">Naviguer à partir d'un lien :</strong> 
+                      <strong class="text-primary dark:text-primary">Naviguer à partir d'un lien :</strong> 
                       Dans le mode visualisation de la note, cliquez sur un de vos liens de citation. Le PDF s'ouvrira automatiquement sur la bonne page et la zone correspondante sera surlignée.
                     </li>
                   </ul>
                 </div>
 
                 <!-- Section 3: Image Occlusion -->
-                <div class="space-y-2 border-t border-slate-100 dark:border-slate-800/60 pt-4">
-                  <h4 class="font-bold text-slate-850 dark:text-white text-xs uppercase tracking-wider font-semibold">3. Masques d'Image (Occlusion)</h4>
-                  <p>Dans le module <strong class="text-slate-800 dark:text-white font-semibold">Diagrammes</strong>, importez un schéma (corps humain, géographie, formule), tracez des rectangles de masquage opaques sur les parties à deviner, puis nommez-les. En mode révision, cliquez sur les masques pour les révéler et évaluer votre mémorisation.</p>
+                <div class="space-y-2 border-t border-line dark:border-line pt-4">
+                  <h4 class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold">3. Masques d'Image (Occlusion)</h4>
+                  <p>Dans le module <strong class="text-ink dark:text-white font-semibold">Diagrammes</strong>, importez un schéma (corps humain, géographie, formule), tracez des rectangles de masquage opaques sur les parties à deviner, puis nommez-les. En mode révision, cliquez sur les masques pour les révéler et évaluer votre mémorisation.</p>
                 </div>
               </div>
             </div>
 
             <!-- Footer -->
-            <div class="border-t border-slate-100 dark:border-slate-800 pt-4 mt-4 flex justify-end">
+            <div class="border-t border-line dark:border-line pt-4 mt-4 flex justify-end">
               <button 
                 @click="showHelpModal = false"
-                class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md shadow-indigo-600/10"
+                class="px-5 py-2.5 bg-primary hover:bg-primary-strong text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md shadow-elev-primary"
               >
                 Compris !
               </button>
@@ -658,16 +658,16 @@
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
           @click.self="showAiModal = false"
         >
-          <div class="bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl">
+          <div class="bg-surface dark:bg-[#111827] border border-line dark:border-line rounded-3xl max-w-2xl w-full p-6 shadow-2xl">
             <!-- Header -->
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-5">
+            <div class="flex items-center justify-between border-b border-line dark:border-line pb-3 mb-5">
               <div class="flex items-center gap-2">
-                <Sparkles class="w-5 h-5 text-indigo-500" />
-                <h3 class="font-extrabold text-base text-slate-850 dark:text-white">Réviser avec l'IA</h3>
+                <Sparkles class="w-5 h-5 text-primary" />
+                <h3 class="font-extrabold text-base text-ink dark:text-white">Réviser avec l'IA</h3>
               </div>
               <button
                 @click="showAiModal = false"
-                class="p-1.5 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl text-slate-400 dark:text-slate-500 transition-colors"
+                class="p-1.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded-xl text-ink-subtle dark:text-ink-muted transition-colors"
               >
                 <X class="w-5 h-5" />
               </button>
@@ -683,8 +683,8 @@
                 :class="activity.cardClass"
               >
                 <component :is="activity.icon" class="w-6 h-6" :class="activity.iconClass" />
-                <span class="font-bold text-sm text-slate-850 dark:text-white">{{ activity.label }}</span>
-                <span class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{{ activity.description }}</span>
+                <span class="font-bold text-sm text-ink dark:text-white">{{ activity.label }}</span>
+                <span class="text-xs text-ink-muted dark:text-ink-subtle leading-relaxed">{{ activity.description }}</span>
               </button>
             </div>
           </div>
@@ -714,21 +714,21 @@
           >
             <div
               v-if="inputModal.visible"
-              class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden custom-input-modal"
+              class="w-full max-w-md bg-surface dark:bg-surface-soft rounded-3xl shadow-2xl border border-line dark:border-line overflow-hidden custom-input-modal"
             >
               <!-- Header -->
               <div class="px-6 pt-6 pb-4 flex items-start gap-4 input-modal-header">
                 <div
                   class="flex items-center justify-center w-11 h-11 rounded-2xl flex-shrink-0 text-white shadow-lg"
-                  :class="inputModal.iconBg || 'bg-indigo-500'"
+                  :class="inputModal.iconBg || 'bg-primary'"
                 >
                   <component :is="inputModal.icon" class="w-5 h-5" />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <h3 class="font-bold text-slate-900 dark:text-white text-base input-modal-title">{{ inputModal.title }}</h3>
-                  <p v-if="inputModal.description" class="text-xs text-slate-500 dark:text-slate-400 input-modal-desc">{{ inputModal.description }}</p>
+                  <h3 class="font-bold text-ink dark:text-white text-base input-modal-title">{{ inputModal.title }}</h3>
+                  <p v-if="inputModal.description" class="text-xs text-ink-muted dark:text-ink-subtle input-modal-desc">{{ inputModal.description }}</p>
                 </div>
-                <button @click="inputModal.onCancel()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors mt-0.5">
+                <button @click="inputModal.onCancel()" class="text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle transition-colors mt-0.5">
                   <X class="w-5 h-5" />
                 </button>
               </div>
@@ -736,7 +736,7 @@
               <!-- Fields -->
               <div class="px-6 pb-2 space-y-3">
                 <div v-for="(field, i) in inputModal.fields" :key="i">
-                  <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">{{ field.label }}</label>
+                  <label class="block text-xs font-bold text-ink-muted dark:text-ink-subtle mb-1.5 uppercase tracking-wider">{{ field.label }}</label>
 
                   <!-- Texte -->
                   <input
@@ -744,7 +744,7 @@
                     v-model="field.value"
                     :placeholder="field.placeholder || ''"
                     :ref="i === 0 ? 'modalFirstInput' : undefined"
-                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    class="w-full px-4 py-2.5 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     @keydown.enter.prevent="inputModal.onConfirm()"
                     @keydown.escape.prevent="inputModal.onCancel()"
                   />
@@ -754,14 +754,14 @@
                     <button
                       @click="field.value = true"
                       class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
-                      :class="field.value === true ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400' : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-emerald-300'"
+                      :class="field.value === true ? 'border-success bg-success-soft dark:bg-success-soft text-success dark:text-success' : 'border-line dark:border-line text-ink-muted hover:border-success'"
                     >
                       ✓ Vrai
                     </button>
                     <button
                       @click="field.value = false"
                       class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
-                      :class="field.value === false ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400' : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-rose-300'"
+                      :class="field.value === false ? 'border-danger bg-danger-soft dark:bg-danger-soft text-danger dark:text-danger' : 'border-line dark:border-line text-ink-muted hover:border-danger'"
                     >
                       ✗ Faux
                     </button>
@@ -771,7 +771,7 @@
                   <select
                     v-else-if="field.type === 'select'"
                     v-model="field.value"
-                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    class="w-full px-4 py-2.5 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                   >
                     <option v-for="opt in field.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                   </select>
@@ -782,14 +782,14 @@
               <div class="flex gap-3 px-6 py-5">
                 <button
                   @click="inputModal.onCancel()"
-                  class="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                  class="flex-1 py-2.5 border border-line dark:border-line rounded-xl text-sm font-semibold text-ink-muted dark:text-ink-subtle hover:bg-surface-soft dark:hover:bg-surface-soft transition-all"
                 >
                   Annuler
                 </button>
                 <button
                   @click="inputModal.onConfirm()"
                   class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95 shadow-md"
-                  :class="inputModal.confirmBg || 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'"
+                  :class="inputModal.confirmBg || 'bg-primary hover:bg-primary-strong shadow-elev-primary'"
                 >
                   {{ inputModal.confirmLabel || 'Confirmer' }}
                 </button>
@@ -820,15 +820,15 @@
           >
             <div
               v-if="evaluationModal.visible"
-              class="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-2xl p-6 text-center sm2-modal-container"
+              class="w-full max-w-sm bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl shadow-2xl p-6 text-center sm2-modal-container"
             >
               <!-- Icon/Header -->
               <div class="flex flex-col items-center mb-3">
-                <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-2 border border-indigo-100 dark:border-indigo-900/40">
+                <div class="w-10 h-10 bg-primary-soft dark:bg-primary-soft rounded-2xl flex items-center justify-center text-primary dark:text-primary mb-2 border border-primary dark:border-primary">
                   <Sparkles class="w-5 h-5 animate-pulse" />
                 </div>
-                <h3 class="font-extrabold text-slate-900 dark:text-white text-base sm2-modal-title">C'était facile ?</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 sm2-modal-desc">Évaluez votre niveau de rappel pour l'algorithme d'apprentissage.</p>
+                <h3 class="font-extrabold text-ink dark:text-white text-base sm2-modal-title">C'était facile ?</h3>
+                <p class="text-xs text-ink-muted dark:text-ink-subtle sm2-modal-desc">Évaluez votre niveau de rappel pour l'algorithme d'apprentissage.</p>
               </div>
 
               <!-- Buttons Grid -->
@@ -850,7 +850,7 @@
               <!-- Actions -->
               <button
                 @click="evaluationModal.visible = false"
-                class="w-full py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all sm2-modal-cancel"
+                class="w-full py-2 border border-line dark:border-line rounded-xl text-xs font-bold text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft transition-all sm2-modal-cancel"
               >
                 Passer sans évaluer
               </button>
@@ -870,11 +870,11 @@
       >
         <div 
           v-if="showSelectionMenu && isEditMode" 
-          class="fixed z-50 bottom-6 left-1/2 -translate-x-1/2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl px-4 py-2.5 flex items-center flex-wrap gap-2.5 max-w-[95vw] no-print pointer-events-auto"
+          class="fixed z-50 bottom-6 left-1/2 -translate-x-1/2 bg-surface/95 dark:bg-surface-soft backdrop-blur-md border border-line dark:border-line rounded-2xl shadow-2xl px-4 py-2.5 flex items-center flex-wrap gap-2.5 max-w-[95vw] no-print pointer-events-auto"
         >
-          <div class="flex items-center gap-1.5 border-r border-slate-200 dark:border-slate-800 pr-3 max-w-[150px]">
-            <Sparkles class="w-3.5 h-3.5 text-indigo-500 flex-shrink-0 animate-pulse" />
-            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">
+          <div class="flex items-center gap-1.5 border-r border-line dark:border-line pr-3 max-w-[150px]">
+            <Sparkles class="w-3.5 h-3.5 text-primary flex-shrink-0 animate-pulse" />
+            <span class="text-[11px] font-bold text-ink-muted dark:text-ink-subtle truncate">
               "{{ selectionText }}"
             </span>
           </div>
@@ -883,7 +883,7 @@
             <!-- Trou Button -->
             <button 
               @click="applySelectionTransform('trou')"
-              class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+              class="px-2 py-1 bg-primary-soft hover:bg-primary-soft dark:bg-primary-soft dark:hover:bg-primary-soft text-primary dark:text-primary rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Trou (Cloze)"
             >
               <Brain class="w-2.5 h-2.5" />
@@ -893,7 +893,7 @@
             <!-- QCM Button -->
             <button 
               @click="applySelectionTransform('qcm')"
-              class="px-2 py-1 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-950/80 text-purple-600 dark:text-purple-400 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+              class="px-2 py-1 bg-accent-soft hover:bg-accent-soft dark:bg-accent-soft dark:hover:bg-accent-soft text-accent dark:text-accent rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="QCM (Choix multiples)"
             >
               <HelpCircle class="w-2.5 h-2.5" />
@@ -903,7 +903,7 @@
             <!-- Sequence / Ordre Button -->
             <button 
               @click="applySelectionTransform('ordre')"
-              class="px-2 py-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-950/80 text-amber-600 dark:text-amber-455 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+              class="px-2 py-1 bg-warning-soft hover:bg-warning-soft dark:bg-warning-soft dark:hover:bg-warning-soft text-warning dark:text-warning rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Séquence (Ordre)"
             >
               <ListOrdered class="w-2.5 h-2.5" />
@@ -923,7 +923,7 @@
             <!-- Vrai/Faux Button -->
             <button 
               @click="applySelectionTransform('vf')"
-              class="px-2 py-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/80 text-rose-600 dark:text-rose-400 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+              class="px-2 py-1 bg-danger-soft hover:bg-danger-soft dark:bg-danger-soft dark:hover:bg-danger-soft text-danger dark:text-danger rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Vrai / Faux"
             >
               <CheckCircle2 class="w-2.5 h-2.5" />
@@ -933,7 +933,7 @@
             <!-- Definition Tooltip Button -->
             <button 
               @click="applySelectionTransform('def')"
-              class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/80 text-emerald-600 dark:text-emerald-455 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+              class="px-2 py-1 bg-success-soft hover:bg-success-soft dark:bg-success-soft dark:hover:bg-success-soft text-success dark:text-success rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Définition info-bulle"
             >
               <BookOpen class="w-2.5 h-2.5" />
@@ -970,12 +970,12 @@
               Schéma
             </button>
 
-            <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1"></div>
+            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-1"></div>
 
             <!-- Bold Button -->
             <button 
               @click="applySelectionTransform('gras')"
-              class="px-1.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-355 rounded-lg text-[9px] font-bold transition-all active:scale-95"
+              class="px-1.5 py-1 hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle rounded-lg text-[9px] font-bold transition-all active:scale-95"
               title="Gras"
             >
               <strong>G</strong>
@@ -984,7 +984,7 @@
             <!-- Italic Button -->
             <button 
               @click="applySelectionTransform('italique')"
-              class="px-1.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-355 rounded-lg text-[9px] font-bold transition-all active:scale-95 italic"
+              class="px-1.5 py-1 hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle rounded-lg text-[9px] font-bold transition-all active:scale-95 italic"
               title="Italique"
             >
               I
@@ -993,7 +993,7 @@
             <!-- Code Button (Inline) -->
             <button 
               @click="applySelectionTransform('code')"
-              class="px-1.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-355 rounded-lg text-[9px] font-mono font-bold transition-all active:scale-95"
+              class="px-1.5 py-1 hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle rounded-lg text-[9px] font-mono font-bold transition-all active:scale-95"
               title="Code en ligne"
             >
               &lt;/&gt;
@@ -1002,7 +1002,7 @@
             <!-- Bloc Code Button -->
             <button 
               @click="applySelectionTransform('bloc_code')"
-              class="px-1.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-355 rounded-lg text-[9px] font-mono font-bold transition-all active:scale-95"
+              class="px-1.5 py-1 hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle rounded-lg text-[9px] font-mono font-bold transition-all active:scale-95"
               title="Bloc de code"
             >
               { }
