@@ -884,3 +884,18 @@ Reprise de la boucle sur les morceaux reportés (risque visuel assumé, validati
   échelle 0-5 rouge→vert pilotée par données, `:class="score.class"`), comme l'échelle SM-2 de
   `NoteEdit`. Scrims + `placeholder-*` conservés.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S8 (couverture app) : modules jamais migrés
+
+Un balayage repo-wide a révélé des **modules entiers restés à l'ancien thème** (indigo/emerald/rose
+bruts dans les templates), hors plan S0→S7. Migration en tokens, **une sous-PR par module**
+(templates seuls ; données/`<script>`/canevas/scrims préservés ; indigo→`primary`, emerald→
+`success`, rose→`danger`, amber→`warning`, blue/sky→`info`, violet/purple→`accent`).
+
+* **Module Notes-runners** : `NoteQuiz` (566), `NoteEvaluation` (264), `Blurting` (274).
+  Spinner `NoteQuiz` corrigé (`border-primary/30 border-t-primary`) ; `dark:hover:bg-slate-700`
+  (nuance hors set) → `dark:hover:bg-line`. Vérif : build OK, Vitest **66** ✅.
+* **À suivre (sous-PR)** : Exam (`ExamSession`/`Results`/`Setup`), Focus (`FocusPage`/`FocusWidget`),
+  divers (`PdfReader`, `Login`, `Register`, `MonthCalendar`, `AppLayout`). Puis audits humains.

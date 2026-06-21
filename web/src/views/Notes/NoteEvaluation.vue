@@ -4,50 +4,50 @@
     <div class="flex items-center justify-between mb-6">
       <button
         @click="goBack"
-        class="text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+        class="text-sm font-semibold text-ink-muted hover:text-ink dark:text-ink-subtle dark:hover:text-ink-subtle"
       >
         ← Retour à la note
       </button>
-      <span class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-        <Sparkles class="w-4 h-4 text-amber-400" />
+      <span class="inline-flex items-center gap-1.5 text-xs font-bold text-primary dark:text-primary uppercase tracking-wider">
+        <Sparkles class="w-4 h-4 text-warning" />
         Évaluation IA
       </span>
     </div>
 
     <!-- GENERATING -->
-    <div v-if="step === 'generating'" class="text-center py-20 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl">
-      <svg class="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <div v-if="step === 'generating'" class="text-center py-20 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl">
+      <svg class="animate-spin h-8 w-8 text-primary mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
       </svg>
-      <h2 class="text-lg font-bold text-slate-800 dark:text-white">Génération de votre évaluation…</h2>
-      <p class="text-sm text-slate-400 mt-1">L'IA conçoit des questions variées à partir de votre note. Cela peut prendre quelques secondes.</p>
+      <h2 class="text-lg font-bold text-ink dark:text-white">Génération de votre évaluation…</h2>
+      <p class="text-sm text-ink-subtle mt-1">L'IA conçoit des questions variées à partir de votre note. Cela peut prendre quelques secondes.</p>
     </div>
 
     <!-- ERROR -->
-    <div v-else-if="step === 'error'" class="text-center py-16 bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-900/40 rounded-3xl">
-      <p class="text-sm font-semibold text-rose-600 dark:text-rose-400">{{ errorMsg }}</p>
+    <div v-else-if="step === 'error'" class="text-center py-16 bg-surface dark:bg-surface-soft border border-danger dark:border-danger rounded-3xl">
+      <p class="text-sm font-semibold text-danger dark:text-danger">{{ errorMsg }}</p>
       <div class="flex gap-3 justify-center mt-6">
-        <button @click="goBack" class="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700">Retour</button>
-        <button @click="start" class="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl">Réessayer</button>
+        <button @click="goBack" class="px-4 py-2 text-xs font-bold text-ink-muted hover:text-ink">Retour</button>
+        <button @click="start" class="px-5 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl">Réessayer</button>
       </div>
     </div>
 
     <!-- WORK -->
     <div v-else-if="step === 'work' && evaluation" class="space-y-6">
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6">
-        <h1 class="text-lg font-bold text-slate-800 dark:text-white">Répondez aux questions</h1>
-        <p class="text-xs text-slate-400 mt-1">{{ evaluation.items.length }} question(s). À la fin, des flashcards vous seront proposées pour vos lacunes.</p>
+      <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6">
+        <h1 class="text-lg font-bold text-ink dark:text-white">Répondez aux questions</h1>
+        <p class="text-xs text-ink-subtle mt-1">{{ evaluation.items.length }} question(s). À la fin, des flashcards vous seront proposées pour vos lacunes.</p>
       </div>
 
       <div
         v-for="(item, idx) in evaluation.items"
         :key="item.id"
-        class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 space-y-4"
+        class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 space-y-4"
       >
         <div class="flex items-start gap-3">
-          <span class="shrink-0 w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center justify-center">{{ idx + 1 }}</span>
-          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 leading-relaxed">{{ questionLabel(item) }}</h3>
+          <span class="shrink-0 w-7 h-7 rounded-full bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary text-xs font-bold flex items-center justify-center">{{ idx + 1 }}</span>
+          <h3 class="font-bold text-sm text-ink dark:text-ink-subtle leading-relaxed">{{ questionLabel(item) }}</h3>
         </div>
 
         <!-- QCM -->
@@ -58,8 +58,8 @@
             @click="qcmAnswers[item.id] = opt.id"
             class="text-left px-4 py-3 rounded-xl border text-xs font-semibold transition-all"
             :class="qcmAnswers[item.id] === opt.id
-              ? 'border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/30 dark:text-indigo-400'
-              : 'border-slate-200 hover:bg-slate-100/60 dark:border-slate-800 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'"
+              ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
+              : 'border-line hover:bg-surface-soft dark:border-line dark:hover:bg-surface-soft text-ink dark:text-ink-subtle'"
           >
             {{ opt.text }}
           </button>
@@ -73,8 +73,8 @@
             @click="vfAnswers[item.id] = val"
             class="px-6 py-2.5 rounded-xl border text-xs font-bold transition-all"
             :class="vfAnswers[item.id] === val
-              ? 'border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/30 dark:text-indigo-400'
-              : 'border-slate-200 hover:bg-slate-100/60 dark:border-slate-800 text-slate-700 dark:text-slate-300'"
+              ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
+              : 'border-line hover:bg-surface-soft dark:border-line text-ink dark:text-ink-subtle'"
           >
             {{ val ? 'Vrai' : 'Faux' }}
           </button>
@@ -86,7 +86,7 @@
             v-model="trouAnswers[item.id]"
             type="text"
             placeholder="Votre réponse…"
-            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            class="w-full px-4 py-2.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -97,34 +97,34 @@
             rows="3"
             :disabled="!!openRevealed[item.id]"
             placeholder="Répondez de mémoire avec vos propres mots…"
-            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none disabled:opacity-70"
+            class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-70"
           ></textarea>
 
           <button
             v-if="!openRevealed[item.id]"
             @click="revealOpen(item)"
-            class="px-4 py-2 text-xs font-bold text-indigo-600 border border-indigo-200 dark:border-indigo-900 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-950/20"
+            class="px-4 py-2 text-xs font-bold text-primary border border-primary dark:border-primary rounded-xl hover:bg-primary-soft dark:hover:bg-primary-soft"
           >
             Voir la réponse attendue
           </button>
 
           <div v-else class="space-y-3">
-            <div class="p-4 bg-indigo-50/50 border-l-4 border-indigo-500 rounded-r-xl dark:bg-indigo-950/15 dark:border-indigo-900/40 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
-              <p class="font-bold text-indigo-700 dark:text-indigo-400 mb-1">Réponse attendue</p>
+            <div class="p-4 bg-primary-soft border-l-4 border-primary rounded-r-xl dark:bg-primary-soft dark:border-primary text-xs leading-relaxed text-ink dark:text-ink-subtle">
+              <p class="font-bold text-primary dark:text-primary mb-1">Réponse attendue</p>
               {{ openRevealed[item.id].model_answer }}
-              <ul v-if="(openRevealed[item.id].key_points || []).length" class="list-disc list-inside mt-2 text-slate-500 dark:text-slate-400">
+              <ul v-if="(openRevealed[item.id].key_points || []).length" class="list-disc list-inside mt-2 text-ink-muted dark:text-ink-subtle">
                 <li v-for="(kp, i) in openRevealed[item.id].key_points || []" :key="i">{{ kp }}</li>
               </ul>
             </div>
             <div>
-              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Votre auto-évaluation</p>
+              <p class="text-[11px] font-bold text-ink-subtle uppercase tracking-wider mb-2">Votre auto-évaluation</p>
               <div class="flex gap-2">
                 <button
                   v-for="g in selfGradeOptions"
                   :key="g.value"
                   @click="setSelfGrade(item, g.value)"
                   class="px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all"
-                  :class="openSelfGrade[item.id] === g.value ? g.activeClass : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-100/60 dark:hover:bg-slate-800/40'"
+                  :class="openSelfGrade[item.id] === g.value ? g.activeClass : 'border-line dark:border-line text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft'"
                 >
                   {{ g.label }}
                 </button>
@@ -134,12 +134,12 @@
         </div>
       </div>
 
-      <div class="flex gap-4 sticky bottom-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80">
-        <button @click="goBack" class="px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700">Abandonner</button>
+      <div class="flex gap-4 sticky bottom-4 bg-surface/80 dark:bg-surface-soft backdrop-blur p-4 rounded-2xl border border-line dark:border-line">
+        <button @click="goBack" class="px-5 py-2.5 text-xs font-bold text-ink-muted hover:text-ink">Abandonner</button>
         <button
           @click="finish"
           :disabled="!canFinish || submitting"
-          class="flex-1 py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
+          class="flex-1 py-3 text-xs font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
         >
           {{ submitting ? 'Correction…' : 'Terminer l\'évaluation' }}
         </button>
@@ -148,13 +148,13 @@
 
     <!-- RESULTS -->
     <div v-else-if="step === 'results' && result" class="space-y-6">
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 flex items-center justify-between">
+      <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 flex items-center justify-between">
         <div>
-          <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Résultats</span>
-          <h1 class="text-lg font-bold text-slate-800 dark:text-white">Score : {{ Math.round(result.score_pct || 0) }}%</h1>
-          <p class="text-xs text-slate-400 mt-1">{{ correctCount }} / {{ result.items.length }} réussi(s).</p>
+          <span class="text-[10px] font-bold text-success uppercase tracking-wider">Résultats</span>
+          <h1 class="text-lg font-bold text-ink dark:text-white">Score : {{ Math.round(result.score_pct || 0) }}%</h1>
+          <p class="text-xs text-ink-subtle mt-1">{{ correctCount }} / {{ result.items.length }} réussi(s).</p>
         </div>
-        <div class="relative w-16 h-16 rounded-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-extrabold text-base border border-indigo-150/40">
+        <div class="relative w-16 h-16 rounded-full flex items-center justify-center bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary font-extrabold text-base border border-primary">
           {{ Math.round(result.score_pct || 0) }}%
         </div>
       </div>
@@ -162,19 +162,19 @@
       <div
         v-for="(item, idx) in result.items"
         :key="item.id"
-        class="bg-white dark:bg-slate-900 border rounded-3xl p-5 space-y-2"
-        :class="item.is_correct ? 'border-emerald-100 dark:border-emerald-900/30' : 'border-rose-100 dark:border-rose-900/30'"
+        class="bg-surface dark:bg-surface-soft border rounded-3xl p-5 space-y-2"
+        :class="item.is_correct ? 'border-success dark:border-success' : 'border-danger dark:border-danger'"
       >
         <div class="flex items-start justify-between gap-3">
-          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200">{{ idx + 1 }}. {{ questionLabel(item) }}</h3>
+          <h3 class="font-bold text-sm text-ink dark:text-ink-subtle">{{ idx + 1 }}. {{ questionLabel(item) }}</h3>
           <span
             class="shrink-0 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
-            :class="item.is_correct ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-450' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-450'"
+            :class="item.is_correct ? 'bg-success-soft text-success dark:bg-success-soft dark:text-success' : 'bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger'"
           >
             {{ item.is_correct ? 'Réussi' : 'À revoir' }}
           </span>
         </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400">
+        <p class="text-xs text-ink-muted dark:text-ink-subtle">
           <span class="font-semibold">Réponse attendue :</span> {{ expectedAnswer(item) }}
         </p>
       </div>
@@ -182,37 +182,37 @@
       <!-- Proposition opt-in de cartes pour les lacunes -->
       <div
         v-if="result.proposed_cards.length && !cardsAdded"
-        class="bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/30 rounded-3xl p-6 space-y-4"
+        class="bg-surface dark:bg-surface-soft border border-primary dark:border-primary rounded-3xl p-6 space-y-4"
       >
         <div>
-          <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Réviser vos lacunes</span>
-          <h2 class="text-base font-bold text-slate-800 dark:text-white">Créer des flashcards pour les thèmes ratés</h2>
-          <p class="text-xs text-slate-400 mt-1">Sélectionnez les cartes à ajouter, puis choisissez un deck. Rien n'est ajouté sans votre accord.</p>
+          <span class="text-[10px] font-bold text-primary uppercase tracking-wider">Réviser vos lacunes</span>
+          <h2 class="text-base font-bold text-ink dark:text-white">Créer des flashcards pour les thèmes ratés</h2>
+          <p class="text-xs text-ink-subtle mt-1">Sélectionnez les cartes à ajouter, puis choisissez un deck. Rien n'est ajouté sans votre accord.</p>
         </div>
 
         <label
           v-for="card in result.proposed_cards"
           :key="card.item_id"
-          class="flex items-start gap-3 p-3 rounded-xl border border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40"
+          class="flex items-start gap-3 p-3 rounded-xl border border-line dark:border-line cursor-pointer hover:bg-surface-soft dark:hover:bg-surface-soft"
         >
           <input
             type="checkbox"
             :value="card.item_id"
             v-model="selectedItemIds"
-            class="mt-1 accent-indigo-600"
+            class="mt-1 accent-primary"
           />
           <div class="min-w-0">
-            <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">{{ card.front }}</p>
-            <p class="text-xs text-slate-400 mt-0.5">{{ card.back }}</p>
+            <p class="text-xs font-semibold text-ink dark:text-ink-subtle">{{ card.front }}</p>
+            <p class="text-xs text-ink-subtle mt-0.5">{{ card.back }}</p>
           </div>
         </label>
 
         <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
           <div class="flex-1">
-            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Deck de destination</label>
+            <label class="block text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-1">Deck de destination</label>
             <select
               v-model="selectedDeckId"
-              class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+              class="w-full px-3 py-2 text-xs rounded-xl border border-line dark:border-line bg-surface dark:bg-surface-soft text-ink dark:text-ink-subtle"
             >
               <option :value="NEW_DECK">➕ Nouveau deck…</option>
               <option v-for="d in decks" :key="d.id" :value="d.id">{{ d.name }}</option>
@@ -223,18 +223,18 @@
             v-model="newDeckName"
             type="text"
             placeholder="Nom du nouveau deck"
-            class="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+            class="flex-1 px-3 py-2 text-xs rounded-xl border border-line dark:border-line bg-surface dark:bg-surface-soft text-ink dark:text-ink-subtle"
           />
         </div>
 
-        <p v-if="addError" class="text-xs text-rose-500">{{ addError }}</p>
+        <p v-if="addError" class="text-xs text-danger">{{ addError }}</p>
 
         <div class="flex gap-3">
-          <button @click="goBack" class="px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700">Non merci</button>
+          <button @click="goBack" class="px-5 py-2.5 text-xs font-bold text-ink-muted hover:text-ink">Non merci</button>
           <button
             @click="addSelectedCards"
             :disabled="!canAddCards || addingCards"
-            class="flex-1 py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex-1 py-3 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ addingCards ? 'Ajout…' : `Ajouter ${selectedItemIds.length} carte(s) au deck` }}
           </button>
@@ -244,20 +244,20 @@
       <!-- Confirmation après ajout -->
       <div
         v-else-if="cardsAdded"
-        class="bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/30 rounded-3xl p-6 flex items-center justify-between gap-4"
+        class="bg-surface dark:bg-surface-soft border border-success dark:border-success rounded-3xl p-6 flex items-center justify-between gap-4"
       >
-        <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{{ cardsAdded }} carte(s) ajoutée(s) à votre deck.</p>
+        <p class="text-xs font-semibold text-success dark:text-success">{{ cardsAdded }} carte(s) ajoutée(s) à votre deck.</p>
         <button
           v-if="addedDeckId"
           @click="router.push(`/decks/${addedDeckId}`)"
-          class="px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md active:scale-95"
+          class="px-4 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl shadow-md active:scale-95"
         >
           Voir le deck
         </button>
       </div>
 
       <div class="flex gap-4">
-        <button @click="goBack" class="flex-1 py-3 text-xs font-bold text-slate-500 hover:text-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl">Retour à la note</button>
+        <button @click="goBack" class="flex-1 py-3 text-xs font-bold text-ink-muted hover:text-ink border border-line dark:border-line rounded-xl">Retour à la note</button>
       </div>
     </div>
   </div>
