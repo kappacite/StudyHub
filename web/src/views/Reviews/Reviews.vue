@@ -65,36 +65,36 @@
       
       <!-- TAB 1: FLASHCARDS (ESPACEMENT SM-2) -->
       <div v-if="activeTab === 'flashcards'" class="space-y-6">
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
-          <div class="flex items-center justify-between mb-6 flex-wrap gap-4 border-b border-slate-100 dark:border-slate-850/60 pb-4">
+        <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-6 flex-wrap gap-4 border-b border-line dark:border-line pb-4">
             <div>
-              <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                <Layers class="w-5 h-5 text-indigo-500" />
+              <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2">
+                <Layers class="w-5 h-5 text-primary" />
                 Decks de Répétition Espacée
               </h2>
-              <p class="text-xs text-slate-400 mt-1">L'algorithme SM-2 calcule automatiquement la prochaine date de révision pour maximiser votre rétention.</p>
+              <p class="text-xs text-ink-subtle mt-1">L'algorithme SM-2 calcule automatiquement la prochaine date de révision pour maximiser votre rétention.</p>
             </div>
             
             <div class="flex items-center gap-2 flex-wrap">
               <button
                 @click="openCreate('basic')"
-                class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md active:scale-95 duration-200"
+                class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95 duration-200"
               >
                 <Plus class="w-4 h-4" />
                 Nouvelle carte
               </button>
               <button
                 @click="openGenerateModal"
-                class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-650 hover:bg-indigo-700 rounded-xl transition-all shadow-md active:scale-95 duration-200"
+                class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95 duration-200"
               >
-                <Sparkles class="w-4 h-4 text-amber-400 animate-pulse" />
+                <Sparkles class="w-4 h-4 text-warning animate-pulse" />
                 Générer depuis Notes / Classeurs
               </button>
             </div>
           </div>
           
           <div v-if="decksLoading" class="flex items-center justify-center py-12">
-            <svg class="animate-spin h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -104,27 +104,27 @@
             <div 
               v-for="deck in decksWithStats" 
               :key="deck.id"
-              class="flex flex-col justify-between p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-800/80 hover:shadow-md transition-all group"
+              class="flex flex-col justify-between p-5 rounded-2xl bg-surface-soft dark:bg-surface-soft border border-line dark:border-line hover:shadow-md transition-all group"
             >
               <div>
                 <div class="flex items-start justify-between">
-                  <h3 class="font-bold text-base text-slate-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate max-w-[200px]">
+                  <h3 class="font-bold text-base text-ink dark:text-white group-hover:text-primary dark:group-hover:text-primary transition-colors truncate max-w-[200px]">
                     {{ deck.name }}
                   </h3>
                   
                   <span 
                     class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
-                    :class="deck.due_count > 0 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-450' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-450'"
+                    :class="deck.due_count > 0 ? 'bg-warning-soft text-warning dark:bg-warning-soft dark:text-warning' : 'bg-success-soft text-success dark:bg-success-soft dark:text-success'"
                   >
                     {{ deck.due_count > 0 ? `${deck.due_count} À réviser` : 'À jour' }}
                   </span>
                 </div>
                 
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-2 min-h-[32px]">
+                <p class="text-xs text-ink-muted dark:text-ink-subtle mt-2 line-clamp-2 min-h-[32px]">
                   {{ deck.description || 'Aucune description fournie.' }}
                 </p>
 
-                <div class="flex items-center gap-2 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <div class="flex items-center gap-2 mt-4 text-[10px] font-bold text-ink-subtle uppercase tracking-wider">
                   <span>{{ deck.card_count }} carte(s)</span>
                   <span>•</span>
                   <span>Rétention : {{ deck.retention_rate }}%</span>
@@ -134,13 +134,13 @@
               <div class="flex gap-2 mt-6">
                 <button 
                   @click="router.push(`/decks/${deck.id}/study`)"
-                  class="flex-1 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all text-center shadow-sm shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-[0.98]"
+                  class="flex-1 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all text-center shadow-sm shadow-elev-primary hover:shadow-elev-primary active:scale-[0.98]"
                 >
                   {{ deck.due_count > 0 ? 'Réviser maintenant' : 'Révision libre' }}
                 </button>
                 <button 
                   @click="router.push('/decks')"
-                  class="px-3 py-2 text-xs font-bold text-slate-600 hover:text-indigo-600 bg-white hover:bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:text-slate-350 dark:border-slate-700 dark:hover:bg-slate-750 rounded-xl transition-all"
+                  class="px-3 py-2 text-xs font-bold text-ink-muted hover:text-primary bg-surface hover:bg-surface-soft border border-line dark:bg-surface-soft dark:text-ink-subtle dark:border-line dark:hover:bg-surface-soft rounded-xl transition-all"
                   title="Gérer les cartes"
                 >
                   Gérer
@@ -150,13 +150,13 @@
 
             <div 
               v-if="decksStore.decks.length === 0" 
-              class="col-span-full text-center py-12 bg-slate-50 dark:bg-slate-850/20 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl"
+              class="col-span-full text-center py-12 bg-surface-soft dark:bg-surface-soft border border-dashed border-line dark:border-line rounded-2xl"
             >
-              <Layers class="w-8 h-8 text-slate-400 mx-auto mb-2" />
-              <p class="text-sm font-semibold text-slate-500">Aucun deck de flashcards disponible</p>
+              <Layers class="w-8 h-8 text-ink-subtle mx-auto mb-2" />
+              <p class="text-sm font-semibold text-ink-muted">Aucun deck de flashcards disponible</p>
               <button 
                 @click="router.push('/decks')" 
-                class="mt-4 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl active:scale-95 transition-all"
+                class="mt-4 px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl active:scale-95 transition-all"
               >
                 Créer un deck
               </button>
@@ -167,73 +167,73 @@
 
       <!-- TAB: ENSEMBLES TYPÉS CLASSIQUES (QCM / V-F / association / définition / ordre) -->
       <div v-if="currentSetType" class="space-y-6">
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
+        <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm">
           <div class="flex items-center justify-between mb-5">
-            <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              <Layers class="w-5 h-5 text-indigo-500" />
+            <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2">
+              <Layers class="w-5 h-5 text-primary" />
               {{ currentSetTypeLabel }} ({{ typedSets.length }})
             </h2>
             <button
               v-if="currentSetType"
               @click="openCreate(currentSetType)"
-              class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md active:scale-95"
+              class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95"
             >
               <Plus class="w-4 h-4" />
               Créer
             </button>
           </div>
 
-          <div v-if="typedSets.length === 0" class="text-center py-12 text-sm text-slate-400">
+          <div v-if="typedSets.length === 0" class="text-center py-12 text-sm text-ink-subtle">
             Aucun ensemble de ce type. Cliquez sur « Créer » pour en ajouter un.
           </div>
 
           <div v-else class="grid gap-3 sm:grid-cols-2">
-            <div v-for="set in typedSets" :key="set.id" class="border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+            <div v-for="set in typedSets" :key="set.id" class="border border-line dark:border-line rounded-2xl p-4">
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                  <p class="font-bold text-sm text-slate-800 dark:text-white truncate">{{ set.name }}</p>
+                  <p class="font-bold text-sm text-ink dark:text-white truncate">{{ set.name }}</p>
                   <p class="text-[10px] font-semibold uppercase tracking-wider mt-0.5 flex items-center gap-1.5">
-                    <span class="text-indigo-500 dark:text-indigo-400">{{ set.item_count }} item(s)</span>
-                    <span v-if="set.read_only" class="text-amber-600 dark:text-amber-400">· Cours partagé</span>
+                    <span class="text-primary dark:text-primary">{{ set.item_count }} item(s)</span>
+                    <span v-if="set.read_only" class="text-warning dark:text-warning">· Cours partagé</span>
                   </p>
                 </div>
-                <button v-if="!set.read_only" @click="toggleSetSettings(set.id)" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30" title="Réglages">
+                <button v-if="!set.read_only" @click="toggleSetSettings(set.id)" class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft dark:hover:bg-primary-soft" title="Réglages">
                   <Settings class="w-4 h-4" />
                 </button>
               </div>
 
               <div class="flex items-center gap-2 mt-3">
-                <button @click="openSet(set)" class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all">
+                <button @click="openSet(set)" class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-strong active:scale-95 transition-all">
                   <Compass class="w-3.5 h-3.5" /> {{ set.type === 'qcm' ? 'Lancer' : 'Étudier' }}
                 </button>
-                <button @click="router.push(`/revision/sets/${set.id}/stats`)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" title="Statistiques">
+                <button @click="router.push(`/revision/sets/${set.id}/stats`)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-ink-muted dark:text-ink-subtle border border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft transition-all" title="Statistiques">
                   <Activity class="w-3.5 h-3.5" /> Stats
                 </button>
               </div>
 
               <!-- Réglages : renommer, fine-tuning, classeur, suppression -->
-              <div v-if="openSettingsId === set.id" class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <div v-if="openSettingsId === set.id" class="mt-3 pt-3 border-t border-line dark:border-line space-y-3">
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nom</label>
-                  <input v-model="setEdit.name" class="w-full text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" />
+                  <label class="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-1">Nom</label>
+                  <input v-model="setEdit.name" class="w-full text-sm px-3 py-1.5 rounded-lg border border-line dark:border-line bg-surface dark:bg-surface-soft" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fine-tuning SM-2 (×{{ setEdit.tuning_default.toFixed(2) }})</label>
-                  <input type="range" min="0.5" max="2" step="0.1" v-model.number="setEdit.tuning_default" class="w-full accent-indigo-600" />
-                  <p class="text-[10px] text-slate-400">&lt; 1 : réviser plus souvent · &gt; 1 : espacer</p>
+                  <label class="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-1">Fine-tuning SM-2 (×{{ setEdit.tuning_default.toFixed(2) }})</label>
+                  <input type="range" min="0.5" max="2" step="0.1" v-model.number="setEdit.tuning_default" class="w-full accent-primary" />
+                  <p class="text-[10px] text-ink-subtle">&lt; 1 : réviser plus souvent · &gt; 1 : espacer</p>
                 </div>
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Classeur</label>
-                  <select v-model="setEdit.binder_id" class="w-full text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                  <label class="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-1">Classeur</label>
+                  <select v-model="setEdit.binder_id" class="w-full text-sm px-3 py-1.5 rounded-lg border border-line dark:border-line bg-surface dark:bg-surface-soft">
                     <option :value="null">— Aucun —</option>
                     <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">{{ b.name }}</option>
                   </select>
                 </div>
                 <div class="flex items-center justify-between gap-2 pt-1">
-                  <button @click="deleteSet(set.id)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all">
+                  <button @click="deleteSet(set.id)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-danger hover:bg-danger-soft dark:hover:bg-danger-soft transition-all">
                     <Trash2 class="w-3.5 h-3.5" /> Supprimer
                   </button>
-                  <button @click="saveSetSettings(set.id)" :disabled="savingSet" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50">
+                  <button @click="saveSetSettings(set.id)" :disabled="savingSet" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-strong active:scale-95 transition-all disabled:opacity-50">
                     Enregistrer
                   </button>
                 </div>
@@ -245,21 +245,21 @@
 
       <!-- TAB: ÉVALUATION IA -->
       <div v-if="activeTab === 'evaluation'" class="space-y-6">
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm max-w-2xl mx-auto">
-          <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-2">
-            <Sparkles class="w-5 h-5 text-amber-400" />
+        <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm max-w-2xl mx-auto">
+          <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2 mb-2">
+            <Sparkles class="w-5 h-5 text-warning" />
             Feuille d'évaluation IA
           </h2>
-          <p class="text-xs text-slate-400 mb-6">
+          <p class="text-xs text-ink-subtle mb-6">
             L'IA génère, à partir d'une note, une évaluation variée (QCM, vrai/faux, textes à trous, questions ouvertes). À la fin, des flashcards sont proposées pour vos lacunes — vous choisissez de les ajouter (ou non) au deck de votre choix.
           </p>
 
           <div class="space-y-4">
             <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sélectionnez la note</label>
+              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2">Sélectionnez la note</label>
               <select
                 v-model="selectedNoteId"
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold transition-all"
+                class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
               >
                 <option :value="null" disabled>Choisir une note...</option>
                 <option v-for="note in notesStore.notes" :key="note.id" :value="note.id">
@@ -271,7 +271,7 @@
             <button
               @click="startEvaluation"
               :disabled="selectedNoteId === null"
-              class="w-full py-3 mt-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-[0.98]"
+              class="w-full py-3 mt-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-[0.98]"
             >
               Générer l'évaluation
             </button>
@@ -282,30 +282,30 @@
       <!-- TAB 2: FEUILLE BLANCHE -->
       <div v-if="activeTab === 'blank-sheet'" class="space-y-6">
         <!-- Step 1: Configuration -->
-        <div v-if="blankSheetStep === 'config'" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm max-w-2xl mx-auto">
-          <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-2">
-            <FileText class="w-5 h-5 text-indigo-500" />
+        <div v-if="blankSheetStep === 'config'" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm max-w-2xl mx-auto">
+          <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2 mb-2">
+            <FileText class="w-5 h-5 text-primary" />
             Méthode de la Feuille Blanche
           </h2>
-          <p class="text-xs text-slate-400 mb-6">
+          <p class="text-xs text-ink-subtle mb-6">
             Cette technique d'Active Recall consiste à écrire de mémoire tout ce dont vous vous souvenez sur un sujet, puis à le confronter au cours original pour identifier immédiatement vos lacunes.
           </p>
 
           <div class="space-y-4">
             <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Source de révision</label>
+              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2">Source de révision</label>
               <div class="grid grid-cols-2 gap-4">
                 <button 
                   @click="blankSheetSourceType = 'note'"
                   class="p-4 border rounded-2xl text-center font-semibold text-sm transition-all"
-                  :class="[blankSheetSourceType === 'note' ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850/40']"
+                  :class="[blankSheetSourceType === 'note' ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft']"
                 >
                   Une Note Individuelle
                 </button>
                 <button 
                   @click="blankSheetSourceType = 'binder'"
                   class="p-4 border rounded-2xl text-center font-semibold text-sm transition-all"
-                  :class="[blankSheetSourceType === 'binder' ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850/40']"
+                  :class="[blankSheetSourceType === 'binder' ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft']"
                 >
                   Un Classeur entier
                 </button>
@@ -314,10 +314,10 @@
 
             <!-- Note Selector -->
             <div v-if="blankSheetSourceType === 'note'">
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sélectionnez la note</label>
+              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2">Sélectionnez la note</label>
               <select 
                 v-model="selectedNoteId"
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold transition-all"
+                class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
               >
                 <option :value="null" disabled>Choisir une note...</option>
                 <option v-for="note in notesStore.notes" :key="note.id" :value="note.id">
@@ -328,10 +328,10 @@
 
             <!-- Binder Selector -->
             <div v-if="blankSheetSourceType === 'binder'">
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sélectionnez le classeur</label>
+              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2">Sélectionnez le classeur</label>
               <select 
                 v-model="selectedBinderId"
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold transition-all"
+                class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
               >
                 <option :value="null" disabled>Choisir un classeur...</option>
                 <option v-for="binder in bindersStore.binders" :key="binder.id" :value="binder.id">
@@ -343,7 +343,7 @@
             <button 
               @click="startBlankSheet"
               :disabled="!isReadyToStartBlankSheet"
-              class="w-full py-3 mt-4 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-indigo-650/10 active:scale-[0.98]"
+              class="w-full py-3 mt-4 text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-elev-primary active:scale-[0.98]"
             >
               Démarrer la feuille blanche
             </button>
@@ -351,16 +351,16 @@
         </div>
 
         <!-- Step 2: Recall Draft Work -->
-        <div v-if="blankSheetStep === 'work'" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-6">
-          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-850/60 pb-4">
+        <div v-if="blankSheetStep === 'work'" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-line dark:border-line pb-4">
             <div>
-              <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Révision en cours : Feuille Blanche</span>
+              <span class="text-[10px] font-bold text-primary uppercase tracking-wider">Révision en cours : Feuille Blanche</span>
               <h2 class="text-lg font-bold">{{ blankSheetSubjectTitle }}</h2>
             </div>
             
             <div class="flex items-center gap-4 text-xs font-bold">
-              <span class="text-slate-400">Mots saisis : {{ blankSheetWordCount }}</span>
-              <span class="px-3 py-1 bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 rounded-lg">
+              <span class="text-ink-subtle">Mots saisis : {{ blankSheetWordCount }}</span>
+              <span class="px-3 py-1 bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger rounded-lg">
                 Temps : {{ formatTimer(blankSheetTimer) }}
               </span>
             </div>
@@ -370,20 +370,20 @@
             v-model="blankSheetDraft"
             placeholder="Écrivez de mémoire tout ce que vous avez retenu sur le sujet..."
             rows="12"
-            class="w-full p-6 text-sm border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-850 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-sans leading-relaxed"
+            class="w-full p-6 text-sm border border-line dark:border-line rounded-2xl bg-surface-soft dark:bg-surface-soft focus:outline-none focus:ring-2 focus:ring-primary resize-none font-sans leading-relaxed"
           ></textarea>
 
           <div class="flex gap-4">
             <button 
               @click="cancelReview"
-              class="px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              class="px-5 py-2.5 text-xs font-bold text-ink-muted hover:text-ink dark:text-ink-subtle dark:hover:text-ink-subtle"
             >
               Abandonner
             </button>
             <button 
               @click="evaluateBlankSheet"
               :disabled="!blankSheetDraft.trim()"
-              class="flex-1 py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
+              class="flex-1 py-3 text-xs font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
             >
               Évaluer ma mémoire
             </button>
@@ -391,22 +391,22 @@
         </div>
 
         <!-- Step 3: Interactive Results -->
-        <div v-if="blankSheetStep === 'results'" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-8">
-          <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 dark:border-slate-850/60 pb-6 gap-6">
+        <div v-if="blankSheetStep === 'results'" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-8">
+          <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-line dark:border-line pb-6 gap-6">
             <div>
-              <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Résultats de la révision</span>
+              <span class="text-[10px] font-bold text-success uppercase tracking-wider">Résultats de la révision</span>
               <h2 class="text-lg font-bold">{{ blankSheetSubjectTitle }}</h2>
-              <p class="text-xs text-slate-400 mt-1">Étudié pendant {{ formatTimer(blankSheetTimer) }}.</p>
+              <p class="text-xs text-ink-subtle mt-1">Étudié pendant {{ formatTimer(blankSheetTimer) }}.</p>
             </div>
 
             <!-- Radial Progress Badge -->
             <div class="flex items-center gap-4">
-              <div class="relative w-16 h-16 rounded-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-extrabold text-lg border border-indigo-150/40">
+              <div class="relative w-16 h-16 rounded-full flex items-center justify-center bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary font-extrabold text-lg border border-primary">
                 {{ blankSheetResult.score }}%
               </div>
               <div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Taux de rappel</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p class="text-xs font-bold text-ink-subtle uppercase tracking-wider">Taux de rappel</p>
+                <p class="text-xs text-ink-muted dark:text-ink-subtle mt-0.5">
                   {{ blankSheetResult.remembered.length }} / {{ blankSheetResult.totalKeywords }} concepts clés retrouvés.
                 </p>
               </div>
@@ -416,58 +416,58 @@
           <!-- Breakdown list -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Remembered -->
-            <div class="p-5 rounded-2xl bg-emerald-50/30 border border-emerald-100 dark:bg-emerald-950/10 dark:border-emerald-900/30 space-y-3">
-              <h3 class="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                <CheckCircle2 class="w-4 h-4 text-emerald-500" />
+            <div class="p-5 rounded-2xl bg-success-soft border border-success dark:bg-success-soft dark:border-success space-y-3">
+              <h3 class="text-xs font-bold text-success dark:text-success uppercase tracking-wider flex items-center gap-1.5">
+                <CheckCircle2 class="w-4 h-4 text-success" />
                 Concepts Retenus ({{ blankSheetResult.remembered.length }})
               </h3>
               <div class="flex flex-wrap gap-1.5 pt-1">
                 <span 
                   v-for="kw in blankSheetResult.remembered" 
                   :key="kw"
-                  class="px-2.5 py-0.5 bg-white border border-emerald-200 text-emerald-700 dark:bg-emerald-900/10 dark:border-emerald-800/40 dark:text-emerald-450 text-[11px] font-semibold rounded-lg"
+                  class="px-2.5 py-0.5 bg-surface border border-success text-success dark:bg-success-soft dark:border-success dark:text-success text-[11px] font-semibold rounded-lg"
                 >
                   {{ kw }}
                 </span>
-                <span v-if="blankSheetResult.remembered.length === 0" class="text-xs text-slate-400 font-medium">Aucun concept clé n'a été mémorisé.</span>
+                <span v-if="blankSheetResult.remembered.length === 0" class="text-xs text-ink-subtle font-medium">Aucun concept clé n'a été mémorisé.</span>
               </div>
             </div>
 
             <!-- Missed -->
-            <div class="p-5 rounded-2xl bg-rose-50/30 border border-rose-100 dark:bg-rose-950/10 dark:border-rose-900/30 space-y-3">
-              <h3 class="text-xs font-bold text-rose-800 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Flame class="w-4 h-4 text-rose-500" />
+            <div class="p-5 rounded-2xl bg-danger-soft border border-danger dark:bg-danger-soft dark:border-danger space-y-3">
+              <h3 class="text-xs font-bold text-danger dark:text-danger uppercase tracking-wider flex items-center gap-1.5">
+                <Flame class="w-4 h-4 text-danger" />
                 Lacunes identifiées ({{ blankSheetResult.missed.length }})
               </h3>
               <div class="flex flex-wrap gap-1.5 pt-1">
                 <span 
                   v-for="kw in blankSheetResult.missed" 
                   :key="kw"
-                  class="px-2.5 py-0.5 bg-white border border-rose-200 text-rose-700 dark:bg-rose-900/10 dark:border-rose-800/40 dark:text-rose-450 text-[11px] font-semibold rounded-lg"
+                  class="px-2.5 py-0.5 bg-surface border border-danger text-danger dark:bg-danger-soft dark:border-danger dark:text-danger text-[11px] font-semibold rounded-lg"
                 >
                   {{ kw }}
                 </span>
-                <span v-if="blankSheetResult.missed.length === 0" class="text-xs text-slate-400 font-medium">Parfait ! Vous n'avez oublié aucun concept clé. 🎉</span>
+                <span v-if="blankSheetResult.missed.length === 0" class="text-xs text-ink-subtle font-medium">Parfait ! Vous n'avez oublié aucun concept clé. 🎉</span>
               </div>
             </div>
           </div>
 
           <!-- Comparative Text View (Original text diff style) -->
           <div class="space-y-3">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <h3 class="text-xs font-bold text-ink-subtle uppercase tracking-wider">
               Analyse visuelle du document original
             </h3>
-            <p class="text-xs text-slate-400">Les concepts clés oubliés sont <span class="bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-350 px-1 rounded font-bold">surlignés en rouge</span>. Les concepts retenus sont <span class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-350 px-1 rounded font-bold">en vert</span>.</p>
+            <p class="text-xs text-ink-subtle">Les concepts clés oubliés sont <span class="bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger px-1 rounded font-bold">surlignés en rouge</span>. Les concepts retenus sont <span class="bg-success-soft text-success dark:bg-success-soft dark:text-success px-1 rounded font-bold">en vert</span>.</p>
             
             <div 
-              class="w-full p-6 bg-slate-50 dark:bg-slate-850/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm leading-relaxed whitespace-pre-line font-sans"
+              class="w-full p-6 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-2xl text-sm leading-relaxed whitespace-pre-line font-sans"
               v-dompurify-html="blankSheetResult.highlightedText"
             ></div>
           </div>
 
           <button 
             @click="blankSheetStep = 'config'"
-            class="px-6 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md active:scale-95"
+            class="px-6 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95"
           >
             Faire une autre révision
           </button>
@@ -477,21 +477,21 @@
       <!-- TAB 3: METHODE FEYNMAN -->
       <div v-if="activeTab === 'feynman'" class="space-y-6">
         <!-- Step 1: Configuration -->
-        <div v-if="feynmanStep === 'config'" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm max-w-2xl mx-auto">
-          <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-2">
-            <Sparkles class="w-5 h-5 text-indigo-500" />
+        <div v-if="feynmanStep === 'config'" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm max-w-2xl mx-auto">
+          <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2 mb-2">
+            <Sparkles class="w-5 h-5 text-primary" />
             Méthode Feynman
           </h2>
-          <p class="text-xs text-slate-400 mb-6">
+          <p class="text-xs text-ink-subtle mb-6">
             La meilleure façon de comprendre un concept est de l'expliquer le plus simplement possible, comme si vous parliez à un enfant de 10 ans. Cette méthode met en évidence les points d'ombre de votre compréhension.
           </p>
 
           <div class="space-y-4">
             <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sélectionnez la note / concept</label>
+              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2">Sélectionnez la note / concept</label>
               <select 
                 v-model="selectedNoteId"
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold transition-all"
+                class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
               >
                 <option :value="null" disabled>Choisir une note...</option>
                 <option v-for="note in notesStore.notes" :key="note.id" :value="note.id">
@@ -503,7 +503,7 @@
             <button 
               @click="startFeynman"
               :disabled="selectedNoteId === null"
-              class="w-full py-3 mt-4 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
+              class="w-full py-3 mt-4 text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
             >
               Lancer l'exercice de simplification
             </button>
@@ -511,22 +511,22 @@
         </div>
 
         <!-- Step 2: Work Draft -->
-        <div v-if="feynmanStep === 'work'" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-6">
-          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-850/60 pb-4">
+        <div v-if="feynmanStep === 'work'" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-line dark:border-line pb-4">
             <div>
-              <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Exercice Feynman : Expliquer simplement</span>
+              <span class="text-[10px] font-bold text-primary uppercase tracking-wider">Exercice Feynman : Expliquer simplement</span>
               <h2 class="text-lg font-bold">{{ feynmanSubjectTitle }}</h2>
             </div>
             
             <div class="flex items-center gap-4 text-xs font-bold">
-              <span class="text-slate-400">Mots : {{ feynmanWordCount }}</span>
-              <span class="px-3 py-1 bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 rounded-lg">
+              <span class="text-ink-subtle">Mots : {{ feynmanWordCount }}</span>
+              <span class="px-3 py-1 bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger rounded-lg">
                 Temps : {{ formatTimer(feynmanTimer) }}
               </span>
             </div>
           </div>
 
-          <div class="p-4 bg-indigo-50/50 border-l-4 border-indigo-500 rounded-r-xl dark:bg-indigo-950/15 dark:border-indigo-900/40 text-xs leading-relaxed text-indigo-800 dark:text-indigo-400">
+          <div class="p-4 bg-primary-soft border-l-4 border-primary rounded-r-xl dark:bg-primary-soft dark:border-primary text-xs leading-relaxed text-primary dark:text-primary">
             <strong>Consigne :</strong> Décrivez ce concept avec vos propres mots en évitant les termes techniques trop complexes. Soyez clair, concis et illustrez votre explication par une métaphore ou un exemple simple.
           </div>
 
@@ -534,20 +534,20 @@
             v-model="feynmanDraft"
             placeholder="Tapez votre explication simplifiée ici..."
             rows="10"
-            class="w-full p-6 text-sm border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-850 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-sans leading-relaxed"
+            class="w-full p-6 text-sm border border-line dark:border-line rounded-2xl bg-surface-soft dark:bg-surface-soft focus:outline-none focus:ring-2 focus:ring-primary resize-none font-sans leading-relaxed"
           ></textarea>
 
           <div class="flex gap-4">
             <button 
               @click="cancelReview"
-              class="px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              class="px-5 py-2.5 text-xs font-bold text-ink-muted hover:text-ink dark:text-ink-subtle dark:hover:text-ink-subtle"
             >
               Abandonner
             </button>
             <button 
               @click="evaluateFeynman"
               :disabled="!feynmanDraft.trim()"
-              class="flex-1 py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
+              class="flex-1 py-3 text-xs font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
             >
               Analyser mon explication
             </button>
@@ -555,22 +555,22 @@
         </div>
 
         <!-- Step 3: Feedback Results -->
-        <div v-if="feynmanStep === 'results'" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-8">
-          <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 dark:border-slate-850/60 pb-6 gap-6">
+        <div v-if="feynmanStep === 'results'" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-8">
+          <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-line dark:border-line pb-6 gap-6">
             <div>
-              <span class="text-[10px] font-bold text-purple-500 uppercase tracking-wider">Analyse Feynman</span>
+              <span class="text-[10px] font-bold text-accent uppercase tracking-wider">Analyse Feynman</span>
               <h2 class="text-lg font-bold">{{ feynmanSubjectTitle }}</h2>
-              <p class="text-xs text-slate-400 mt-1">Soumis en {{ formatTimer(feynmanTimer) }}.</p>
+              <p class="text-xs text-ink-subtle mt-1">Soumis en {{ formatTimer(feynmanTimer) }}.</p>
             </div>
 
             <!-- Feynman Score -->
             <div class="flex items-center gap-4">
-              <div class="relative w-16 h-16 rounded-full flex items-center justify-center bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 font-extrabold text-lg border border-purple-150/40">
+              <div class="relative w-16 h-16 rounded-full flex items-center justify-center bg-accent-soft dark:bg-accent-soft text-accent dark:text-accent font-extrabold text-lg border border-accent">
                 {{ feynmanResult.score }}%
               </div>
               <div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Score de Simplicité</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p class="text-xs font-bold text-ink-subtle uppercase tracking-wider">Score de Simplicité</p>
+                <p class="text-xs text-ink-muted dark:text-ink-subtle mt-0.5">
                   Votre explication est claire et accessible.
                 </p>
               </div>
@@ -580,40 +580,40 @@
           <!-- Evaluation Cards -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Jargon alert -->
-            <div class="p-5 rounded-2xl border space-y-2" :class="[feynmanResult.jargonFound.length > 0 ? 'bg-amber-50/30 border-amber-100 dark:bg-amber-950/10 dark:border-amber-900/30' : 'bg-emerald-50/30 border-emerald-100 dark:bg-emerald-950/10 dark:border-emerald-900/30']">
-              <h4 class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" :class="[feynmanResult.jargonFound.length > 0 ? 'text-amber-800 dark:text-amber-400' : 'text-emerald-800 dark:text-emerald-400']">
+            <div class="p-5 rounded-2xl border space-y-2" :class="[feynmanResult.jargonFound.length > 0 ? 'bg-warning-soft border-warning dark:bg-warning-soft dark:border-warning' : 'bg-success-soft border-success dark:bg-success-soft dark:border-success']">
+              <h4 class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" :class="[feynmanResult.jargonFound.length > 0 ? 'text-warning dark:text-warning' : 'text-success dark:text-success']">
                 <Compass class="w-4.5 h-4.5" />
                 Mots complexes
               </h4>
-              <p class="text-xs text-slate-400">Nombre de termes complexes ou de jargon conservés de la note d'origine.</p>
+              <p class="text-xs text-ink-subtle">Nombre de termes complexes ou de jargon conservés de la note d'origine.</p>
               <div v-if="feynmanResult.jargonFound.length > 0" class="flex flex-wrap gap-1 mt-2">
-                <span v-for="w in feynmanResult.jargonFound" :key="w" class="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/10 text-amber-600 text-[10px] font-semibold rounded-lg">{{ w }}</span>
+                <span v-for="w in feynmanResult.jargonFound" :key="w" class="px-2 py-0.5 bg-warning-soft dark:bg-warning-soft text-warning text-[10px] font-semibold rounded-lg">{{ w }}</span>
               </div>
-              <p v-else class="text-xs font-semibold text-emerald-600 mt-2">Félicitations ! Aucun mot complexe ou jargon repéré.</p>
+              <p v-else class="text-xs font-semibold text-success mt-2">Félicitations ! Aucun mot complexe ou jargon repéré.</p>
             </div>
 
             <!-- Length check -->
-            <div class="p-5 rounded-2xl bg-indigo-50/30 border border-indigo-100 dark:bg-indigo-950/10 dark:border-indigo-900/30 space-y-2">
-              <h4 class="text-xs font-bold text-indigo-800 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Clock class="w-4.5 h-4.5 text-indigo-500" />
+            <div class="p-5 rounded-2xl bg-primary-soft border border-primary dark:bg-primary-soft dark:border-primary space-y-2">
+              <h4 class="text-xs font-bold text-primary dark:text-primary uppercase tracking-wider flex items-center gap-1.5">
+                <Clock class="w-4.5 h-4.5 text-primary" />
                 Concision
               </h4>
-              <p class="text-xs text-slate-400">Longueur idéale pour vulgariser : entre 50 et 150 mots.</p>
-              <p class="text-sm font-bold text-slate-800 dark:text-white mt-3">
+              <p class="text-xs text-ink-subtle">Longueur idéale pour vulgariser : entre 50 et 150 mots.</p>
+              <p class="text-sm font-bold text-ink dark:text-white mt-3">
                 Votre longueur : {{ feynmanWordCount }} mots
               </p>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold text-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20 uppercase tracking-wider mt-1 inline-block">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold text-primary bg-primary-soft dark:bg-primary-soft uppercase tracking-wider mt-1 inline-block">
                 {{ feynmanResult.lengthFeedback }}
               </span>
             </div>
 
             <!-- Suggestions -->
-            <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 dark:bg-slate-850/50 dark:border-slate-800 space-y-2">
-              <h4 class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles class="w-4.5 h-4.5 text-indigo-500" />
+            <div class="p-5 rounded-2xl bg-surface-soft border border-line dark:bg-surface-soft dark:border-line space-y-2">
+              <h4 class="text-xs font-bold text-ink-muted dark:text-ink-subtle uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles class="w-4.5 h-4.5 text-primary" />
                 Suggestion
               </h4>
-              <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-2">
+              <p class="text-xs text-ink-muted dark:text-ink-subtle leading-relaxed mt-2">
                 {{ feynmanResult.suggestion }}
               </p>
             </div>
@@ -621,7 +621,7 @@
 
           <button 
             @click="feynmanStep = 'config'"
-            class="px-6 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md active:scale-95"
+            class="px-6 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95"
           >
             Faire une autre révision
           </button>
@@ -631,21 +631,21 @@
       <!-- TAB 4: AUTO-QCM -->
       <div v-if="activeTab === 'quiz'" class="space-y-6">
         <!-- Step 1: Configuration -->
-        <div v-if="quizStep === 'config'" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm max-w-2xl mx-auto">
-          <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-2">
-            <Activity class="w-5 h-5 text-indigo-500" />
+        <div v-if="quizStep === 'config'" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm max-w-2xl mx-auto">
+          <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2 mb-2">
+            <Activity class="w-5 h-5 text-primary" />
             Générateur de Quiz Interactif
           </h2>
-          <p class="text-xs text-slate-400 mb-6">
+          <p class="text-xs text-ink-subtle mb-6">
             Entraînez-vous activement. Le système analyse le texte de la note sélectionnée pour extraire les concepts clés et générer des questions à choix multiples.
           </p>
 
           <div class="space-y-4">
             <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sélectionnez la note</label>
+              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2">Sélectionnez la note</label>
               <select 
                 v-model="selectedNoteId"
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold transition-all"
+                class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
               >
                 <option :value="null" disabled>Choisir une note...</option>
                 <option v-for="note in notesStore.notes" :key="note.id" :value="note.id">
@@ -657,7 +657,7 @@
             <button 
               @click="startQuiz"
               :disabled="selectedNoteId === null"
-              class="w-full py-3 mt-4 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
+              class="w-full py-3 mt-4 text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
             >
               Générer mon Quiz
             </button>
@@ -665,14 +665,14 @@
         </div>
 
         <!-- Step 2: Quiz Session -->
-        <div v-if="quizStep === 'work'" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-8 max-w-3xl mx-auto">
-          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-850/60 pb-4">
+        <div v-if="quizStep === 'work'" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-8 max-w-3xl mx-auto">
+          <div class="flex items-center justify-between border-b border-line dark:border-line pb-4">
             <div>
-              <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Quiz actif : {{ quizSubjectTitle }}</span>
+              <span class="text-[10px] font-bold text-primary uppercase tracking-wider">Quiz actif : {{ quizSubjectTitle }}</span>
               <h2 class="text-base font-bold">Répondez aux questions</h2>
             </div>
             
-            <span class="px-3 py-1 bg-indigo-55 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 text-xs font-bold rounded-lg">
+            <span class="px-3 py-1 bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary text-xs font-bold rounded-lg">
               {{ quizQuestions.length }} Question(s)
             </span>
           </div>
@@ -681,9 +681,9 @@
             <div 
               v-for="(q, qIdx) in quizQuestions" 
               :key="qIdx"
-              class="p-5 bg-slate-50 dark:bg-slate-850/50 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-4"
+              class="p-5 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-2xl space-y-4"
             >
-              <h3 class="font-bold text-sm leading-relaxed text-slate-800 dark:text-slate-200">
+              <h3 class="font-bold text-sm leading-relaxed text-ink dark:text-ink-subtle">
                 Question {{ qIdx + 1 }} : {{ q.questionText }}
               </h3>
 
@@ -695,33 +695,33 @@
                   class="w-full px-4 py-3 rounded-xl border text-left text-xs font-semibold transition-all active:scale-[0.99] flex items-center justify-between"
                   :class="[
                     quizAnswers[qIdx] === opt 
-                      ? 'border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/30 dark:text-indigo-400' 
-                      : 'border-slate-200 hover:bg-slate-100/60 dark:border-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300'
+                      ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' 
+                      : 'border-line hover:bg-surface-soft dark:border-line dark:hover:bg-surface-soft text-ink dark:text-ink-subtle'
                   ]"
                 >
                   <span>{{ opt }}</span>
                   <span 
-                    class="w-4 h-4 rounded-full border border-slate-350 flex items-center justify-center"
-                    :class="[quizAnswers[qIdx] === opt ? 'border-indigo-600 bg-indigo-600 text-white dark:border-indigo-500 dark:bg-indigo-500' : '']"
+                    class="w-4 h-4 rounded-full border border-line flex items-center justify-center"
+                    :class="[quizAnswers[qIdx] === opt ? 'border-primary bg-primary text-white dark:border-primary dark:bg-primary' : '']"
                   >
-                    <span v-if="quizAnswers[qIdx] === opt" class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                    <span v-if="quizAnswers[qIdx] === opt" class="w-1.5 h-1.5 rounded-full bg-surface"></span>
                   </span>
                 </button>
               </div>
             </div>
           </div>
 
-          <div class="flex gap-4 border-t border-slate-100 dark:border-slate-850/60 pt-6">
+          <div class="flex gap-4 border-t border-line dark:border-line pt-6">
             <button 
               @click="cancelReview"
-              class="px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              class="px-5 py-2.5 text-xs font-bold text-ink-muted hover:text-ink dark:text-ink-subtle dark:hover:text-ink-subtle"
             >
               Abandonner
             </button>
             <button 
               @click="evaluateQuiz"
               :disabled="!isQuizFinished"
-              class="flex-1 py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
+              class="flex-1 py-3 text-xs font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
             >
               Valider mes réponses
             </button>
@@ -729,22 +729,22 @@
         </div>
 
         <!-- Step 3: Quiz Feedback Results -->
-        <div v-if="quizStep === 'results'" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-8 max-w-3xl mx-auto">
-          <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 dark:border-slate-850/60 pb-6 gap-6">
+        <div v-if="quizStep === 'results'" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-8 max-w-3xl mx-auto">
+          <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-line dark:border-line pb-6 gap-6">
             <div>
-              <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Résultats du Quiz</span>
+              <span class="text-[10px] font-bold text-primary uppercase tracking-wider">Résultats du Quiz</span>
               <h2 class="text-lg font-bold">{{ quizSubjectTitle }}</h2>
-              <p class="text-xs text-slate-400 mt-1">Quiz complété.</p>
+              <p class="text-xs text-ink-subtle mt-1">Quiz complété.</p>
             </div>
 
             <!-- Quiz Radial Score -->
             <div class="flex items-center gap-4">
-              <div class="relative w-16 h-16 rounded-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-extrabold text-lg border border-indigo-150/40">
+              <div class="relative w-16 h-16 rounded-full flex items-center justify-center bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary font-extrabold text-lg border border-primary">
                 {{ Math.round((quizResult.score / quizQuestions.length) * 100) }}%
               </div>
               <div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Score Final</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p class="text-xs font-bold text-ink-subtle uppercase tracking-wider">Score Final</p>
+                <p class="text-xs text-ink-muted dark:text-ink-subtle mt-0.5">
                   {{ quizResult.score }} / {{ quizQuestions.length }} réponses correctes.
                 </p>
               </div>
@@ -759,20 +759,20 @@
               class="p-5 rounded-2xl border leading-relaxed space-y-3"
               :class="[
                 quizAnswers[qIdx] === q.correctAnswer 
-                  ? 'bg-emerald-50/20 border-emerald-100 dark:bg-emerald-950/5 dark:border-emerald-900/20' 
-                  : 'bg-rose-50/20 border-rose-100 dark:bg-rose-950/5 dark:border-rose-900/20'
+                  ? 'bg-success-soft border-success dark:bg-success-soft dark:border-success' 
+                  : 'bg-danger-soft border-danger dark:bg-danger-soft dark:border-danger'
               ]"
             >
               <div class="flex items-start justify-between">
-                <h4 class="font-bold text-sm text-slate-800 dark:text-slate-200">
+                <h4 class="font-bold text-sm text-ink dark:text-ink-subtle">
                   Question {{ qIdx + 1 }} : {{ q.questionText }}
                 </h4>
                 <span 
                   class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
                   :class="[
                     quizAnswers[qIdx] === q.correctAnswer 
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-450' 
-                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-450'
+                      ? 'bg-success-soft text-success dark:bg-success-soft dark:text-success' 
+                      : 'bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger'
                   ]"
                 >
                   {{ quizAnswers[qIdx] === q.correctAnswer ? 'Correct' : 'Incorrect' }}
@@ -780,11 +780,11 @@
               </div>
 
               <div class="text-xs space-y-2 mt-2">
-                <p class="text-slate-500">
-                  Votre réponse : <strong :class="[quizAnswers[qIdx] === q.correctAnswer ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400']">{{ quizAnswers[qIdx] }}</strong>
+                <p class="text-ink-muted">
+                  Votre réponse : <strong :class="[quizAnswers[qIdx] === q.correctAnswer ? 'text-success dark:text-success' : 'text-danger dark:text-danger']">{{ quizAnswers[qIdx] }}</strong>
                 </p>
-                <p v-if="quizAnswers[qIdx] !== q.correctAnswer" class="text-slate-500">
-                  Réponse attendue : <strong class="text-emerald-600 dark:text-emerald-400">{{ q.correctAnswer }}</strong>
+                <p v-if="quizAnswers[qIdx] !== q.correctAnswer" class="text-ink-muted">
+                  Réponse attendue : <strong class="text-success dark:text-success">{{ q.correctAnswer }}</strong>
                 </p>
               </div>
             </div>
@@ -792,7 +792,7 @@
 
           <button 
             @click="quizStep = 'config'"
-            class="px-6 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md active:scale-95"
+            class="px-6 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95"
           >
             Refaire un Quiz
           </button>
@@ -805,14 +805,14 @@
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print animate-fade-in"
     >
       <div 
-        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-6"
+        class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-6"
       >
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-            <Sparkles class="w-5 h-5 text-indigo-55" />
+          <h3 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2">
+            <Sparkles class="w-5 h-5 text-primary" />
             Générer des Flashcards
           </h3>
-          <button @click="showGenerateModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm">
+          <button @click="showGenerateModal = false" class="text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle text-sm">
             ✕
           </button>
         </div>
@@ -820,19 +820,19 @@
         <div class="space-y-4">
           <!-- Source selection -->
           <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Source d'extraction</label>
+            <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2">Source d'extraction</label>
             <div class="grid grid-cols-2 gap-4">
               <button 
                 @click="genSourceType = 'note'"
                 class="p-3 border rounded-xl text-center font-semibold text-xs transition-all"
-                :class="[genSourceType === 'note' ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850/40']"
+                :class="[genSourceType === 'note' ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft']"
               >
                 Une Note
               </button>
               <button 
                 @click="genSourceType = 'binder'"
                 class="p-3 border rounded-xl text-center font-semibold text-xs transition-all"
-                :class="[genSourceType === 'binder' ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850/40']"
+                :class="[genSourceType === 'binder' ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft']"
               >
                 Un Classeur
               </button>
@@ -841,10 +841,10 @@
 
           <!-- Note Selector -->
           <div v-if="genSourceType === 'note'">
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sélectionnez la note</label>
+            <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2">Sélectionnez la note</label>
             <select 
               v-model="genNoteId"
-              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="w-full px-3 py-2.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option :value="null" disabled>Choisir une note...</option>
               <option v-for="n in notesStore.notes" :key="n.id" :value="n.id">{{ n.title }}</option>
@@ -853,10 +853,10 @@
 
           <!-- Binder Selector -->
           <div v-if="genSourceType === 'binder'">
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sélectionnez le classeur</label>
+            <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2">Sélectionnez le classeur</label>
             <select 
               v-model="genBinderId"
-              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="w-full px-3 py-2.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option :value="null" disabled>Choisir un classeur...</option>
               <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">{{ b.name }}</option>
@@ -865,19 +865,19 @@
 
           <!-- Target Deck Select -->
           <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Deck de destination</label>
+            <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2">Deck de destination</label>
             <div class="grid grid-cols-2 gap-4 mb-3">
               <button 
                 @click="genDeckTarget = 'new'"
                 class="p-3 border rounded-xl text-center font-semibold text-xs transition-all"
-                :class="[genDeckTarget === 'new' ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850/40']"
+                :class="[genDeckTarget === 'new' ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft']"
               >
                 Nouveau Deck
               </button>
               <button 
                 @click="genDeckTarget = 'existing'"
                 class="p-3 border rounded-xl text-center font-semibold text-xs transition-all"
-                :class="[genDeckTarget === 'existing' ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850/40']"
+                :class="[genDeckTarget === 'existing' ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft']"
                 :disabled="decksStore.decks.length === 0"
               >
                 Deck existant
@@ -890,7 +890,7 @@
                 type="text" 
                 v-model="genNewDeckName" 
                 placeholder="Nom du nouveau deck (ex: Chimie, Bio...)"
-                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                class="w-full px-3 py-2 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
 
@@ -898,7 +898,7 @@
             <div v-if="genDeckTarget === 'existing'">
               <select 
                 v-model="genExistingDeckId"
-                class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 dark:bg-slate-850 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                class="w-full px-3 py-2.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option :value="null" disabled>Choisir un deck...</option>
                 <option v-for="d in decksStore.decks" :key="d.id" :value="d.id">{{ d.name }}</option>
@@ -908,21 +908,21 @@
         </div>
 
         <!-- Alert messages or status -->
-        <div v-if="genStatusMessage" class="p-3 text-xs rounded-xl" :class="[genStatusIsError ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-450' : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400']">
+        <div v-if="genStatusMessage" class="p-3 text-xs rounded-xl" :class="[genStatusIsError ? 'bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger' : 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary']">
           {{ genStatusMessage }}
         </div>
 
-        <div class="flex gap-3 justify-end border-t border-slate-100 dark:border-slate-850/60 pt-4">
+        <div class="flex gap-3 justify-end border-t border-line dark:border-line pt-4">
           <button 
             @click="showGenerateModal = false"
-            class="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            class="px-4 py-2 text-xs font-bold text-ink-muted hover:text-ink dark:text-ink-subtle dark:hover:text-ink-subtle"
           >
             Fermer
           </button>
           <button 
             @click="executeFlashcardGeneration"
             :disabled="!isReadyToGenerate"
-            class="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
+            class="px-5 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
           >
             {{ genDeckTarget === 'new' ? 'Générer' : 'Mettre à jour' }}
           </button>

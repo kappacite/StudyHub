@@ -837,3 +837,21 @@ Reprise de la boucle sur les morceaux reportés (risque visuel assumé, validati
 * **Restent (revue visuelle requise)** : onglets/runners `Reviews` (Flashcards `ListRow` + corps IA) ;
   puis audits dark/AA/responsive 375 px/Capacitor.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S8 (suite) : Reviews — hub
+
+* **`Reviews/Reviews.vue`** (1773 l) : **`<template>` (l. 1-945) migré** en tokens. Marque
+  **indigo→`primary`** ; emerald→`success`, rose→`danger`, amber→`warning`, blue/sky→`info`,
+  violet/purple→`accent` ; slate→`ink`/`surface`/`line`. Les ternaires de **statut sémantique**
+  (échéance>0→`warning`/`success`, correct→`success`/erreur→`danger`, statut génération→`danger`/
+  normal) sont tokenisés (ce ne sont pas des palettes de données). Corrige 2 résidus : classe morte
+  `bg-indigo-55`→`bg-primary-soft`, `accent-indigo-600`→`accent-primary` (curseur de réglage).
+* **Laissé intact** : `<script>` (l. 947+), notamment les constructeurs de classes de **surlignage
+  correct/incorrect** (blurting/feynman, l. 1442) — rendu piloté par données. Scrims + placeholders
+  conservés.
+* **Restent (revue visuelle requise)** : runners/stats `Reviews` (`RevisionStudy`, `QcmRun`,
+  `RevisionBinderStats`/`SetStats`, `RevisionItemModal`, `AnkiImportModal`, `LearningCurve`) ;
+  puis audits dark/AA/responsive 375 px/Capacitor.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
