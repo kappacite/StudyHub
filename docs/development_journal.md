@@ -749,3 +749,20 @@ S6 (PR #77) mergé. Slice S7 (branche `feature/ui-refactor-s7`) : finir la secti
   `Builder`, `NoteEdit` (zen), corps éditeur `Diagrams`, onglets Reviews (Flashcards/IA) + runners ;
   puis audits dark/AA/responsive/Capacitor.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S7 (suite) : feuilles de détail Classes
+
+S7-slice (PR #78) mergé. Continuation : `GroupDetail` + `AssignmentDetail`.
+
+* **`Groups/GroupDetail.vue`** : page réécrite en tokens (en-tête, 4 onglets Classeurs/Activité/
+  Membres/Progression, modale partage) ; violet→`primary`, rôles→`accent`/`info`/`primary`/neutre,
+  permissions/scores→`success`/`warning`/`danger`, rangs→`accent`/`warning`. Corrigé
+  `/binders/:id`→`/bibliotheque/:id`. Logique (partage/rôles/exclusion/quitter) inchangée.
+* **`Classes/AssignmentDetail.vue`** : page réécrite en tokens (en-tête, 4 cartes stats, table de
+  progression + notation prof) ; statuts→`success`/`info`/neutre, scores→`success`/`warning`/`danger`,
+  accents→`primary`/`accent`. Back→`/classes?tab=teacher`. Notation inchangée.
+* **Restent (revue visuelle)** : `TeacherDashboard`, `AssignmentBuilder`, `NoteEdit` (zen), corps
+  éditeur `Diagrams`, onglets Reviews (Flashcards/IA) + runners ; puis audits dark/AA/responsive/Capacitor.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.

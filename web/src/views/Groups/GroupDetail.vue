@@ -131,11 +131,18 @@ function roleLabel(role: string) {
 
 function roleBadgeClass(role: string) {
   return {
-    owner: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    admin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    member: 'bg-slate-100 text-slate-655 dark:bg-slate-700 dark:text-slate-300',
-    follower: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400'
+    owner: 'bg-accent-soft text-accent',
+    admin: 'bg-info-soft text-info',
+    member: 'bg-surface-soft text-ink-muted',
+    follower: 'bg-primary-soft text-primary'
   }[role] ?? ''
+}
+
+function rankBadgeClass(idx: number) {
+  if (idx === 0) return 'bg-accent text-white'
+  if (idx === 1) return 'bg-ink-subtle text-white'
+  if (idx === 2) return 'bg-warning text-white'
+  return 'bg-surface-soft text-ink-muted'
 }
 
 // Classeurs disponibles (non encore partagés)
@@ -146,26 +153,26 @@ const availableBinders = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-[#0B0F19]">
+  <div class="min-h-screen bg-app">
     <!-- Loading -->
     <div v-if="groupsStore.loading && !group" class="flex items-center justify-center py-32">
-      <Loader2 class="w-8 h-8 text-violet-500 animate-spin" />
+      <Loader2 class="w-8 h-8 text-primary animate-spin" />
     </div>
 
     <!-- Error -->
     <div v-else-if="groupsStore.error && !group" class="flex flex-col items-center justify-center py-32 gap-4">
-      <AlertCircle class="w-12 h-12 text-red-400" />
-      <p class="text-slate-600 dark:text-slate-400">{{ groupsStore.error }}</p>
-      <button @click="router.push('/groups')" class="text-violet-600 hover:underline text-sm">← Retour aux groupes</button>
+      <AlertCircle class="w-12 h-12 text-danger" />
+      <p class="text-ink-muted">{{ groupsStore.error }}</p>
+      <button @click="router.push('/groups')" class="text-primary hover:underline text-sm">← Retour aux groupes</button>
     </div>
 
     <template v-else-if="group">
       <!-- Header -->
-      <div class="bg-white dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+      <div class="bg-surface border-b border-line">
         <div class="max-w-6xl mx-auto px-6 py-5">
           <button
             @click="router.push('/groups')"
-            class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-violet-600 dark:hover:text-violet-400 transition mb-4"
+            class="flex items-center gap-1.5 text-sm text-ink-muted hover:text-primary transition mb-4"
           >
             <ArrowLeft class="w-4 h-4" />
             Mes groupes
@@ -173,13 +180,13 @@ const availableBinders = computed(() => {
 
           <div class="flex items-start justify-between gap-4">
             <div class="flex items-center gap-4">
-              <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30 text-2xl font-bold flex-shrink-0">
+              <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary text-white shadow-elev-primary text-2xl font-bold flex-shrink-0">
                 {{ group.name.charAt(0).toUpperCase() }}
               </div>
               <div>
-                <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ group.name }}</h1>
-                <p v-if="group.description" class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ group.description }}</p>
-                <div class="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
+                <h1 class="text-2xl font-bold text-ink">{{ group.name }}</h1>
+                <p v-if="group.description" class="text-sm text-ink-muted mt-0.5">{{ group.description }}</p>
+                <div class="flex items-center gap-3 mt-1.5 text-xs text-ink-subtle">
                   <span class="flex items-center gap-1"><Users class="w-3 h-3" />{{ group.members.length }} membres</span>
                   <span class="flex items-center gap-1"><BookOpen class="w-3 h-3" />{{ group.binders.length }} classeurs</span>
                 </div>
@@ -187,17 +194,17 @@ const availableBinders = computed(() => {
             </div>
 
             <div class="flex items-center gap-2 flex-shrink-0">
-              <!-- Invite code badge -->
-              <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
-                <span class="text-xs font-mono text-slate-600 dark:text-slate-300 tracking-widest">{{ group.invite_code }}</span>
-                <button @click="copyCode" class="p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Copier le code">
-                  <Check v-if="codeCopied" class="w-3.5 h-3.5 text-green-500" />
-                  <Copy v-else class="w-3.5 h-3.5 text-slate-400" />
+              <!-- Code d'invitation -->
+              <div class="flex items-center gap-2 bg-surface-soft border border-line rounded-xl px-3 py-2">
+                <span class="text-xs font-mono text-ink-muted tracking-widest">{{ group.invite_code }}</span>
+                <button @click="copyCode" class="p-1 rounded-md hover:bg-surface transition" title="Copier le code">
+                  <Check v-if="codeCopied" class="w-3.5 h-3.5 text-success" />
+                  <Copy v-else class="w-3.5 h-3.5 text-ink-subtle" />
                 </button>
               </div>
               <button
                 @click="leaveGroup"
-                class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs font-medium transition"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-danger/30 text-danger hover:bg-danger-soft text-xs font-medium transition"
               >
                 <UserMinus class="w-3.5 h-3.5" />
                 Quitter
@@ -206,7 +213,7 @@ const availableBinders = computed(() => {
           </div>
 
           <!-- Tabs -->
-          <div class="flex gap-1 mt-5 border-b border-slate-200 dark:border-slate-700 -mb-px">
+          <div class="flex gap-1 mt-5 border-b border-line -mb-px">
             <button
               v-for="tab in [
                 { id: 'binders', label: 'Classeurs partagés', icon: BookOpen },
@@ -219,8 +226,8 @@ const availableBinders = computed(() => {
               :class="[
                 'flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition',
                 activeTab === tab.id
-                  ? 'border-violet-600 text-violet-600 dark:border-violet-400 dark:text-violet-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-ink-muted hover:text-ink'
               ]"
             >
               <component :is="tab.icon" class="w-4 h-4" />
@@ -235,11 +242,11 @@ const availableBinders = computed(() => {
         <!-- TAB: Classeurs partagés -->
         <div v-if="activeTab === 'binders'">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Classeurs partagés</h2>
+            <h2 class="text-lg font-semibold text-ink">Classeurs partagés</h2>
             <button
               v-if="canManageGroup"
               @click="showShareModal = true; shareError = ''"
-              class="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition shadow-sm"
+              class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-strong text-white text-sm font-medium transition shadow-elev-primary"
             >
               <Share2 class="w-4 h-4" />
               Partager un classeur
@@ -247,42 +254,42 @@ const availableBinders = computed(() => {
           </div>
 
           <div v-if="group.binders.length === 0" class="text-center py-16">
-            <BookOpen class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p class="text-slate-500 dark:text-slate-400 text-sm">Aucun classeur partagé pour l'instant.</p>
+            <BookOpen class="w-12 h-12 text-ink-subtle mx-auto mb-3" />
+            <p class="text-ink-muted text-sm">Aucun classeur partagé pour l'instant.</p>
           </div>
 
           <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div
               v-for="b in group.binders"
               :key="b.binder_id"
-              class="flex items-center justify-between gap-3 bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-xl p-4 cursor-pointer hover:border-violet-500/30 transition-all duration-200"
-              @click="router.push(`/binders/${b.binder_id}`)"
+              class="flex items-center justify-between gap-3 bg-surface border border-line rounded-xl p-4 cursor-pointer hover:border-primary/30 transition-all duration-200"
+              @click="router.push(`/bibliotheque/${b.binder_id}`)"
             >
               <div class="flex items-center gap-3 min-w-0">
-                <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-violet-50 dark:bg-violet-900/20 flex-shrink-0">
-                  <BookMarked class="w-4 h-4 text-violet-500" />
+                <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-primary-soft flex-shrink-0">
+                  <BookMarked class="w-4 h-4 text-primary" />
                 </div>
                 <div class="min-w-0">
-                  <p class="font-bold text-slate-900 dark:text-white text-sm truncate hover:text-violet-600 transition-colors">{{ b.binder_name }}</p>
+                  <p class="font-bold text-ink text-sm truncate hover:text-primary transition-colors">{{ b.binder_name }}</p>
                   <div class="flex items-center gap-2 mt-0.5">
                     <span :class="[
                       'flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md',
                       b.permission === 'write'
-                        ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-                        : 'bg-slate-50 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                        ? 'bg-success-soft text-success'
+                        : 'bg-surface-soft text-ink-muted'
                     ]">
                       <Eye v-if="b.permission === 'read'" class="w-3 h-3" />
                       <Lock v-else class="w-3 h-3" />
                       {{ b.permission === 'read' ? 'Lecture' : 'Écriture' }}
                     </span>
-                    <span class="text-xs text-slate-400">{{ formatDate(b.added_at) }}</span>
+                    <span class="text-xs text-ink-subtle">{{ formatDate(b.added_at) }}</span>
                   </div>
                 </div>
               </div>
               <button
                 v-if="canManageGroup"
                 @click.stop="removeBinder(b.binder_id)"
-                class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                class="p-1.5 rounded-lg text-ink-subtle hover:text-danger hover:bg-danger-soft transition"
                 title="Retirer du groupe"
               >
                 <Trash2 class="w-4 h-4" />
@@ -293,64 +300,64 @@ const availableBinders = computed(() => {
 
         <!-- TAB: Activité -->
         <div v-else-if="activeTab === 'activity'">
-          <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Fil d'activité</h2>
+          <h2 class="text-lg font-semibold text-ink mb-4">Fil d'activité</h2>
           <div v-if="groupsStore.activities.length === 0" class="text-center py-16">
-            <Activity class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p class="text-slate-500 dark:text-slate-400 text-sm">Pas encore d'activité dans ce groupe.</p>
+            <Activity class="w-12 h-12 text-ink-subtle mx-auto mb-3" />
+            <p class="text-ink-muted text-sm">Pas encore d'activité dans ce groupe.</p>
           </div>
           <div v-else class="space-y-2">
             <div
               v-for="act in groupsStore.activities"
               :key="act.id"
-              class="flex items-center gap-4 bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-xl px-4 py-3"
+              class="flex items-center gap-4 bg-surface border border-line rounded-xl px-4 py-3"
             >
               <span class="text-2xl flex-shrink-0">{{ activityIcon(act.type) }}</span>
               <div class="flex-1 min-w-0">
-                <p class="text-sm text-slate-700 dark:text-slate-300 truncate">{{ activityLabel(act) }}</p>
+                <p class="text-sm text-ink-muted truncate">{{ activityLabel(act) }}</p>
               </div>
-              <span class="text-xs text-slate-400 flex-shrink-0">{{ formatDate(act.created_at) }}</span>
+              <span class="text-xs text-ink-subtle flex-shrink-0">{{ formatDate(act.created_at) }}</span>
             </div>
           </div>
         </div>
 
         <!-- TAB: Membres -->
         <div v-else-if="activeTab === 'members'">
-          <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Membres ({{ group.members.length }})</h2>
+          <h2 class="text-lg font-semibold text-ink mb-4">Membres ({{ group.members.length }})</h2>
           <div class="space-y-2">
             <div
               v-for="m in group.members"
               :key="m.user_id"
-              class="flex items-center justify-between gap-3 bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-xl px-4 py-3"
+              class="flex items-center justify-between gap-3 bg-surface border border-line rounded-xl px-4 py-3"
             >
               <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 font-bold text-sm flex-shrink-0">
+                <div class="flex items-center justify-center w-9 h-9 rounded-full bg-primary-soft text-primary font-bold text-sm flex-shrink-0">
                   {{ m.username.substring(0, 2).toUpperCase() }}
                 </div>
                 <div>
-                  <p class="font-medium text-slate-900 dark:text-white text-sm">
+                  <p class="font-medium text-ink text-sm">
                     {{ m.username }}
-                    <span v-if="m.user_id === currentUserId" class="text-xs text-slate-400 ml-1">(vous)</span>
+                    <span v-if="m.user_id === currentUserId" class="text-xs text-ink-subtle ml-1">(vous)</span>
                   </p>
-                  <p class="text-xs text-slate-400">Rejoint le {{ formatDate(m.joined_at) }}</p>
+                  <p class="text-xs text-ink-subtle">Rejoint le {{ formatDate(m.joined_at) }}</p>
                 </div>
               </div>
               <div class="flex items-center gap-2">
                 <span :class="['px-2 py-0.5 rounded-md text-xs font-medium', roleBadgeClass(m.role)]">
                   {{ roleLabel(m.role) }}
                 </span>
-                <!-- Admin actions (visible owner only) -->
+                <!-- Actions admin (propriétaire uniquement) -->
                 <template v-if="isOwner && m.user_id !== currentUserId && m.role !== 'owner'">
                   <select
                     :value="m.role"
                     @change="updateRole(m.user_id, ($event.target as HTMLSelectElement).value as 'admin' | 'member')"
-                    class="text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-200 cursor-pointer"
+                    class="text-xs bg-surface-soft border border-line rounded-lg px-2 py-1 text-ink cursor-pointer"
                   >
                     <option value="admin">Admin</option>
                     <option value="member">Membre</option>
                   </select>
                   <button
                     @click="excludeMember(m.user_id, m.username)"
-                    class="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                    class="p-1.5 rounded-lg text-ink-subtle hover:text-danger hover:bg-danger-soft transition"
                     title="Exclure"
                   >
                     <UserMinus class="w-4 h-4" />
@@ -363,55 +370,52 @@ const availableBinders = computed(() => {
 
         <!-- TAB: Progression -->
         <div v-else-if="activeTab === 'progress'">
-          <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">Progression (7 derniers jours)</h2>
-          <p class="text-sm text-slate-400 dark:text-slate-500 mb-4">Données agrégées uniquement – le contenu des révisions reste privé.</p>
+          <h2 class="text-lg font-semibold text-ink mb-1">Progression (7 derniers jours)</h2>
+          <p class="text-sm text-ink-subtle mb-4">Données agrégées uniquement – le contenu des révisions reste privé.</p>
 
           <div v-if="groupsStore.membersProgress.length === 0" class="text-center py-16">
-            <BarChart3 class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p class="text-slate-500 dark:text-slate-400 text-sm">Aucune donnée de progression disponible.</p>
+            <BarChart3 class="w-12 h-12 text-ink-subtle mx-auto mb-3" />
+            <p class="text-ink-muted text-sm">Aucune donnée de progression disponible.</p>
           </div>
 
           <div v-else class="space-y-3">
             <div
               v-for="(prog, idx) in groupsStore.membersProgress"
               :key="prog.user_id"
-              class="bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 rounded-xl p-4"
+              class="bg-surface border border-line rounded-xl p-4"
             >
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-3">
-                  <span :class="[
-                    'flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold text-white',
-                    idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-slate-400' : idx === 2 ? 'bg-orange-400' : 'bg-slate-200 text-slate-600'
-                  ]">{{ idx + 1 }}</span>
-                  <span class="font-medium text-slate-900 dark:text-white text-sm">
+                  <span :class="['flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold', rankBadgeClass(idx)]">{{ idx + 1 }}</span>
+                  <span class="font-medium text-ink text-sm">
                     {{ prog.username }}
-                    <span v-if="prog.user_id === currentUserId" class="text-xs text-slate-400 ml-1">(vous)</span>
+                    <span v-if="prog.user_id === currentUserId" class="text-xs text-ink-subtle ml-1">(vous)</span>
                   </span>
                 </div>
-                <span class="flex items-center gap-1 text-xs text-violet-600 dark:text-violet-400 font-medium">
+                <span class="flex items-center gap-1 text-xs text-primary font-medium">
                   <Clock class="w-3.5 h-3.5" />
                   {{ formatTime(prog.total_time_seconds) }}
                 </span>
               </div>
 
-              <div class="flex items-center gap-6 text-xs text-slate-500 dark:text-slate-400">
+              <div class="flex items-center gap-6 text-xs text-ink-muted">
                 <span class="flex items-center gap-1.5">
-                  <TrendingUp class="w-3.5 h-3.5 text-blue-400" />
+                  <TrendingUp class="w-3.5 h-3.5 text-info" />
                   {{ prog.cards_reviewed }} cartes révisées
                 </span>
                 <span class="flex items-center gap-1.5">
-                  <CheckCircle2 class="w-3.5 h-3.5 text-green-500" />
+                  <CheckCircle2 class="w-3.5 h-3.5 text-success" />
                   {{ prog.cards_correct }} correctes
                 </span>
-                <span v-if="prog.cards_reviewed > 0" class="flex items-center gap-1.5 font-medium" :class="(prog.cards_correct / prog.cards_reviewed) >= 0.8 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">
+                <span v-if="prog.cards_reviewed > 0" class="flex items-center gap-1.5 font-medium" :class="(prog.cards_correct / prog.cards_reviewed) >= 0.8 ? 'text-success' : 'text-warning'">
                   {{ Math.round((prog.cards_correct / prog.cards_reviewed) * 100) }}% réussite
                 </span>
               </div>
 
-              <!-- Progress bar -->
-              <div v-if="prog.cards_reviewed > 0" class="mt-3 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+              <!-- Barre de progression -->
+              <div v-if="prog.cards_reviewed > 0" class="mt-3 h-1.5 rounded-full bg-surface-soft overflow-hidden">
                 <div
-                  class="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all"
+                  class="h-full rounded-full bg-primary transition-all"
                   :style="{ width: Math.round((prog.cards_correct / prog.cards_reviewed) * 100) + '%' }"
                 />
               </div>
@@ -421,36 +425,36 @@ const availableBinders = computed(() => {
       </div>
     </template>
 
-    <!-- Share Binder Modal -->
+    <!-- Modale : partager un classeur -->
     <Teleport to="body">
       <div
         v-if="showShareModal"
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
         @click.self="showShareModal = false"
       >
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
-          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Share2 class="w-5 h-5 text-violet-500" />
+        <div class="bg-surface rounded-2xl shadow-elev-3 w-full max-w-md border border-line">
+          <div class="p-6 border-b border-line">
+            <h2 class="text-xl font-bold text-ink flex items-center gap-2">
+              <Share2 class="w-5 h-5 text-primary" />
               Partager un classeur
             </h2>
           </div>
           <div class="p-6 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Classeur</label>
+              <label class="block text-sm font-medium text-ink-muted mb-1.5">Classeur</label>
               <select
                 v-model="shareBinderId"
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition"
+                class="w-full px-4 py-2.5 rounded-xl border border-line bg-surface-soft text-ink focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
               >
                 <option :value="null" disabled>Choisir un classeur…</option>
                 <option v-for="b in availableBinders" :key="b.id" :value="b.id">{{ b.name }}</option>
               </select>
-              <p v-if="availableBinders.length === 0" class="mt-2 text-xs text-slate-400">
+              <p v-if="availableBinders.length === 0" class="mt-2 text-xs text-ink-subtle">
                 Tous vos classeurs sont déjà partagés dans ce groupe.
               </p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Permission</label>
+              <label class="block text-sm font-medium text-ink-muted mb-1.5">Permission</label>
               <div class="grid grid-cols-2 gap-2">
                 <button
                   v-for="perm in [{ val: 'read', label: 'Lecture seule', icon: Eye }, { val: 'write', label: 'Lecture + Écriture', icon: Lock }]"
@@ -459,8 +463,8 @@ const availableBinders = computed(() => {
                   :class="[
                     'flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-sm font-medium transition',
                     sharePermission === perm.val
-                      ? 'border-violet-600 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-500'
-                      : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-300'
+                      ? 'border-primary bg-primary-soft text-primary'
+                      : 'border-line text-ink-muted hover:border-primary/40'
                   ]"
                 >
                   <component :is="perm.icon" class="w-4 h-4" />
@@ -468,19 +472,19 @@ const availableBinders = computed(() => {
                 </button>
               </div>
             </div>
-            <div v-if="shareError" class="flex items-center gap-2 text-red-500 text-sm">
+            <div v-if="shareError" class="flex items-center gap-2 text-danger text-sm">
               <AlertCircle class="w-4 h-4 flex-shrink-0" />
               {{ shareError }}
             </div>
           </div>
           <div class="p-6 pt-0 flex gap-3">
-            <button @click="showShareModal = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition text-sm font-medium">
+            <button @click="showShareModal = false" class="flex-1 px-4 py-2.5 rounded-xl border border-line text-ink-muted hover:bg-surface-soft transition text-sm font-medium">
               Annuler
             </button>
             <button
               @click="shareBinder"
               :disabled="!shareBinderId || sharing"
-              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-medium text-sm transition"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-strong disabled:opacity-50 text-white font-medium text-sm transition"
             >
               <Loader2 v-if="sharing" class="w-4 h-4 animate-spin" />
               <Share2 v-else class="w-4 h-4" />
