@@ -5,21 +5,21 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 class="text-xl font-bold">Mes Decks de Flashcards</h1>
-          <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Créez et révisez vos cartes mémoire avec l'algorithme de répétition espacée SM-2</p>
+          <p class="text-xs text-ink-subtle dark:text-ink-muted mt-1">Créez et révisez vos cartes mémoire avec l'algorithme de répétition espacée SM-2</p>
         </div>
         
         <div class="flex items-center gap-3">
           <button 
             @click="showAnkiModal = true"
-            class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+            class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold text-ink-muted dark:text-ink-subtle hover:bg-surface-soft dark:hover:bg-surface-soft active:scale-95 transition-all cursor-pointer"
           >
-            <Upload class="w-4 h-4 text-indigo-500" />
+            <Upload class="w-4 h-4 text-primary" />
             Importer Anki
           </button>
 
           <button 
             @click="openCreateDeckModal"
-            class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-600/15 cursor-pointer"
+            class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-primary hover:bg-primary-strong active:scale-95 transition-all shadow-lg shadow-elev-primary cursor-pointer"
           >
             <Plus class="w-4 h-4" />
             Nouveau Deck
@@ -27,12 +27,12 @@
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filtrer</span>
+      <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface p-3 dark:border-line dark:bg-surface-soft">
+        <span class="text-xs font-bold uppercase tracking-wider text-ink-subtle">Filtrer</span>
         <button
           type="button"
           class="rounded-xl px-3 py-1.5 text-xs font-bold"
-          :class="selectedTagId === null ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+          :class="selectedTagId === null ? 'bg-primary text-white' : 'bg-surface-soft text-ink-muted dark:bg-surface-soft dark:text-ink-subtle'"
           @click="filterByTag(null)"
         >
           Tous
@@ -43,7 +43,7 @@
           type="button"
           class="rounded-xl px-3 py-1.5 text-xs font-bold"
           :style="selectedTagId === tag.id ? { backgroundColor: tag.color || '#4F46E5', color: '#fff' } : undefined"
-          :class="selectedTagId === tag.id ? '' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+          :class="selectedTagId === tag.id ? '' : 'bg-surface-soft text-ink-muted dark:bg-surface-soft dark:text-ink-subtle'"
           @click="filterByTag(tag.id)"
         >
           {{ tag.name }}
@@ -55,15 +55,15 @@
         <div 
           v-for="deck in decksStore.decks" 
           :key="deck.id"
-          class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200 group"
+          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200 group"
         >
           <div>
             <div class="flex items-start justify-between gap-3">
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 uppercase tracking-wider">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary uppercase tracking-wider">
                   {{ deck.card_count }} cartes
                 </span>
-                <span v-if="deck.reversed" class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 uppercase tracking-wider" title="Mode inversé activé">
+                <span v-if="deck.reversed" class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-bold text-warning bg-warning-soft dark:bg-warning-soft dark:text-warning uppercase tracking-wider" title="Mode inversé activé">
                   ⇄ Inversé
                 </span>
               </div>
@@ -71,14 +71,14 @@
               <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
                   @click.stop="openEditDeckModal(deck)" 
-                  class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                  class="p-1 text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle rounded-lg hover:bg-surface-soft dark:hover:bg-surface-soft"
                   title="Modifier"
                 >
                   <Edit class="w-4 h-4" />
                 </button>
                 <button 
                   @click.stop="deleteDeck(deck)" 
-                  class="p-1 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                  class="p-1 text-ink-subtle hover:text-danger rounded-lg hover:bg-danger-soft dark:hover:bg-danger-soft"
                   title="Supprimer"
                 >
                   <Trash2 class="w-4 h-4" />
@@ -86,25 +86,25 @@
               </div>
             </div>
 
-            <h3 class="font-bold text-lg text-slate-800 dark:text-white mt-4">{{ deck.name }}</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">{{ deck.description || 'Aucune description' }}</p>
+            <h3 class="font-bold text-lg text-ink dark:text-white mt-4">{{ deck.name }}</h3>
+            <p class="text-xs text-ink-muted dark:text-ink-subtle mt-2 line-clamp-2">{{ deck.description || 'Aucune description' }}</p>
             <div v-if="deck.tags?.length" class="mt-3 flex flex-wrap gap-1.5">
               <TagBadge v-for="tag in deck.tags" :key="tag.id" :tag="tag" />
             </div>
           </div>
 
-          <div class="flex items-center gap-3 mt-6 pt-4 border-t border-slate-50 dark:border-slate-800/50">
+          <div class="flex items-center gap-3 mt-6 pt-4 border-t border-line-soft dark:border-line">
             <!-- Study button -->
             <button 
               @click="router.push(`/decks/${deck.id}/study`)"
-              class="flex-1 px-4 py-2 border border-transparent rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all text-center"
+              class="flex-1 px-4 py-2 border border-transparent rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-strong active:scale-95 transition-all text-center"
             >
               Étudier
             </button>
             <!-- View cards button -->
             <button 
               @click="selectDeck(deck)"
-              class="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800 active:scale-95 transition-all"
+              class="flex-1 px-4 py-2 border border-line dark:border-line rounded-xl text-xs font-bold text-ink-muted hover:bg-surface-soft dark:text-ink-subtle dark:hover:bg-surface-soft active:scale-95 transition-all"
             >
               Gérer cartes
             </button>
@@ -113,14 +113,14 @@
 
         <div 
           v-if="decksStore.decks.length === 0" 
-          class="col-span-full border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-12 flex flex-col items-center justify-center text-center text-slate-400"
+          class="col-span-full border-2 border-dashed border-line dark:border-line rounded-3xl p-12 flex flex-col items-center justify-center text-center text-ink-subtle"
         >
-          <Layers class="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
-          <h4 class="font-bold text-slate-800 dark:text-slate-200">Aucun deck disponible</h4>
+          <Layers class="w-12 h-12 text-ink-subtle dark:text-ink mb-3" />
+          <h4 class="font-bold text-ink dark:text-ink-subtle">Aucun deck disponible</h4>
           <p class="text-xs mt-1">Commencez par créer votre premier deck pour étudier !</p>
           <button 
             @click="openCreateDeckModal"
-            class="mt-4 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all"
+            class="mt-4 px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all"
           >
             Créer un Deck
           </button>
@@ -133,31 +133,31 @@
       <div class="flex items-center gap-2 text-sm font-semibold">
         <button 
           @click="selectedDeck = null" 
-          class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+          class="text-ink-muted hover:text-primary dark:text-ink-subtle dark:hover:text-primary"
         >
           Decks
         </button>
-        <ChevronRight class="w-4 h-4 text-slate-400" />
-        <span class="text-slate-800 dark:text-white font-bold">{{ selectedDeck.name }}</span>
+        <ChevronRight class="w-4 h-4 text-ink-subtle" />
+        <span class="text-ink dark:text-white font-bold">{{ selectedDeck.name }}</span>
       </div>
 
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm">
         <div>
           <h2 class="text-lg font-bold">{{ selectedDeck.name }}</h2>
-          <p class="text-xs text-slate-500 mt-1">{{ selectedDeck.description }}</p>
-          <p class="text-xs font-semibold text-indigo-500 uppercase tracking-wider mt-2">{{ currentCards.length }} cartes au total</p>
+          <p class="text-xs text-ink-muted mt-1">{{ selectedDeck.description }}</p>
+          <p class="text-xs font-semibold text-primary uppercase tracking-wider mt-2">{{ currentCards.length }} cartes au total</p>
         </div>
         
         <div class="flex items-center gap-3">
           <button 
             @click="router.push(`/decks/${selectedDeck.id}/study`)"
-            class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10"
+            class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-primary hover:bg-primary-strong transition-all shadow-md shadow-elev-primary"
           >
             Lancer l'étude
           </button>
           <button 
             @click="openCreateCardModal"
-            class="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-600 dark:text-slate-300"
+            class="px-4 py-2 text-sm font-semibold rounded-xl border border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
           >
             Ajouter une carte
           </button>
@@ -166,49 +166,49 @@
 
       <!-- Cards List -->
       <div class="space-y-4">
-        <h3 class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Cartes du Deck</h3>
+        <h3 class="text-xs font-semibold text-ink-subtle dark:text-ink-muted uppercase tracking-wider">Cartes du Deck</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div 
             v-for="card in currentCards" 
             :key="card.id"
-            class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-200 dark:hover:border-slate-700/60 transition-colors group flex flex-col justify-between"
+            class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-5 shadow-sm hover:border-line dark:hover:border-line transition-colors group flex flex-col justify-between"
           >
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recto (Front)</span>
-                <p class="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">{{ card.front }}</p>
+                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Recto (Front)</span>
+                <p class="text-sm font-bold text-ink dark:text-ink-subtle mt-1">{{ card.front }}</p>
               </div>
-              <div class="border-t sm:border-t-0 sm:border-l border-slate-50 dark:border-slate-800/50 pt-3 sm:pt-0 sm:pl-4">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Verso (Back)</span>
-                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">{{ card.back }}</p>
+              <div class="border-t sm:border-t-0 sm:border-l border-line-soft dark:border-line pt-3 sm:pt-0 sm:pl-4">
+                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Verso (Back)</span>
+                <p class="text-sm text-ink-muted dark:text-ink-subtle mt-1">{{ card.back }}</p>
               </div>
             </div>
 
-            <div class="flex items-center justify-between gap-4 mt-6 pt-3 border-t border-slate-50 dark:border-slate-800/40">
+            <div class="flex items-center justify-between gap-4 mt-6 pt-3 border-t border-line-soft dark:border-line">
               <!-- SM-2 Stats badge -->
-              <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+              <span class="text-[10px] text-ink-subtle font-semibold uppercase tracking-wider">
                 Intervalle : {{ card.interval }}j | EF : {{ card.ease_factor.toFixed(2) }}
                 <template v-if="(card.tuning ?? 1) !== 1"> | ×{{ card.tuning }}</template>
               </span>
               <div class="flex items-center gap-1">
                 <button
                   @click="toggleHistory(card)"
-                  class="p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
-                  :class="historyCardId === card.id ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'"
+                  class="p-1 rounded-lg hover:bg-surface-soft dark:hover:bg-surface-soft"
+                  :class="historyCardId === card.id ? 'text-primary' : 'text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle'"
                   title="Courbe d'apprentissage"
                 >
                   <Activity class="w-3.5 h-3.5" />
                 </button>
                 <button
                   @click="openEditCardModal(card)"
-                  class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                  class="p-1 text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle rounded-lg hover:bg-surface-soft dark:hover:bg-surface-soft opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Modifier"
                 >
                   <Edit class="w-3.5 h-3.5" />
                 </button>
                 <button
                   @click="deleteCard(card.id)"
-                  class="p-1 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 opacity-0 group-hover:opacity-100 transition-opacity"
+                  class="p-1 text-ink-subtle hover:text-danger rounded-lg hover:bg-danger-soft dark:hover:bg-danger-soft opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Supprimer"
                 >
                   <Trash2 class="w-3.5 h-3.5" />
@@ -217,8 +217,8 @@
             </div>
 
             <!-- Courbe d'apprentissage (dépliée à la demande) -->
-            <div v-if="historyCardId === card.id" class="mt-3 pt-3 border-t border-slate-50 dark:border-slate-800/40 text-indigo-500">
-              <div v-if="historyLoading" class="flex items-center gap-2 text-xs text-slate-400 py-3 justify-center">
+            <div v-if="historyCardId === card.id" class="mt-3 pt-3 border-t border-line-soft dark:border-line text-primary">
+              <div v-if="historyLoading" class="flex items-center gap-2 text-xs text-ink-subtle py-3 justify-center">
                 <RefreshCw class="w-3.5 h-3.5 animate-spin" /> Chargement…
               </div>
               <LearningCurve v-else :entries="historyEntries" />
@@ -227,13 +227,13 @@
 
           <div 
             v-if="currentCards.length === 0" 
-            class="col-span-full border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-12 flex flex-col items-center justify-center text-center text-slate-400"
+            class="col-span-full border-2 border-dashed border-line dark:border-line rounded-2xl p-12 flex flex-col items-center justify-center text-center text-ink-subtle"
           >
-            <Layers class="w-10 h-10 text-slate-300 dark:text-slate-700 mb-2" />
+            <Layers class="w-10 h-10 text-ink-subtle dark:text-ink mb-2" />
             <p class="text-xs font-semibold uppercase tracking-wider">Aucune carte dans ce deck</p>
             <button 
               @click="openCreateCardModal"
-              class="mt-3 px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all"
+              class="mt-3 px-3.5 py-1.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all"
             >
               Ajouter une Carte
             </button>
@@ -245,40 +245,40 @@
     <!-- Create/Edit Deck Modal -->
     <div v-if="showDeckModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showDeckModal = false"></div>
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
+      <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
         <h3 class="text-lg font-bold mb-4">{{ isEditingDeck ? 'Modifier le deck' : 'Créer un nouveau deck' }}</h3>
         <form @submit.prevent="submitDeckForm">
           <div class="space-y-4">
             <div>
-              <label for="deck-name" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Nom du deck</label>
-              <input id="deck-name" type="text" required v-model="deckForm.name" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium" placeholder="Ex: Vocabulaire Espagnol" />
+              <label for="deck-name" class="block text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-2">Nom du deck</label>
+              <input id="deck-name" type="text" required v-model="deckForm.name" class="block w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium" placeholder="Ex: Vocabulaire Espagnol" />
             </div>
             <div>
-              <label for="deck-desc" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Description</label>
-              <textarea id="deck-desc" v-model="deckForm.description" rows="3" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium" placeholder="Ex: Verbes irréguliers et vocabulaire utile pour voyager."></textarea>
+              <label for="deck-desc" class="block text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-2">Description</label>
+              <textarea id="deck-desc" v-model="deckForm.description" rows="3" class="block w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium" placeholder="Ex: Verbes irréguliers et vocabulaire utile pour voyager."></textarea>
             </div>
-            <div class="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-3">
-              <input id="deck-reversed" type="checkbox" v-model="deckForm.reversed" class="mt-0.5 accent-indigo-600 shrink-0" />
+            <div class="flex items-start gap-3 rounded-xl border border-line dark:border-line p-3">
+              <input id="deck-reversed" type="checkbox" v-model="deckForm.reversed" class="mt-0.5 accent-primary shrink-0" />
               <label for="deck-reversed" class="cursor-pointer">
-                <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Mode inversé</span>
-                <span class="block text-xs text-slate-400">Réviser aussi chaque carte dans le sens verso → recto (suivi SM-2 distinct).</span>
+                <span class="block text-sm font-semibold text-ink dark:text-ink-subtle">Mode inversé</span>
+                <span class="block text-xs text-ink-subtle">Réviser aussi chaque carte dans le sens verso → recto (suivi SM-2 distinct).</span>
               </label>
             </div>
             <div>
-              <label for="deck-tuning" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              <label for="deck-tuning" class="block text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-2">
                 Fine-tuning par défaut — {{ tuningLabel(deckForm.tuning_default) }}
               </label>
-              <input id="deck-tuning" type="range" min="0.5" max="2" step="0.1" v-model.number="deckForm.tuning_default" class="w-full accent-indigo-600" />
-              <div class="flex justify-between text-[10px] text-slate-400 mt-1"><span>plus fréquent</span><span>plus espacé</span></div>
+              <input id="deck-tuning" type="range" min="0.5" max="2" step="0.1" v-model.number="deckForm.tuning_default" class="w-full accent-primary" />
+              <div class="flex justify-between text-[10px] text-ink-subtle mt-1"><span>plus fréquent</span><span>plus espacé</span></div>
             </div>
             <div v-if="isEditingDeck">
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tags</label>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-2">Tags</label>
               <TagSelector v-model="deckForm.tags" @change="saveDeckTags" />
             </div>
           </div>
           <div class="flex items-center justify-end gap-3 mt-6">
-            <button type="button" @click="showDeckModal = false" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800">Annuler</button>
-            <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700">Enregistrer</button>
+            <button type="button" @click="showDeckModal = false" class="px-4 py-2 text-sm font-semibold rounded-xl text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft">Annuler</button>
+            <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-primary hover:bg-primary-strong">Enregistrer</button>
           </div>
         </form>
       </div>
@@ -287,29 +287,29 @@
     <!-- Create/Edit Card Modal -->
     <div v-if="showCardModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="showCardModal = false"></div>
-      <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
+      <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl w-full max-w-md p-6 relative z-10 shadow-2xl animate-scale-up">
         <h3 class="text-lg font-bold mb-4">{{ isEditingCard ? 'Modifier la carte' : 'Ajouter une carte' }}</h3>
         <form @submit.prevent="submitCardForm">
           <div class="space-y-4">
             <div>
-              <label for="card-front" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Recto (Question / Terme)</label>
-              <input id="card-front" type="text" required v-model="cardForm.front" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium" placeholder="Ex: El coche" />
+              <label for="card-front" class="block text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-2">Recto (Question / Terme)</label>
+              <input id="card-front" type="text" required v-model="cardForm.front" class="block w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium" placeholder="Ex: El coche" />
             </div>
             <div>
-              <label for="card-back" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Verso (Réponse / Définition)</label>
-              <textarea id="card-back" required v-model="cardForm.back" rows="3" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium" placeholder="Ex: La voiture"></textarea>
+              <label for="card-back" class="block text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-2">Verso (Réponse / Définition)</label>
+              <textarea id="card-back" required v-model="cardForm.back" rows="3" class="block w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium" placeholder="Ex: La voiture"></textarea>
             </div>
             <div v-if="isEditingCard">
-              <label for="card-tuning" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              <label for="card-tuning" class="block text-xs font-semibold uppercase tracking-wider text-ink-subtle mb-2">
                 Fine-tuning — {{ tuningLabel(cardForm.tuning) }}
               </label>
-              <input id="card-tuning" type="range" min="0.5" max="2" step="0.1" v-model.number="cardForm.tuning" class="w-full accent-indigo-600" />
-              <div class="flex justify-between text-[10px] text-slate-400 mt-1"><span>réviser plus souvent</span><span>réviser moins souvent</span></div>
+              <input id="card-tuning" type="range" min="0.5" max="2" step="0.1" v-model.number="cardForm.tuning" class="w-full accent-primary" />
+              <div class="flex justify-between text-[10px] text-ink-subtle mt-1"><span>réviser plus souvent</span><span>réviser moins souvent</span></div>
             </div>
           </div>
           <div class="flex items-center justify-end gap-3 mt-6">
-            <button type="button" @click="showCardModal = false" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800">Annuler</button>
-            <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700">Enregistrer</button>
+            <button type="button" @click="showCardModal = false" class="px-4 py-2 text-sm font-semibold rounded-xl text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft">Annuler</button>
+            <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-primary hover:bg-primary-strong">Enregistrer</button>
           </div>
         </form>
       </div>

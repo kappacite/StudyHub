@@ -871,3 +871,16 @@ Reprise de la boucle sur les morceaux reportés (risque visuel assumé, validati
   transverses NON automatisables** (revue humaine) : dark mode, contraste AA des pastels, responsive
   375 px, smoke test Capacitor.
 * Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
+
+---
+
+## [2026-06-21] Refacto UI — Lot S8 (extension) : Decks + StudyDeck (reliquats S3)
+
+* Reliquats de couleurs brutes repérés en cartographiant Reviews : **`Decks/Decks.vue`** (~186) et
+  **`Decks/StudyDeck.vue`** (~93) n'avaient été migrés que partiellement en S3. Templates migrés en
+  tokens : marque **indigo→`primary`** ; emerald→`success`, slate→`ink`/`surface`/`line` ;
+  utilitaires `accent-indigo-*` (checkbox/range)→`accent-primary`.
+* **Préservé** : boutons de notation **SM-2** de `StudyDeck` (`ratingButtons`, `<script>` l. 161 —
+  échelle 0-5 rouge→vert pilotée par données, `:class="score.class"`), comme l'échelle SM-2 de
+  `NoteEdit`. Scrims + `placeholder-*` conservés.
+* Vérif : `npm run build` OK (vue-tsc strict), Vitest **66** ✅. Aucun changement backend.
