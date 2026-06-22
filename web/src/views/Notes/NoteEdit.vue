@@ -1484,7 +1484,12 @@ function compileStructuredNote() {
 
 // Rendering marked + LaTeX + Definition tooltips
 function renderSm2Buttons(cardId: number | null, rawTag: string): string {
-  if (!cardId) return `<span class="text-[10px] text-slate-450 italic font-semibold align-middle">En attente de sauvegarde...</span>`;
+  if (!cardId) {
+    // En révision active, on n'affiche pas le rappel « En attente de sauvegarde… »
+    // (bruit visuel pendant la révision) : seul le mode Lecture/édition l'indique.
+    if (notesStore.isReviewModeActive) return '';
+    return `<span class="text-[10px] text-slate-450 italic font-semibold align-middle">En attente de sauvegarde...</span>`;
+  }
   const state = placeholderStates.value[rawTag];
   if (!state || state.score === undefined) return '';
   
