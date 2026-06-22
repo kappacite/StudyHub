@@ -339,26 +339,27 @@
               <div class="px-4 py-1.5 border-b border-line-soft dark:border-line flex items-center justify-between text-[9px] text-ink-muted font-bold uppercase tracking-wider select-none">
                 <span>Plan interactif</span>
                 <span v-if="drawingMode === 'mask'" class="text-danger font-extrabold animate-pulse">Mode Masque actif : Cliquez-glissez pour dessiner un masque</span>
-                <span v-else>Clic : sélectionner / déplacer · Double-clic : renommer · Clic sur un lien : sélectionner · Suppr : effacer</span>
+                <span v-else>Glisser le fond / molette : se déplacer · Ctrl+molette : zoomer · Double-clic : renommer · Suppr : effacer</span>
               </div>
 
-              <!-- Zone SVG interactive -->
-              <div 
+              <!-- Zone SVG interactive (pan + zoom) -->
+              <div
+                ref="canvasRef"
                 class="relative w-full h-[450px] bg-surface-soft dark:bg-surface-soft overflow-hidden select-none"
-                :class="[drawingMode === 'mask' ? 'cursor-cell' : 'cursor-crosshair']"
+                :class="[drawingMode === 'mask' ? 'cursor-cell' : (isPanning && panMoved ? 'cursor-grabbing' : 'cursor-grab')]"
+                :style="gridStyle"
                 @mousedown="onCanvasMouseDown"
                 @mousemove="onCanvasMouseMove"
                 @mouseup="onCanvasMouseUp"
                 @mouseleave="onCanvasMouseUp"
+                @wheel.prevent="onWheel"
               >
-                <!-- SVG global pour grille, image de fond, connexions et masques -->
-                <svg class="absolute inset-0 w-full h-full" style="cursor: inherit;">
+                <!-- Conteneur « monde » : translate(pan) + scale(zoom) -->
+                <div class="absolute inset-0 origin-top-left" :style="worldStyle">
+                <!-- SVG : image de fond, connexions et masques (coordonnées monde) -->
+                <svg class="absolute inset-0 w-full h-full overflow-visible" style="cursor: inherit;">
                   <defs>
-                    <pattern id="canvas-grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                      <rect width="20" height="20" fill="none" />
-                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5" class="text-ink-subtle dark:text-ink" />
-                    </pattern>
-                    <marker 
+                    <marker
                       id="arrow" 
                       viewBox="0 0 10 10" 
                       refX="22" 
@@ -370,10 +371,7 @@
                       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#6366f1" />
                     </marker>
                   </defs>
-                  
-                  <!-- Grille -->
-                  <rect width="100%" height="100%" fill="url(#canvas-grid)" class="pointer-events-none" />
-                  
+
                   <!-- Image de fond -->
                   <image 
                     v-if="backgroundImage" 
@@ -525,6 +523,14 @@
                     <span v-else class="relative z-10 text-[8px] font-extrabold text-white px-2 leading-tight">{{ node.label }}</span>
                   </div>
                 </div>
+                </div>
+
+                <!-- Barre de zoom flottante -->
+                <div class="absolute top-2 right-2 flex items-center gap-1 rounded-xl border border-line bg-surface/90 dark:bg-surface-soft/90 backdrop-blur px-1 py-1 shadow-sm">
+                  <button @click="zoomBy(1 / 1.2)" title="Dézoomer" class="p-1.5 rounded-lg text-ink-muted hover:bg-surface-soft dark:hover:bg-surface transition-colors"><ZoomOut class="w-4 h-4" /></button>
+                  <button @click="resetView" aria-label="Réinitialiser la vue" title="Réinitialiser la vue" class="px-2 py-1 text-[10px] font-bold text-ink-muted hover:bg-surface-soft dark:hover:bg-surface rounded-lg transition-colors tabular-nums">{{ Math.round(zoom * 100) }}%</button>
+                  <button @click="zoomBy(1.2)" title="Zoomer" class="p-1.5 rounded-lg text-ink-muted hover:bg-surface-soft dark:hover:bg-surface transition-colors"><ZoomIn class="w-4 h-4" /></button>
+                </div>
               </div>
             </div>
           </div>
@@ -573,11 +579,13 @@ import TagSelector from '../../components/ui/TagSelector.vue'
 import { PageContainer, PageHeader } from '../../components/ui/base'
 import {
   Plus,
-  Trash2, 
-  Save, 
-  Link as LinkIcon, 
-  Activity, 
-  Sparkles
+  Trash2,
+  Save,
+  Link as LinkIcon,
+  Activity,
+  Sparkles,
+  ZoomIn,
+  ZoomOut
 } from '@lucide/vue'
 
 interface VisualNode {
@@ -627,6 +635,84 @@ const saving = ref(false)
 const isDragging = ref(false)
 const draggedNodeId = ref<number | null>(null)
 const dragOffset = ref({ x: 0, y: 0 })
+
+// Pan + zoom du canevas (état de vue, non persisté dans `code`)
+const canvasRef = ref<HTMLElement | null>(null)
+const zoom = ref(1)
+const panX = ref(0)
+const panY = ref(0)
+const isPanning = ref(false)
+const panMoved = ref(false)
+const panPointerStart = ref({ x: 0, y: 0 })
+const panOriginStart = ref({ x: 0, y: 0 })
+
+const gridStyle = computed(() => {
+  const size = 20 * zoom.value
+  return {
+    backgroundImage:
+      'linear-gradient(to right, rgba(148,163,184,0.18) 1px, transparent 1px),' +
+      'linear-gradient(to bottom, rgba(148,163,184,0.18) 1px, transparent 1px)',
+    backgroundSize: `${size}px ${size}px`,
+    backgroundPosition: `${panX.value}px ${panY.value}px`,
+  }
+})
+
+const worldStyle = computed(() => ({
+  transform: `translate(${panX.value}px, ${panY.value}px) scale(${zoom.value})`,
+  transformOrigin: '0 0',
+}))
+
+// Convertit des coordonnées écran (clientX/Y) en coordonnées « monde » du canevas
+function screenToWorld(clientX: number, clientY: number) {
+  const rect = canvasRef.value?.getBoundingClientRect()
+  const left = rect?.left ?? 0
+  const top = rect?.top ?? 0
+  return {
+    x: (clientX - left - panX.value) / zoom.value,
+    y: (clientY - top - panY.value) / zoom.value,
+  }
+}
+
+function clampCoord(v: number) {
+  return Math.max(-3000, Math.min(6000, v))
+}
+
+function zoomAtPoint(factor: number, clientX: number, clientY: number) {
+  const rect = canvasRef.value?.getBoundingClientRect()
+  const left = rect?.left ?? 0
+  const top = rect?.top ?? 0
+  const newZoom = Math.max(0.3, Math.min(3, zoom.value * factor))
+  // Garder le point monde sous le curseur à la même position écran
+  const wx = (clientX - left - panX.value) / zoom.value
+  const wy = (clientY - top - panY.value) / zoom.value
+  panX.value = (clientX - left) - wx * newZoom
+  panY.value = (clientY - top) - wy * newZoom
+  zoom.value = newZoom
+}
+
+function zoomBy(factor: number) {
+  const rect = canvasRef.value?.getBoundingClientRect()
+  if (!rect) {
+    zoom.value = Math.max(0.3, Math.min(3, zoom.value * factor))
+    return
+  }
+  zoomAtPoint(factor, rect.left + rect.width / 2, rect.top + rect.height / 2)
+}
+
+function resetView() {
+  zoom.value = 1
+  panX.value = 0
+  panY.value = 0
+}
+
+function onWheel(event: WheelEvent) {
+  if (event.ctrlKey || event.metaKey) {
+    zoomAtPoint(event.deltaY < 0 ? 1.1 : 1 / 1.1, event.clientX, event.clientY)
+  } else {
+    panX.value -= event.deltaX
+    panY.value -= event.deltaY
+  }
+}
 
 // Modèles locaux d'édition
 const nodes = ref<VisualNode[]>([])
@@ -716,6 +802,8 @@ function selectDiagram(diag: BackendDiagram) {
   selectedConnectionIndex.value = null
   editingNodeId.value = null
   drawingMode.value = 'select'
+  resetView()
+  isPanning.value = false
 
   // Parser le contenu du diagramme
   try {
@@ -932,56 +1020,57 @@ function onNodeMouseDown(node: VisualNode, event: MouseEvent) {
   selectedConnectionIndex.value = null
   if (editingNodeId.value !== node.id) editingNodeId.value = null
 
+  const w = screenToWorld(event.clientX, event.clientY)
   dragOffset.value = {
-    x: event.clientX - node.x,
-    y: event.clientY - node.y
+    x: node.x - w.x,
+    y: node.y - w.y
   }
 }
 
 function onCanvasMouseDown(event: MouseEvent) {
   if (drawingMode.value === 'mask') {
     isDrawingMask.value = true
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-    const x = event.clientX - rect.left
-    const y = event.clientY - rect.top
+    const w = screenToWorld(event.clientX, event.clientY)
     tempMask.value = {
-      startX: x,
-      startY: y,
-      x,
-      y,
+      startX: w.x,
+      startY: w.y,
+      x: w.x,
+      y: w.y,
       width: 0,
       height: 0
     }
   } else {
-    selectedNodeId.value = null
-    selectedMaskId.value = null
-    selectedConnectionIndex.value = null
-    editingNodeId.value = null
+    // Démarre un éventuel pan ; la désélection a lieu au relâchement sans déplacement
+    isPanning.value = true
+    panMoved.value = false
+    panPointerStart.value = { x: event.clientX, y: event.clientY }
+    panOriginStart.value = { x: panX.value, y: panY.value }
   }
 }
 
 function onCanvasMouseMove(event: MouseEvent) {
   if (drawingMode.value === 'mask' && isDrawingMask.value && tempMask.value) {
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-    const currentX = event.clientX - rect.left
-    const currentY = event.clientY - rect.top
-    
+    const w = screenToWorld(event.clientX, event.clientY)
     const startX = tempMask.value.startX
     const startY = tempMask.value.startY
-    
-    tempMask.value.x = Math.min(startX, currentX)
-    tempMask.value.y = Math.min(startY, currentY)
-    tempMask.value.width = Math.abs(currentX - startX)
-    tempMask.value.height = Math.abs(currentY - startY)
+
+    tempMask.value.x = Math.min(startX, w.x)
+    tempMask.value.y = Math.min(startY, w.y)
+    tempMask.value.width = Math.abs(w.x - startX)
+    tempMask.value.height = Math.abs(w.y - startY)
   } else if (isDragging.value && draggedNodeId.value !== null) {
     const node = nodes.value.find(n => n.id === draggedNodeId.value)
     if (node) {
-      let newX = event.clientX - dragOffset.value.x
-      let newY = event.clientY - dragOffset.value.y
-
-      node.x = Math.max(30, Math.min(650, newX))
-      node.y = Math.max(30, Math.min(420, newY))
+      const w = screenToWorld(event.clientX, event.clientY)
+      node.x = clampCoord(w.x + dragOffset.value.x)
+      node.y = clampCoord(w.y + dragOffset.value.y)
     }
+  } else if (isPanning.value) {
+    const dx = event.clientX - panPointerStart.value.x
+    const dy = event.clientY - panPointerStart.value.y
+    if (Math.hypot(dx, dy) > 3) panMoved.value = true
+    panX.value = panOriginStart.value.x + dx
+    panY.value = panOriginStart.value.y + dy
   }
 }
 
@@ -1007,6 +1096,15 @@ function onCanvasMouseUp() {
     }
     tempMask.value = null
   } else {
+    // Clic simple sur le fond (pan sans déplacement) → désélection
+    if (isPanning.value && !panMoved.value) {
+      selectedNodeId.value = null
+      selectedMaskId.value = null
+      selectedConnectionIndex.value = null
+      editingNodeId.value = null
+    }
+    isPanning.value = false
+    panMoved.value = false
     isDragging.value = false
     draggedNodeId.value = null
   }
