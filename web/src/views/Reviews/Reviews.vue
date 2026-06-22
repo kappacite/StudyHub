@@ -1696,6 +1696,28 @@ async function executeFlashcardGeneration() {
       const res = await api.post('/flashcards/generate', payload)
       extracted = res.data.flashcards || []
     } catch (aiErr) {
+      const status = (aiErr as { response?: { status?: number } })?.response?.status
+      const backendMsg = (aiErr as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message
+
+      // 401/429/400 : ce n'est pas « l'IA indisponible » → message précis, pas de repli.
+      if (status === 401) {
+        genStatusIsError.value = true
+        genStatusMessage.value = "Votre session a expiré. Reconnectez-vous, puis relancez la génération."
+        return
+      }
+      if (status === 429) {
+        genStatusIsError.value = true
+        genStatusMessage.value = "Trop de générations en peu de temps. Patientez quelques minutes avant de réessayer."
+        return
+      }
+      if (status === 400) {
+        genStatusIsError.value = true
+        genStatusMessage.value = backendMsg || "La source ne contient pas assez de texte pour générer des flashcards."
+        return
+      }
+
+      // 502 / réseau / autres : l'IA est réellement indisponible → repli local.
       console.warn("Génération IA indisponible, repli sur l'extraction locale.", aiErr)
       extracted = extractFlashcardsFromText(localSourceText())
       usedFallback = true

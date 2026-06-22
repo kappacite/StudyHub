@@ -1,5 +1,24 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Fix UX — messages d'erreur précis pour la génération de flashcards IA
+
+**Symptôme** : « IA indisponible » s'affichait même quand l'IA marchait. Diagnostic (logs
+`backend.log`) : le `catch` du front basculait en repli local pour **toute** réponse non-2xx, alors
+que les vrais échecs étaient un **401** (jeton JWT expiré, durée 1 h) et un **400** (note de 4
+caractères → « source sans texte exploitable »). Le pipeline IA lui-même est OK (vérifié en live :
+`POST /flashcards/generate` → 200 + 11 cartes sur une note de 1907 caractères).
+
+**Correctif** (`Reviews.vue`, `executeFlashcardGeneration`) : distinction des cas dans le `catch` via
+`err.response.status` (sans `any`, cast typé) :
+- **401** → « Votre session a expiré. Reconnectez-vous… » (pas de repli)
+- **429** → « Trop de générations… patientez »
+- **400** → message renvoyé par le backend (source vide)
+- **502 / réseau** → repli sur l'extraction locale + « IA indisponible » (comportement légitime conservé)
+
+**Tests** : `reviews-ai-flashcards.spec.ts` étendu (401/429/400/502). Build + Vitest 66 verts ;
+E2E 23 verts.
+
+
 ## [2026-06-22] Feature — génération de flashcards par IA (Notes / Classeurs)
 
 **Besoin** : le bouton « Générer depuis Notes / Classeurs » (vue Révisions) extrayait les cartes par
