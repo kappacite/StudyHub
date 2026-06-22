@@ -48,3 +48,36 @@ test('Génération de flashcards par IA depuis une note', async ({ page }) => {
   await expect(page.getByText(/générées par IA/i)).toBeVisible()
   await expect(page.getByText(/2 carte/i)).toBeVisible()
 })
+
+// Ouvre la modale et lance la génération (note + nouveau deck nommé).
+async function startGeneration(page: import('@playwright/test').Page) {
+  await page.goto('/reviser')
+  await page.getByRole('button', { name: /Générer depuis Notes/i }).click()
+  await page.locator('select').first().selectOption('n1')
+  await page.getByPlaceholder(/Nom du nouveau deck/i).fill('IA Bio')
+  await page.getByRole('button', { name: 'Générer', exact: true }).click()
+}
+
+test('Erreur 401 → message de session expirée (pas « IA indisponible »)', async ({ page }) => {
+  await page.route('**/flashcards/generate', (r) => r.fulfill({ status: 401, json: { error: { message: 'token expired' } } }))
+  await startGeneration(page)
+  await expect(page.getByText(/session a expiré/i)).toBeVisible()
+})
+
+test('Erreur 429 → message de quota', async ({ page }) => {
+  await page.route('**/flashcards/generate', (r) => r.fulfill({ status: 429, json: { error: { message: 'rate limited' } } }))
+  await startGeneration(page)
+  await expect(page.getByText(/Trop de générations/i)).toBeVisible()
+})
+
+test('Erreur 400 → message backend (source vide)', async ({ page }) => {
+  await page.route('**/flashcards/generate', (r) => r.fulfill({ status: 400, json: { error: { message: 'Source vide côté serveur.' } } }))
+  await startGeneration(page)
+  await expect(page.getByText('Source vide côté serveur.')).toBeVisible()
+})
+
+test('Erreur 502 → repli local et message « IA indisponible »', async ({ page }) => {
+  await page.route('**/flashcards/generate', (r) => r.fulfill({ status: 502, json: { error: { message: 'AI down' } } }))
+  await startGeneration(page)
+  await expect(page.getByText(/IA est indisponible/i)).toBeVisible()
+})
