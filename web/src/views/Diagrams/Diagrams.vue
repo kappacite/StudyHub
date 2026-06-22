@@ -294,8 +294,41 @@
 
               <div class="h-[1px] bg-surface-soft dark:bg-surface-soft"></div>
 
+              <!-- Sélection multiple : alignement de groupe -->
+              <div v-if="selectedNodeIds.length > 1" class="space-y-4">
+                <h4 class="text-[10px] font-bold uppercase tracking-wider text-primary">{{ selectedNodeIds.length }} éléments sélectionnés</h4>
+
+                <div>
+                  <label class="block text-[9px] font-bold text-ink-subtle mb-1 uppercase">Aligner horizontalement</label>
+                  <div class="grid grid-cols-3 gap-1">
+                    <button @click="alignSelectedNodes('left')" title="Aligner à gauche" class="px-2 py-1.5 text-[10px] font-bold border border-line rounded-lg hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle transition-colors">Gauche</button>
+                    <button @click="alignSelectedNodes('centerH')" title="Centrer horizontalement" class="px-2 py-1.5 text-[10px] font-bold border border-line rounded-lg hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle transition-colors">Centre</button>
+                    <button @click="alignSelectedNodes('right')" title="Aligner à droite" class="px-2 py-1.5 text-[10px] font-bold border border-line rounded-lg hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle transition-colors">Droite</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-[9px] font-bold text-ink-subtle mb-1 uppercase">Aligner verticalement</label>
+                  <div class="grid grid-cols-3 gap-1">
+                    <button @click="alignSelectedNodes('top')" title="Aligner en haut" class="px-2 py-1.5 text-[10px] font-bold border border-line rounded-lg hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle transition-colors">Haut</button>
+                    <button @click="alignSelectedNodes('middleV')" title="Centrer verticalement" class="px-2 py-1.5 text-[10px] font-bold border border-line rounded-lg hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle transition-colors">Milieu</button>
+                    <button @click="alignSelectedNodes('bottom')" title="Aligner en bas" class="px-2 py-1.5 text-[10px] font-bold border border-line rounded-lg hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle transition-colors">Bas</button>
+                  </div>
+                </div>
+
+                <div class="pt-2">
+                  <button
+                    @click="deleteSelectedNode"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-danger border border-danger hover:bg-danger-soft dark:border-danger dark:hover:bg-danger-soft rounded-xl transition-colors"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                    Supprimer la sélection
+                  </button>
+                </div>
+              </div>
+
               <!-- Options du nœud sélectionné -->
-              <div v-if="selectedNode" class="space-y-4">
+              <div v-else-if="selectedNode" class="space-y-4">
                 <h4 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider">Élément sélectionné</h4>
                 
                 <div>
@@ -445,7 +478,7 @@
                 <span>Plan interactif</span>
                 <span v-if="drawingMode === 'mask'" class="text-danger font-extrabold animate-pulse">Mode Masque actif : Cliquez-glissez pour dessiner un masque</span>
                 <span v-else-if="drawingMode === 'pen'" class="text-primary font-extrabold animate-pulse">Crayon actif : cliquez-glissez pour dessiner</span>
-                <span v-else>Glisser le fond / molette : se déplacer · Ctrl+molette : zoomer · Double-clic : renommer · Suppr : effacer</span>
+                <span v-else>Glisser : déplacer · Molette : naviguer · Ctrl+molette : zoom · Maj+clic / Maj+glisser : multi-sélection · Suppr : effacer</span>
               </div>
 
               <!-- Zone SVG interactive (pan + zoom) -->
@@ -587,13 +620,24 @@
                   />
                   
                   <!-- Rectangle de dessin temporaire -->
-                  <rect 
+                  <rect
                     v-if="drawingMode === 'mask' && tempMask"
                     :x="tempMask.x"
                     :y="tempMask.y"
                     :width="tempMask.width"
                     :height="tempMask.height"
                     class="fill-rose-500/25 stroke-rose-600 stroke-2 pointer-events-none"
+                  />
+
+                  <!-- Rectangle de sélection (marquee) -->
+                  <rect
+                    v-if="marqueeRect"
+                    :x="marqueeRect.x"
+                    :y="marqueeRect.y"
+                    :width="marqueeRect.width"
+                    :height="marqueeRect.height"
+                    class="fill-primary/10 stroke-primary stroke-1 pointer-events-none"
+                    style="stroke-dasharray: 4;"
                   />
                 </svg>
 
@@ -613,7 +657,7 @@
                     class="w-28 h-10 rounded-xl border flex items-center justify-center text-center px-2 text-[10px] font-bold text-white shadow transition-all"
                     :class="[
                       node.color,
-                      selectedNodeId === node.id ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
+                      isNodeSelected(node.id) ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
                     ]"
                     :style="sizeStyle(node)"
                   >
@@ -637,7 +681,7 @@
                     class="w-14 h-14 rounded-full border flex items-center justify-center text-center p-2 text-[9px] font-extrabold text-white shadow transition-all"
                     :class="[
                       node.color,
-                      selectedNodeId === node.id ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
+                      isNodeSelected(node.id) ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
                     ]"
                   >
                     <input
@@ -658,11 +702,11 @@
                   <div 
                     v-else-if="node.type === 'diamond'"
                     class="relative w-14 h-14 flex items-center justify-center text-center transition-all select-none"
-                    :class="[selectedNodeId === node.id ? 'scale-105' : '']"
+                    :class="[isNodeSelected(node.id) ? 'scale-105' : '']"
                   >
                     <div 
                       class="absolute inset-0 rotate-45 border rounded-lg shadow transition-all"
-                      :class="[node.color, selectedNodeId === node.id ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
+                      :class="[node.color, isNodeSelected(node.id) ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
                     ></div>
                     <input
                       v-if="editingNodeId === node.id"
@@ -684,7 +728,7 @@
                     class="w-24 h-12 rounded-[50%] border flex items-center justify-center text-center px-3 text-[10px] font-bold text-white shadow transition-all"
                     :class="[
                       node.color,
-                      selectedNodeId === node.id ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
+                      isNodeSelected(node.id) ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
                     ]"
                     :style="sizeStyle(node)"
                   >
@@ -706,7 +750,7 @@
                   <div
                     v-else-if="node.type === 'text'"
                     class="px-2 py-1 rounded-lg text-center text-xs font-bold text-ink dark:text-white transition-all"
-                    :class="[selectedNodeId === node.id ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
+                    :class="[isNodeSelected(node.id) ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
                   >
                     <input
                       v-if="editingNodeId === node.id"
@@ -726,7 +770,7 @@
                   <div
                     v-else-if="node.type === 'sticky'"
                     class="w-24 h-24 -rotate-2 p-2 flex items-center justify-center text-center text-[10px] font-bold text-amber-950 bg-amber-200 shadow-md transition-all"
-                    :class="[selectedNodeId === node.id ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
+                    :class="[isNodeSelected(node.id) ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
                     :style="sizeStyle(node)"
                   >
                     <textarea
@@ -744,7 +788,7 @@
 
                   <!-- Poignée de redimensionnement (coin bas-droit) -->
                   <div
-                    v-if="selectedNodeId === node.id && isResizable(node)"
+                    v-if="selectedNodeIds.length === 1 && isNodeSelected(node.id) && isResizable(node)"
                     class="absolute -bottom-1.5 -right-1.5 h-3 w-3 rounded-sm bg-primary border border-white shadow cursor-nwse-resize"
                     @mousedown.stop="onResizeStart(node, $event)"
                     @click.stop
@@ -863,6 +907,7 @@ const selectedTagId = ref<number | null>(null)
 
 const activeTab = ref('visual')
 const selectedNodeId = ref<number | null>(null)
+const selectedNodeIds = ref<number[]>([])
 const linkingSourceId = ref<number | null>(null)
 const editingNodeId = ref<number | null>(null)
 const selectedConnectionIndex = ref<number | null>(null)
@@ -880,6 +925,11 @@ const saving = ref(false)
 const isDragging = ref(false)
 const draggedNodeId = ref<number | null>(null)
 const dragOffset = ref({ x: 0, y: 0 })
+const dragOffsets = ref<{ id: number; dx: number; dy: number }[]>([])
+
+// Sélection par rectangle (marquee) — Maj + glisser sur le fond
+const isMarqueeing = ref(false)
+const marqueeRect = ref<{ startX: number; startY: number; x: number; y: number; width: number; height: number } | null>(null)
 
 // Pan + zoom du canevas (état de vue, non persisté dans `code`)
 const canvasRef = ref<HTMLElement | null>(null)
@@ -913,7 +963,72 @@ function snapVal(v: number) {
 
 function onResizeStart(node: VisualNode, _event: MouseEvent) {
   resizingNodeId.value = node.id
-  selectedNodeId.value = node.id
+  selectSingleNode(node.id)
+}
+
+// ---- Sélection des nœuds (simple + multiple) ----
+function isNodeSelected(id: number) {
+  return selectedNodeIds.value.includes(id)
+}
+
+function selectSingleNode(id: number) {
+  selectedNodeId.value = id
+  selectedNodeIds.value = [id]
+}
+
+function clearNodeSelection() {
+  selectedNodeId.value = null
+  selectedNodeIds.value = []
+}
+
+function toggleNodeSelection(id: number) {
+  const i = selectedNodeIds.value.indexOf(id)
+  if (i >= 0) {
+    selectedNodeIds.value.splice(i, 1)
+    selectedNodeId.value = selectedNodeIds.value[selectedNodeIds.value.length - 1] ?? null
+  } else {
+    selectedNodeIds.value.push(id)
+    selectedNodeId.value = id
+  }
+}
+
+// Taille effective d'un nœud (px) : valeur explicite ou défaut par forme
+const NODE_DEFAULT_SIZE: Record<NodeShape, { w: number; h: number }> = {
+  rect: { w: 112, h: 40 },
+  circle: { w: 56, h: 56 },
+  diamond: { w: 56, h: 56 },
+  ellipse: { w: 96, h: 48 },
+  text: { w: 80, h: 28 },
+  sticky: { w: 96, h: 96 }
+}
+
+function effectiveSize(node: VisualNode) {
+  return {
+    w: node.width ?? NODE_DEFAULT_SIZE[node.type].w,
+    h: node.height ?? NODE_DEFAULT_SIZE[node.type].h
+  }
+}
+
+// Alignement des bords/centres des nœuds sélectionnés (positionnés par leur centre)
+function alignSelectedNodes(edge: 'left' | 'centerH' | 'right' | 'top' | 'middleV' | 'bottom') {
+  const sel = nodes.value.filter(n => selectedNodeIds.value.includes(n.id))
+  if (sel.length < 2) return
+  const boxes = sel.map(n => {
+    const { w, h } = effectiveSize(n)
+    return { n, w, h, left: n.x - w / 2, right: n.x + w / 2, top: n.y - h / 2, bottom: n.y + h / 2 }
+  })
+  const minLeft = Math.min(...boxes.map(b => b.left))
+  const maxRight = Math.max(...boxes.map(b => b.right))
+  const minTop = Math.min(...boxes.map(b => b.top))
+  const maxBottom = Math.max(...boxes.map(b => b.bottom))
+  for (const b of boxes) {
+    if (edge === 'left') b.n.x = minLeft + b.w / 2
+    else if (edge === 'right') b.n.x = maxRight - b.w / 2
+    else if (edge === 'centerH') b.n.x = (minLeft + maxRight) / 2
+    else if (edge === 'top') b.n.y = minTop + b.h / 2
+    else if (edge === 'bottom') b.n.y = maxBottom - b.h / 2
+    else if (edge === 'middleV') b.n.y = (minTop + maxBottom) / 2
+  }
 }
 
 const gridStyle = computed(() => {
@@ -1101,7 +1216,7 @@ async function filterByTag(tagId: number | null) {
 
 function selectDiagram(diag: BackendDiagram) {
   selectedDiagram.value = { ...diag }
-  selectedNodeId.value = null
+  clearNodeSelection()
   linkingSourceId.value = null
   selectedMaskId.value = null
   selectedConnectionIndex.value = null
@@ -1264,10 +1379,11 @@ function addNode(type: NodeShape) {
   }
 
   nodes.value.push(newNode)
-  selectedNodeId.value = newId
+  selectSingleNode(newId)
 }
 
 function onNodeClick(node: VisualNode) {
+  // La sélection est gérée dans onNodeMouseDown ; ici on ne traite que le liage.
   if (linkingSourceId.value !== null) {
     if (linkingSourceId.value !== node.id) {
       const alreadyLinked = connections.value.some(
@@ -1281,16 +1397,11 @@ function onNodeClick(node: VisualNode) {
       }
     }
     linkingSourceId.value = null
-  } else {
-    selectedNodeId.value = node.id
-    selectedMaskId.value = null
-    selectedConnectionIndex.value = null
-    selectedDrawingId.value = null
   }
 }
 
 function startEditingNode(node: VisualNode) {
-  selectedNodeId.value = node.id
+  selectSingleNode(node.id)
   selectedMaskId.value = null
   selectedConnectionIndex.value = null
   selectedDrawingId.value = null
@@ -1303,7 +1414,7 @@ function stopEditingNode() {
 
 function onConnectionClick(idx: number) {
   selectedConnectionIndex.value = idx
-  selectedNodeId.value = null
+  clearNodeSelection()
   selectedMaskId.value = null
   selectedDrawingId.value = null
   editingNodeId.value = null
@@ -1322,32 +1433,46 @@ function startLinking() {
 }
 
 function deleteSelectedNode() {
-  if (selectedNodeId.value === null) return
-  nodes.value = nodes.value.filter(n => n.id !== selectedNodeId.value)
+  if (selectedNodeIds.value.length === 0) return
+  const ids = new Set(selectedNodeIds.value)
+  nodes.value = nodes.value.filter(n => !ids.has(n.id))
   connections.value = connections.value.filter(
-    c => c.from !== selectedNodeId.value && c.to !== selectedNodeId.value
+    c => !ids.has(c.from) && !ids.has(c.to)
   )
-  selectedNodeId.value = null
+  clearNodeSelection()
   linkingSourceId.value = null
 }
 
 // Drag & drop canevas
 function onNodeMouseDown(node: VisualNode, event: MouseEvent) {
   if (drawingMode.value === 'mask' || drawingMode.value === 'pen') return
+  // En cours de liage : laisser le clic choisir la cible (pas de drag/sélection)
+  if (linkingSourceId.value !== null) return
 
-  isDragging.value = true
-  draggedNodeId.value = node.id
-  selectedNodeId.value = node.id
   selectedMaskId.value = null
   selectedConnectionIndex.value = null
   selectedDrawingId.value = null
+
+  // Maj+clic : (dé)sélectionne le nœud sans démarrer de déplacement
+  if (event.shiftKey) {
+    toggleNodeSelection(node.id)
+    return
+  }
+
+  // Clic simple sur un nœud hors sélection : sélection unique ; sinon on garde le groupe
+  if (!isNodeSelected(node.id)) selectSingleNode(node.id)
   if (editingNodeId.value !== node.id) editingNodeId.value = null
 
+  isDragging.value = true
+  draggedNodeId.value = node.id
+
   const w = screenToWorld(event.clientX, event.clientY)
-  dragOffset.value = {
-    x: node.x - w.x,
-    y: node.y - w.y
-  }
+  dragOffset.value = { x: node.x - w.x, y: node.y - w.y }
+  // Décalages de chaque nœud sélectionné pour un déplacement de groupe
+  dragOffsets.value = selectedNodeIds.value
+    .map(id => getNode(id))
+    .filter((n): n is VisualNode => !!n)
+    .map(n => ({ id: n.id, dx: n.x - w.x, dy: n.y - w.y }))
 }
 
 function onCanvasMouseDown(event: MouseEvent) {
@@ -1371,6 +1496,11 @@ function onCanvasMouseDown(event: MouseEvent) {
       width: 0,
       height: 0
     }
+  } else if (event.shiftKey) {
+    // Maj + glisser sur le fond : sélection par rectangle (marquee)
+    isMarqueeing.value = true
+    const w = screenToWorld(event.clientX, event.clientY)
+    marqueeRect.value = { startX: w.x, startY: w.y, x: w.x, y: w.y, width: 0, height: 0 }
   } else {
     // Démarre un éventuel pan ; la désélection a lieu au relâchement sans déplacement
     isPanning.value = true
@@ -1404,12 +1534,23 @@ function onCanvasMouseMove(event: MouseEvent) {
     tempMask.value.y = Math.min(startY, w.y)
     tempMask.value.width = Math.abs(w.x - startX)
     tempMask.value.height = Math.abs(w.y - startY)
+  } else if (isMarqueeing.value && marqueeRect.value) {
+    const w = screenToWorld(event.clientX, event.clientY)
+    const startX = marqueeRect.value.startX
+    const startY = marqueeRect.value.startY
+    marqueeRect.value.x = Math.min(startX, w.x)
+    marqueeRect.value.y = Math.min(startY, w.y)
+    marqueeRect.value.width = Math.abs(w.x - startX)
+    marqueeRect.value.height = Math.abs(w.y - startY)
   } else if (isDragging.value && draggedNodeId.value !== null) {
-    const node = nodes.value.find(n => n.id === draggedNodeId.value)
-    if (node) {
-      const w = screenToWorld(event.clientX, event.clientY)
-      node.x = clampCoord(snapVal(w.x + dragOffset.value.x))
-      node.y = clampCoord(snapVal(w.y + dragOffset.value.y))
+    const w = screenToWorld(event.clientX, event.clientY)
+    // Déplacement de groupe via les décalages capturés au départ
+    for (const off of dragOffsets.value) {
+      const node = getNode(off.id)
+      if (node) {
+        node.x = clampCoord(snapVal(w.x + off.dx))
+        node.y = clampCoord(snapVal(w.y + off.dy))
+      }
     }
   } else if (isPanning.value) {
     const dx = event.clientX - panPointerStart.value.x
@@ -1453,10 +1594,25 @@ function onCanvasMouseUp() {
       }
     }
     tempMask.value = null
+  } else if (isMarqueeing.value && marqueeRect.value) {
+    // Sélectionne les nœuds dont le centre est dans le rectangle
+    const r = marqueeRect.value
+    if (r.width > 4 && r.height > 4) {
+      const ids = nodes.value
+        .filter(n => n.x >= r.x && n.x <= r.x + r.width && n.y >= r.y && n.y <= r.y + r.height)
+        .map(n => n.id)
+      selectedNodeIds.value = ids
+      selectedNodeId.value = ids[ids.length - 1] ?? null
+      selectedMaskId.value = null
+      selectedConnectionIndex.value = null
+      selectedDrawingId.value = null
+    }
+    isMarqueeing.value = false
+    marqueeRect.value = null
   } else {
     // Clic simple sur le fond (pan sans déplacement) → désélection
     if (isPanning.value && !panMoved.value) {
-      selectedNodeId.value = null
+      clearNodeSelection()
       selectedMaskId.value = null
       selectedConnectionIndex.value = null
       selectedDrawingId.value = null
@@ -1482,7 +1638,7 @@ function onBackgroundImageUploaded(event: Event) {
 }
 
 function onMaskClick(mask: any) {
-  selectedNodeId.value = null
+  clearNodeSelection()
   selectedConnectionIndex.value = null
   selectedDrawingId.value = null
   selectedMaskId.value = mask.id
@@ -1496,7 +1652,7 @@ function deleteSelectedMask() {
 
 function onDrawingClick(id: string) {
   if (drawingMode.value !== 'select') return
-  selectedNodeId.value = null
+  clearNodeSelection()
   selectedMaskId.value = null
   selectedConnectionIndex.value = null
   editingNodeId.value = null
@@ -1511,7 +1667,7 @@ function deleteSelectedDrawing() {
 
 function togglePenMode() {
   drawingMode.value = drawingMode.value === 'pen' ? 'select' : 'pen'
-  selectedNodeId.value = null
+  clearNodeSelection()
   selectedMaskId.value = null
   selectedConnectionIndex.value = null
   selectedDrawingId.value = null
@@ -1562,7 +1718,7 @@ function applySnapshot(snap: string) {
   masks.value = data.masks || []
   backgroundImage.value = data.backgroundImage ?? null
   drawings.value = data.drawings || []
-  selectedNodeId.value = null
+  clearNodeSelection()
   selectedMaskId.value = null
   selectedConnectionIndex.value = null
   selectedDrawingId.value = null
@@ -1613,7 +1769,7 @@ function onKeydown(event: KeyboardEvent) {
   if (event.key !== 'Delete' && event.key !== 'Backspace') return
   if (typing) return
 
-  if (selectedNodeId.value !== null) {
+  if (selectedNodeIds.value.length > 0) {
     deleteSelectedNode()
     event.preventDefault()
   } else if (selectedMaskId.value !== null) {

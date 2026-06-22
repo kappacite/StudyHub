@@ -1,5 +1,26 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Feature — éditeur de diagrammes : multi-sélection + alignement (incrément 7)
+
+**Incrément 7** (`Diagrams.vue`, frontend only) : sélection multiple de nœuds et alignement de groupe.
+- **Modèle de sélection refactoré** : `selectedNodeId` (primaire, pour panneau/resize/édition/liage)
+  + `selectedNodeIds: number[]` (groupe). Helpers `selectSingleNode` / `toggleNodeSelection` /
+  `clearNodeSelection` / `isNodeSelected` ; tous les anciens `selectedNodeId.value = …` passent par
+  ces helpers (sélections mutuellement exclusives node/masque/lien/tracé conservées).
+- **Maj+clic** sur un nœud : (dé)sélection sans déplacement. **Maj+glisser** sur le fond : sélection
+  par rectangle (marquee, nœuds dont le **centre** est dans la zone) ; le glisser simple reste un pan.
+- **Multi-déplacement** : décalages de chaque nœud sélectionné capturés au mousedown
+  (`dragOffsets`), déplacés ensemble (avec snap-grille). `Suppr` efface tout le groupe.
+- **Alignement** (panneau « N éléments sélectionnés », ≥2) : gauche/centre/droite et haut/milieu/bas,
+  **bords-conscients** via `effectiveSize()` (taille explicite ou défaut par forme `NODE_DEFAULT_SIZE`).
+- La poignée de redimensionnement n'apparaît que pour une sélection **unique**.
+
+**Rétro-compat** : rien à persister (sélection = état de vue), JSON `code` inchangé. Modes masque/pen
+intacts. **Tests** : `diagrams-editor.spec.ts` étendu (multi-sélection + alignement, suppression
+clavier de groupe). Build + Vitest 66 verts ; E2E 18 verts. ⚠️ Rendu visuel non vérifié en headless.
+**Roadmap diagrammes complète** (incréments 1→7).
+
+
 ## [2026-06-22] Feature — éditeur de diagrammes : crayon main levée (incrément 6)
 
 **Incrément 6** (`Diagrams.vue`, frontend only) : annotation au crayon (freehand).

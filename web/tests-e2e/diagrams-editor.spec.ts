@@ -36,7 +36,7 @@ test('Diagrams : sélection d\'un diagramme et rendu des nœuds', async ({ page 
   await page.getByText('Cycle cellulaire').click()
   await expect(page.getByText('Interphase')).toBeVisible()
   await expect(page.getByText('Mitose')).toBeVisible()
-  await expect(page.getByText(/Double-clic\s*:\s*renommer/i)).toBeVisible()
+  await expect(page.getByText(/multi-sélection/i)).toBeVisible()
 })
 
 test('Diagrams : édition inline du texte d\'un nœud au double-clic', async ({ page }) => {
@@ -146,4 +146,31 @@ test('Diagrams : crayon main levée dessine un tracé', async ({ page }) => {
   await page.mouse.up()
 
   await expect(page.locator('svg polyline[stroke="#ef4444"]')).toHaveCount(1)
+})
+
+test('Diagrams : multi-sélection (Maj+clic) et panneau d\'alignement', async ({ page }) => {
+  await page.goto('/diagrams')
+  await page.getByText('Cycle cellulaire').click()
+
+  await page.getByText('Interphase').click()
+  await page.getByText('Mitose').click({ modifiers: ['Shift'] })
+
+  await expect(page.getByText('2 éléments sélectionnés')).toBeVisible()
+
+  // L'alignement ne doit pas planter et la sélection est conservée
+  await page.getByRole('button', { name: 'Gauche', exact: true }).click()
+  await expect(page.getByText('2 éléments sélectionnés')).toBeVisible()
+})
+
+test('Diagrams : suppression d\'une multi-sélection au clavier', async ({ page }) => {
+  await page.goto('/diagrams')
+  await page.getByText('Cycle cellulaire').click()
+
+  await page.getByText('Interphase').click()
+  await page.getByText('Mitose').click({ modifiers: ['Shift'] })
+  await expect(page.getByText('2 éléments sélectionnés')).toBeVisible()
+
+  await page.keyboard.press('Delete')
+  await expect(page.getByText('Interphase')).toHaveCount(0)
+  await expect(page.getByText('Mitose')).toHaveCount(0)
 })
