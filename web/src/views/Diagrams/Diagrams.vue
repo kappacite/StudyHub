@@ -264,6 +264,31 @@
                     <Sparkles class="w-3.5 h-3.5" />
                     {{ drawingMode === 'mask' ? 'Mode Masque : Actif' : 'Dessiner un masque rect' }}
                   </button>
+
+                  <button
+                    @click="togglePenMode"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border rounded-xl transition-all"
+                    :class="[
+                      drawingMode === 'pen'
+                        ? 'bg-primary border-primary text-white shadow-sm hover:bg-primary-strong'
+                        : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle'
+                    ]"
+                  >
+                    <Pencil class="w-3.5 h-3.5" />
+                    {{ drawingMode === 'pen' ? 'Crayon : actif' : 'Crayon (main levée)' }}
+                  </button>
+
+                  <div v-if="drawingMode === 'pen'" class="flex items-center justify-center gap-2 pt-1">
+                    <button
+                      v-for="pc in penColors"
+                      :key="pc.hex"
+                      @click="penColor = pc.hex"
+                      class="h-7 w-7 rounded-full border-2 shadow-sm transition-transform hover:scale-105"
+                      :class="penColor === pc.hex ? 'ring-2 ring-primary scale-110 border-white' : 'border-white dark:border-line'"
+                      :style="{ backgroundColor: pc.hex }"
+                      :title="pc.name"
+                    ></button>
+                  </div>
                 </div>
               </div>
 
@@ -394,6 +419,21 @@
                 </div>
               </div>
 
+              <!-- Options du tracé sélectionné -->
+              <div v-else-if="selectedDrawing" class="space-y-4">
+                <h4 class="text-[10px] font-bold uppercase tracking-wider text-primary">Tracé sélectionné</h4>
+                <p class="text-[11px] text-ink-muted leading-snug">Tracé au crayon ({{ selectedDrawing.points.length }} points).</p>
+                <div class="pt-2">
+                  <button
+                    @click="deleteSelectedDrawing"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-danger border border-danger hover:bg-danger-soft dark:border-danger dark:hover:bg-danger-soft rounded-xl transition-colors"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                    Supprimer le tracé
+                  </button>
+                </div>
+              </div>
+
               <div v-else class="text-center py-4 text-ink-subtle text-xs italic">
                 Double-cliquez une forme pour la renommer. Cliquez un lien pour le supprimer.
               </div>
@@ -404,14 +444,16 @@
               <div class="px-4 py-1.5 border-b border-line-soft dark:border-line flex items-center justify-between text-[9px] text-ink-muted font-bold uppercase tracking-wider select-none">
                 <span>Plan interactif</span>
                 <span v-if="drawingMode === 'mask'" class="text-danger font-extrabold animate-pulse">Mode Masque actif : Cliquez-glissez pour dessiner un masque</span>
+                <span v-else-if="drawingMode === 'pen'" class="text-primary font-extrabold animate-pulse">Crayon actif : cliquez-glissez pour dessiner</span>
                 <span v-else>Glisser le fond / molette : se déplacer · Ctrl+molette : zoomer · Double-clic : renommer · Suppr : effacer</span>
               </div>
 
               <!-- Zone SVG interactive (pan + zoom) -->
               <div
                 ref="canvasRef"
+                data-testid="diagram-canvas"
                 class="relative w-full h-[450px] bg-surface-soft dark:bg-surface-soft overflow-hidden select-none"
-                :class="[drawingMode === 'mask' ? 'cursor-cell' : (isPanning && panMoved ? 'cursor-grabbing' : 'cursor-grab')]"
+                :class="[drawingMode === 'mask' ? 'cursor-cell' : (drawingMode === 'pen' ? 'cursor-crosshair' : (isPanning && panMoved ? 'cursor-grabbing' : 'cursor-grab'))]"
                 :style="gridStyle"
                 @mousedown="onCanvasMouseDown"
                 @mousemove="onCanvasMouseMove"
@@ -490,9 +532,45 @@
                     </g>
                   </g>
                   
+                  <!-- Tracés au crayon (main levée) -->
+                  <g v-for="stroke in drawings" :key="stroke.id">
+                    <!-- Zone de clic élargie -->
+                    <polyline
+                      :points="strokePoints(stroke)"
+                      fill="none"
+                      stroke="transparent"
+                      :stroke-width="(stroke.width || 3) + 12"
+                      :class="drawingMode === 'select' ? 'cursor-pointer' : 'pointer-events-none'"
+                      @click.stop="onDrawingClick(stroke.id)"
+                    />
+                    <!-- Tracé visible -->
+                    <polyline
+                      :points="strokePoints(stroke)"
+                      fill="none"
+                      :stroke="stroke.color"
+                      :stroke-width="stroke.width || 3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      :class="['pointer-events-none transition-all', selectedDrawingId === stroke.id ? 'opacity-100' : 'opacity-90']"
+                      :style="selectedDrawingId === stroke.id ? 'filter: drop-shadow(0 0 2px rgb(var(--sh-primary)));' : ''"
+                    />
+                  </g>
+
+                  <!-- Tracé en cours -->
+                  <polyline
+                    v-if="currentStroke"
+                    :points="strokePoints(currentStroke)"
+                    fill="none"
+                    :stroke="currentStroke.color"
+                    :stroke-width="currentStroke.width"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="pointer-events-none"
+                  />
+
                   <!-- Masques d'occlusion -->
-                  <rect 
-                    v-for="mask in masks" 
+                  <rect
+                    v-for="mask in masks"
                     :key="mask.id" 
                     :x="mask.x" 
                     :y="mask.y" 
@@ -743,7 +821,8 @@ import {
   ZoomOut,
   Grid3x3,
   Undo2,
-  Redo2
+  Redo2,
+  Pencil
 } from '@lucide/vue'
 
 type NodeShape = 'rect' | 'circle' | 'diamond' | 'ellipse' | 'text' | 'sticky'
@@ -911,7 +990,7 @@ const connections = ref<Connection[]>([])
 const mermaidCode = ref('')
 
 // Modèles locaux d'occlusion et image de fond
-const drawingMode = ref<'select' | 'mask'>('select')
+const drawingMode = ref<'select' | 'mask' | 'pen'>('select')
 const isDrawingMask = ref(false)
 const tempMask = ref<{ startX: number; startY: number; x: number; y: number; width: number; height: number } | null>(null)
 const masks = ref<{ id: string; x: number; y: number; width: number; height: number; label: string }[]>([])
@@ -919,10 +998,34 @@ const selectedMaskId = ref<string | null>(null)
 const backgroundImage = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
+// Crayon main levée (tracés)
+interface PenStroke {
+  id: string
+  points: { x: number; y: number }[]
+  color: string
+  width: number
+}
+const drawings = ref<PenStroke[]>([])
+const currentStroke = ref<PenStroke | null>(null)
+const isDrawingPen = ref(false)
+const selectedDrawingId = ref<string | null>(null)
+const penColor = ref('#ef4444')
+const penColors = [
+  { name: 'Rouge', hex: '#ef4444' },
+  { name: 'Bleu', hex: '#3b82f6' },
+  { name: 'Vert', hex: '#22c55e' },
+  { name: 'Encre', hex: '#1e293b' }
+]
+
+function strokePoints(stroke: PenStroke) {
+  return stroke.points.map(p => `${p.x},${p.y}`).join(' ')
+}
+
 const selectedMask = computed(() => masks.value.find(m => m.id === selectedMaskId.value) || null)
 const selectedConnection = computed(() =>
   selectedConnectionIndex.value === null ? null : connections.value[selectedConnectionIndex.value] || null
 )
+const selectedDrawing = computed(() => drawings.value.find(d => d.id === selectedDrawingId.value) || null)
 
 const colors = [
   { name: 'Indigo', bg: 'bg-indigo-600' },
@@ -1003,6 +1106,7 @@ function selectDiagram(diag: BackendDiagram) {
   selectedMaskId.value = null
   selectedConnectionIndex.value = null
   editingNodeId.value = null
+  selectedDrawingId.value = null
   drawingMode.value = 'select'
   resetView()
   isPanning.value = false
@@ -1016,12 +1120,14 @@ function selectDiagram(diag: BackendDiagram) {
       connections.value = data.connections || []
       backgroundImage.value = data.backgroundImage || null
       masks.value = data.masks || []
+      drawings.value = data.drawings || []
       activeTab.value = 'visual'
     } else {
       // Si ce n'est pas du JSON, on charge comme du code Mermaid
       mermaidCode.value = diag.code || ''
       backgroundImage.value = null
       masks.value = []
+      drawings.value = []
       activeTab.value = 'mermaid'
     }
   } catch {
@@ -1031,6 +1137,7 @@ function selectDiagram(diag: BackendDiagram) {
     connections.value = []
     backgroundImage.value = null
     masks.value = []
+    drawings.value = []
     activeTab.value = 'mermaid'
   }
 
@@ -1094,7 +1201,8 @@ async function saveDiagram() {
       nodes: nodes.value,
       connections: connections.value,
       backgroundImage: backgroundImage.value,
-      masks: masks.value
+      masks: masks.value,
+      drawings: drawings.value
     })
   } else {
     codePayload = mermaidCode.value
@@ -1177,6 +1285,7 @@ function onNodeClick(node: VisualNode) {
     selectedNodeId.value = node.id
     selectedMaskId.value = null
     selectedConnectionIndex.value = null
+    selectedDrawingId.value = null
   }
 }
 
@@ -1184,6 +1293,7 @@ function startEditingNode(node: VisualNode) {
   selectedNodeId.value = node.id
   selectedMaskId.value = null
   selectedConnectionIndex.value = null
+  selectedDrawingId.value = null
   editingNodeId.value = node.id
 }
 
@@ -1195,6 +1305,7 @@ function onConnectionClick(idx: number) {
   selectedConnectionIndex.value = idx
   selectedNodeId.value = null
   selectedMaskId.value = null
+  selectedDrawingId.value = null
   editingNodeId.value = null
 }
 
@@ -1222,13 +1333,14 @@ function deleteSelectedNode() {
 
 // Drag & drop canevas
 function onNodeMouseDown(node: VisualNode, event: MouseEvent) {
-  if (drawingMode.value === 'mask') return
-  
+  if (drawingMode.value === 'mask' || drawingMode.value === 'pen') return
+
   isDragging.value = true
   draggedNodeId.value = node.id
   selectedNodeId.value = node.id
   selectedMaskId.value = null
   selectedConnectionIndex.value = null
+  selectedDrawingId.value = null
   if (editingNodeId.value !== node.id) editingNodeId.value = null
 
   const w = screenToWorld(event.clientX, event.clientY)
@@ -1239,7 +1351,16 @@ function onNodeMouseDown(node: VisualNode, event: MouseEvent) {
 }
 
 function onCanvasMouseDown(event: MouseEvent) {
-  if (drawingMode.value === 'mask') {
+  if (drawingMode.value === 'pen') {
+    isDrawingPen.value = true
+    const w = screenToWorld(event.clientX, event.clientY)
+    currentStroke.value = {
+      id: 'pen-' + Date.now(),
+      points: [{ x: w.x, y: w.y }],
+      color: penColor.value,
+      width: 3
+    }
+  } else if (drawingMode.value === 'mask') {
     isDrawingMask.value = true
     const w = screenToWorld(event.clientX, event.clientY)
     tempMask.value = {
@@ -1260,7 +1381,13 @@ function onCanvasMouseDown(event: MouseEvent) {
 }
 
 function onCanvasMouseMove(event: MouseEvent) {
-  if (resizingNodeId.value !== null) {
+  if (drawingMode.value === 'pen' && isDrawingPen.value && currentStroke.value) {
+    const w = screenToWorld(event.clientX, event.clientY)
+    const pts = currentStroke.value.points
+    const last = pts[pts.length - 1]
+    // N'ajoute un point que si le curseur a bougé suffisamment (lissage)
+    if (Math.hypot(w.x - last.x, w.y - last.y) > 2) pts.push({ x: w.x, y: w.y })
+  } else if (resizingNodeId.value !== null) {
     const node = nodes.value.find(n => n.id === resizingNodeId.value)
     if (node) {
       // Redimensionnement ancré au centre : la poignée est au coin bas-droit
@@ -1298,6 +1425,14 @@ function onCanvasMouseUp() {
     resizingNodeId.value = null
     return
   }
+  if (drawingMode.value === 'pen' && isDrawingPen.value) {
+    isDrawingPen.value = false
+    if (currentStroke.value && currentStroke.value.points.length > 1) {
+      drawings.value.push(currentStroke.value)
+    }
+    currentStroke.value = null
+    return
+  }
   if (drawingMode.value === 'mask' && isDrawingMask.value && tempMask.value) {
     isDrawingMask.value = false
     const width = tempMask.value.width
@@ -1324,6 +1459,7 @@ function onCanvasMouseUp() {
       selectedNodeId.value = null
       selectedMaskId.value = null
       selectedConnectionIndex.value = null
+      selectedDrawingId.value = null
       editingNodeId.value = null
     }
     isPanning.value = false
@@ -1347,6 +1483,8 @@ function onBackgroundImageUploaded(event: Event) {
 
 function onMaskClick(mask: any) {
   selectedNodeId.value = null
+  selectedConnectionIndex.value = null
+  selectedDrawingId.value = null
   selectedMaskId.value = mask.id
 }
 
@@ -1354,6 +1492,30 @@ function deleteSelectedMask() {
   if (selectedMaskId.value === null) return
   masks.value = masks.value.filter(m => m.id !== selectedMaskId.value)
   selectedMaskId.value = null
+}
+
+function onDrawingClick(id: string) {
+  if (drawingMode.value !== 'select') return
+  selectedNodeId.value = null
+  selectedMaskId.value = null
+  selectedConnectionIndex.value = null
+  editingNodeId.value = null
+  selectedDrawingId.value = id
+}
+
+function deleteSelectedDrawing() {
+  if (selectedDrawingId.value === null) return
+  drawings.value = drawings.value.filter(d => d.id !== selectedDrawingId.value)
+  selectedDrawingId.value = null
+}
+
+function togglePenMode() {
+  drawingMode.value = drawingMode.value === 'pen' ? 'select' : 'pen'
+  selectedNodeId.value = null
+  selectedMaskId.value = null
+  selectedConnectionIndex.value = null
+  selectedDrawingId.value = null
+  editingNodeId.value = null
 }
 
 // Raccourci clavier : Suppr / Backspace efface l'élément sélectionné
@@ -1372,6 +1534,7 @@ function snapshotDoc() {
     connections: connections.value,
     masks: masks.value,
     backgroundImage: backgroundImage.value,
+    drawings: drawings.value,
   })
 }
 
@@ -1398,9 +1561,11 @@ function applySnapshot(snap: string) {
   connections.value = data.connections || []
   masks.value = data.masks || []
   backgroundImage.value = data.backgroundImage ?? null
+  drawings.value = data.drawings || []
   selectedNodeId.value = null
   selectedMaskId.value = null
   selectedConnectionIndex.value = null
+  selectedDrawingId.value = null
   editingNodeId.value = null
   resizingNodeId.value = null
   nextTick(() => { isApplyingHistory.value = false })
@@ -1418,7 +1583,7 @@ function redo() {
   applySnapshot(history.value[historyIndex.value])
 }
 
-watch([nodes, connections, masks, backgroundImage], () => {
+watch([nodes, connections, masks, backgroundImage, drawings], () => {
   if (isApplyingHistory.value) return
   if (histTimer) clearTimeout(histTimer)
   histTimer = setTimeout(recordHistory, 350)
@@ -1456,6 +1621,9 @@ function onKeydown(event: KeyboardEvent) {
     event.preventDefault()
   } else if (selectedConnectionIndex.value !== null) {
     deleteSelectedConnection()
+    event.preventDefault()
+  } else if (selectedDrawingId.value !== null) {
+    deleteSelectedDrawing()
     event.preventDefault()
   }
 }
