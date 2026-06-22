@@ -64,3 +64,23 @@ test('Diagrams : contrôles de zoom (zoom + réinitialisation de la vue)', async
   await reset.click()
   await expect(reset).toHaveText('100%')
 })
+
+test('Diagrams : ajout d\'une forme « texte libre »', async ({ page }) => {
+  await page.goto('/diagrams')
+  await page.getByText('Cycle cellulaire').click()
+  await page.getByRole('button', { name: 'Texte libre' }).click()
+  // .last() = le nœud rendu sur le canevas (le 1er match est le label de la barre latérale)
+  await expect(page.getByText('Texte', { exact: true }).last()).toBeVisible()
+})
+
+test('Diagrams : sélection d\'un lien et ajout d\'un libellé', async ({ page }) => {
+  await page.goto('/diagrams')
+  await page.getByText('Cycle cellulaire').click()
+
+  // Clic sur la zone cliquable élargie du lien (stroke transparent → force)
+  await page.locator('line.cursor-pointer').first().click({ force: true })
+  await expect(page.getByText('Lien sélectionné')).toBeVisible()
+
+  await page.getByPlaceholder('ex: entraîne').fill('active')
+  await expect(page.locator('svg text', { hasText: 'active' })).toBeVisible()
+})
