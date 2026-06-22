@@ -1672,7 +1672,7 @@ function localSourceText(): string {
 async function executeFlashcardGeneration() {
   if (!isReadyToGenerate.value) return
 
-  genStatusMessage.value = "Génération par IA en cours... (cela peut prendre quelques secondes)"
+  genStatusMessage.value = "Génération par IA en cours... (cela peut prendre jusqu'à une minute, ne fermez pas la fenêtre)"
   genStatusIsError.value = false
 
   try {
@@ -1693,7 +1693,9 @@ async function executeFlashcardGeneration() {
       const payload = genSourceType.value === 'note'
         ? { source_type: 'note', note_id: genNoteId.value }
         : { source_type: 'binder', binder_id: genBinderId.value }
-      const res = await api.post('/flashcards/generate', payload)
+      // Génération IA longue : on dépasse le timeout global (10 s) et le
+      // timeout backend Gemini (90 s) pour ne pas couper une requête qui aboutit.
+      const res = await api.post('/flashcards/generate', payload, { timeout: 120000 })
       extracted = res.data.flashcards || []
     } catch (aiErr) {
       const status = (aiErr as { response?: { status?: number } })?.response?.status

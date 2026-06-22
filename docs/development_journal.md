@@ -1,5 +1,16 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Fix — timeout trop court sur la génération de flashcards IA
+
+**Symptôme** : la génération « avait l'air de marcher » puis affichait « IA indisponible ».
+**Cause** : l'instance Axios a un `timeout` global de **10 s** (`api.ts`), or une génération Gemini
+prend souvent 15-90 s → la requête est avortée côté front pendant que le backend (timeout urllib
+90 s) travaille encore → branche réseau → repli + « IA indisponible ».
+**Correctif** (`Reviews.vue`) : `api.post('/flashcards/generate', payload, { timeout: 120000 })`
+(120 s, au-delà des 90 s backend) + message d'attente plus explicite (« jusqu'à une minute, ne
+fermez pas la fenêtre »). Build + Vitest 66 verts ; E2E 23 verts.
+
+
 ## [2026-06-22] Fix UX — messages d'erreur précis pour la génération de flashcards IA
 
 **Symptôme** : « IA indisponible » s'affichait même quand l'IA marchait. Diagnostic (logs
