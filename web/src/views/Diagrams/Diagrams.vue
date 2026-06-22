@@ -674,6 +674,12 @@
                 </div>
                 </div>
 
+                <!-- Barre annuler / rétablir flottante -->
+                <div class="absolute top-2 left-2 flex items-center gap-1 rounded-xl border border-line bg-surface/90 dark:bg-surface-soft/90 backdrop-blur px-1 py-1 shadow-sm">
+                  <button @click="undo" :disabled="!canUndo" title="Annuler (Ctrl+Z)" class="p-1.5 rounded-lg text-ink-muted hover:bg-surface-soft dark:hover:bg-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"><Undo2 class="w-4 h-4" /></button>
+                  <button @click="redo" :disabled="!canRedo" title="Rétablir (Ctrl+Maj+Z)" class="p-1.5 rounded-lg text-ink-muted hover:bg-surface-soft dark:hover:bg-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"><Redo2 class="w-4 h-4" /></button>
+                </div>
+
                 <!-- Barre de zoom flottante -->
                 <div class="absolute top-2 right-2 flex items-center gap-1 rounded-xl border border-line bg-surface/90 dark:bg-surface-soft/90 backdrop-blur px-1 py-1 shadow-sm">
                   <button @click="zoomBy(1 / 1.2)" title="Dézoomer" class="p-1.5 rounded-lg text-ink-muted hover:bg-surface-soft dark:hover:bg-surface transition-colors"><ZoomOut class="w-4 h-4" /></button>
@@ -720,7 +726,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../../services/api'
 import { useTagsStore, type Tag } from '../../stores/tags'
@@ -735,7 +741,9 @@ import {
   Sparkles,
   ZoomIn,
   ZoomOut,
-  Grid3x3
+  Grid3x3,
+  Undo2,
+  Redo2
 } from '@lucide/vue'
 
 type NodeShape = 'rect' | 'circle' | 'diamond' | 'ellipse' | 'text' | 'sticky'
@@ -1025,6 +1033,8 @@ function selectDiagram(diag: BackendDiagram) {
     masks.value = []
     activeTab.value = 'mermaid'
   }
+
+  initHistory()
 }
 
 async function saveDiagramTags(tags: Tag[]) {
@@ -1347,13 +1357,96 @@ function deleteSelectedMask() {
 }
 
 // Raccourci clavier : Suppr / Backspace efface l'élément sélectionné
+// ---- Historique (annuler / rétablir) ----
+const history = ref<string[]>([])
+const historyIndex = ref(0)
+const isApplyingHistory = ref(false)
+let histTimer: ReturnType<typeof setTimeout> | null = null
+
+const canUndo = computed(() => historyIndex.value > 0)
+const canRedo = computed(() => historyIndex.value < history.value.length - 1)
+
+function snapshotDoc() {
+  return JSON.stringify({
+    nodes: nodes.value,
+    connections: connections.value,
+    masks: masks.value,
+    backgroundImage: backgroundImage.value,
+  })
+}
+
+function initHistory() {
+  history.value = [snapshotDoc()]
+  historyIndex.value = 0
+}
+
+function recordHistory() {
+  if (isApplyingHistory.value) return
+  const snap = snapshotDoc()
+  if (snap === history.value[historyIndex.value]) return
+  // Tronque la branche « rétablir » avant d'empiler le nouvel état
+  history.value = history.value.slice(0, historyIndex.value + 1)
+  history.value.push(snap)
+  if (history.value.length > 50) history.value.shift()
+  historyIndex.value = history.value.length - 1
+}
+
+function applySnapshot(snap: string) {
+  const data = JSON.parse(snap)
+  isApplyingHistory.value = true
+  nodes.value = data.nodes || []
+  connections.value = data.connections || []
+  masks.value = data.masks || []
+  backgroundImage.value = data.backgroundImage ?? null
+  selectedNodeId.value = null
+  selectedMaskId.value = null
+  selectedConnectionIndex.value = null
+  editingNodeId.value = null
+  resizingNodeId.value = null
+  nextTick(() => { isApplyingHistory.value = false })
+}
+
+function undo() {
+  if (!canUndo.value) return
+  historyIndex.value--
+  applySnapshot(history.value[historyIndex.value])
+}
+
+function redo() {
+  if (!canRedo.value) return
+  historyIndex.value++
+  applySnapshot(history.value[historyIndex.value])
+}
+
+watch([nodes, connections, masks, backgroundImage], () => {
+  if (isApplyingHistory.value) return
+  if (histTimer) clearTimeout(histTimer)
+  histTimer = setTimeout(recordHistory, 350)
+}, { deep: true })
+
 function onKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Delete' && event.key !== 'Backspace') return
   if (!selectedDiagram.value || activeTab.value !== 'visual') return
 
   // Ne pas intercepter pendant la saisie de texte (titre, label inline, tags…)
   const target = event.target as HTMLElement | null
-  if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return
+  const typing = !!target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
+
+  const mod = event.ctrlKey || event.metaKey
+  if (mod && (event.key === 'z' || event.key === 'Z')) {
+    if (typing) return
+    event.shiftKey ? redo() : undo()
+    event.preventDefault()
+    return
+  }
+  if (mod && (event.key === 'y' || event.key === 'Y')) {
+    if (typing) return
+    redo()
+    event.preventDefault()
+    return
+  }
+
+  if (event.key !== 'Delete' && event.key !== 'Backspace') return
+  if (typing) return
 
   if (selectedNodeId.value !== null) {
     deleteSelectedNode()

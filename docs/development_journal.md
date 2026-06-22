@@ -1,5 +1,23 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Feature — éditeur de diagrammes : annuler / rétablir (incrément 5)
+
+**Incrément 5** (`Diagrams.vue`, frontend only) : historique undo/redo.
+- **Pile d'historique** : snapshots JSON de `{nodes, connections, masks, backgroundImage}` capturés
+  via un `watch` profond **débouncé (350 ms)** → un point d'historique par geste fini (drag/resize
+  continus regroupés). Capacité 50, troncature de la branche « rétablir » à chaque nouvelle action.
+- **Restauration** : `applySnapshot()` réassigne l'état sous garde `isApplyingHistory` (évite la
+  ré-entrance du watcher) et nettoie les sélections ; déduplication par égalité de snapshot.
+- **Commandes** : barre flottante haut-gauche du canevas (↶/↷, désactivées via `canUndo`/`canRedo`)
+  + raccourcis `Ctrl/⌘+Z` (annuler), `Ctrl/⌘+Maj+Z` / `Ctrl+Y` (rétablir), ignorés en saisie texte.
+- Historique (ré)initialisé à chaque sélection de diagramme.
+
+**Rétro-compat** : aucun changement du schéma `code` (l'historique est en mémoire). Mode masque intact.
+**Tests** : `diagrams-editor.spec.ts` étendu (annuler/rétablir un ajout de forme). Build + Vitest 66
+verts ; E2E 15 verts. ⚠️ Rendu visuel non vérifié en headless.
+**Reste** : crayon main levée (incrément 6), multi-sélection + alignement (incrément 7).
+
+
 ## [2026-06-22] Feature — éditeur de diagrammes : redimensionnement + alignement grille (incrément 4)
 
 **Incrément 4** (`Diagrams.vue`, frontend only) :

@@ -105,3 +105,23 @@ test('Diagrams : bascule d\'alignement sur la grille', async ({ page }) => {
   await snap.click()
   await expect(snap).toHaveText(/actif/)
 })
+
+test('Diagrams : annuler / rétablir un ajout de forme', async ({ page }) => {
+  await page.goto('/diagrams')
+  await page.getByText('Cycle cellulaire').click()
+
+  const undo = page.getByRole('button', { name: /Annuler/ })
+  const redo = page.getByRole('button', { name: /Rétablir/ })
+  await expect(undo).toBeDisabled()
+
+  await page.getByRole('button', { name: 'Texte libre' }).click()
+  await expect(page.getByText('Texte', { exact: true }).last()).toBeVisible()
+  await expect(undo).toBeEnabled() // après debounce de l'historique
+
+  await undo.click()
+  await expect(page.getByText('Texte', { exact: true })).toHaveCount(0)
+
+  await expect(redo).toBeEnabled()
+  await redo.click()
+  await expect(page.getByText('Texte', { exact: true }).last()).toBeVisible()
+})
