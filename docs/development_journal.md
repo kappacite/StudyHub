@@ -1,5 +1,24 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Feature — éditeur de diagrammes : nouvelles formes + édition des liens (incrément 3)
+
+**Incrément 3** (`Diagrams.vue`, frontend only) :
+- **3 nouvelles formes** ajoutées à la palette : **ellipse** (domaine), **texte libre** (sans cadre,
+  couleur d'encre) et **post-it** (note jaune, `<textarea>` multi-lignes). `VisualNode.type` élargi
+  (`NodeShape`), `addNode` factorisé via `NODE_DEFAULT_LABEL`. Le sélecteur de couleur est masqué
+  pour texte/post-it (non pertinent).
+- **Édition des liens** : `Connection` gagne `label?`, `arrow?` (`end`/`both`/`none`), `dashed?`
+  (tous optionnels → défaut rétro-compatible `connArrow()=end`, trait plein, sans libellé). Le panneau
+  « Lien sélectionné » expose : champ libellé (rendu en `<text>` SVG au milieu du trait, halo
+  `stroke-surface`), sélecteur de flèche (segmented) et bascule plein/pointillé. Marqueurs SVG
+  `marker-start`/`marker-end` pilotés par `arrow` (le marqueur unique `#arrow` à `auto-start-reverse`
+  sert aux deux extrémités).
+
+**Rétro-compat** : champs ajoutés tous optionnels, anciens diagrammes inchangés ; mode masque intact.
+**Tests** : `diagrams-editor.spec.ts` étendu (ajout forme texte libre + sélection lien & libellé).
+Build + Vitest 66 verts ; E2E 12 verts. ⚠️ Rendu visuel non vérifié en headless.
+
+
 ## [2026-06-22] Feature — éditeur de diagrammes : pan + zoom (incrément 2)
 
 **Incrément 2** (`Diagrams.vue`, frontend only) : le canevas devient une « feuille de papier »

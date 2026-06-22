@@ -182,6 +182,30 @@
                   <div class="mx-2 h-8 w-8 rotate-45 border-2 border-warning bg-warning shadow-sm"></div>
                   <span class="text-[11px] font-bold">Décision (Losange)</span>
                 </button>
+
+                <button
+                  @click="addNode('ellipse')"
+                  class="flex items-center gap-3 p-2.5 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl text-left transition-colors"
+                >
+                  <div class="h-7 w-12 rounded-[50%] border-2 border-info bg-info shadow-sm"></div>
+                  <span class="text-[11px] font-bold">Domaine (Ellipse)</span>
+                </button>
+
+                <button
+                  @click="addNode('text')"
+                  class="flex items-center gap-3 p-2.5 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl text-left transition-colors"
+                >
+                  <div class="flex h-8 w-12 items-center justify-center text-base font-black text-ink">T</div>
+                  <span class="text-[11px] font-bold">Texte libre</span>
+                </button>
+
+                <button
+                  @click="addNode('sticky')"
+                  class="flex items-center gap-3 p-2.5 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl text-left transition-colors"
+                >
+                  <div class="h-9 w-9 -rotate-3 rounded-sm bg-amber-200 shadow-sm"></div>
+                  <span class="text-[11px] font-bold">Post-it (Note)</span>
+                </button>
               </div>
 
               <!-- Contrôles d'occlusion et d'image d'arrière-plan -->
@@ -249,11 +273,11 @@
                   />
                 </div>
 
-                <div>
+                <div v-if="selectedNode.type !== 'text' && selectedNode.type !== 'sticky'">
                   <label class="block text-[9px] font-bold text-ink-subtle mb-1 uppercase">Couleur</label>
                   <div class="flex flex-wrap gap-2">
-                    <button 
-                      v-for="color in colors" 
+                    <button
+                      v-for="color in colors"
                       :key="color.bg"
                       @click="selectedNode.color = color.bg"
                       class="h-8 w-8 rounded-full border-2 shadow-sm transition-transform hover:scale-105"
@@ -317,6 +341,38 @@
                   →
                   <span class="font-bold text-ink">{{ getNode(selectedConnection.to)?.label || '?' }}</span>
                 </p>
+
+                <div>
+                  <label class="block text-[9px] font-bold text-ink-subtle mb-1 uppercase">Libellé</label>
+                  <input
+                    type="text"
+                    :value="selectedConnection.label || ''"
+                    @input="selectedConnection.label = ($event.target as HTMLInputElement).value"
+                    class="w-full px-2.5 py-1.5 text-xs bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold"
+                    placeholder="ex: entraîne"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[9px] font-bold text-ink-subtle mb-1 uppercase">Flèche</label>
+                  <div class="flex items-center gap-1 bg-surface-soft p-1 rounded-xl border border-line">
+                    <button
+                      v-for="opt in arrowOptions"
+                      :key="opt.value"
+                      @click="selectedConnection.arrow = opt.value"
+                      class="flex-1 px-2 py-1 text-[10px] font-bold rounded-lg transition-colors"
+                      :class="connArrow(selectedConnection) === opt.value ? 'bg-primary text-white' : 'text-ink-muted hover:text-ink'"
+                    >{{ opt.label }}</button>
+                  </div>
+                </div>
+
+                <button
+                  @click="selectedConnection.dashed = !selectedConnection.dashed"
+                  class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border rounded-xl transition-colors"
+                  :class="selectedConnection.dashed ? 'bg-primary-soft text-primary border-primary' : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle'"
+                >
+                  {{ selectedConnection.dashed ? 'Trait : pointillé' : 'Trait : plein' }}
+                </button>
 
                 <div class="pt-2">
                   <button
@@ -407,9 +463,20 @@
                           :y2="getNode(conn.to)!.y"
                           :stroke="selectedConnectionIndex === idx ? '#ec4899' : '#6366f1'"
                           :stroke-width="selectedConnectionIndex === idx ? 3.5 : 2"
-                          marker-end="url(#arrow)"
+                          :stroke-dasharray="conn.dashed ? '7 5' : undefined"
+                          :marker-start="connArrow(conn) === 'both' ? 'url(#arrow)' : undefined"
+                          :marker-end="connArrow(conn) !== 'none' ? 'url(#arrow)' : undefined"
                           class="pointer-events-none transition-all"
                         />
+                        <!-- Libellé du lien -->
+                        <text
+                          v-if="conn.label"
+                          :x="(getNode(conn.from)!.x + getNode(conn.to)!.x) / 2"
+                          :y="(getNode(conn.from)!.y + getNode(conn.to)!.y) / 2 - 4"
+                          text-anchor="middle"
+                          class="pointer-events-none fill-ink stroke-surface text-[10px] font-bold"
+                          style="paint-order: stroke; stroke-width: 3px;"
+                        >{{ conn.label }}</text>
                       </template>
                     </g>
                   </g>
@@ -522,6 +589,68 @@
                     />
                     <span v-else class="relative z-10 text-[8px] font-extrabold text-white px-2 leading-tight">{{ node.label }}</span>
                   </div>
+
+                  <!-- Ellipse -->
+                  <div
+                    v-else-if="node.type === 'ellipse'"
+                    class="w-24 h-12 rounded-[50%] border flex items-center justify-center text-center px-3 text-[10px] font-bold text-white shadow transition-all"
+                    :class="[
+                      node.color,
+                      selectedNodeId === node.id ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
+                    ]"
+                  >
+                    <input
+                      v-if="editingNodeId === node.id"
+                      v-model="node.label"
+                      class="w-full bg-transparent text-center text-[10px] font-bold text-white outline-none placeholder-white/60"
+                      @mousedown.stop
+                      @click.stop
+                      @blur="stopEditingNode"
+                      @keydown.enter.prevent="stopEditingNode"
+                      @keydown.esc.prevent="stopEditingNode"
+                      v-focus
+                    />
+                    <template v-else>{{ node.label }}</template>
+                  </div>
+
+                  <!-- Texte libre -->
+                  <div
+                    v-else-if="node.type === 'text'"
+                    class="px-2 py-1 rounded-lg text-center text-xs font-bold text-ink dark:text-white transition-all"
+                    :class="[selectedNodeId === node.id ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
+                  >
+                    <input
+                      v-if="editingNodeId === node.id"
+                      v-model="node.label"
+                      class="w-32 bg-transparent text-center text-xs font-bold text-ink dark:text-white outline-none"
+                      @mousedown.stop
+                      @click.stop
+                      @blur="stopEditingNode"
+                      @keydown.enter.prevent="stopEditingNode"
+                      @keydown.esc.prevent="stopEditingNode"
+                      v-focus
+                    />
+                    <template v-else>{{ node.label }}</template>
+                  </div>
+
+                  <!-- Post-it -->
+                  <div
+                    v-else-if="node.type === 'sticky'"
+                    class="w-24 h-24 -rotate-2 p-2 flex items-center justify-center text-center text-[10px] font-bold text-amber-950 bg-amber-200 shadow-md transition-all"
+                    :class="[selectedNodeId === node.id ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
+                  >
+                    <textarea
+                      v-if="editingNodeId === node.id"
+                      v-model="node.label"
+                      class="w-full h-full bg-transparent text-center text-[10px] font-bold text-amber-950 outline-none resize-none"
+                      @mousedown.stop
+                      @click.stop
+                      @blur="stopEditingNode"
+                      @keydown.esc.prevent="stopEditingNode"
+                      v-focus
+                    />
+                    <span v-else class="whitespace-pre-wrap leading-tight">{{ node.label }}</span>
+                  </div>
                 </div>
                 </div>
 
@@ -588,10 +717,13 @@ import {
   ZoomOut
 } from '@lucide/vue'
 
+type NodeShape = 'rect' | 'circle' | 'diamond' | 'ellipse' | 'text' | 'sticky'
+type ArrowStyle = 'end' | 'both' | 'none'
+
 interface VisualNode {
   id: number
   label: string
-  type: 'rect' | 'circle' | 'diamond'
+  type: NodeShape
   x: number
   y: number
   color: string
@@ -600,6 +732,9 @@ interface VisualNode {
 interface Connection {
   from: number
   to: number
+  label?: string
+  arrow?: ArrowStyle
+  dashed?: boolean
 }
 
 interface BackendDiagram {
@@ -739,6 +874,17 @@ const colors = [
   { name: 'Ambre', bg: 'bg-amber-500' },
   { name: 'Rose', bg: 'bg-pink-500' }
 ]
+
+const arrowOptions: { value: ArrowStyle; label: string }[] = [
+  { value: 'end', label: 'Fin' },
+  { value: 'both', label: 'Double' },
+  { value: 'none', label: 'Aucune' }
+]
+
+// Style de flèche d'un lien (défaut rétro-compatible : flèche en fin)
+function connArrow(conn: Connection): ArrowStyle {
+  return conn.arrow ?? 'end'
+}
 
 const selectedNode = computed(() => {
   if (selectedNodeId.value === null) return null
@@ -929,21 +1075,27 @@ async function deleteDiagram(diag: BackendDiagram) {
 }
 
 // Outils d'édition visuelle
-function addNode(type: 'rect' | 'circle' | 'diamond') {
+const NODE_DEFAULT_LABEL: Record<NodeShape, string> = {
+  rect: 'Concept',
+  circle: 'Événement',
+  diamond: 'Décision',
+  ellipse: 'Domaine',
+  text: 'Texte',
+  sticky: 'Note...'
+}
+
+function addNode(type: NodeShape) {
   const newId = nodes.value.length ? Math.max(...nodes.value.map(n => n.id)) + 1 : 1
-  let label = 'Concept'
-  if (type === 'circle') label = 'Événement'
-  if (type === 'diamond') label = 'Décision'
 
   const newNode: VisualNode = {
     id: newId,
-    label,
+    label: NODE_DEFAULT_LABEL[type],
     type,
     x: 150 + Math.random() * 60,
     y: 150 + Math.random() * 60,
     color: 'bg-indigo-600'
   }
-  
+
   nodes.value.push(newNode)
   selectedNodeId.value = newId
 }
