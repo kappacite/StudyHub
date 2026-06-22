@@ -50,3 +50,17 @@ test('Diagrams : édition inline du texte d\'un nœud au double-clic', async ({ 
   await input.press('Enter')
   await expect(page.getByText('Phase G1')).toBeVisible()
 })
+
+test('Diagrams : contrôles de zoom (zoom + réinitialisation de la vue)', async ({ page }) => {
+  await page.goto('/diagrams')
+  await page.getByText('Cycle cellulaire').click()
+
+  const reset = page.getByRole('button', { name: 'Réinitialiser la vue' })
+  await expect(reset).toHaveText('100%')
+
+  await page.getByRole('button', { name: 'Zoomer', exact: true }).click()
+  await expect(reset).not.toHaveText('100%')
+
+  await reset.click()
+  await expect(reset).toHaveText('100%')
+})

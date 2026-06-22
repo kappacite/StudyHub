@@ -1,5 +1,27 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Feature — éditeur de diagrammes : pan + zoom (incrément 2)
+
+**Incrément 2** (`Diagrams.vue`, frontend only) : le canevas devient une « feuille de papier »
+déplaçable et zoomable.
+- **Conteneur « monde »** : un `<div>` recevant `transform: translate(panX,panY) scale(zoom)`
+  (origine `0 0`) enveloppe le SVG (image de fond, connexions, masques) **et** les nœuds. La grille
+  est désormais un fond CSS du viewport (`background-position`/`-size` suivant pan/zoom) → effet
+  infini, plus de `<pattern>` SVG.
+- **Pan** : glisser le fond (désélection au relâchement *sans* déplacement, seuil 3px) ou molette
+  (deltaX/deltaY).
+- **Zoom** : `Ctrl/⌘ + molette` (zoom vers le curseur) + barre flottante `−` / `%` (reset) / `+`
+  (zoom vers le centre). Bornes 0,3×–3×.
+- **Refacto coordonnées** : helper unique `screenToWorld(clientX,clientY)` utilisé par le drag de
+  nœud (offset monde) et le dessin de masque. Le drag n'est plus delta-`clientX` mais position
+  monde + offset → correct quel que soit le zoom/pan. Clamp élargi (−3000…6000) pour la feuille.
+- La vue est **réinitialisée** à chaque sélection de diagramme ; **non persistée** dans le JSON
+  `code` (état de vue uniquement) → rétro-compat totale, mode masque intact.
+
+**Tests** : `tests-e2e/diagrams-editor.spec.ts` étendu (contrôles de zoom + reset). Build + Vitest 66
+verts ; E2E 10 verts. ⚠️ Rendu visuel non vérifié en headless.
+
+
 ## [2026-06-22] Feature — éditeur de diagrammes : édition inline + suppression de lien (incrément 1)
 
 **Besoin** : rendre l'éditeur de diagrammes plus complet/flexible (façon « feuille de papier »).
