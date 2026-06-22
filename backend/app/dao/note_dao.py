@@ -32,6 +32,14 @@ class NoteDAO(BaseDAO[Note]):
             .all()
         )
 
+    def get_by_binder_for_user(self, binder_internal_id: int, user_id: int) -> List[Note]:
+        """Notes de l'utilisateur appartenant à un classeur donné (id interne)."""
+        return (
+            self.db.query(self.model)
+            .filter(self.model.binder_id == binder_internal_id, self.model.user_id == user_id)
+            .all()
+        )
+
     def get_all(self, user_id: int, limit: int = 20, offset: int = 0) -> List[Note]:
         from sqlalchemy.orm import selectinload
         return (

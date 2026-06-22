@@ -1,5 +1,32 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Feature — génération de flashcards par IA (Notes / Classeurs)
+
+**Besoin** : le bouton « Générer depuis Notes / Classeurs » (vue Révisions) extrayait les cartes par
+simples motifs regex côté client. Désormais il **utilise l'IA** (Gemini) pour rédiger des
+questions/réponses ciblées.
+
+**Backend** :
+- `AIService.generate_flashcards(source_text, count=0, subject="")` — nouvel appel Gemini (même
+  patron que `generate_quiz`) : prompt anti-injection (`<source_text>`), atomicité des cartes,
+  nombre adaptatif selon la taille, sortie JSON `[{front, back}]` nettoyée.
+- `FlashcardGenerationService(note_dao, binder_dao, ai_service)` : récupère le contenu **côté
+  serveur** avec contrôle d'appartenance (note → contenu+titre ; classeur → agrégation des notes de
+  l'utilisateur via `NoteDAO.get_by_binder_for_user`), tronque à 60 000 caractères, délègue à l'IA.
+  Ne crée pas les cartes.
+- Endpoint `POST /api/v1/flashcards/generate` (`flashcards_global_bp`), JWT + `20/h`/utilisateur.
+  Erreurs : 400 (vide), 403/404 (appartenance), 502 `AI_GENERATION_FAILED`.
+- Tests `test_flashcard_generation.py` (note, classeur agrégé, vide→400, 404, 403, 401) avec
+  `AIService.generate_flashcards` mocké. Suite backend complète verte.
+
+**Frontend** (`Reviews.vue`) : `executeFlashcardGeneration` appelle `/flashcards/generate` puis
+réutilise la création de deck + dédoublonnage + insertion existants. **Repli** automatique sur
+l'extraction locale par motifs si l'IA est indisponible (clé absente/réseau) — message distinct.
+Encart explicatif IA dans la modale. E2E `reviews-ai-flashcards.spec.ts`.
+
+Build + Vitest 66 verts ; E2E 19 verts. ⚠️ Rendu visuel non vérifié en headless.
+
+
 ## [2026-06-22] Feature — éditeur de diagrammes : multi-sélection + alignement (incrément 7)
 
 **Incrément 7** (`Diagrams.vue`, frontend only) : sélection multiple de nœuds et alignement de groupe.

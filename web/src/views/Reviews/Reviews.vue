@@ -817,6 +817,10 @@
           </button>
         </div>
 
+        <p class="text-xs text-ink-muted -mt-2">
+          L'IA analyse votre note ou votre classeur pour rédiger des questions/réponses ciblées, prêtes à réviser.
+        </p>
+
         <div class="space-y-4">
           <!-- Source selection -->
           <div>
@@ -1655,34 +1659,56 @@ function extractFlashcardsFromText(text: string): { front: string, back: string 
   return cards
 }
 
+// Récupère le texte source local (pour le repli hors-ligne sans IA)
+function localSourceText(): string {
+  if (genSourceType.value === 'note') {
+    const note = notesStore.notes.find(n => n.id === genNoteId.value)
+    return note ? note.content : ""
+  }
+  const notesInBinder = notesStore.notes.filter(n => n.binder_id === genBinderId.value)
+  return notesInBinder.map(n => n.content).join("\n\n")
+}
+
 async function executeFlashcardGeneration() {
   if (!isReadyToGenerate.value) return
-  
-  genStatusMessage.value = "Analyse et extraction en cours..."
+
+  genStatusMessage.value = "Génération par IA en cours... (cela peut prendre quelques secondes)"
   genStatusIsError.value = false
-  
+
   try {
-    let sourceText = ""
     let subjectName = ""
     if (genSourceType.value === 'note') {
       const note = notesStore.notes.find(n => n.id === genNoteId.value)
-      sourceText = note ? note.content : ""
       subjectName = note ? note.title : "la note"
     } else {
       const binder = bindersStore.binders.find(b => b.id === genBinderId.value)
-      const notesInBinder = notesStore.notes.filter(n => n.binder_id === genBinderId.value)
-      sourceText = notesInBinder.map(n => n.content).join("\n\n")
       subjectName = binder ? `classeur ${binder.name}` : "le classeur"
     }
-    
-    const extracted = extractFlashcardsFromText(sourceText)
-    
+
+    // 1. Génération par IA (backend Gemini). Repli sur l'extraction locale
+    //    par motifs si l'IA est indisponible (clé absente, réseau…).
+    let extracted: { front: string, back: string }[] = []
+    let usedFallback = false
+    try {
+      const payload = genSourceType.value === 'note'
+        ? { source_type: 'note', note_id: genNoteId.value }
+        : { source_type: 'binder', binder_id: genBinderId.value }
+      const res = await api.post('/flashcards/generate', payload)
+      extracted = res.data.flashcards || []
+    } catch (aiErr) {
+      console.warn("Génération IA indisponible, repli sur l'extraction locale.", aiErr)
+      extracted = extractFlashcardsFromText(localSourceText())
+      usedFallback = true
+    }
+
     if (extracted.length === 0) {
       genStatusIsError.value = true
-      genStatusMessage.value = "Aucune flashcard n'a pu être extraite. Ajoutez des définitions sous la forme '[concept]{def:explication}' ou '- **Concept** : explication' dans vos notes."
+      genStatusMessage.value = usedFallback
+        ? "L'IA est indisponible et aucune flashcard n'a pu être extraite localement. Réessayez plus tard ou ajoutez des définitions ('- **Concept** : explication') dans vos notes."
+        : "L'IA n'a généré aucune flashcard. Vérifiez que la source contient assez de contenu."
       return
     }
-    
+
     let deckId: number
     let isNew = false
     
@@ -1726,7 +1752,8 @@ async function executeFlashcardGeneration() {
     await fetchDecksStats()
     
     genStatusIsError.value = false
-    genStatusMessage.value = `Succès ! ${addedCount} carte(s) ajoutée(s)${skippedCount > 0 ? ` (${skippedCount} doublon(s) ignoré(s))` : ''}.`
+    const sourceLabel = usedFallback ? ' (extraction locale, IA indisponible)' : ' (générées par IA)'
+    genStatusMessage.value = `Succès ! ${addedCount} carte(s) ajoutée(s)${skippedCount > 0 ? ` (${skippedCount} doublon(s) ignoré(s))` : ''}${sourceLabel}.`
     
     if (isNew) {
       genNewDeckName.value = ""

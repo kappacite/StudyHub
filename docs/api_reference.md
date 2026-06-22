@@ -1171,6 +1171,30 @@ Crée en une fois les flashcards sélectionnées suite à l'analyse et les insè
   }
   ```
 
+### 🤖 Générer des flashcards par IA (note ou classeur)
+Analyse par IA (Gemini) le contenu d'une **note** ou d'un **classeur** (toutes les notes de l'utilisateur dans ce classeur) et renvoie une liste de flashcards `{front, back}`. **Ne crée pas** les cartes : le client les insère ensuite via les endpoints de création (avec dédoublonnage). Limité à 20 requêtes/heure/utilisateur.
+* **Route** : `POST /flashcards/generate`
+* **Type** : `[Sécurisé]`
+* **Request Body** :
+  ```json
+  { "source_type": "note", "note_id": "<uuid de la note>" }
+  ```
+  ou
+  ```json
+  { "source_type": "binder", "binder_id": "<uuid du classeur>" }
+  ```
+* **Response** (Status `200 OK`) :
+  ```json
+  {
+    "count": 2,
+    "flashcards": [
+      { "front": "Quelle est l'unité du vivant ?", "back": "La cellule" },
+      { "front": "Quel organite produit l'ATP ?", "back": "La mitochondrie" }
+    ]
+  }
+  ```
+* **Erreurs** : `400` source vide/invalide · `403` source d'un autre utilisateur · `404` source introuvable · `502` `AI_GENERATION_FAILED` (clé Gemini absente, réseau, réponse invalide). Le client web bascule alors sur une extraction locale par motifs.
+
 ---
 
 ## Espace Professeur — Classes & Devoirs
