@@ -125,3 +125,25 @@ test('Diagrams : annuler / rétablir un ajout de forme', async ({ page }) => {
   await redo.click()
   await expect(page.getByText('Texte', { exact: true }).last()).toBeVisible()
 })
+
+test('Diagrams : crayon main levée dessine un tracé', async ({ page }) => {
+  await page.goto('/diagrams')
+  await page.getByText('Cycle cellulaire').click()
+
+  await page.getByRole('button', { name: 'Crayon (main levée)' }).click()
+  await expect(page.getByText('Crayon actif')).toBeVisible()
+
+  const canvas = page.getByTestId('diagram-canvas')
+  await canvas.scrollIntoViewIfNeeded()
+  const box = await canvas.boundingBox()
+  if (!box) throw new Error('canvas introuvable')
+
+  // Dessine au centre du canevas (évite les nœuds et les barres flottantes)
+  await page.mouse.move(box.x + 220, box.y + 220)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 280, box.y + 260, { steps: 6 })
+  await page.mouse.move(box.x + 360, box.y + 230, { steps: 6 })
+  await page.mouse.up()
+
+  await expect(page.locator('svg polyline[stroke="#ef4444"]')).toHaveCount(1)
+})

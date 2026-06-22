@@ -1,5 +1,29 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Feature — éditeur de diagrammes : crayon main levée (incrément 6)
+
+**Incrément 6** (`Diagrams.vue`, frontend only) : annotation au crayon (freehand).
+- **Nouveau mode** `drawingMode = 'pen'` (exclusif avec `mask`/`select`) ; bascule + palette de
+  4 couleurs (rouge/bleu/vert/encre) dans le panneau d'outils. Cliquer-glisser trace une polyligne ;
+  les points sont échantillonnés (> 2 px monde) puis lissés (`stroke-linecap/linejoin=round`).
+- **Modèle** : nouveau champ `drawings: PenStroke[]` (`{id, points[], color, width}`) dans le JSON
+  `code` — **optionnel** (`data.drawings || []`) → rétro-compatible. Rendu via `<polyline>` en
+  coordonnées monde (suivent pan/zoom).
+- **Sélection/suppression** : en mode select, clic sur un tracé (hit-area élargie) → panneau
+  « Tracé sélectionné » + suppression ; `Suppr` géré ; intégré à l'historique undo/redo et au
+  nettoyage de sélection mutuel.
+- Persisté par `saveDiagram`, parsé/réinitialisé dans `selectDiagram`.
+
+**Note technique (tests)** : le canevas peut être hors viewport → les tests souris doivent
+`scrollIntoViewIfNeeded()` avant `boundingBox()` (sinon clics hors écran). `data-testid="diagram-canvas"`
+ajouté.
+
+**Rétro-compat** : champ `drawings` optionnel, mode masque intact.
+**Tests** : `diagrams-editor.spec.ts` étendu (tracé au crayon via souris). Build + Vitest 66 verts ;
+E2E 16 verts. ⚠️ Rendu visuel non vérifié en headless.
+**Roadmap terminée** (incréments 1→6). Reste optionnel : multi-sélection + alignement de groupes.
+
+
 ## [2026-06-22] Feature — éditeur de diagrammes : annuler / rétablir (incrément 5)
 
 **Incrément 5** (`Diagrams.vue`, frontend only) : historique undo/redo.
