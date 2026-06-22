@@ -1,5 +1,13 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] UX — masquer « En attente de sauvegarde… » en révision active
+
+En mode **Révision Active** d'une note (`notesStore.isReviewModeActive`), les cartes intégrées non
+encore sauvegardées affichaient « En attente de sauvegarde… » (bruit visuel pendant la révision).
+`renderSm2Buttons` (`NoteEdit.vue`) renvoie désormais `''` dans ce cas quand le mode révision est
+actif ; le rappel reste affiché en mode Lecture/édition. Build + Vitest 66 verts.
+
+
 ## [2026-06-22] Fix — timeout trop court sur la génération de flashcards IA
 
 **Symptôme** : la génération « avait l'air de marcher » puis affichait « IA indisponible ».
