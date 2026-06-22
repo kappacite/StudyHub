@@ -1,5 +1,28 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Feature — éditeur de diagrammes : édition inline + suppression de lien (incrément 1)
+
+**Besoin** : rendre l'éditeur de diagrammes plus complet/flexible (façon « feuille de papier »).
+Livré par incréments en PR séparées. Roadmap : (1) édition inline + suppression de lien + raccourci
+`Suppr` ; (2) pan/zoom ; (3) nouvelles formes + édition des liens ; (4) redimensionnement + snap +
+multi-sélection ; (5) undo/redo + crayon.
+
+**Incrément 1** (`Diagrams.vue`, frontend only, aucun changement de schéma `code`) :
+- **Édition inline du texte** : double-clic sur un nœud (rect/cercle/losange) → input superposé
+  (directive locale `v-focus`), validation à `Entrée`/`blur`, annulation à `Échap`. Le champ de la
+  barre latérale reste disponible.
+- **Sélection/suppression de lien** : les connexions deviennent cliquables (trait de clic élargi
+  invisible de 14px), le lien sélectionné passe en rose et s'épaissit ; panneau latéral « Lien
+  sélectionné » (origine → cible) avec bouton supprimer.
+- **Raccourci clavier `Suppr`/`Backspace`** : efface le nœud / masque / lien sélectionné (ignoré
+  pendant la saisie dans un input/textarea/contenteditable).
+- Sélections mutuellement exclusives (nœud ↔ masque ↔ lien) ; reset à la sélection d'un diagramme.
+
+**Rétro-compat** : aucun champ ajouté au JSON `code`, le mode masque (occlusion) est intact.
+**Tests** : nouveau `tests-e2e/diagrams-editor.spec.ts` (rendu des nœuds + édition inline au
+double-clic). Build + Vitest 66 verts ; E2E 9 verts. ⚠️ Rendu visuel non vérifié en headless.
+
+
 ## [2026-06-22] Feature — réviser un dossier entier
 
 **Besoin** : pouvoir réviser tout un classeur d'un coup (cartes dues de tous ses decks).

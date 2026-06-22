@@ -308,8 +308,29 @@
                 </div>
               </div>
 
+              <!-- Options du lien sélectionné -->
+              <div v-else-if="selectedConnection" class="space-y-4">
+                <h4 class="text-[10px] font-bold uppercase tracking-wider text-primary">Lien sélectionné</h4>
+
+                <p class="text-[11px] text-ink-muted leading-snug">
+                  <span class="font-bold text-ink">{{ getNode(selectedConnection.from)?.label || '?' }}</span>
+                  →
+                  <span class="font-bold text-ink">{{ getNode(selectedConnection.to)?.label || '?' }}</span>
+                </p>
+
+                <div class="pt-2">
+                  <button
+                    @click="deleteSelectedConnection"
+                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-danger border border-danger hover:bg-danger-soft dark:border-danger dark:hover:bg-danger-soft rounded-xl transition-colors"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                    Supprimer le lien
+                  </button>
+                </div>
+              </div>
+
               <div v-else class="text-center py-4 text-ink-subtle text-xs italic">
-                Sélectionnez une forme ou un masque sur le canevas pour l'éditer.
+                Double-cliquez une forme pour la renommer. Cliquez un lien pour le supprimer.
               </div>
             </div>
 
@@ -318,7 +339,7 @@
               <div class="px-4 py-1.5 border-b border-line-soft dark:border-line flex items-center justify-between text-[9px] text-ink-muted font-bold uppercase tracking-wider select-none">
                 <span>Plan interactif</span>
                 <span v-if="drawingMode === 'mask'" class="text-danger font-extrabold animate-pulse">Mode Masque actif : Cliquez-glissez pour dessiner un masque</span>
-                <span v-else>Clic : Sélectionner / Déplacer | Option Relier pour lier</span>
+                <span v-else>Clic : sélectionner / déplacer · Double-clic : renommer · Clic sur un lien : sélectionner · Suppr : effacer</span>
               </div>
 
               <!-- Zone SVG interactive -->
@@ -366,18 +387,32 @@
                   />
                   
                   <!-- Connexions -->
-                  <g class="pointer-events-none">
+                  <g>
                     <g v-for="(conn, idx) in connections" :key="idx">
-                      <line 
-                        v-if="getNode(conn.from) && getNode(conn.to)"
-                        :x1="getNode(conn.from)!.x" 
-                        :y1="getNode(conn.from)!.y" 
-                        :x2="getNode(conn.to)!.x" 
-                        :y2="getNode(conn.to)!.y" 
-                        stroke="#6366f1" 
-                        stroke-width="2" 
-                        marker-end="url(#arrow)" 
-                      />
+                      <template v-if="getNode(conn.from) && getNode(conn.to)">
+                        <!-- Zone de clic élargie (invisible) -->
+                        <line
+                          :x1="getNode(conn.from)!.x"
+                          :y1="getNode(conn.from)!.y"
+                          :x2="getNode(conn.to)!.x"
+                          :y2="getNode(conn.to)!.y"
+                          stroke="transparent"
+                          stroke-width="14"
+                          class="cursor-pointer"
+                          @click.stop="onConnectionClick(idx)"
+                        />
+                        <!-- Trait visible -->
+                        <line
+                          :x1="getNode(conn.from)!.x"
+                          :y1="getNode(conn.from)!.y"
+                          :x2="getNode(conn.to)!.x"
+                          :y2="getNode(conn.to)!.y"
+                          :stroke="selectedConnectionIndex === idx ? '#ec4899' : '#6366f1'"
+                          :stroke-width="selectedConnectionIndex === idx ? 3.5 : 2"
+                          marker-end="url(#arrow)"
+                          class="pointer-events-none transition-all"
+                        />
+                      </template>
                     </g>
                   </g>
                   
@@ -418,6 +453,7 @@
                   :style="{ top: `${node.y}px`, left: `${node.x}px` }"
                   @mousedown.stop="onNodeMouseDown(node, $event)"
                   @click.stop="onNodeClick(node)"
+                  @dblclick.stop="startEditingNode(node)"
                 >
                   <!-- Rectangle -->
                   <div 
@@ -428,7 +464,18 @@
                       selectedNodeId === node.id ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
                     ]"
                   >
-                    {{ node.label }}
+                    <input
+                      v-if="editingNodeId === node.id"
+                      v-model="node.label"
+                      class="w-full bg-transparent text-center text-[10px] font-bold text-white outline-none placeholder-white/60"
+                      @mousedown.stop
+                      @click.stop
+                      @blur="stopEditingNode"
+                      @keydown.enter.prevent="stopEditingNode"
+                      @keydown.esc.prevent="stopEditingNode"
+                      v-focus
+                    />
+                    <template v-else>{{ node.label }}</template>
                   </div>
 
                   <!-- Cercle -->
@@ -440,7 +487,18 @@
                       selectedNodeId === node.id ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
                     ]"
                   >
-                    {{ node.label }}
+                    <input
+                      v-if="editingNodeId === node.id"
+                      v-model="node.label"
+                      class="w-full bg-transparent text-center text-[9px] font-extrabold text-white outline-none placeholder-white/60"
+                      @mousedown.stop
+                      @click.stop
+                      @blur="stopEditingNode"
+                      @keydown.enter.prevent="stopEditingNode"
+                      @keydown.esc.prevent="stopEditingNode"
+                      v-focus
+                    />
+                    <template v-else>{{ node.label }}</template>
                   </div>
 
                   <!-- Losange -->
@@ -453,7 +511,18 @@
                       class="absolute inset-0 rotate-45 border rounded-lg shadow transition-all"
                       :class="[node.color, selectedNodeId === node.id ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
                     ></div>
-                    <span class="relative z-10 text-[8px] font-extrabold text-white px-2 leading-tight">{{ node.label }}</span>
+                    <input
+                      v-if="editingNodeId === node.id"
+                      v-model="node.label"
+                      class="relative z-10 w-12 bg-transparent text-center text-[8px] font-extrabold text-white outline-none placeholder-white/60"
+                      @mousedown.stop
+                      @click.stop
+                      @blur="stopEditingNode"
+                      @keydown.enter.prevent="stopEditingNode"
+                      @keydown.esc.prevent="stopEditingNode"
+                      v-focus
+                    />
+                    <span v-else class="relative z-10 text-[8px] font-extrabold text-white px-2 leading-tight">{{ node.label }}</span>
                   </div>
                 </div>
               </div>
@@ -496,7 +565,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../../services/api'
 import { useTagsStore, type Tag } from '../../stores/tags'
@@ -542,6 +611,13 @@ const selectedTagId = ref<number | null>(null)
 const activeTab = ref('visual')
 const selectedNodeId = ref<number | null>(null)
 const linkingSourceId = ref<number | null>(null)
+const editingNodeId = ref<number | null>(null)
+const selectedConnectionIndex = ref<number | null>(null)
+
+// Directive locale : focus automatique de l'input d'édition inline
+const vFocus = {
+  mounted: (el: HTMLInputElement) => el.focus()
+}
 
 // Chargement & Sauvegarde
 const loadingList = ref(false)
@@ -567,6 +643,9 @@ const backgroundImage = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
 const selectedMask = computed(() => masks.value.find(m => m.id === selectedMaskId.value) || null)
+const selectedConnection = computed(() =>
+  selectedConnectionIndex.value === null ? null : connections.value[selectedConnectionIndex.value] || null
+)
 
 const colors = [
   { name: 'Indigo', bg: 'bg-indigo-600' },
@@ -634,8 +713,10 @@ function selectDiagram(diag: BackendDiagram) {
   selectedNodeId.value = null
   linkingSourceId.value = null
   selectedMaskId.value = null
+  selectedConnectionIndex.value = null
+  editingNodeId.value = null
   drawingMode.value = 'select'
-  
+
   // Parser le contenu du diagramme
   try {
     const data = JSON.parse(diag.code)
@@ -795,7 +876,33 @@ function onNodeClick(node: VisualNode) {
     linkingSourceId.value = null
   } else {
     selectedNodeId.value = node.id
+    selectedMaskId.value = null
+    selectedConnectionIndex.value = null
   }
+}
+
+function startEditingNode(node: VisualNode) {
+  selectedNodeId.value = node.id
+  selectedMaskId.value = null
+  selectedConnectionIndex.value = null
+  editingNodeId.value = node.id
+}
+
+function stopEditingNode() {
+  editingNodeId.value = null
+}
+
+function onConnectionClick(idx: number) {
+  selectedConnectionIndex.value = idx
+  selectedNodeId.value = null
+  selectedMaskId.value = null
+  editingNodeId.value = null
+}
+
+function deleteSelectedConnection() {
+  if (selectedConnectionIndex.value === null) return
+  connections.value.splice(selectedConnectionIndex.value, 1)
+  selectedConnectionIndex.value = null
 }
 
 function startLinking() {
@@ -822,7 +929,9 @@ function onNodeMouseDown(node: VisualNode, event: MouseEvent) {
   draggedNodeId.value = node.id
   selectedNodeId.value = node.id
   selectedMaskId.value = null
-  
+  selectedConnectionIndex.value = null
+  if (editingNodeId.value !== node.id) editingNodeId.value = null
+
   dragOffset.value = {
     x: event.clientX - node.x,
     y: event.clientY - node.y
@@ -846,6 +955,8 @@ function onCanvasMouseDown(event: MouseEvent) {
   } else {
     selectedNodeId.value = null
     selectedMaskId.value = null
+    selectedConnectionIndex.value = null
+    editingNodeId.value = null
   }
 }
 
@@ -923,4 +1034,28 @@ function deleteSelectedMask() {
   masks.value = masks.value.filter(m => m.id !== selectedMaskId.value)
   selectedMaskId.value = null
 }
+
+// Raccourci clavier : Suppr / Backspace efface l'élément sélectionné
+function onKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Delete' && event.key !== 'Backspace') return
+  if (!selectedDiagram.value || activeTab.value !== 'visual') return
+
+  // Ne pas intercepter pendant la saisie de texte (titre, label inline, tags…)
+  const target = event.target as HTMLElement | null
+  if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return
+
+  if (selectedNodeId.value !== null) {
+    deleteSelectedNode()
+    event.preventDefault()
+  } else if (selectedMaskId.value !== null) {
+    deleteSelectedMask()
+    event.preventDefault()
+  } else if (selectedConnectionIndex.value !== null) {
+    deleteSelectedConnection()
+    event.preventDefault()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
