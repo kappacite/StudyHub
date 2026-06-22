@@ -84,3 +84,24 @@ test('Diagrams : sélection d\'un lien et ajout d\'un libellé', async ({ page }
   await page.getByPlaceholder('ex: entraîne').fill('active')
   await expect(page.locator('svg text', { hasText: 'active' })).toBeVisible()
 })
+
+test('Diagrams : poignée de redimensionnement sur un nœud sélectionné', async ({ page }) => {
+  await page.goto('/diagrams')
+  await page.getByText('Cycle cellulaire').click()
+
+  // Aucune poignée tant que rien n'est sélectionné
+  await expect(page.locator('.cursor-nwse-resize')).toHaveCount(0)
+
+  await page.getByText('Interphase').click()
+  await expect(page.locator('.cursor-nwse-resize')).toBeVisible()
+})
+
+test('Diagrams : bascule d\'alignement sur la grille', async ({ page }) => {
+  await page.goto('/diagrams')
+  await page.getByText('Cycle cellulaire').click()
+
+  const snap = page.getByRole('button', { name: /Aligner sur la grille/ })
+  await expect(snap).toHaveText(/Aligner sur la grille$/)
+  await snap.click()
+  await expect(snap).toHaveText(/actif/)
+})

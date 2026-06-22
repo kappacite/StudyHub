@@ -1,5 +1,24 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-22] Feature — éditeur de diagrammes : redimensionnement + alignement grille (incrément 4)
+
+**Incrément 4** (`Diagrams.vue`, frontend only) :
+- **Redimensionnement des nœuds** : `VisualNode` gagne `width?`/`height?` (optionnels). Une poignée
+  bas-droite (`cursor-nwse-resize`) apparaît sur le nœud sélectionné *redimensionnable* (rect,
+  ellipse, post-it). Le redimensionnement est **ancré au centre** (`width = 2·(worldX − node.x)`),
+  taille min 40px ; `sizeStyle()` applique la taille en inline-style par-dessus les classes Tailwind
+  par défaut (donc nœuds existants inchangés).
+- **Alignement sur la grille** : bascule dans la palette (`snapToGrid`, état de vue, défaut off).
+  Quand actif, le déplacement *et* le redimensionnement s'accrochent au pas de 20px (`snapVal()`).
+- Le redimensionnement réutilise `screenToWorld()` (correct sous pan/zoom) et est branché en tête de
+  `onCanvasMouseMove`/`onCanvasMouseUp` ; réinitialisé à la sélection d'un diagramme.
+
+**Rétro-compat** : `width`/`height` optionnels, anciens diagrammes inchangés ; mode masque intact.
+**Tests** : `diagrams-editor.spec.ts` étendu (poignée de resize au focus + bascule grille). Build +
+Vitest 66 verts ; E2E 14 verts. ⚠️ Rendu visuel non vérifié en headless.
+**Reste** : multi-sélection + alignement (incrément 5), undo/redo + crayon (incrément 6).
+
+
 ## [2026-06-22] Feature — éditeur de diagrammes : nouvelles formes + édition des liens (incrément 3)
 
 **Incrément 3** (`Diagrams.vue`, frontend only) :
