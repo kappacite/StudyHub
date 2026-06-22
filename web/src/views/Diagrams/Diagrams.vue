@@ -208,6 +208,15 @@
                 </button>
               </div>
 
+              <button
+                @click="snapToGrid = !snapToGrid"
+                class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold border rounded-xl transition-all"
+                :class="snapToGrid ? 'bg-primary-soft text-primary border-primary' : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle'"
+              >
+                <Grid3x3 class="w-3.5 h-3.5" />
+                {{ snapToGrid ? 'Aligner sur la grille : actif' : 'Aligner sur la grille' }}
+              </button>
+
               <!-- Contrôles d'occlusion et d'image d'arrière-plan -->
               <div class="h-[1px] bg-surface-soft dark:bg-surface-soft"></div>
 
@@ -528,6 +537,7 @@
                       node.color,
                       selectedNodeId === node.id ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
                     ]"
+                    :style="sizeStyle(node)"
                   >
                     <input
                       v-if="editingNodeId === node.id"
@@ -598,6 +608,7 @@
                       node.color,
                       selectedNodeId === node.id ? 'ring-2 ring-primary scale-105 ring-offset-2 dark:ring-offset-surface' : ''
                     ]"
+                    :style="sizeStyle(node)"
                   >
                     <input
                       v-if="editingNodeId === node.id"
@@ -638,6 +649,7 @@
                     v-else-if="node.type === 'sticky'"
                     class="w-24 h-24 -rotate-2 p-2 flex items-center justify-center text-center text-[10px] font-bold text-amber-950 bg-amber-200 shadow-md transition-all"
                     :class="[selectedNodeId === node.id ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-surface' : '']"
+                    :style="sizeStyle(node)"
                   >
                     <textarea
                       v-if="editingNodeId === node.id"
@@ -651,6 +663,14 @@
                     />
                     <span v-else class="whitespace-pre-wrap leading-tight">{{ node.label }}</span>
                   </div>
+
+                  <!-- Poignée de redimensionnement (coin bas-droit) -->
+                  <div
+                    v-if="selectedNodeId === node.id && isResizable(node)"
+                    class="absolute -bottom-1.5 -right-1.5 h-3 w-3 rounded-sm bg-primary border border-white shadow cursor-nwse-resize"
+                    @mousedown.stop="onResizeStart(node, $event)"
+                    @click.stop
+                  ></div>
                 </div>
                 </div>
 
@@ -714,7 +734,8 @@ import {
   Activity,
   Sparkles,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  Grid3x3
 } from '@lucide/vue'
 
 type NodeShape = 'rect' | 'circle' | 'diamond' | 'ellipse' | 'text' | 'sticky'
@@ -727,6 +748,8 @@ interface VisualNode {
   x: number
   y: number
   color: string
+  width?: number
+  height?: number
 }
 
 interface Connection {
@@ -780,6 +803,31 @@ const isPanning = ref(false)
 const panMoved = ref(false)
 const panPointerStart = ref({ x: 0, y: 0 })
 const panOriginStart = ref({ x: 0, y: 0 })
+
+// Redimensionnement des nœuds + alignement sur la grille
+const GRID_SIZE = 20
+const MIN_NODE_SIZE = 40
+const RESIZABLE_TYPES: NodeShape[] = ['rect', 'ellipse', 'sticky']
+const snapToGrid = ref(false)
+const resizingNodeId = ref<number | null>(null)
+
+function isResizable(node: VisualNode) {
+  return RESIZABLE_TYPES.includes(node.type)
+}
+
+function sizeStyle(node: VisualNode) {
+  if (node.width == null || node.height == null) return {}
+  return { width: `${node.width}px`, height: `${node.height}px` }
+}
+
+function snapVal(v: number) {
+  return snapToGrid.value ? Math.round(v / GRID_SIZE) * GRID_SIZE : v
+}
+
+function onResizeStart(node: VisualNode, _event: MouseEvent) {
+  resizingNodeId.value = node.id
+  selectedNodeId.value = node.id
+}
 
 const gridStyle = computed(() => {
   const size = 20 * zoom.value
@@ -950,6 +998,7 @@ function selectDiagram(diag: BackendDiagram) {
   drawingMode.value = 'select'
   resetView()
   isPanning.value = false
+  resizingNodeId.value = null
 
   // Parser le contenu du diagramme
   try {
@@ -1201,7 +1250,15 @@ function onCanvasMouseDown(event: MouseEvent) {
 }
 
 function onCanvasMouseMove(event: MouseEvent) {
-  if (drawingMode.value === 'mask' && isDrawingMask.value && tempMask.value) {
+  if (resizingNodeId.value !== null) {
+    const node = nodes.value.find(n => n.id === resizingNodeId.value)
+    if (node) {
+      // Redimensionnement ancré au centre : la poignée est au coin bas-droit
+      const w = screenToWorld(event.clientX, event.clientY)
+      node.width = snapVal(Math.max(MIN_NODE_SIZE, 2 * (w.x - node.x)))
+      node.height = snapVal(Math.max(MIN_NODE_SIZE, 2 * (w.y - node.y)))
+    }
+  } else if (drawingMode.value === 'mask' && isDrawingMask.value && tempMask.value) {
     const w = screenToWorld(event.clientX, event.clientY)
     const startX = tempMask.value.startX
     const startY = tempMask.value.startY
@@ -1214,8 +1271,8 @@ function onCanvasMouseMove(event: MouseEvent) {
     const node = nodes.value.find(n => n.id === draggedNodeId.value)
     if (node) {
       const w = screenToWorld(event.clientX, event.clientY)
-      node.x = clampCoord(w.x + dragOffset.value.x)
-      node.y = clampCoord(w.y + dragOffset.value.y)
+      node.x = clampCoord(snapVal(w.x + dragOffset.value.x))
+      node.y = clampCoord(snapVal(w.y + dragOffset.value.y))
     }
   } else if (isPanning.value) {
     const dx = event.clientX - panPointerStart.value.x
@@ -1227,6 +1284,10 @@ function onCanvasMouseMove(event: MouseEvent) {
 }
 
 function onCanvasMouseUp() {
+  if (resizingNodeId.value !== null) {
+    resizingNodeId.value = null
+    return
+  }
   if (drawingMode.value === 'mask' && isDrawingMask.value && tempMask.value) {
     isDrawingMask.value = false
     const width = tempMask.value.width
