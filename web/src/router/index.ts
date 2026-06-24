@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -217,7 +217,12 @@ const routes: Array<RouteRecordRaw> = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  // En desktop (Electron), l'app est servie via un protocole custom (app://-) sans
+  // serveur HTTP : l'history HTML5 casserait au rechargement/deep-link. On bascule
+  // donc en hash history, gated par le flag de build VITE_DESKTOP (web inchangé).
+  history: import.meta.env.VITE_DESKTOP === 'true'
+    ? createWebHashHistory()
+    : createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior(to, from, savedPosition) {
     // Si c'est la même page et que seuls les paramètres de requête/hash changent, ne pas scroller

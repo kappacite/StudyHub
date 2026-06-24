@@ -1,0 +1,34 @@
+{
+  "name": "studyhub-desktop",
+  "productName": "StudyHub",
+  "version": "0.1.0",
+  "description": "Coque bureau (Electron) de StudyHub — réutilise le build web/.",
+  "private": true,
+  "author": "StudyHub <denoeud.robyn@gmail.com>",
+  "homepage": "https://study.leshen.cloud",
+  "type": "commonjs",
+  "main": "dist/main.js",
+  "scripts": {
+    "build:electron": "tsc -p tsconfig.json",
+    "build:web": "cross-env VITE_DESKTOP=true VITE_API_BASE_URL=https://study.leshen.cloud npm --prefix ../web run build",
+    "dev:web": "npm --prefix ../web run dev",
+    "dev:electron": "wait-on tcp:5173 && npm run build:electron && electron .",
+    "dev": "concurrently -k -n web,electron \"npm:dev:web\" \"npm:dev:electron\"",
+    "dist": "npm run build:web && npm run build:electron && electron-builder",
+    "dist:linux": "npm run build:web && npm run build:electron && electron-builder --linux",
+    "dist:win": "npm run build:web && npm run build:electron && electron-builder --win",
+    "dist:mac": "npm run build:web && npm run build:electron && electron-builder --mac"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.3",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "typescript": "~6.0.2",
+    "wait-on": "^8.0.1"
+  },
+  "dependencies": {
+    "electron-serve": "^2.1.1"
+  }
+}

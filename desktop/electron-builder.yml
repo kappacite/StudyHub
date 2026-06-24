@@ -1,0 +1,39 @@
+appId: cloud.leshen.studyhub
+productName: StudyHub
+copyright: © StudyHub
+
+directories:
+  output: release
+  buildResources: build
+
+# Le main/preload compilés (dist/) sont packagés dans l'asar ; le build web
+# (web/dist) est copié hors asar et servi par electron-serve (process.resourcesPath).
+files:
+  - dist/**
+  - package.json
+extraResources:
+  - from: ../web/dist
+    to: web-dist
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Education
+  maintainer: StudyHub <denoeud.robyn@gmail.com>
+  icon: build/icon.png
+
+win:
+  target:
+    - nsis
+  icon: build/icon.png
+
+mac:
+  target:
+    - dmg
+  category: public.app-category.education
+  icon: build/icon.png
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
