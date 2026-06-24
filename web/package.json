@@ -10,10 +10,13 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:mobile": "vue-tsc -b && cross-env VITE_API_BASE_URL=https://study.leshen.cloud vite build",
+    "cap:sync": "npm run build:mobile && cap sync android",
+    "cap:android": "cap open android"
   },
   "dependencies": {
-    "@capacitor/core": "^8.3.4",
+    "@capacitor/core": "^8.4.1",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/local-notifications": "^8.2.0",
@@ -31,6 +34,8 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
     "@lucide/vue": "^1.17.0",
     "@playwright/test": "^1.60.0",
     "@types/dompurify": "^3.0.5",
@@ -42,6 +47,7 @@
     "@vue/test-utils": "^2.4.11",
     "@vue/tsconfig": "^0.9.1",
     "autoprefixer": "^10.5.0",
+    "cross-env": "^7.0.3",
     "happy-dom": "^20.10.2",
     "postcss": "^8.5.15",
     "tailwindcss": "^3.4.19",

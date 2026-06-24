@@ -1227,3 +1227,30 @@ rapide, un seul codebase front.
 * **Docs** : `docs/desktop.md`, skill `desktop-build`, carte projet `CLAUDE.md`.
 * **Reste** : icône définitive, signature/notarisation macOS + signature Windows,
   build Win/mac en CI. Vérifier l'`Origin` réelle au 1er lancement packagé.
+
+---
+
+## [2026-06-24] Application mobile — matérialisation de la coque Capacitor (Android)
+
+Les plugins `@capacitor/*` étaient déjà dépendances de `web/` (et `usePlatform()` les
+utilisait), mais aucune coque native n'existait : pas de CLI, pas de `capacitor.config`,
+pas de projet natif. Cette étape **matérialise** la coque mobile, sur le modèle du
+desktop (réutilisation du build web, un seul codebase front).
+
+* **Enracinement dans `web/`** (choix idiomatique Capacitor : config + CLI + plugins
+  dans le même package). Ajout devDeps : `@capacitor/cli`, `@capacitor/android`,
+  `cross-env` ; alignement de tout l'écosystème Capacitor en **8.4.1**.
+* **`web/capacitor.config.ts`** : appId `com.studyhub.app`, `webDir: 'dist'`,
+  `androidScheme: 'https'`. Projet natif généré dans **`web/android`** (`cap add` +
+  `cap sync` ; 4 plugins détectés : filesystem, haptics, local-notifications,
+  preferences). `cap doctor` ✅.
+* **Différence vs desktop** : servi en `https://localhost` (vraie origine HTTP) →
+  history HTML5 conservée (**pas de hash**, aucun changement de router). API pointée
+  vers le backend prod via `build:mobile` (pas de Nginx).
+* **Backend** : origines `https://localhost` (Android) et `capacitor://localhost` (iOS)
+  ajoutées à la whitelist `CORS_ALLOWED_ORIGINS`.
+* **Scripts `web/`** : `build:mobile`, `cap:sync`, `cap:android`.
+* **Docs** : `docs/mobile.md`, skill `mobile-build` corrigé (Cap 6→8, emplacement réel),
+  carte projet + stack `CLAUDE.md` (Cap 6→8).
+* **Différé** : compilation APK (SDK Android / CI), icône & splash, plateforme iOS
+  (Mac), tests émulateur/appareil. Vérifier les origines CORS réelles au 1er run natif.

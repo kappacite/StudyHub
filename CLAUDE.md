@@ -11,7 +11,7 @@
 | `backend/` (dao, services, api, models, schemas) | `backend-patterns` | `docs/backend.md` |
 | `web/src` (views, components, stores, services) | `frontend-patterns` | `docs/frontend.md`, `docs/design-system.md` |
 | Routes / contrats d'endpoints | `api-spec` | `docs/api_reference.md` |
-| `mobile/`, Capacitor, comportements natifs | `mobile-build` | — |
+| `web/android`, Capacitor, comportements natifs | `mobile-build` | `docs/mobile.md` |
 | `desktop/`, Electron, packaging bureau | `desktop-build` | `docs/desktop.md` |
 | Docker, CI/CD, migrations de déploiement | `deployment` | `docs/deployment.md`, `docs/migrations.md` |
 
@@ -21,7 +21,7 @@ Journal de dev : `docs/development_journal.md` · Fonctionnalités : `docs/FEATU
 
 - **Backend** : Python 3.12 · Flask 3 · SQLAlchemy 2 (pattern DAO) · PostgreSQL 16 (prod) / SQLite (dev) · JWT (`flask-jwt-extended`) · Alembic · Pydantic v2 · Pytest.
 - **Web** : Vue 3 (Composition API, `<script setup>`) · Vite 5 · TailwindCSS 3 + HeadlessUI · Pinia · Vue Router 4 · Axios · Tiptap, Mermaid.js, PDF.js · Vitest.
-- **Mobile** : Capacitor 6 encapsule le build web (un seul codebase `web/`). iOS 16+ / Android 10+.
+- **Mobile** : Capacitor 8 encapsule le build web (un seul codebase `web/`, projet natif `web/android`). Android 10+ / iOS 16+.
 - **Bureau** : Electron encapsule le build web (`desktop/`, electron-builder). Windows / macOS / Linux.
 - **IA** : Gemini (Blurting / feuille blanche).
 
