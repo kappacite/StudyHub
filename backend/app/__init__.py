@@ -8,10 +8,12 @@ def create_app(config_name=None):
     flask_app = Flask(__name__)
     
     # Whitelist CORS stricte ciblant l'URL du frontend
-    # app://- est l'origine émise par la coque bureau Electron (electron-serve).
+    # Origines des coques natives : app://- (bureau Electron), https://localhost
+    # (mobile Capacitor Android, androidScheme 'https'), capacitor://localhost (iOS).
     allowed_origins = os.environ.get(
         "CORS_ALLOWED_ORIGINS",
-        "https://study.leshen.cloud,http://localhost:5173,http://localhost:3000,app://-"
+        "https://study.leshen.cloud,http://localhost:5173,http://localhost:3000,"
+        "app://-,https://localhost,capacitor://localhost"
     )
     origins_list = [o.strip() for o in allowed_origins.split(",") if o.strip()]
     
