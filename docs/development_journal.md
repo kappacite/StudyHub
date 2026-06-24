@@ -1203,3 +1203,27 @@ bruts dans les templates), hors plan S0→S7. Migration en tokens, **une sous-PR
   incorrect, palette de nœuds) — toutes préservées intentionnellement.
 * **Reste uniquement** : audits transverses NON automatisables (revue humaine) — dark mode,
   contraste AA des pastels, responsive 375 px, smoke test Capacitor.
+
+---
+
+## [2026-06-24] Application bureau — démarrage (Electron)
+
+Nouvelle coque **bureau** (`desktop/`) qui réutilise le build web (`web/`) sans
+réécriture, sur le modèle de la coque mobile Capacitor. Objectif : déploiement bureau
+rapide, un seul codebase front.
+
+* **`desktop/`** : `src/main.ts` (BrowserWindow sécurisée — `contextIsolation`/`sandbox`,
+  liens externes → `shell.openExternal`), `src/preload.ts` (pont `window.studyhub`
+  `{ isDesktop, version }`), `electron-builder.yml` (cibles Linux AppImage+deb / Windows
+  NSIS / macOS dmg), icône dérivée de `web/public/favicon.svg`.
+* **Dev** : serveur Vite (`localhost:5173`, HMR). **Prod** : `web/dist` copié hors asar
+  (`extraResources`) et servi par `electron-serve` sous `app://-` (import dynamique ESM
+  depuis le main CJS).
+* **3 adaptations** : router en `createWebHashHistory` si `VITE_DESKTOP=true`
+  (`web/src/router/index.ts`, web inchangé) ; `usePlatform()` expose `isDesktop` ;
+  `VITE_API_BASE_URL` pointe le backend prod (pas de Nginx en desktop).
+* **Backend** : origine `app://-` ajoutée à la whitelist `CORS_ALLOWED_ORIGINS`
+  (`backend/app/__init__.py`).
+* **Docs** : `docs/desktop.md`, skill `desktop-build`, carte projet `CLAUDE.md`.
+* **Reste** : icône définitive, signature/notarisation macOS + signature Windows,
+  build Win/mac en CI. Vérifier l'`Origin` réelle au 1er lancement packagé.
