@@ -147,6 +147,43 @@ def test_quiz_task_completion_derived_from_module(client, auth_headers, app):
     assert sub.json["my_score_pct"] == 88.0
 
 
+def test_quiz_task_marked_done_on_read_without_manual_submit(client, auth_headers, app):
+    """Régression : terminer un QCM fait passer le devoir en « fait » au simple
+    chargement de /assignments/mine, sans validation manuelle (submit)."""
+    from app.models.note import Note
+    from app.models.quiz import Quiz
+
+    class_id, student_id, student_headers = _make_class_with_student(
+        client, auth_headers, app, "richread@test.com")
+    note_id = _create_note(client, auth_headers, "Quiz auto")
+
+    asgn = client.post(f"/api/v1/classes/{class_id}/assignments", json={
+        "title": "QCM auto",
+        "tasks": [{"task_type": "quiz", "ref": note_id}],
+    }, headers=auth_headers).json
+    asgn_id = asgn["id"]
+
+    # Avant complétion : à faire
+    mine = client.get("/api/v1/assignments/mine", headers=student_headers).json
+    target = next(a for a in mine if a["id"] == asgn_id)
+    assert target["status"] == "todo"
+    assert target["tasks"][0]["my_status"] == "todo"
+
+    # L'élève complète un quiz sur la note (état du module), SANS appeler submit.
+    with app.app_context():
+        note = db.session.query(Note).filter_by(id=note_id).first()
+        db.session.add(Quiz(note_id=note._id, user_id=student_id,
+                            score_pct=91.0, completed_at=datetime.utcnow()))
+        db.session.commit()
+
+    # Au simple rechargement, le devoir devient « fait » (recalcul à la lecture).
+    mine2 = client.get("/api/v1/assignments/mine", headers=student_headers).json
+    target2 = next(a for a in mine2 if a["id"] == asgn_id)
+    assert target2["tasks"][0]["my_status"] == "done"
+    assert target2["status"] == "done"
+    assert target2["my_score_pct"] == 91.0
+
+
 def test_assignment_requires_target(client, auth_headers, app):
     resp = client.post("/api/v1/classes", json={"name": "Vide"}, headers=auth_headers)
     class_id = resp.json["id"]

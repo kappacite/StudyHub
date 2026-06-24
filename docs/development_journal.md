@@ -1254,3 +1254,28 @@ desktop (réutilisation du build web, un seul codebase front).
   carte projet + stack `CLAUDE.md` (Cap 6→8).
 * **Différé** : compilation APK (SDK Android / CI), icône & splash, plateforme iOS
   (Mac), tests émulateur/appareil. Vérifier les origines CORS réelles au 1er run natif.
+
+---
+
+## [2026-06-24] Fix — un devoir terminé ne passait pas en « fait »
+
+**Symptôme** : un élève termine un devoir (QCM / examen blanc / blurting notamment) mais
+le statut reste « à faire ».
+
+**Cause** : le statut « fait » est stocké et n'est mis à jour que par un recalcul
+(`recompute_*`). Or ce recalcul n'était déclenché que (1) à la révision d'une carte
+flashcard et (2) par le bouton manuel « vérifier » (`submit_task`). **Aucun hook** sur
+la complétion d'un quiz/examen/blurting, et `get_my_assignments` lisait le statut
+**stocké sans recalculer**. La correspondance des clés `ref_id`↔modules était correcte
+(ce n'était pas un bug de mapping).
+
+**Correctif** (`backend/app/services/class_service.py`) :
+- `get_my_assignments` **recalcule à la lecture** chaque devoir depuis l'état réel des
+  modules (un seul commit après la boucle) → couvre tous les types de tâches d'un coup,
+  sans dépendre d'une validation manuelle ni d'un hook par module.
+- Effet de bord révélé puis corrigé : `_flashcards_state` marquait un **classeur vide**
+  comme « fait » — incohérent avec les ensembles de révision vides (#4). Aligné sur le
+  principe « cible vide ⇒ à faire » pour éviter qu'un devoir flashcards sur classeur vide
+  passe « fait » au simple affichage.
+- Test de non-régression : `test_quiz_task_marked_done_on_read_without_manual_submit`
+  (QCM complété ⇒ devoir « fait » sans `submit`). Suite backend complète verte.

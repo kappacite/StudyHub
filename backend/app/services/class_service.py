@@ -465,11 +465,17 @@ class ClassService:
         )
 
         result = []
+        dirty = False
         for membership in memberships:
             group = self._group_dao.get_by_id(membership.group_id)
             asgns = db.session.query(Assignment).filter_by(group_id=membership.group_id).all()
             for asgn in asgns:
-                prog = db.session.get(AssignmentProgress, (asgn.id, user_id))
+                # Recalcul à la lecture : le statut « fait » doit refléter l'état réel des
+                # modules (QCM/examen/blurting/flashcards/révision), sans dépendre d'une
+                # validation manuelle ni d'un hook par module. recompute_* ne commit pas ;
+                # on persiste en une fois après la boucle.
+                prog = recompute_assignment_for_user(db.session, user_id, asgn)
+                dirty = True
 
                 # Calcul du statut
                 if prog and prog.completed_at:
@@ -498,6 +504,9 @@ class ClassService:
                     status=status,
                     tasks=[self._serialize_task(t, viewer_id=user_id) for t in asgn.tasks],
                 ))
+
+        if dirty:
+            db.session.commit()
 
         # Trier : late et todo d'abord, puis par deadline
         def sort_key(a: AssignmentSummarySchema):
@@ -682,8 +691,11 @@ def _flashcards_state(db_session, user_id, binder_id, created_after, goal):
     payload = {"cards_reviewed": 0, "total_cards": total_cards}
 
     if total_cards == 0:
-        # Rien à réviser : tâche considérée comme faite.
-        return "done", 100.0, datetime.utcnow(), payload
+        # Classeur vide (rien à réviser / mal configuré) : la tâche n'est PAS « faite ».
+        # Cohérent avec les ensembles de révision vides (cf. _revision_state, #4) —
+        # sinon un devoir flashcards sur classeur vide se marquerait « fait » au simple
+        # affichage (recalcul à la lecture de get_my_assignments).
+        return "todo", None, None, payload
 
     sessions = (
         db_session.query(StudySession)
