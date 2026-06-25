@@ -1303,3 +1303,17 @@ laissée intacte. La sanitisation XSS finale reste assurée par `DOMPurify` au r
 **Tests** : `tests/test_notes.py` réécrit — vecteurs XSS toujours neutralisés, + 2
 régressions (`test_note_preserves_markdown_punctuation`,
 `test_copy_note_does_not_double_escape`). Suite backend complète verte.
+
+---
+
+## [2026-06-25] Fix #1 — saut de ligne dans une cellule de tableau Markdown
+
+**Symptôme** : impossible d'aller à la ligne proprement dans une cellule de tableau ;
+une touche Entrée cassait la ligne du tableau (un tableau Markdown impose une ligne de
+texte par ligne de tableau).
+
+**Correctif** (`web/src/views/Notes/NoteEdit.vue`) : ajout d'un saut de ligne souple
+via Maj+Entrée dans le textarea Markdown. À l'intérieur d'une ligne de tableau
+(`^\s*\|`), on insère un `<br>` explicite (rendu en saut de ligne dans la cellule par
+`marked`/`DOMPurify`) ; ailleurs, un saut de ligne souple classique. Aide de l'éditeur
+enrichie (section « Tableaux & sauts de ligne »). Typecheck `vue-tsc` vert.
