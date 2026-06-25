@@ -1,5 +1,25 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-25] Fix #4 — éditer les éléments d'un ensemble de révision
+
+**Symptôme** : impossible de modifier les éléments d'un set de révision (ex. corriger
+un QCM dans un ensemble QCM).
+
+**Cause** : le backend exposait pourtant le CRUD complet des items
+(`PUT/DELETE /revision/sets/:id/items/:item_id`), mais le frontend n'avait ni store
+(`updateItem`/`deleteItem`) ni UI d'édition (la modale ne servait qu'à créer).
+
+**Correctif** (frontend) :
+- Store `revision.ts` : `updateItem(setId, itemId, payload, tuning?)` et `deleteItem`.
+- `RevisionItemModal.vue` : mode édition (props `editItem`/`lockedSetId`/`lockedType`),
+  pré-remplissage des champs, sélecteurs type/cible masqués, bouton « Enregistrer »,
+  émission `updated`.
+- `RevisionSetStats.vue` : boutons Modifier / Supprimer par élément (ensembles éditables
+  uniquement, càd non partagés), rechargement stats+items après action.
+
+**Tests** (`tests/stores/revision.spec.ts`) : `updateItem` (avec/sans tuning),
+`deleteItem` (décrémente `item_count`). Vitest + `vue-tsc` verts.
+
 ## [2026-06-25] Fix #3 — supprimer un classeur partagé ne doit pas détruire l'original
 
 **Symptôme** : quand un destinataire « supprime » un classeur partagé, l'œuvre

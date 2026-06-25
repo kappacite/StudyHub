@@ -36,22 +36,32 @@
         <p class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-3">Éléments ({{ stats.items.length }})</p>
         <div class="space-y-2">
           <div v-for="it in stats.items" :key="it.item_id" class="border border-line dark:border-line rounded-xl">
-            <button @click="toggle(it.item_id)" class="w-full flex items-center justify-between gap-3 p-3 text-left">
-              <span class="min-w-0 flex-1">
-                <span class="text-sm font-semibold text-ink dark:text-ink-subtle truncate block">{{ it.label }}</span>
-                <span class="flex flex-wrap gap-1.5 mt-1">
-                  <span v-if="it.is_leech" class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger">Sangsue</span>
-                  <span v-if="it.is_mature" class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-success-soft text-success dark:bg-success-soft dark:text-success">Mûr</span>
-                  <span v-if="it.due" class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-warning-soft text-warning dark:bg-warning-soft dark:text-warning">À réviser</span>
+            <div class="flex items-center gap-1 pr-2">
+              <button @click="toggle(it.item_id)" class="flex-1 min-w-0 flex items-center justify-between gap-3 p-3 text-left">
+                <span class="min-w-0 flex-1">
+                  <span class="text-sm font-semibold text-ink dark:text-ink-subtle truncate block">{{ it.label }}</span>
+                  <span class="flex flex-wrap gap-1.5 mt-1">
+                    <span v-if="it.is_leech" class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger">Sangsue</span>
+                    <span v-if="it.is_mature" class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-success-soft text-success dark:bg-success-soft dark:text-success">Mûr</span>
+                    <span v-if="it.due" class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-warning-soft text-warning dark:bg-warning-soft dark:text-warning">À réviser</span>
+                  </span>
                 </span>
-              </span>
-              <span class="shrink-0 text-right">
-                <span class="text-xs font-bold" :class="it.success_rate >= 70 ? 'text-success' : it.reviews ? 'text-danger' : 'text-ink-subtle'">
-                  {{ it.reviews ? `${it.success_rate}%` : '—' }}
+                <span class="shrink-0 text-right">
+                  <span class="text-xs font-bold" :class="it.success_rate >= 70 ? 'text-success' : it.reviews ? 'text-danger' : 'text-ink-subtle'">
+                    {{ it.reviews ? `${it.success_rate}%` : '—' }}
+                  </span>
+                  <span class="block text-[10px] text-ink-subtle">D {{ it.difficulty }} · R {{ Math.round(it.retrievability * 100) }}%</span>
                 </span>
-                <span class="block text-[10px] text-ink-subtle">D {{ it.difficulty }} · R {{ Math.round(it.retrievability * 100) }}%</span>
-              </span>
-            </button>
+              </button>
+              <template v-if="canEdit">
+                <button @click="openEdit(it.item_id)" class="shrink-0 p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft transition-all" title="Modifier l'élément">
+                  <Pencil class="w-4 h-4" />
+                </button>
+                <button @click="confirmDeleteItem(it.item_id)" class="shrink-0 p-1.5 text-ink-subtle hover:text-danger rounded-lg hover:bg-danger-soft transition-all" title="Supprimer l'élément">
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </template>
+            </div>
 
             <!-- Détail / courbe -->
             <div v-if="expanded === it.item_id" class="px-3 pb-3 border-t border-line-soft dark:border-line pt-3">
@@ -77,6 +87,17 @@
         </div>
       </div>
     </template>
+
+    <RevisionItemModal
+      v-if="showEditModal && editingItem"
+      :binder-id="null"
+      :decks="[]"
+      :edit-item="editingItem"
+      :locked-set-id="setId"
+      :locked-type="stats?.type"
+      @close="showEditModal = false"
+      @updated="onItemSaved"
+    />
   </div>
 </template>
 
@@ -84,8 +105,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useRevisionStore } from '../../stores/revision'
-import type { SetStats, ItemStats } from '../../stores/revision'
-import { ChevronLeft } from 'lucide-vue-next'
+import type { SetStats, ItemStats, RevisionItem, RevisionSet } from '../../stores/revision'
+import RevisionItemModal from '../../components/decks/RevisionItemModal.vue'
+import { ChevronLeft, Pencil, Trash2 } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
@@ -98,15 +120,65 @@ const expanded = ref<number | null>(null)
 const detail = ref<ItemStats | null>(null)
 const detailLoading = ref(false)
 
+// Édition des éléments (réservée aux ensembles éditables, càd non partagés).
+const setMeta = ref<RevisionSet | null>(null)
+const items = ref<RevisionItem[]>([])
+const editingItem = ref<RevisionItem | null>(null)
+const showEditModal = ref(false)
+const canEdit = computed(() => !!setMeta.value && !setMeta.value.read_only)
+
+async function loadItems() {
+  if (canEdit.value) {
+    try {
+      items.value = await revisionStore.fetchItems(setId)
+    } catch (e) {
+      console.error('Erreur de chargement des éléments', e)
+    }
+  }
+}
+
 onMounted(async () => {
   try {
     stats.value = await revisionStore.fetchSetStats(setId)
+    try {
+      setMeta.value = await revisionStore.fetchSet(setId)
+    } catch (e) {
+      console.error('Erreur de chargement de l\'ensemble', e)
+    }
+    await loadItems()
   } catch (e) {
     console.error('Erreur de chargement des stats', e)
   } finally {
     loading.value = false
   }
 })
+
+function openEdit(itemId: number) {
+  const found = items.value.find(i => i.id === itemId)
+  if (!found) return
+  editingItem.value = found
+  showEditModal.value = true
+}
+
+async function onItemSaved() {
+  showEditModal.value = false
+  editingItem.value = null
+  stats.value = await revisionStore.fetchSetStats(setId)
+  await loadItems()
+}
+
+async function confirmDeleteItem(itemId: number) {
+  if (!confirm('Supprimer cet élément de révision ? Cette action est définitive.')) return
+  try {
+    await revisionStore.deleteItem(setId, itemId)
+    if (expanded.value === itemId) expanded.value = null
+    stats.value = await revisionStore.fetchSetStats(setId)
+    await loadItems()
+  } catch (e) {
+    console.error('Erreur lors de la suppression de l\'élément', e)
+    alert('Impossible de supprimer cet élément.')
+  }
+}
 
 const kpis = computed(() => {
   const s = stats.value

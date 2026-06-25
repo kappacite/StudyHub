@@ -52,6 +52,39 @@ describe('revision store — ensembles typés (D3c)', () => {
     expect(store.sets[0].item_count).toBe(1)
   })
 
+  it('updateItem envoie le payload modifié (PUT items/:id)', async () => {
+    api.put.mockResolvedValue({ data: { id: 9, set_id: 5, payload: {}, tuning: 1, position: 0, interval: 0, ease_factor: 2.5, repetitions: 0, next_review: '' } })
+    const store = useRevisionStore()
+
+    const payload = { question: 'Modifiée ?', options: [{ id: 'a', text: 'x', correct: true }, { id: 'b', text: 'y', correct: false }] }
+    await store.updateItem(5, 9, payload)
+
+    expect(api.put).toHaveBeenCalledWith('/revision/sets/5/items/9', { payload })
+  })
+
+  it('updateItem inclut tuning si fourni', async () => {
+    api.put.mockResolvedValue({ data: { id: 9 } })
+    const store = useRevisionStore()
+    await store.updateItem(5, 9, { term: 't', definition: 'd' }, 1.5)
+    expect(api.put).toHaveBeenCalledWith('/revision/sets/5/items/9', { payload: { term: 't', definition: 'd' }, tuning: 1.5 })
+  })
+
+  it('deleteItem supprime et décrémente item_count', async () => {
+    api.post
+      .mockResolvedValueOnce({ data: { id: 5, name: 'QCM', type: 'qcm', binder_id: null, tuning_default: 1, is_public: false, item_count: 0 } })
+      .mockResolvedValueOnce({ data: { id: 9, set_id: 5, payload: {}, tuning: 1, position: 0, interval: 0, ease_factor: 2.5, repetitions: 0, next_review: '' } })
+    api.delete.mockResolvedValue({ data: {} })
+    const store = useRevisionStore()
+    const set = await store.createSet('QCM', 'qcm', null)
+    await store.createItem(set.id, { question: 'q', options: [{ id: 'a', text: 'x', correct: true }, { id: 'b', text: 'y', correct: false }] })
+    expect(store.sets[0].item_count).toBe(1)
+
+    await store.deleteItem(5, 9)
+
+    expect(api.delete).toHaveBeenCalledWith('/revision/sets/5/items/9')
+    expect(store.sets[0].item_count).toBe(0)
+  })
+
   it('runQcm poste les réponses et renvoie le score pondéré', async () => {
     const runResult = { score: 3, max_score: 4, percentage: 75, results: [] }
     api.post.mockResolvedValue({ data: runResult })
