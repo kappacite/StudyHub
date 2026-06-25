@@ -1,44 +1,46 @@
-import bleach
 import re
-from bleach.css_sanitizer import CSSSanitizer
 
-def sanitize_html(html_content: str) -> str:
+# Balises dont le contenu doit être supprimé intégralement (exécutables / inertes dangereux).
+_DANGEROUS_BLOCK_RE = re.compile(
+    r"<(script|style|iframe|object|embed|noscript|template|svg|math)\b[\s\S]*?</\1\s*>",
+    flags=re.IGNORECASE,
+)
+# Mêmes balises sous forme non fermée / auto-fermante + balises d'en-tête sensibles.
+_DANGEROUS_TAG_RE = re.compile(
+    r"<\/?(script|style|iframe|object|embed|noscript|template|svg|math|link|meta|base)\b[^>]*>",
+    flags=re.IGNORECASE,
+)
+# Gestionnaires d'événements inline : on*="…" / on*='…' / on*=valeur.
+_EVENT_HANDLER_RE = re.compile(
+    r"""\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)""",
+    flags=re.IGNORECASE,
+)
+# URIs exécutables dans href/src (javascript:, data:, vbscript:).
+_DANGEROUS_URI_RE = re.compile(
+    r"""(href|src|xlink:href)\s*=\s*(["']?)\s*(?:javascript|data|vbscript):[^"'\s>]*\2""",
+    flags=re.IGNORECASE,
+)
+
+
+def sanitize_html(content: str) -> str:
+    """Assainit le contenu d'une note **sans corrompre le Markdown**.
+
+    Les notes StudyHub sont stockées en Markdown brut (l'éditeur est un textarea
+    Markdown) et rendues côté client via `marked` puis `DOMPurify` (couche de
+    défense XSS principale, au moment du rendu). Faire passer ce Markdown dans un
+    sanitizer HTML classique (bleach) échappait les caractères structurels du
+    Markdown (`>` des citations, `<`, `&`) en entités HTML, cassant l'affichage —
+    notamment lors d'une copie où le contenu était ré-échappé.
+
+    Ici on se contente donc d'une défense en profondeur ciblée : on retire les
+    constructions réellement exécutables (script/iframe/handlers `on*`, URIs
+    `javascript:`…) tout en laissant la ponctuation Markdown intacte.
     """
-    Assainit le code HTML provenant de l'éditeur riche (Tiptap) pour prévenir les failles XSS
-    tout en préservant le formatage légitime.
-    """
-    if not html_content:
+    if not content:
         return ""
-        
-    # Nettoyer complètement les balises script et iframe (et leur contenu) pour éviter qu'elles ne soient conservées sous forme de texte brut
-    content_clean = re.sub(r'<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>', '', html_content, flags=re.IGNORECASE)
-    content_clean = re.sub(r'<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>', '', content_clean, flags=re.IGNORECASE)
-        
-    allowed_tags = [
-        'a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 'em', 'i', 'li', 'ol', 'strong', 'ul',
-        'p', 'span', 'u', 's', 'pre', 'br', 'hr',
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'table', 'thead', 'tbody', 'tr', 'th', 'td',
-        'img'
-    ]
-    
-    allowed_attributes = {
-        'a': ['href', 'title', 'target', 'rel'],
-        'img': ['src', 'alt', 'title', 'width', 'height'],
-        '*': ['class', 'style']
-    }
-    
-    allowed_styles = [
-        'color', 'background-color', 'text-align', 'font-size', 'font-family',
-        'font-weight', 'font-style', 'text-decoration'
-    ]
-    
-    css_sanitizer = CSSSanitizer(allowed_css_properties=allowed_styles)
-    
-    return bleach.clean(
-        content_clean,
-        tags=allowed_tags,
-        attributes=allowed_attributes,
-        css_sanitizer=css_sanitizer,
-        strip=True
-    )
+
+    cleaned = _DANGEROUS_BLOCK_RE.sub("", content)
+    cleaned = _DANGEROUS_TAG_RE.sub("", cleaned)
+    cleaned = _EVENT_HANDLER_RE.sub("", cleaned)
+    cleaned = _DANGEROUS_URI_RE.sub(r"\1=\2#\2", cleaned)
+    return cleaned

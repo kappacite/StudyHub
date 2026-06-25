@@ -1279,3 +1279,27 @@ la complétion d'un quiz/examen/blurting, et `get_my_assignments` lisait le stat
   passe « fait » au simple affichage.
 - Test de non-régression : `test_quiz_task_marked_done_on_read_without_manual_submit`
   (QCM complété ⇒ devoir « fait » sans `submit`). Suite backend complète verte.
+
+---
+
+## [2026-06-25] Fix #2 — la copie/sauvegarde de note échappait le Markdown en HTML
+
+**Symptôme** : en copiant (ou simplement en sauvegardant) une note, certains caractères
+étaient transformés en entités HTML (`>` → `&gt;`, `<` → `&lt;`), cassant l'affichage —
+notamment les citations Markdown (`> …`) et les comparaisons (`a > b`).
+
+**Cause** : les notes sont stockées en **Markdown brut** (l'éditeur est un textarea
+Markdown) et rendues côté client via `marked` + `DOMPurify` (vraie barrière XSS, au
+rendu). Or `note_service` faisait passer ce Markdown dans `sanitize_html` (bleach), un
+sanitizer **HTML** qui échappe la ponctuation structurelle du Markdown. La copie
+rendait le symptôme visible car elle ré-assainissait un contenu déjà stocké.
+
+**Correctif** (`backend/app/utils/html_sanitizer.py`) : `sanitize_html` ne fait plus
+d'échappement HTML. Défense en profondeur ciblée seulement : suppression des blocs/balises
+exécutables (`script`, `iframe`, `style`, `object`…), des gestionnaires `on*` inline et
+des URIs `javascript:`/`data:`/`vbscript:`. La ponctuation Markdown (`>`, `<`, `&`) est
+laissée intacte. La sanitisation XSS finale reste assurée par `DOMPurify` au rendu.
+
+**Tests** : `tests/test_notes.py` réécrit — vecteurs XSS toujours neutralisés, + 2
+régressions (`test_note_preserves_markdown_punctuation`,
+`test_copy_note_does_not_double_escape`). Suite backend complète verte.
