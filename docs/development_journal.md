@@ -1,5 +1,24 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-25] Fix #5 — notes d'un classeur partagé qui « disparaissent »
+
+**Symptôme** : un classeur partagé (cours/groupe) ; ses notes visibles au début puis
+disparues alors que le classeur reste partagé.
+
+**Cause** : `note_service.get_notes` n'incluait les notes partagées (lecture seule) que
+dans le **listing global strict** (`binder_id`/`search`/`tag_id` tous nuls). Dès qu'on
+scope la requête à un classeur (`GET /notes?binder_id=<classeur partagé>`), le DAO filtre
+par `user_id` et renvoie `[]` (les notes appartiennent au propriétaire, pas au lecteur).
+
+**Correctif** (`backend/app/services/note_service.py`) : `get_notes` gère désormais
+explicitement le scope « classeur partagé non possédé » (après contrôle d'accès via
+`check_binder_access`) en renvoyant ses notes en lecture seule ; la recherche textuelle
+inclut aussi les notes partagées. Helpers `_shared_notes_response` / `_note_matches_search`.
+
+**Tests** (`tests/test_shared_class_notes.py`) :
+`test_student_sees_shared_notes_when_filtering_by_binder`,
+`test_non_member_cannot_list_shared_binder_notes`. Suite backend complète verte.
+
 ## [2026-06-22] UX — masquer « En attente de sauvegarde… » en révision active
 
 En mode **Révision Active** d'une note (`notesStore.isReviewModeActive`), les cartes intégrées non

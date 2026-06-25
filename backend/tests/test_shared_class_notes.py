@@ -204,6 +204,33 @@ def test_binder_classes_indicator(client, auth_headers, test_user, app):
     assert forbidden.status_code == 404
 
 
+def test_student_sees_shared_notes_when_filtering_by_binder(client, auth_headers, test_user, app):
+    """Régression #5 — les notes d'un classeur partagé ne doivent pas
+    « disparaître » lorsqu'on liste les notes scopées à ce classeur."""
+    binder_uuid, note_uuid, invite_code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+
+    _other_user(app, "eleve_scope@example.com", "elevescope")
+    student = _login(client, "eleve_scope@example.com")
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student)
+
+    resp = client.get(f"/api/v1/notes?binder_id={binder_uuid}", headers=student)
+    assert resp.status_code == 200
+    notes = resp.get_json()["data"]
+    note = next((n for n in notes if n["id"] == note_uuid), None)
+    assert note is not None, "note du classeur partagé absente du listing scopé au classeur"
+    assert note["read_only"] is True
+
+
+def test_non_member_cannot_list_shared_binder_notes(client, auth_headers, test_user, app):
+    """Le scope par classeur partagé reste protégé : un non-membre est refusé."""
+    binder_uuid, _note, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+
+    _other_user(app, "intrus_scope@example.com", "intrusscope")
+    outsider = _login(client, "intrus_scope@example.com")
+    resp = client.get(f"/api/v1/notes?binder_id={binder_uuid}", headers=outsider)
+    assert resp.status_code in (403, 404)
+
+
 def test_non_member_does_not_see_shared_notes(client, auth_headers, test_user, app):
     _binder, note_uuid, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
 

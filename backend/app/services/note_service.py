@@ -50,31 +50,50 @@ class NoteService:
         return NoteResponse.model_validate(created)
 
     def get_notes(
-        self, 
-        user_id: int, 
-        binder_id: Optional[int] = None, 
-        search: Optional[str] = None, 
+        self,
+        user_id: int,
+        binder_id: Optional[int] = None,
+        search: Optional[str] = None,
         tag_id: Optional[int] = None,
-        page: int = 1, 
+        page: int = 1,
         per_page: int = 20
     ) -> Tuple[List[NoteResponse], int]:
         offset = (page - 1) * per_page
-        notes = self._note_dao.search_notes(user_id, binder_id, search, tag_id, limit=per_page, offset=offset)
-        total = self._note_dao.count_notes(user_id, binder_id, search, tag_id)
 
+        # Cas d'un listing scopé à un classeur précis : s'il s'agit d'un classeur
+        # PARTAGÉ (cours/groupe, non possédé), ses notes sont filtrées par user_id
+        # par le DAO et « disparaissent ». On renvoie alors ses notes en lecture
+        # seule. (Sinon — classeur possédé ou inexistant — chemin DAO normal.)
+        if binder_id is not None:
+            binder = self._binder_dao.get_by_id(binder_id)
+            if binder is not None and binder.user_id != user_id:
+                from app.utils.security import check_binder_access
+                check_binder_access(self._note_dao.db, binder_id, user_id, write_required=False)
+                return self._shared_notes_response([binder._id], user_id, search, offset, per_page)
+
+            notes = self._note_dao.search_notes(user_id, binder_id, search, tag_id, limit=per_page, offset=offset)
+            total = self._note_dao.count_notes(user_id, binder_id, search, tag_id)
+            return [NoteResponse.model_validate(n) for n in notes], total
+
+        # Listing global : notes possédées (paginées) …
+        notes = self._note_dao.search_notes(user_id, None, search, tag_id, limit=per_page, offset=offset)
+        total = self._note_dao.count_notes(user_id, None, search, tag_id)
         responses = [NoteResponse.model_validate(n) for n in notes]
 
-        # Lors d'un listing global (sans binder précis), inclure les notes des
-        # classeurs partagés par un cours/groupe, en LECTURE SEULE.
-        if binder_id is None and search is None and tag_id is None:
+        # … plus les notes des classeurs partagés (cours/groupe) en LECTURE SEULE.
+        # On respecte la recherche textuelle, mais pas le filtre par tag (les tags
+        # appartiennent au propriétaire, pas au lecteur).
+        if tag_id is None:
             shared_binder_ids: list = []
             for root in self._binder_dao.get_shared_root_binders(user_id):
                 shared_binder_ids.append(root._id)
                 shared_binder_ids.extend(d._id for d in self._binder_dao.get_descendants(root._id))
             if shared_binder_ids:
-                hidden = self._note_dao.get_hidden_note_ids(user_id) if hasattr(self._note_dao, "get_hidden_note_ids") else set()
+                hidden = self._note_dao.get_hidden_note_ids(user_id)
                 for n in self._note_dao.get_by_binder_internal_ids(shared_binder_ids):
                     if n._id in hidden:
+                        continue
+                    if search and not self._note_matches_search(n, search):
                         continue
                     resp = NoteResponse.model_validate(n)
                     resp.read_only = True
@@ -82,6 +101,29 @@ class NoteService:
                 total = len(responses)
 
         return responses, total
+
+    @staticmethod
+    def _note_matches_search(note: Note, search: str) -> bool:
+        needle = search.lower()
+        return needle in (note.title or "").lower() or needle in (note.content or "").lower()
+
+    def _shared_notes_response(
+        self, binder_internal_ids: List[int], user_id: int, search: Optional[str], offset: int, per_page: int
+    ) -> Tuple[List[NoteResponse], int]:
+        """Notes (tous propriétaires) d'un ou plusieurs classeurs partagés, en
+        lecture seule, hors notes masquées par le lecteur."""
+        hidden = self._note_dao.get_hidden_note_ids(user_id)
+        results: List[NoteResponse] = []
+        for n in self._note_dao.get_by_binder_internal_ids(binder_internal_ids):
+            if n._id in hidden:
+                continue
+            if search and not self._note_matches_search(n, search):
+                continue
+            resp = NoteResponse.model_validate(n)
+            resp.read_only = True
+            results.append(resp)
+        total = len(results)
+        return results[offset:offset + per_page], total
 
     def get_note(self, user_id: int, note_id: int) -> NoteResponse:
         note = self._get_note_or_404(note_id, user_id, write_required=False)
