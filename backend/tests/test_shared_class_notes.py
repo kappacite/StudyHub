@@ -281,6 +281,46 @@ def test_non_member_cannot_run_ai_quiz_on_shared_note(mock_gen, client, auth_hea
     assert resp.status_code in (403, 404)
 
 
+def test_deleting_shared_binder_does_not_destroy_original(client, auth_headers, test_user, app):
+    """Régression #3 — un destinataire qui « supprime » un classeur partagé ne
+    détruit PAS l'original ; il est seulement retiré de sa propre vue."""
+    binder_uuid, note_uuid, invite_code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+
+    _other_user(app, "suppr@example.com", "suppr")
+    student = _login(client, "suppr@example.com")
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student)
+
+    # L'élève voit le classeur partagé.
+    binders = client.get("/api/v1/binders?all=true", headers=student).get_json()["data"]
+    assert any(b["id"] == binder_uuid for b in binders)
+
+    # L'élève « supprime » le classeur partagé -> succès (204), mais masquage seulement.
+    resp = client.delete(f"/api/v1/binders/{binder_uuid}", headers=student)
+    assert resp.status_code == 204
+
+    # Côté élève : le classeur (et ses notes) ont disparu de SA vue.
+    binders_after = client.get("/api/v1/binders?all=true", headers=student).get_json()["data"]
+    assert all(b["id"] != binder_uuid for b in binders_after)
+    notes_after = client.get("/api/v1/notes", headers=student).get_json()["data"]
+    assert all(n["id"] != note_uuid for n in notes_after)
+
+    # Côté propriétaire (prof) : l'original est intact.
+    owner_binders = client.get("/api/v1/binders?all=true", headers=auth_headers).get_json()["data"]
+    assert any(b["id"] == binder_uuid for b in owner_binders)
+    owner_note = client.get(f"/api/v1/notes/{note_uuid}", headers=auth_headers)
+    assert owner_note.status_code == 200
+    assert owner_note.json["read_only"] is False
+
+
+def test_owner_can_still_delete_own_binder(client, auth_headers, test_user, app):
+    binder_uuid, _note, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+    resp = client.delete(f"/api/v1/binders/{binder_uuid}", headers=auth_headers)
+    assert resp.status_code == 204
+    # Réellement supprimé pour le propriétaire (absent de son arborescence).
+    binders = client.get("/api/v1/binders?all=true", headers=auth_headers).get_json()["data"]
+    assert all(b["id"] != binder_uuid for b in binders)
+
+
 def test_non_member_does_not_see_shared_notes(client, auth_headers, test_user, app):
     _binder, note_uuid, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
 

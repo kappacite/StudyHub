@@ -84,8 +84,11 @@ class NoteService:
         # On respecte la recherche textuelle, mais pas le filtre par tag (les tags
         # appartiennent au propriétaire, pas au lecteur).
         if tag_id is None:
+            hidden_binder_ids = self._binder_dao.get_hidden_binder_ids(user_id)
             shared_binder_ids: list = []
             for root in self._binder_dao.get_shared_root_binders(user_id):
+                if root._id in hidden_binder_ids:
+                    continue
                 shared_binder_ids.append(root._id)
                 shared_binder_ids.extend(d._id for d in self._binder_dao.get_descendants(root._id))
             if shared_binder_ids:
