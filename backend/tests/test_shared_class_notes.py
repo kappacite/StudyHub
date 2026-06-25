@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from app.extensions import db
 from app.models.user import User
 from app.models.binder import Binder
@@ -228,6 +230,54 @@ def test_non_member_cannot_list_shared_binder_notes(client, auth_headers, test_u
     _other_user(app, "intrus_scope@example.com", "intrusscope")
     outsider = _login(client, "intrus_scope@example.com")
     resp = client.get(f"/api/v1/notes?binder_id={binder_uuid}", headers=outsider)
+    assert resp.status_code in (403, 404)
+
+
+@patch("app.services.ai_service.AIService.generate_quiz")
+def test_student_can_run_ai_quiz_on_shared_note(mock_gen, client, auth_headers, test_user, app):
+    """Régression #6 — la révision active IA (QCM) doit être possible sur une note
+    partagée non possédée ; le quiz produit appartient à l'élève (isolation)."""
+    mock_gen.return_value = [{
+        "question": "Q ?",
+        "options": [
+            {"id": "a", "text": "x", "correct": True},
+            {"id": "b", "text": "y", "correct": False},
+        ],
+    }]
+    _binder, note_uuid, invite_code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+
+    _other_user(app, "revise@example.com", "revise")
+    student = _login(client, "revise@example.com")
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student)
+
+    gen = client.post(
+        "/api/v1/quizzes/generate",
+        json={"note_id": note_uuid, "question_count": 1},
+        headers=student,
+    )
+    assert gen.status_code == 201, gen.json
+
+    # Le prof (propriétaire) ne voit pas le quiz de l'élève (isolation par user_id).
+    teacher_quizzes = client.get(f"/api/v1/quizzes/note/{note_uuid}", headers=auth_headers).json
+    assert teacher_quizzes == [] or all(q["id"] != gen.json["id"] for q in teacher_quizzes)
+    # L'élève voit son propre quiz.
+    student_quizzes = client.get(f"/api/v1/quizzes/note/{note_uuid}", headers=student).json
+    assert any(q["id"] == gen.json["id"] for q in student_quizzes)
+
+
+@patch("app.services.ai_service.AIService.generate_quiz")
+def test_non_member_cannot_run_ai_quiz_on_shared_note(mock_gen, client, auth_headers, test_user, app):
+    mock_gen.return_value = [{"question": "Q ?", "options": [
+        {"id": "a", "text": "x", "correct": True}, {"id": "b", "text": "y", "correct": False}]}]
+    _binder, note_uuid, _code = _setup_shared_class(client, auth_headers, app, test_user["id"])
+
+    _other_user(app, "intrus_ai@example.com", "intrusai")
+    outsider = _login(client, "intrus_ai@example.com")
+    resp = client.post(
+        "/api/v1/quizzes/generate",
+        json={"note_id": note_uuid, "question_count": 1},
+        headers=outsider,
+    )
     assert resp.status_code in (403, 404)
 
 

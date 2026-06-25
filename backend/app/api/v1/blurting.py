@@ -55,9 +55,10 @@ def analyze():
     note = note_dao.get_by_id(note_id)
     if not note:
         raise ResourceNotFoundError("Note introuvable.")
-    if note.user_id != user_id:
-        raise ForbiddenError("Accès interdit à cette note.")
-        
+    # Autorise aussi la révision active sur une note partagée (lecture seule).
+    from app.utils.security import check_note_access
+    check_note_access(db.session, note, user_id)
+
     # Lancement de l'analyse IA via Celery, avec repli synchrone si le broker
     # Redis est indisponible (dev sans worker).
     mode, payload = dispatch_or_run(
