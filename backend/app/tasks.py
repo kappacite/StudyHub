@@ -24,9 +24,16 @@ def run_blurting_analysis(self, user_id: int, note_id: int, user_blurting: str, 
         if not note:
             logger.error(f"Note {note_id} not found")
             raise ValueError("Note introuvable")
-        if note.user_id != user_id:
-            logger.error(f"User {user_id} does not own note {note_id}")
-            raise ValueError("Accès interdit à cette note")
+        is_owner = note.user_id == user_id
+        if not is_owner:
+            # Révision active autorisée sur une note partagée (lecture seule).
+            from app.utils.security import check_note_access
+            from app.middlewares.error_handler import ForbiddenError
+            try:
+                check_note_access(db.session, note, user_id)
+            except ForbiddenError:
+                logger.error(f"User {user_id} has no access to note {note_id}")
+                raise ValueError("Accès interdit à cette note")
 
         ai_service = AIService()
         analysis_result = ai_service.analyze_blurting(note.title, note.content, user_blurting)
@@ -46,10 +53,12 @@ def run_blurting_analysis(self, user_id: int, note_id: int, user_blurting: str, 
             )
             stats_service.create_session(user_id, session_data)
 
-        # Enregistrer la date du blurting
-        note.last_blurting_at = datetime.utcnow()
-        note_dao.update(note)
-        
+        # Enregistrer la date du blurting — uniquement sur sa propre note (ne pas
+        # modifier la note source d'autrui lors d'une révision sur note partagée).
+        if is_owner:
+            note.last_blurting_at = datetime.utcnow()
+            note_dao.update(note)
+
         # S'assurer que les modifications sont persistées
         db.session.commit()
         

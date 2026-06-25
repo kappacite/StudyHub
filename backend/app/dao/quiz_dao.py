@@ -25,6 +25,16 @@ class QuizDAO(BaseDAO[Quiz]):
             .all()
         )
 
+    def get_by_note_and_user(self, note_id: int, user_id: int) -> List[Quiz]:
+        """Quiz d'un utilisateur pour une note donnée (isolation : indispensable
+        pour les notes partagées, où plusieurs lecteurs génèrent leurs propres quiz)."""
+        return (
+            self.db.query(self.model)
+            .filter_by(note_id=note_id, user_id=user_id)
+            .order_by(self.model.created_at.desc())
+            .all()
+        )
+
     def get_best_completed_for_note(self, note_id: int, user_id: int) -> Optional[Quiz]:
         """Meilleur quiz complété par l'utilisateur pour une note (score max)."""
         return (

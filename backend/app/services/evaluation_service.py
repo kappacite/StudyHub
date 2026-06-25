@@ -52,8 +52,9 @@ class EvaluationService:
         note = self._note_dao.get_by_id(note_id)
         if not note:
             raise ResourceNotFoundError("Note introuvable.")
-        if note.user_id != user_id:
-            raise ForbiddenError("Accès interdit à cette note.")
+        # Propriétaire OU note partagée accessible (révision active autorisée).
+        from app.utils.security import check_note_access
+        check_note_access(self._note_dao.db, note, user_id)
         return note
 
     def _get_eval_or_403(self, evaluation_id: int, user_id: int) -> Evaluation:
@@ -143,7 +144,13 @@ class EvaluationService:
         """Lecture seule : une évaluation réutilisable existe-t-elle pour le contenu
         actuel de la note ? Sert à exempter les cache-hits du rate-limit Gemini."""
         note = self._note_dao.get_by_id(note_id)
-        if not note or note.user_id != user_id:
+        if not note:
+            return False
+        from app.utils.security import check_note_access
+        from app.middlewares.error_handler import ForbiddenError
+        try:
+            check_note_access(self._note_dao.db, note, user_id)
+        except (ForbiddenError, ResourceNotFoundError):
             return False
         content_hash = self._content_hash(note)
         return (

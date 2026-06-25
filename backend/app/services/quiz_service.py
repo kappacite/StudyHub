@@ -25,12 +25,12 @@ class QuizService:
         self._ai_service = ai_service
 
     def generate_quiz(self, user_id: int, note_id: int, question_count: int = 7) -> Quiz:
-        # Vérification de la note
+        # Vérification de la note (propriétaire OU note partagée accessible).
         note = self._note_dao.get_by_id(note_id)
         if not note:
             raise ResourceNotFoundError("Note introuvable.")
-        if note.user_id != user_id:
-            raise ForbiddenError("Accès interdit à cette note.")
+        from app.utils.security import check_note_access
+        check_note_access(self._note_dao.db, note, user_id)
 
         # Appel au service d'IA
         raw_questions = self._ai_service.generate_quiz(note.content, count=question_count)
@@ -60,14 +60,15 @@ class QuizService:
         return quiz
 
     def get_quizzes_by_note(self, user_id: int, note_id: int) -> List[Quiz]:
-        # Vérification de la note
+        # Vérification de la note (propriétaire OU note partagée accessible).
         note = self._note_dao.get_by_id(note_id)
         if not note:
             raise ResourceNotFoundError("Note introuvable.")
-        if note.user_id != user_id:
-            raise ForbiddenError("Accès interdit à cette note.")
-        
-        return self._quiz_dao.get_by_note(note._id)
+        from app.utils.security import check_note_access
+        check_note_access(self._note_dao.db, note, user_id)
+
+        # Isolation : ne renvoyer que les quiz de l'utilisateur (notes partagées).
+        return self._quiz_dao.get_by_note_and_user(note._id, user_id)
 
     def answer_question(self, user_id: int, quiz_id: int, question_id: int, answer_id: str) -> QuizQuestion:
         # Vérification du quiz

@@ -1,5 +1,28 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-25] Fix #6 — révision active IA sur une note partagée non possédée
+
+**Symptôme** : impossible de lancer une révision active IA (page blanche / QCM /
+évaluation) sur une note partagée (cours/groupe) qui ne nous appartient pas → 403.
+
+**Cause** : les chemins de génération IA contrôlaient `note.user_id == user_id`
+strictement, alors que la lecture d'une note partagée est légitime. Concerné :
+`blurting.py` (route + tâche Celery), `quiz_service`, `evaluation_service`,
+`evaluations.py` (route).
+
+**Correctif** :
+- Nouveau helper `app/utils/security.check_note_access(db, note, user_id)` : autorise
+  le propriétaire **ou** l'accès via un classeur partagé (réutilise `check_binder_access`).
+- Tous les points de génération IA l'utilisent. Les artefacts produits (analyse,
+  quiz, évaluation) appartiennent au lecteur ; la note source n'est pas modifiée
+  (la tâche blurting ne met `last_blurting_at` à jour que pour le propriétaire).
+- Isolation : `QuizDAO.get_by_note_and_user` ; `get_quizzes_by_note` ne renvoie que
+  les quiz du lecteur (plusieurs lecteurs d'une note partagée ne se mélangent pas).
+
+**Tests** (`tests/test_shared_class_notes.py`) :
+`test_student_can_run_ai_quiz_on_shared_note`,
+`test_non_member_cannot_run_ai_quiz_on_shared_note`. Suite backend complète verte.
+
 ## [2026-06-25] Fix #5 — notes d'un classeur partagé qui « disparaissent »
 
 **Symptôme** : un classeur partagé (cours/groupe) ; ses notes visibles au début puis
