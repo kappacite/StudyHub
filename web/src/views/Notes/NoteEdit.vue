@@ -366,6 +366,7 @@
               @mouseup="handleTextareaSelect($event)"
               @keyup="handleTextareaSelect($event)"
               @keydown.tab.prevent="handleTabKey"
+              @keydown.enter.shift.prevent="insertSoftBreak"
             ></textarea>
           </div>
 
@@ -627,6 +628,12 @@
                 <div class="space-y-2 border-t border-line dark:border-line pt-4">
                   <h4 class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold">3. Masques d'Image (Occlusion)</h4>
                   <p>Dans le module <strong class="text-ink dark:text-white font-semibold">Diagrammes</strong>, importez un schéma (corps humain, géographie, formule), tracez des rectangles de masquage opaques sur les parties à deviner, puis nommez-les. En mode révision, cliquez sur les masques pour les révéler et évaluer votre mémorisation.</p>
+                </div>
+
+                <!-- Section 4: Tableaux & sauts de ligne -->
+                <div class="space-y-2 border-t border-line dark:border-line pt-4">
+                  <h4 class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold">4. Tableaux & sauts de ligne</h4>
+                  <p>Dans un tableau Markdown, chaque ligne du texte correspond à une ligne du tableau : une simple touche <kbd class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono">Entrée</kbd> casserait donc la ligne. Pour aller à la ligne <strong class="text-ink dark:text-white font-semibold">à l'intérieur d'une cellule</strong>, utilisez <kbd class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono">Maj</kbd> + <kbd class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono">Entrée</kbd> (insère un retour à la ligne propre). Cela fonctionne aussi partout ailleurs pour un saut de ligne souple.</p>
                 </div>
               </div>
             </div>
@@ -2429,6 +2436,34 @@ function getNoteTitle(id: string): string {
 
 function navigateToNote(id: string) {
   router.push(`/notes/${id}`)
+}
+
+// Saut de ligne souple (Maj+Entrée). Dans une cellule de tableau Markdown, une
+// ligne = une ligne de tableau : un vrai « \n » casserait la ligne. On insère
+// donc un <br> explicite (rendu en saut de ligne dans la cellule) ; ailleurs un
+// saut de ligne souple suffit (marked est configuré avec breaks: true).
+function insertSoftBreak() {
+  const textarea = textareaRef.value
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = textarea.value
+
+  const lineStart = text.lastIndexOf('\n', start - 1) + 1
+  const nextNewline = text.indexOf('\n', start)
+  const currentLine = text.substring(lineStart, nextNewline === -1 ? text.length : nextNewline)
+  const inTableRow = /^\s*\|/.test(currentLine)
+
+  const insertion = inTableRow ? '<br>' : '\n'
+  noteBody.value = text.substring(0, start) + insertion + text.substring(end)
+
+  setTimeout(() => {
+    textarea.focus()
+    const pos = start + insertion.length
+    textarea.setSelectionRange(pos, pos)
+    triggerAutoSave()
+  }, 0)
 }
 
 function handleTabKey() {
