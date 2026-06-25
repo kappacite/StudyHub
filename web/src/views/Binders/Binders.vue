@@ -136,10 +136,10 @@
               </div>
               <template #trailing>
                 <button
-                  v-if="isOwner"
+                  v-if="isOwner || folder.read_only"
                   @click.stop="confirmDelete(folder)"
                   class="opacity-0 group-hover:opacity-100 p-1.5 text-ink-subtle hover:text-danger rounded-lg hover:bg-danger-soft transition-all"
-                  title="Supprimer"
+                  :title="folder.read_only ? 'Retirer de ma vue' : 'Supprimer'"
                 >
                   <Trash2 class="w-4 h-4" />
                 </button>
@@ -656,7 +656,12 @@ async function createFolder() {
 }
 
 async function confirmDelete(folder: Binder) {
-  if (confirm(`Êtes-vous sûr de vouloir supprimer le dossier "${folder.name}" et tous ses sous-dossiers ?`)) {
+  // Un classeur partagé (cours/groupe) ne nous appartient pas : on le retire de
+  // notre vue, sans supprimer l'original côté propriétaire.
+  const message = folder.read_only
+    ? `Retirer le classeur partagé "${folder.name}" de votre espace ? (l'original n'est pas supprimé)`
+    : `Êtes-vous sûr de vouloir supprimer le dossier "${folder.name}" et tous ses sous-dossiers ?`
+  if (confirm(message)) {
     await bindersStore.deleteBinder(folder.id)
   }
 }

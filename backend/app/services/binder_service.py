@@ -77,8 +77,14 @@ class BinderService:
         return BinderResponse.model_validate(updated)
 
     def delete_binder(self, user_id: int, binder_id) -> None:
-        binder = self._get_binder_or_404(binder_id, user_id, write_required=True)
-        self._binder_dao.delete(binder)
+        # Accès requis (lecture) ; la suppression réelle est réservée au propriétaire.
+        binder = self._get_binder_or_404(binder_id, user_id, write_required=False)
+        if binder.user_id == user_id:
+            self._binder_dao.delete(binder)
+        else:
+            # Classeur partagé par un autre utilisateur : on ne détruit JAMAIS
+            # l'original. On le retire seulement de la vue du destinataire.
+            self._binder_dao.hide_binder(user_id, binder._id)
 
     def get_all_binders_flat(self, user_id: int) -> List[BinderResponse]:
         binders = self._binder_dao.get_all(user_id, limit=1000)
@@ -88,7 +94,12 @@ class BinderService:
         # Classeurs partagés par un cours/groupe : on ajoute le sous-arbre en lecture
         # seule. La racine partagée est détachée (parent_id=None) pour apparaître à la
         # racine de l'arbre de l'élève ; les descendants gardent leur parent.
+        # Un classeur partagé masqué par l'utilisateur (cf. delete côté destinataire)
+        # est exclu, lui et tout son sous-arbre.
+        hidden_binder_ids = self._binder_dao.get_hidden_binder_ids(user_id)
         for root in self._binder_dao.get_shared_root_binders(user_id):
+            if root._id in hidden_binder_ids:
+                continue
             subtree = [(root, True)] + [(d, False) for d in self._binder_dao.get_descendants(root._id)]
             for binder, is_root in subtree:
                 if binder.id in seen:

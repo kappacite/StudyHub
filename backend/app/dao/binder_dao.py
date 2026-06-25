@@ -47,6 +47,24 @@ class BinderDAO(BaseDAO[Binder]):
             query = query.filter(self.model.tags.any(id=tag_id))
         return query.options(selectinload(self.model.tags), selectinload(self.model.parent)).limit(limit).offset(offset).all()
         
+    def get_hidden_binder_ids(self, user_id: int) -> set:
+        """Ids internes des classeurs (partagés) masqués par l'utilisateur."""
+        from app.models.hidden_binder import HiddenBinder
+        rows = self.db.query(HiddenBinder.binder_id).filter_by(user_id=user_id).all()
+        return {r[0] for r in rows}
+
+    def hide_binder(self, user_id: int, binder_internal_id: int) -> None:
+        """Masque un classeur partagé dans la vue de l'utilisateur (idempotent)."""
+        from app.models.hidden_binder import HiddenBinder
+        existing = (
+            self.db.query(HiddenBinder)
+            .filter_by(user_id=user_id, binder_id=binder_internal_id)
+            .first()
+        )
+        if not existing:
+            self.db.add(HiddenBinder(user_id=user_id, binder_id=binder_internal_id))
+            self.db.commit()
+
     def get_shared_root_binders(self, user_id: int) -> List[Binder]:
         """Classeurs partagés avec l'utilisateur via un groupe/classe (qu'il ne possède pas).
         Ce sont les racines, du point de vue de l'élève, des sous-arbres en lecture seule."""

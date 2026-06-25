@@ -190,7 +190,8 @@ def create_app(config_name=None):
         import app.models.group
         import app.models.assignment
         import app.models.hidden_note
-        
+        import app.models.hidden_binder
+
         # Import celery tasks
         import app.tasks
 

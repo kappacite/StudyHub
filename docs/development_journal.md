@@ -1,5 +1,31 @@
 # Journal de Développement — StudyHub
 
+## [2026-06-25] Fix #3 — supprimer un classeur partagé ne doit pas détruire l'original
+
+**Symptôme** : quand un destinataire « supprime » un classeur partagé, l'œuvre
+originelle (côté propriétaire) était supprimée.
+
+**Cause** : `delete_binder` exigeait seulement un accès en écriture
+(`check_binder_access(write_required=True)`). Un membre non-propriétaire avec accès
+écriture pouvait donc appeler `_binder_dao.delete()` sur le classeur original. Côté
+front, au niveau racine de l'arbre du destinataire `isOwner` valait `true`, exposant
+le bouton « supprimer » sur le classeur partagé.
+
+**Correctif** (partage par référence → masquage, comme `HiddenNote`) :
+- Nouveau modèle `HiddenBinder` (+ migration `4e6e094d2711`) et
+  `BinderDAO.get_hidden_binder_ids` / `hide_binder`.
+- `delete_binder` : le propriétaire supprime réellement ; un destinataire (non
+  propriétaire) **masque** le classeur dans sa vue, l'original n'est jamais touché.
+- `get_all_binders_flat` et `note_service.get_notes` excluent les classeurs partagés
+  masqués (et leur sous-arbre / notes).
+- Front (`Binders.vue`) : bouton « Retirer de ma vue » + message dédié pour un
+  classeur partagé (`read_only`).
+
+**Tests** (`tests/test_shared_class_notes.py`) :
+`test_deleting_shared_binder_does_not_destroy_original`,
+`test_owner_can_still_delete_own_binder`. Suite backend complète verte ; migration
+`flask db upgrade` OK.
+
 ## [2026-06-25] Fix #6 — révision active IA sur une note partagée non possédée
 
 **Symptôme** : impossible de lancer une révision active IA (page blanche / QCM /
