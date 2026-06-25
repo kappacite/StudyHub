@@ -3,11 +3,11 @@
     <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="$emit('close')"></div>
 
     <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl w-full max-w-lg p-6 relative z-10 shadow-2xl max-h-[88vh] overflow-y-auto">
-      <h3 class="text-lg font-bold mb-1 text-ink dark:text-white">Ajouter un élément de révision</h3>
-      <p class="text-xs text-ink-subtle mb-4">Choisissez un type, il sera révisé en répétition espacée (SM-2).</p>
+      <h3 class="text-lg font-bold mb-1 text-ink dark:text-white">{{ isEdit ? 'Modifier l\'élément' : 'Ajouter un élément de révision' }}</h3>
+      <p class="text-xs text-ink-subtle mb-4">{{ isEdit ? 'Modifiez le contenu de cet élément de révision.' : 'Choisissez un type, il sera révisé en répétition espacée (SM-2).' }}</p>
 
-      <!-- Type selector -->
-      <div class="flex flex-wrap gap-2 mb-5">
+      <!-- Type selector (masqué en édition : le type d'un ensemble est figé) -->
+      <div v-if="!isEdit" class="flex flex-wrap gap-2 mb-5">
         <button
           v-for="t in TYPES"
           :key="t.value"
@@ -23,8 +23,8 @@
       </div>
 
       <form @submit.prevent="submit" class="space-y-4">
-        <!-- Target : deck (basic) OR revision set (typed) -->
-        <div>
+        <!-- Target : deck (basic) OR revision set (typed) — masqué en édition -->
+        <div v-if="!isEdit">
           <label :class="labelCls">{{ itemType === 'basic' ? 'Jeu de révision (flashcards)' : 'Ensemble de révision' }}</label>
           <select v-model="targetChoice" :class="inputCls">
             <option :value="NEW_TARGET">➕ Nouvel ensemble…</option>
@@ -117,7 +117,7 @@
         <div class="flex items-center justify-end gap-3 pt-2">
           <button type="button" @click="$emit('close')" class="px-4 py-2 text-sm font-semibold rounded-xl text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft">Annuler</button>
           <button type="submit" :disabled="!canSubmit || saving" class="px-4 py-2 text-sm font-bold rounded-xl text-white bg-primary hover:bg-primary-strong disabled:opacity-50 disabled:cursor-not-allowed">
-            {{ saving ? 'Ajout…' : 'Ajouter' }}
+            {{ saving ? (isEdit ? 'Enregistrement…' : 'Ajout…') : (isEdit ? 'Enregistrer' : 'Ajouter') }}
           </button>
         </div>
       </form>
@@ -130,7 +130,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useDecksStore } from '../../stores/decks'
 import type { Deck } from '../../stores/decks'
 import { useRevisionStore } from '../../stores/revision'
-import type { RevisionType, RevisionItemPayload } from '../../stores/revision'
+import type { RevisionType, RevisionItemPayload, RevisionItem } from '../../stores/revision'
 
 // 'basic' = flashcard recto/verso (Deck) ; les autres = ensembles de révision.
 type ItemType = 'basic' | RevisionType
@@ -140,8 +140,14 @@ const props = defineProps<{
   decks: Deck[]
   initialType?: ItemType
   initialDeckId?: number
+  // Mode édition : item existant à modifier (toujours un ensemble de révision typé).
+  editItem?: RevisionItem
+  lockedSetId?: number
+  lockedType?: RevisionType
 }>()
-const emit = defineEmits<{ (e: 'close'): void; (e: 'created'): void }>()
+const emit = defineEmits<{ (e: 'close'): void; (e: 'created'): void; (e: 'updated'): void }>()
+
+const isEdit = computed(() => !!props.editItem)
 
 const decksStore = useDecksStore()
 const revisionStore = useRevisionStore()
@@ -159,7 +165,7 @@ const TYPES: { value: ItemType; label: string }[] = [
 ]
 
 const NEW_TARGET = '__new__' as const
-const itemType = ref<ItemType>(props.initialType || 'basic')
+const itemType = ref<ItemType>(props.lockedType || props.initialType || 'basic')
 const targetChoice = ref<number | typeof NEW_TARGET>(NEW_TARGET)
 const newTargetName = ref('')
 const saving = ref(false)
@@ -183,6 +189,10 @@ function resetTargetChoice() {
 
 watch(itemType, resetTargetChoice)
 onMounted(async () => {
+  if (isEdit.value) {
+    prefillFromItem()
+    return
+  }
   await revisionStore.fetchSets()
   resetTargetChoice()
 })
@@ -259,11 +269,47 @@ function buildPayload(): RevisionItemPayload {
   }
 }
 
+// Pré-remplit le formulaire à partir d'un item existant (mode édition).
+function prefillFromItem() {
+  const item = props.editItem
+  if (!item) return
+  const p = item.payload || {}
+  if (itemType.value === 'qcm') {
+    qcmQuestion.value = p.question || ''
+    qcmPoints.value = p.points || 1
+    qcmOptions.value = (p.options && p.options.length)
+      ? p.options.map(o => ({ text: o.text, correct: o.correct }))
+      : [{ text: '', correct: false }, { text: '', correct: false }]
+  } else if (itemType.value === 'vf') {
+    vfAssertion.value = p.assertion || ''
+    vfCorrect.value = p.correct ?? true
+    vfJustification.value = p.justification || ''
+  } else if (itemType.value === 'definition') {
+    defTerm.value = p.term || ''
+    defDefinition.value = p.definition || ''
+  } else if (itemType.value === 'ordre') {
+    ordreTitle.value = p.title || ''
+    ordreSteps.value = (p.steps && p.steps.length)
+      ? p.steps.map(s => ({ value: s }))
+      : [{ value: '' }, { value: '' }]
+  } else if (itemType.value === 'association') {
+    assocTitle.value = p.title || ''
+    assocPairs.value = (p.pairs && p.pairs.length)
+      ? p.pairs.map(pair => ({ left: pair.left, right: pair.right }))
+      : [{ left: '', right: '' }, { left: '', right: '' }]
+  }
+}
+
 async function submit() {
   if (!canSubmit.value || saving.value) return
   saving.value = true
   error.value = ''
   try {
+    if (isEdit.value && props.editItem && props.lockedSetId !== undefined) {
+      await revisionStore.updateItem(props.lockedSetId, props.editItem.id, buildPayload())
+      emit('updated')
+      return
+    }
     if (itemType.value === 'basic') {
       let deckId: number
       if (targetChoice.value === NEW_TARGET) {

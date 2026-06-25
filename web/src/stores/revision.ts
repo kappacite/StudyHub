@@ -245,6 +245,19 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
+  async function updateItem(setId: number, itemId: number, payload: RevisionItemPayload, tuning?: number) {
+    const body: { payload: RevisionItemPayload; tuning?: number } = { payload }
+    if (tuning !== undefined) body.tuning = tuning
+    const response = await api.put<RevisionItem>(`/revision/sets/${setId}/items/${itemId}`, body)
+    return response.data
+  }
+
+  async function deleteItem(setId: number, itemId: number) {
+    await api.delete(`/revision/sets/${setId}/items/${itemId}`)
+    const set = sets.value.find(s => s.id === setId)
+    if (set && set.item_count > 0) set.item_count--
+  }
+
   async function fetchStudyItems(setId: number) {
     const response = await api.get<RevisionItem[]>(`/revision/sets/${setId}/study`)
     return response.data
@@ -297,6 +310,8 @@ export const useRevisionStore = defineStore('revision', () => {
     fetchSet,
     fetchItems,
     createItem,
+    updateItem,
+    deleteItem,
     fetchStudyItems,
     answerItem,
     runQcm,
