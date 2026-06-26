@@ -206,6 +206,9 @@
                 <button @click="openSet(set)" class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-strong active:scale-95 transition-all">
                   <Compass class="w-3.5 h-3.5" /> {{ set.type === 'qcm' ? 'Lancer' : 'Étudier' }}
                 </button>
+                <button v-if="!set.read_only" @click="router.push(`/revision/sets/${set.id}/manage`)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-ink-muted dark:text-ink-subtle border border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft transition-all" title="Gérer les éléments">
+                  <Pencil class="w-3.5 h-3.5" /> Gérer
+                </button>
                 <button @click="router.push(`/revision/sets/${set.id}/stats`)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-ink-muted dark:text-ink-subtle border border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft transition-all" title="Statistiques">
                   <Activity class="w-3.5 h-3.5" /> Stats
                 </button>
@@ -973,6 +976,7 @@ import {
   Settings,
   Trash2,
   Plus,
+  Pencil,
   ShieldAlert
 } from '@lucide/vue'
 
