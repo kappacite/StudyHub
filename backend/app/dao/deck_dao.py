@@ -8,6 +8,19 @@ class DeckDAO(BaseDAO[Deck]):
     def __init__(self, db: Session):
         super().__init__(Deck, db)
 
+    def get_by_binder_internal_ids(self, binder_internal_ids: List[int]) -> List[Deck]:
+        """Decks (tous propriétaires) appartenant aux classeurs donnés — pour le
+        contenu en lecture seule des classeurs partagés (cours)."""
+        if not binder_internal_ids:
+            return []
+        from sqlalchemy.orm import selectinload
+        return (
+            self.db.query(self.model)
+            .filter(self.model.binder_id.in_(binder_internal_ids))
+            .options(selectinload(self.model.tags), selectinload(self.model.binder))
+            .all()
+        )
+
     def get_all(self, user_id: int, limit: int = 20, offset: int = 0) -> List[Deck]:
         from sqlalchemy.orm import selectinload
         # On NE charge PAS les cartes : le nombre de cartes est calculé via un

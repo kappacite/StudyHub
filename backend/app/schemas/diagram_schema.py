@@ -20,6 +20,8 @@ class DiagramResponse(DiagramBase):
     id: int
     binder_id: Optional[str] = Field(None, validation_alias="binder_uuid")
     user_id: int
+    # True pour un diagramme issu d'un classeur partagé (cours) : lecture seule.
+    read_only: bool = False
     tags: List[TagResponseSchema] = []
     created_at: datetime
     updated_at: datetime

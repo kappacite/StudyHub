@@ -27,6 +27,8 @@ class DeckResponse(DeckBase):
     tuning_default: float = 1.0
     # Injecté par le service (COUNT groupé) ; 0 par défaut si non fourni.
     card_count: int = 0
+    # True pour un deck issu d'un classeur partagé (cours) : lecture seule.
+    read_only: bool = False
     tags: List[TagResponseSchema] = []
     created_at: datetime
     updated_at: datetime
