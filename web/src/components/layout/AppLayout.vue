@@ -1,5 +1,8 @@
 <template>
-  <div class="min-h-screen flex bg-app text-ink transition-colors duration-300">
+  <!-- h-screen + overflow-hidden : l'app occupe exactement le viewport ; seul
+       <main> défile en interne. La sidebar (lg:static) reste ainsi fixe et son
+       pied (compte) ne descend plus avec le contenu de la page. -->
+  <div class="h-screen overflow-hidden flex bg-app text-ink transition-colors duration-300 print:h-auto print:overflow-visible print:block">
 
     <!-- Sidebar -->
     <aside
@@ -103,8 +106,8 @@
       @click="isZenSidebarOpen = false"
     ></div>
 
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+    <!-- Main Content Area : colonne bornée au viewport, scroll délégué à <main> -->
+    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:overflow-visible">
       
       <!-- Invisible Header Hover Trigger (Zen mode only) -->
       <div 
@@ -164,8 +167,8 @@
       </header>
 
       <!-- Main Router View with padding -->
-      <main 
-        class="flex-1 transition-all duration-300"
+      <main
+        class="flex-1 min-h-0 transition-all duration-300 print:overflow-visible print:h-auto"
         :class="[
           $route.meta.immersive
             ? 'p-0 bg-app overflow-y-auto'
