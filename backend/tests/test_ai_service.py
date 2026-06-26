@@ -129,6 +129,83 @@ def test_generate_evaluation_invalid_shape_raises(mock_urlopen, monkeypatch):
         service.generate_evaluation("Contenu")
 
 
+def test_analyze_feynman_missing_api_key(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    service = AIService()
+    with pytest.raises(RuntimeError) as excinfo:
+        service.analyze_feynman("Titre", "Contenu", "Explication simple")
+    assert "La clé d'API Gemini n'est pas configurée" in str(excinfo.value)
+
+
+@patch("urllib.request.urlopen")
+def test_analyze_feynman_success(mock_urlopen, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test_key")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash")
+
+    mock_response = MagicMock()
+    mock_response.read.return_value = json.dumps({
+        "candidates": [{"content": {"parts": [{"text": json.dumps({
+            "clarity_score": 78,
+            "jargon": ["mitochondrie"],
+            "gaps": [{"concept": "ATP", "issue": "rôle énergétique non expliqué"}],
+            "feedback": "Bonne analogie, mais un terme reste opaque.",
+            "suggestion": "Compare la mitochondrie à une centrale électrique."
+        })}]}}]
+    }).encode("utf-8")
+    mock_urlopen.return_value.__enter__.return_value = mock_response
+
+    service = AIService()
+    result = service.analyze_feynman("La cellule", "Contenu du cours", "Mon explication")
+
+    assert result["clarity_score"] == 78
+    assert result["jargon"] == ["mitochondrie"]
+    assert result["gaps"][0]["concept"] == "ATP"
+    assert "analogie" in result["feedback"]
+    assert result["suggestion"]
+
+
+@patch("app.services.ai_service.AIService.analyze_feynman")
+def test_feynman_analyze_endpoint(mock_analyze_feynman, client, auth_headers, test_user, app):
+    mock_analyze_feynman.return_value = {
+        "clarity_score": 88,
+        "jargon": [],
+        "gaps": [],
+        "feedback": "Très clair.",
+        "suggestion": "Continuez ainsi.",
+    }
+
+    with app.app_context():
+        from app.extensions import db
+        binder = Binder(user_id=test_user["id"], name="Classeur Feynman")
+        db.session.add(binder)
+        db.session.commit()
+        note = Note(user_id=test_user["id"], binder_id=binder.id, title="Note F", content="Contenu")
+        db.session.add(note)
+        db.session.commit()
+        note_id = note.id
+
+    resp = client.post("/api/v1/feynman/analyze", json={
+        "note_id": note_id,
+        "user_explanation": "Mon explication simple",
+        "duration_seconds": 90,
+    }, headers=auth_headers)
+
+    assert resp.status_code == 202
+    assert "task_id" in resp.json
+    task_id = resp.json["task_id"]
+
+    poll = client.get(f"/api/v1/feynman/tasks/{task_id}", headers=auth_headers)
+    assert poll.status_code == 200
+    assert poll.json["status"] == "SUCCESS"
+    assert poll.json["result"]["clarity_score"] == 88
+    assert poll.json["result"]["feedback"] == "Très clair."
+
+
+def test_feynman_analyze_requires_fields(client, auth_headers):
+    resp = client.post("/api/v1/feynman/analyze", json={"note_id": None}, headers=auth_headers)
+    assert resp.status_code == 400
+
+
 @patch("app.services.ai_service.AIService.analyze_blurting")
 def test_blurting_analyze_endpoint(mock_analyze_blurting, client, auth_headers, test_user, app):
     # Mocking du service IA

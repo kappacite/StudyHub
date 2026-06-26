@@ -134,6 +134,7 @@ def create_app(config_name=None):
         from app.api.v1.stats import stats_bp
         from app.api.v1.health import health_bp
         from app.api.v1.blurting import blurting_bp
+        from app.api.v1.feynman import feynman_bp
         from app.api.v1.packages import packages_bp
         from app.api.v1.tags import tags_bp
         from app.api.v1.focus import focus_bp
@@ -160,6 +161,7 @@ def create_app(config_name=None):
         flask_app.register_blueprint(stats_bp, url_prefix="/api/v1/stats")
         flask_app.register_blueprint(health_bp, url_prefix="/api/v1/health")
         flask_app.register_blueprint(blurting_bp, url_prefix="/api/v1/blurting")
+        flask_app.register_blueprint(feynman_bp, url_prefix="/api/v1/feynman")
         flask_app.register_blueprint(packages_bp, url_prefix="/api/v1/packages")
         flask_app.register_blueprint(tags_bp, url_prefix="/api/v1/tags")
         flask_app.register_blueprint(focus_bp, url_prefix="/api/v1/focus")
