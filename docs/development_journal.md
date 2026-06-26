@@ -1405,3 +1405,55 @@ via Maj+Entrée dans le textarea Markdown. À l'intérieur d'une ligne de tablea
 (`^\s*\|`), on insère un `<br>` explicite (rendu en saut de ligne dans la cellule par
 `marked`/`DOMPurify`) ; ailleurs, un saut de ligne souple classique. Aide de l'éditeur
 enrichie (section « Tableaux & sauts de ligne »). Typecheck `vue-tsc` vert.
+
+
+---
+
+## [2026-06-26] Lot de 4 correctifs (révision, partage de groupe, Feynman IA, sidebar)
+
+### 1 — Gérer le contenu d'un ensemble de révision (QCM/VF/…)
+Le CRUD des items existait (backend + store) mais l'édition/suppression n'était
+accessible que depuis la page **Stats** (peu découvrable) et il n'existait aucun point
+d'entrée pour ajouter/modifier un item depuis l'ensemble lui-même.
+* `RevisionItemModal` : prise en charge de l'ajout à un **ensemble verrouillé**
+  (`lockedSetId` en mode création → cible figée, sélecteurs de type/cible masqués).
+* Nouvelle vue **`RevisionSetManage.vue`** (`/revision/sets/:id/manage`) : liste des
+  éléments avec libellé lisible, ajout/édition/suppression. Réservée aux ensembles
+  éditables (non `read_only`).
+* `Reviews.vue` : bouton **« Gérer »** sur chaque carte d'ensemble éditable + route.
+
+### 2 — Classeur partagé en groupe : contenu invisible + 404
+**Symptômes** : contenu d'un classeur partagé non visible, et `404` sur
+`GET /groups/binders/<id>/classes`.
+* **Backend** : `get_decks` et `get_diagrams` n'incluaient pas le contenu des classeurs
+  partagés (cours) dans le listing global — seuls notes/PDF/ensembles le faisaient.
+  Ajout du scoping « classeur partagé » en LECTURE SEULE (champ `read_only` ajouté à
+  `DeckResponse`/`DiagramResponse`, getters DAO `get_by_binder_internal_ids`,
+  `DiagramService._get_diagram_or_404` relâché en lecture pour les membres).
+* **Frontend** (`Binders.vue`) : l'endpoint `/groups/binders/<id>/classes` est
+  réservé au **propriétaire** (404 sinon). `loadSharedClasses` ne l'appelle plus que sur
+  preuve de propriété (objet classeur chargé + `user_id` correspondant) ; le watch passe
+  de `currentBinderId` à `currentBinder` pour se déclencher après chargement.
+* **Tests** : `test_shared_class_decks_diagrams.py` (visibilité decks/diagrammes partagés,
+  lecture seule, isolation non-membre).
+
+### 3 — Méthode Feynman analysée par l'IA
+La méthode Feynman était évaluée par des **heuristiques locales** (mots-clés, longueur).
+Désormais analysée par l'IA (Gemini), à l'image du Blurting :
+* `AIService.analyze_feynman` (+ helper factorisé `_generate_json_object`) : compare
+  l'explication à la note ; renvoie `clarity_score`, `jargon`, `gaps`, `feedback`,
+  `suggestion`.
+* Task `run_feynman_analysis` + blueprint `feynman` (`POST /feynman/analyze`,
+  `GET /feynman/tasks/<id>`) — async Celery + repli synchrone, limité 10/h.
+* `Reviews.vue` : `evaluateFeynman` appelle l'IA (polling), nouvel affichage des
+  résultats (bilan IA, jargon à simplifier, points à approfondir, suggestion).
+* **Tests** : service (clé absente + succès mocké) et endpoint (202 + polling SUCCESS).
+
+### 4 — Sidebar de navigation à hauteur fixe
+La sidebar suivait le scroll du document (le pied/compte descendait). Cause : conteneurs
+en `min-h-screen` → c'est le document qui défile. `AppLayout.vue` borné au viewport
+(`h-screen` + `overflow-hidden`) ; seul `<main>` défile (`min-h-0`). Variantes `print:`
+(`print:h-auto`/`print:overflow-visible`/`print:block`) ajoutées pour préserver l'export
+PDF des notes.
+
+**Validation** : 281 tests backend, 69 tests frontend, `vue-tsc` — tous verts.
