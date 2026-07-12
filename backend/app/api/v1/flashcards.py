@@ -19,7 +19,9 @@ deck_dao = DeckDAO(db.session)
 note_dao = NoteDAO(db.session)
 binder_dao = BinderDAO(db.session)
 flashcard_service = FlashcardService(flashcard_dao, deck_dao)
-flashcard_generation_service = FlashcardGenerationService(note_dao, binder_dao, AIService())
+flashcard_generation_service = FlashcardGenerationService(
+    note_dao, binder_dao, AIService(), deck_dao=deck_dao, flashcard_dao=flashcard_dao
+)
 
 
 def _gen_rate_limit_key():
@@ -113,9 +115,14 @@ def generate_flashcards():
     data = request.get_json() or {}
     source_type = data.get("source_type")
     source_id = data.get("note_id") if source_type == "note" else data.get("binder_id")
+    # deck_id optionnel : deck cible d'un ajout existant. Ses cartes sont passées
+    # à l'IA pour éviter les doublons. Absent lors de la création d'un nouveau deck.
+    deck_id = data.get("deck_id")
 
     try:
-        cards = flashcard_generation_service.generate_from_source(user_id, source_type, source_id)
+        cards = flashcard_generation_service.generate_from_source(
+            user_id, source_type, source_id, deck_id=deck_id
+        )
     except RuntimeError as e:
         # Erreur côté fournisseur IA (clé absente, réseau, réponse invalide…)
         return jsonify({

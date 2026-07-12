@@ -16,12 +16,16 @@ class FlashcardGenerationService:
     # Limite de contenu envoyée à l'IA (sécurité / coût)
     MAX_SOURCE_CHARS = 60000
 
-    def __init__(self, note_dao, binder_dao, ai_service):
+    def __init__(self, note_dao, binder_dao, ai_service, deck_dao=None, flashcard_dao=None):
         self._note_dao = note_dao
         self._binder_dao = binder_dao
         self._ai_service = ai_service
+        self._deck_dao = deck_dao
+        self._flashcard_dao = flashcard_dao
 
-    def generate_from_source(self, user_id: int, source_type: str, source_id) -> list:
+    def generate_from_source(
+        self, user_id: int, source_type: str, source_id, deck_id=None
+    ) -> list:
         if source_type not in ("note", "binder"):
             raise ValidationError("source_type doit valoir 'note' ou 'binder'.")
         if not source_id:
@@ -38,8 +42,31 @@ class FlashcardGenerationService:
                 "Ajoutez du contenu à vos notes avant de générer des flashcards."
             )
 
+        # Cartes déjà présentes dans le deck cible : transmises à l'IA pour éviter
+        # qu'elle régénère les mêmes (ou de simples variantes de formulation).
+        existing_cards = self._existing_cards(user_id, deck_id)
+
         source_text = source_text[: self.MAX_SOURCE_CHARS]
-        return self._ai_service.generate_flashcards(source_text, subject=subject)
+        return self._ai_service.generate_flashcards(
+            source_text, subject=subject, existing_cards=existing_cards
+        )
+
+    def _existing_cards(self, user_id: int, deck_id) -> list:
+        """Cartes originales du deck cible sous forme [{'front', 'back'}].
+
+        Filtrage strict par appartenance : un deck existant d'un autre utilisateur
+        déclenche un 403 (isolation des données). Un deck_id absent ou introuvable
+        renvoie une liste vide — l'enrichissement du prompt est simplement ignoré.
+        """
+        if not deck_id or self._deck_dao is None or self._flashcard_dao is None:
+            return []
+        deck = self._deck_dao.get_by_id(deck_id)
+        if not deck:
+            return []
+        if deck.user_id != user_id:
+            raise ForbiddenError("Accès interdit à ce deck.")
+        cards = self._flashcard_dao.get_originals_by_deck(deck_id)
+        return [{"front": c.front, "back": c.back} for c in cards]
 
     def _note_source(self, user_id: int, note_id):
         note = self._note_dao.get_by_id(note_id)
