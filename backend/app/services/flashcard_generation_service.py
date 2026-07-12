@@ -24,7 +24,7 @@ class FlashcardGenerationService:
         self._flashcard_dao = flashcard_dao
 
     def generate_from_source(
-        self, user_id: int, source_type: str, source_id, deck_id=None
+        self, user_id: int, source_type: str, source_id, deck_id=None, coverage=100
     ) -> list:
         if source_type not in ("note", "binder"):
             raise ValidationError("source_type doit valoir 'note' ou 'binder'.")
@@ -48,7 +48,7 @@ class FlashcardGenerationService:
 
         source_text = source_text[: self.MAX_SOURCE_CHARS]
         return self._ai_service.generate_flashcards(
-            source_text, subject=subject, existing_cards=existing_cards
+            source_text, subject=subject, existing_cards=existing_cards, coverage=coverage
         )
 
     def _existing_cards(self, user_id: int, deck_id) -> list:

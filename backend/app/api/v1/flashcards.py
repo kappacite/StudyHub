@@ -119,9 +119,20 @@ def generate_flashcards():
     # à l'IA pour éviter les doublons. Absent lors de la création d'un nouveau deck.
     deck_id = data.get("deck_id")
 
+    # coverage optionnel (0–100) : taux de couverture des notions du cours. 75 par défaut.
+    coverage = data.get("coverage", 75)
+    if not isinstance(coverage, int) or isinstance(coverage, bool) or not (0 <= coverage <= 100):
+        return jsonify({
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Le taux de couverture doit être un entier entre 0 et 100.",
+                "details": {}
+            }
+        }), 400
+
     try:
         cards = flashcard_generation_service.generate_from_source(
-            user_id, source_type, source_id, deck_id=deck_id
+            user_id, source_type, source_id, deck_id=deck_id, coverage=coverage
         )
     except RuntimeError as e:
         # Erreur côté fournisseur IA (clé absente, réseau, réponse invalide…)

@@ -1176,17 +1176,19 @@ Crée en une fois les flashcards sélectionnées suite à l'analyse et les insè
 Analyse par IA (Gemini) le contenu d'une **note** ou d'un **classeur** (toutes les notes de l'utilisateur dans ce classeur) et renvoie une liste de flashcards `{front, back}`. **Ne crée pas** les cartes : le client les insère ensuite via les endpoints de création (avec dédoublonnage). Limité à 20 requêtes/heure/utilisateur.
 
 `deck_id` **optionnel** : lorsque la génération vise un deck **existant**, transmettre son id. Les cartes déjà présentes dans ce deck sont alors passées à l'IA pour qu'elle **évite d'en régénérer des variantes** et produise des cartes nouvelles et complémentaires, pertinentes pour le deck. À omettre lors de la création d'un nouveau deck. Un `deck_id` appartenant à un autre utilisateur renvoie `403` (isolation des données) ; un id introuvable est ignoré.
+
+`coverage` **optionnel** (entier `0`–`100`, défaut `75`) : **taux de couverture des notions** de la source. `100` = toutes les notions méritant révision (définitions, distinctions, nuances, faits/mécanismes clés) sont couvertes ; plus bas = seules les ~`coverage` % notions les plus importantes le sont. Le nombre de cartes découle du nombre de notions retenues, pas de la longueur du texte. Hors `[0,100]` ou non entier → `400`.
 * **Route** : `POST /flashcards/generate`
 * **Type** : `[Sécurisé]`
 * **Request Body** :
   ```json
-  { "source_type": "note", "note_id": "<uuid de la note>", "deck_id": 42 }
+  { "source_type": "note", "note_id": "<uuid de la note>", "deck_id": 42, "coverage": 75 }
   ```
   ou
   ```json
-  { "source_type": "binder", "binder_id": "<uuid du classeur>", "deck_id": 42 }
+  { "source_type": "binder", "binder_id": "<uuid du classeur>", "deck_id": 42, "coverage": 75 }
   ```
-  (`deck_id` facultatif dans les deux cas)
+  (`deck_id` et `coverage` facultatifs dans les deux cas)
 * **Response** (Status `200 OK`) :
   ```json
   {
@@ -1197,7 +1199,7 @@ Analyse par IA (Gemini) le contenu d'une **note** ou d'un **classeur** (toutes l
     ]
   }
   ```
-* **Erreurs** : `400` source vide/invalide · `403` source **ou deck** d'un autre utilisateur · `404` source introuvable · `502` `AI_GENERATION_FAILED` (clé Gemini absente, réseau, réponse invalide). Le client web bascule alors sur une extraction locale par motifs.
+* **Erreurs** : `400` source vide/invalide **ou coverage hors [0,100]** · `403` source **ou deck** d'un autre utilisateur · `404` source introuvable · `502` `AI_GENERATION_FAILED` (clé Gemini absente, réseau, réponse invalide). Le client web bascule alors sur une extraction locale par motifs.
 
 ---
 
