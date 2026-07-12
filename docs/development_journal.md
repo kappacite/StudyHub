@@ -1,5 +1,20 @@
 # Journal de Développement — StudyHub
 
+## [2026-07-12] Amélioration — rectos de flashcards IA plus courts et directs
+
+**Besoin** : les rectos générés par l'IA étaient trop verbeux (ex. « Comment dit-on
+'Après-midi' en néerlandais ? » au lieu de « Après-midi »).
+
+**Correctif** (`AIService.generate_flashcards`, section « PRINCIPES DE CONCEPTION ») :
+directive renforcée pour un recto **le plus court possible** — indice de rappel plutôt
+que phrase d'examen, suppression de l'habillage conversationnel (« Comment dit-on… ? »,
+« Quelle est… ? »), terme/date/nom seul quand il suffit, avec exemples (vocabulaire,
+dates, concepts). Question développée réservée aux cas réellement ambigus. Placeholder
+de format passé à `<Indice de rappel le plus court possible>`.
+
+**Vérif** : prompt rendu et inspecté via mock (assemblage correct, exemple intact) ;
+19 tests backend flashcards/IA verts. Aucun test ne dépend du texte du prompt.
+
 ## [2026-07-12] Feat — génération IA de flashcards consciente du deck cible
 
 **Besoin** : à la génération de flashcards par IA vers un deck **existant**, l'IA
