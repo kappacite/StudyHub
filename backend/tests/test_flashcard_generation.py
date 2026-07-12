@@ -1,5 +1,7 @@
 from unittest.mock import patch
 from app.models.binder import Binder
+from app.models.deck import Deck
+from app.models.flashcard import Flashcard
 from app.models.note import Note
 from app.extensions import db
 
@@ -101,6 +103,75 @@ def test_generate_other_users_note_forbidden(mock_gen, client, auth_headers, tes
         "note_id": note_id,
     }, headers=auth_headers)
     assert resp.status_code == 403
+
+
+@patch("app.services.ai_service.AIService.generate_flashcards")
+def test_generate_passes_existing_deck_cards_to_ai(mock_gen, client, auth_headers, test_user, app):
+    """Un deck_id ciblé → ses cartes existantes sont transmises à l'IA (anti-doublon)."""
+    mock_gen.return_value = AI_CARDS
+    with app.app_context():
+        note = Note(user_id=test_user["id"], title="Géo", content="La capitale de la France est Paris.")
+        deck = Deck(user_id=test_user["id"], name="Géographie")
+        db.session.add_all([note, deck])
+        db.session.commit()
+        db.session.add(Flashcard(deck_id=deck.id, front="Capitale de l'Italie ?", back="Rome"))
+        db.session.commit()
+        note_id, deck_id = note.id, deck.id
+
+    resp = client.post("/api/v1/flashcards/generate", json={
+        "source_type": "note",
+        "note_id": note_id,
+        "deck_id": deck_id,
+    }, headers=auth_headers)
+
+    assert resp.status_code == 200
+    existing = mock_gen.call_args.kwargs["existing_cards"]
+    assert {"front": "Capitale de l'Italie ?", "back": "Rome"} in existing
+
+
+@patch("app.services.ai_service.AIService.generate_flashcards")
+def test_generate_without_deck_sends_no_existing_cards(mock_gen, client, auth_headers, test_user, app):
+    """Nouveau deck (pas de deck_id) → aucune carte existante transmise."""
+    mock_gen.return_value = AI_CARDS
+    with app.app_context():
+        note = Note(user_id=test_user["id"], title="Géo", content="La capitale de la France est Paris.")
+        db.session.add(note)
+        db.session.commit()
+        note_id = note.id
+
+    resp = client.post("/api/v1/flashcards/generate", json={
+        "source_type": "note",
+        "note_id": note_id,
+    }, headers=auth_headers)
+
+    assert resp.status_code == 200
+    assert mock_gen.call_args.kwargs["existing_cards"] == []
+
+
+@patch("app.services.ai_service.AIService.generate_flashcards")
+def test_generate_other_users_deck_forbidden(mock_gen, client, auth_headers, test_user, app):
+    """Cibler le deck d'un autre utilisateur ne doit pas fuiter ses cartes (403)."""
+    mock_gen.return_value = AI_CARDS
+    with app.app_context():
+        from app.models.user import User
+        from werkzeug.security import generate_password_hash
+        other = User(email="deckowner@x.io", username="deckowner", password_hash=generate_password_hash("x"))
+        db.session.add(other)
+        db.session.commit()
+        deck = Deck(user_id=other.id, name="Privé")
+        note = Note(user_id=test_user["id"], title="Géo", content="La capitale de la France est Paris.")
+        db.session.add_all([deck, note])
+        db.session.commit()
+        note_id, deck_id = note.id, deck.id
+
+    resp = client.post("/api/v1/flashcards/generate", json={
+        "source_type": "note",
+        "note_id": note_id,
+        "deck_id": deck_id,
+    }, headers=auth_headers)
+
+    assert resp.status_code == 403
+    mock_gen.assert_not_called()
 
 
 def test_generate_requires_auth(client):

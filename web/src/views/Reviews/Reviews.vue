@@ -1717,9 +1717,14 @@ async function executeFlashcardGeneration() {
     let extracted: { front: string, back: string }[] = []
     let usedFallback = false
     try {
-      const payload = genSourceType.value === 'note'
+      const payload: Record<string, unknown> = genSourceType.value === 'note'
         ? { source_type: 'note', note_id: genNoteId.value }
         : { source_type: 'binder', binder_id: genBinderId.value }
+      // Deck existant ciblé : on transmet son id pour que l'IA voie les cartes
+      // déjà présentes et évite d'en régénérer des variantes (pertinence du deck).
+      if (genDeckTarget.value === 'existing' && genExistingDeckId.value) {
+        payload.deck_id = genExistingDeckId.value
+      }
       // Génération IA longue : on dépasse le timeout global (10 s) et le
       // timeout backend Gemini (90 s) pour ne pas couper une requête qui aboutit.
       const res = await api.post('/flashcards/generate', payload, { timeout: 120000 })

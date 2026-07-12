@@ -1,5 +1,30 @@
 # Journal de Développement — StudyHub
 
+## [2026-07-12] Feat — génération IA de flashcards consciente du deck cible
+
+**Besoin** : à la génération de flashcards par IA vers un deck **existant**, l'IA
+reproduisait souvent des cartes déjà présentes (mêmes notions sous une formulation
+légèrement variante). Le dédoublonnage front (match exact du recto, `Reviews.vue`)
+ne rattrapait pas ces quasi-doublons. Objectif : des cartes nouvelles et
+**pertinentes pour le deck**.
+
+**Correctif** :
+- `AIService.generate_flashcards(..., existing_cards=None)` : les cartes existantes
+  (normalisées + bornées à `MAX_EXISTING_CARDS = 120`) sont injectées dans le prompt
+  via un bloc `<existing_flashcards>` + une directive interdisant recopie, reformulation
+  et variantes, imposant des cartes complémentaires (« génère MOINS voire aucune carte
+  plutôt que de dupliquer »). Directive anti-injection étendue à ce bloc.
+- `FlashcardGenerationService` : injection de `deck_dao`/`flashcard_dao`, param
+  `deck_id` optionnel. `_existing_cards()` récupère les cartes **originales** du deck
+  (`get_originals_by_deck`) avec **contrôle d'appartenance** : deck d'un autre
+  utilisateur → `403` (pas de fuite dans le prompt) ; deck introuvable → ignoré.
+- Route `POST /flashcards/generate` : lit `deck_id` (optionnel), le transmet au service.
+- `Reviews.vue` : le payload inclut `deck_id` uniquement quand un deck existant est ciblé
+  (`genDeckTarget === 'existing'`). Nouveau deck → pas de `deck_id`.
+
+**Tests** (`tests/test_flashcard_generation.py`) : cartes existantes transmises à l'IA,
+liste vide sans `deck_id`, `403` sur deck d'autrui. 15 tests backend verts (+ `vue-tsc`).
+
 ## [2026-06-25] Fix #4 — éditer les éléments d'un ensemble de révision
 
 **Symptôme** : impossible de modifier les éléments d'un set de révision (ex. corriger
