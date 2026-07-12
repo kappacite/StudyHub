@@ -174,6 +174,65 @@ def test_generate_other_users_deck_forbidden(mock_gen, client, auth_headers, tes
     mock_gen.assert_not_called()
 
 
+@patch("app.services.ai_service.AIService.generate_flashcards")
+def test_generate_passes_coverage_to_ai(mock_gen, client, auth_headers, test_user, app):
+    """Le taux de couverture fourni est transmis tel quel à l'IA."""
+    mock_gen.return_value = AI_CARDS
+    with app.app_context():
+        note = Note(user_id=test_user["id"], title="Géo", content="La capitale de la France est Paris.")
+        db.session.add(note)
+        db.session.commit()
+        note_id = note.id
+
+    resp = client.post("/api/v1/flashcards/generate", json={
+        "source_type": "note",
+        "note_id": note_id,
+        "coverage": 40,
+    }, headers=auth_headers)
+
+    assert resp.status_code == 200
+    assert mock_gen.call_args.kwargs["coverage"] == 40
+
+
+@patch("app.services.ai_service.AIService.generate_flashcards")
+def test_generate_coverage_defaults_to_75(mock_gen, client, auth_headers, test_user, app):
+    """Sans coverage explicite, le défaut équilibré (75) est appliqué."""
+    mock_gen.return_value = AI_CARDS
+    with app.app_context():
+        note = Note(user_id=test_user["id"], title="Géo", content="La capitale de la France est Paris.")
+        db.session.add(note)
+        db.session.commit()
+        note_id = note.id
+
+    resp = client.post("/api/v1/flashcards/generate", json={
+        "source_type": "note",
+        "note_id": note_id,
+    }, headers=auth_headers)
+
+    assert resp.status_code == 200
+    assert mock_gen.call_args.kwargs["coverage"] == 75
+
+
+@patch("app.services.ai_service.AIService.generate_flashcards")
+def test_generate_invalid_coverage_returns_400(mock_gen, client, auth_headers, test_user, app):
+    """Un coverage hors [0,100] ou non entier est rejeté avant tout appel IA."""
+    mock_gen.return_value = AI_CARDS
+    with app.app_context():
+        note = Note(user_id=test_user["id"], title="Géo", content="La capitale de la France est Paris.")
+        db.session.add(note)
+        db.session.commit()
+        note_id = note.id
+
+    for bad in (150, -1, "beaucoup", 50.5):
+        resp = client.post("/api/v1/flashcards/generate", json={
+            "source_type": "note",
+            "note_id": note_id,
+            "coverage": bad,
+        }, headers=auth_headers)
+        assert resp.status_code == 400, f"coverage={bad!r} aurait dû être rejeté"
+    mock_gen.assert_not_called()
+
+
 def test_generate_requires_auth(client):
     resp = client.post("/api/v1/flashcards/generate", json={"source_type": "note", "note_id": "1"})
     assert resp.status_code == 401

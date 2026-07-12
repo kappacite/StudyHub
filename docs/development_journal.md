@@ -1,5 +1,27 @@
 # Journal de Développement — StudyHub
 
+## [2026-07-12] Feat — taux de couverture des notions à la génération IA de flashcards
+
+**Besoin** : contrôler quelle part des **notions** d'une note est transformée en flashcards.
+À 100 %, toutes les notions méritant révision (définitions, nuances, faits clés) sont
+couvertes — **pas** le texte brut : uniquement ce qui mérite d'être révisé.
+
+**Correctif** :
+- `AIService.generate_flashcards(..., coverage=100)` : clampé `[0,100]`, pilote une
+  directive « OBJECTIF DE COUVERTURE DES NOTIONS » graduée — ≥90 % exhaustif (une carte
+  par notion, aucun remplissage), 16–89 % top ~X % par importance, ≤15 % noyau seul. Le
+  nombre de cartes découle des notions retenues, plus de la longueur du texte (ancien
+  `cards_desc` adaptatif supprimé). Rappel systématique : une carte = une notion, jamais
+  du texte recopié.
+- `FlashcardGenerationService.generate_from_source(..., coverage=100)` : simple relais.
+- Route `POST /flashcards/generate` : lit `coverage` (défaut **75**), valide `[0,100]`
+  entier (sinon `400`).
+- `Reviews.vue` : slider 0–100 (pas de 5, défaut 75) dans le formulaire de génération,
+  libellé + aide, envoyé dans le payload.
+
+**Vérif** : directive rendue et inspectée pour 100/75/10 via mock ; 22 tests backend
+flashcards/IA verts (coverage transmis, défaut 75, `400` sur valeur invalide) ; `vue-tsc` OK.
+
 ## [2026-07-12] Amélioration — rectos de flashcards IA plus courts et directs
 
 **Besoin** : les rectos générés par l'IA étaient trop verbeux (ex. « Comment dit-on

@@ -930,6 +930,26 @@
           </div>
         </div>
 
+        <!-- Coverage slider -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider">Taux de couverture</label>
+            <span class="text-xs font-bold text-primary tabular-nums">{{ genCoverage }}%</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            v-model.number="genCoverage"
+            class="w-full accent-primary cursor-pointer"
+            aria-label="Taux de couverture des notions"
+          />
+          <p class="mt-1.5 text-[11px] leading-snug text-ink-muted dark:text-ink-subtle">
+            Part des <strong>notions</strong> importantes de la note transformées en flashcards. 100 % = toutes les notions à réviser (définitions, nuances, faits clés) — pas le texte brut.
+          </p>
+        </div>
+
         <!-- Alert messages or status -->
         <div v-if="genStatusMessage" class="p-3 text-xs rounded-xl" :class="[genStatusIsError ? 'bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger' : 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary']">
           {{ genStatusMessage }}
@@ -1625,6 +1645,8 @@ const genBinderId = ref<string | null>(null)
 const genDeckTarget = ref<'new' | 'existing'>('new')
 const genNewDeckName = ref('')
 const genExistingDeckId = ref<number | null>(null)
+// Taux de couverture des notions (0–100). Défaut équilibré à 75 %.
+const genCoverage = ref(75)
 const genStatusMessage = ref('')
 const genStatusIsError = ref(false)
 
@@ -1718,8 +1740,8 @@ async function executeFlashcardGeneration() {
     let usedFallback = false
     try {
       const payload: Record<string, unknown> = genSourceType.value === 'note'
-        ? { source_type: 'note', note_id: genNoteId.value }
-        : { source_type: 'binder', binder_id: genBinderId.value }
+        ? { source_type: 'note', note_id: genNoteId.value, coverage: genCoverage.value }
+        : { source_type: 'binder', binder_id: genBinderId.value, coverage: genCoverage.value }
       // Deck existant ciblé : on transmet son id pour que l'IA voie les cartes
       // déjà présentes et évite d'en régénérer des variantes (pertinence du deck).
       if (genDeckTarget.value === 'existing' && genExistingDeckId.value) {
