@@ -6,8 +6,8 @@
       <h3 class="text-lg font-bold mb-1 text-ink dark:text-white">{{ isEdit ? 'Modifier l\'élément' : 'Ajouter un élément de révision' }}</h3>
       <p class="text-xs text-ink-subtle mb-4">{{ isEdit ? 'Modifiez le contenu de cet élément de révision.' : 'Choisissez un type, il sera révisé en répétition espacée (SM-2).' }}</p>
 
-      <!-- Type selector (masqué en édition : le type d'un ensemble est figé) -->
-      <div v-if="!isEdit" class="flex flex-wrap gap-2 mb-5">
+      <!-- Type selector (masqué en édition et quand le type est verrouillé) -->
+      <div v-if="!isEdit && !lockedType" class="flex flex-wrap gap-2 mb-5">
         <button
           v-for="t in TYPES"
           :key="t.value"
@@ -23,8 +23,9 @@
       </div>
 
       <form @submit.prevent="submit" class="space-y-4">
-        <!-- Target : deck (basic) OR revision set (typed) — masqué en édition -->
-        <div v-if="!isEdit">
+        <!-- Target : deck (basic) OR revision set (typed) — masqué en édition
+             et quand on ajoute à un ensemble déjà déterminé (lockedSetId). -->
+        <div v-if="!isEdit && props.lockedSetId === undefined">
           <label :class="labelCls">{{ itemType === 'basic' ? 'Jeu de révision (flashcards)' : 'Ensemble de révision' }}</label>
           <select v-model="targetChoice" :class="inputCls">
             <option :value="NEW_TARGET">➕ Nouvel ensemble…</option>
@@ -180,6 +181,11 @@ const targets = computed(() => {
 })
 
 function resetTargetChoice() {
+  // Ajout à un ensemble déjà déterminé : la cible est figée, pas de sélecteur.
+  if (props.lockedSetId !== undefined) {
+    targetChoice.value = props.lockedSetId
+    return
+  }
   if (itemType.value === 'basic' && props.initialDeckId) {
     targetChoice.value = props.initialDeckId
     return

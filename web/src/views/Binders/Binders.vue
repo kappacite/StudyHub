@@ -725,12 +725,17 @@ const ownedClasses = computed(() => myClasses.value.filter(c => c.created_by ===
 const isSharedToClass = computed(() => sharedClasses.value.length > 0)
 
 async function loadSharedClasses() {
-  if (currentBinderId.value === null || !isOwner.value) {
+  // L'endpoint /groups/binders/<id>/classes est réservé au PROPRIÉTAIRE du
+  // classeur (404 sinon). On l'interroge donc seulement si l'on est certain de
+  // posséder le classeur : objet chargé ET user_id correspondant. Un classeur
+  // partagé (non possédé) ou pas encore chargé est ignoré — pas de 404.
+  const binder = currentBinder.value
+  if (!binder || binder.user_id !== currentUserId.value) {
     sharedClasses.value = []
     return
   }
   try {
-    sharedClasses.value = await groupService.getBinderClasses(currentBinderId.value)
+    sharedClasses.value = await groupService.getBinderClasses(binder.id)
   } catch {
     sharedClasses.value = []
   }
@@ -769,5 +774,7 @@ async function toggleClassShare(c: ClassInfo) {
   }
 }
 
-watch(currentBinderId, loadSharedClasses, { immediate: true })
+// On observe currentBinder (et non currentBinderId) : l'indicateur « partagé »
+// se met à jour dès que l'objet classeur est résolu après le chargement.
+watch(currentBinder, loadSharedClasses, { immediate: true })
 </script>

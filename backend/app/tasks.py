@@ -71,6 +71,49 @@ def run_blurting_analysis(self, user_id: int, note_id: int, user_blurting: str, 
 
 
 @celery_app.task(bind=True)
+def run_feynman_analysis(self, user_id: int, note_id: int, user_explanation: str, duration_seconds: int) -> dict:
+    """Analyse IA de l'exercice Feynman (explication simplifiée) au regard de la note,
+    puis enregistrement de la session d'étude. Symétrique de run_blurting_analysis."""
+    logger.info(f"Starting async feynman analysis for user_id={user_id}, note_id={note_id}")
+    try:
+        note_dao = NoteDAO(db.session)
+        note = note_dao.get_by_id(note_id)
+        if not note:
+            logger.error(f"Note {note_id} not found")
+            raise ValueError("Note introuvable")
+        if note.user_id != user_id:
+            # Révision active autorisée sur une note partagée (lecture seule).
+            from app.utils.security import check_note_access
+            from app.middlewares.error_handler import ForbiddenError
+            try:
+                check_note_access(db.session, note, user_id)
+            except ForbiddenError:
+                logger.error(f"User {user_id} has no access to note {note_id}")
+                raise ValueError("Accès interdit à cette note")
+
+        ai_service = AIService()
+        analysis_result = ai_service.analyze_feynman(note.title, note.content, user_explanation)
+
+        if duration_seconds > 0:
+            deck_dao = DeckDAO(db.session)
+            flashcard_dao = FlashcardDAO(db.session)
+            study_session_dao = StudySessionDAO(db.session)
+            stats_service = StatsService(study_session_dao, deck_dao, flashcard_dao)
+            stats_service.create_session(user_id, StudySessionCreate(
+                module="note", duration_seconds=duration_seconds,
+                cards_reviewed=0, cards_correct=0,
+            ))
+
+        db.session.commit()
+        logger.info(f"Finished async feynman analysis for user_id={user_id}, note_id={note_id}")
+        return analysis_result
+    except Exception as e:
+        db.session.rollback()
+        logger.exception(f"Error executing feynman analysis task: {e}")
+        raise
+
+
+@celery_app.task(bind=True)
 def run_class_gap_analysis(self, class_id: int) -> dict:
     """Calcule les lacunes d'une classe (data) + résumé IA optionnel, et met en cache.
 

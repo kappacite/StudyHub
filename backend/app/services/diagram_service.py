@@ -13,12 +13,18 @@ class DiagramService:
         self._diagram_dao = diagram_dao
         self._binder_dao = binder_dao
 
-    def _get_diagram_or_404(self, diagram_id: int, user_id: int) -> Diagram:
+    def _get_diagram_or_404(self, diagram_id: int, user_id: int, write_required: bool = False) -> Diagram:
         diagram = self._diagram_dao.get_by_id(diagram_id)
         if not diagram:
             raise ResourceNotFoundError("Diagramme introuvable.")
         if diagram.user_id != user_id:
-            raise ForbiddenError("Accès interdit à ce diagramme.")
+            # Diagramme d'un classeur partagé (cours) : lecture autorisée aux
+            # membres ; l'écriture reste soumise à la permission du partage.
+            if diagram.binder_id:
+                from app.utils.security import check_binder_access
+                check_binder_access(self._diagram_dao.db, diagram.binder_id, user_id, write_required=write_required)
+            else:
+                raise ForbiddenError("Accès interdit à ce diagramme.")
         return diagram
 
     def create_diagram(self, user_id: int, data: DiagramCreate) -> DiagramResponse:
@@ -49,16 +55,32 @@ class DiagramService:
         offset = (page - 1) * per_page
         diagrams = self._diagram_dao.get_by_binder(user_id, binder_id, tag_id, limit=per_page, offset=offset)
         total = self._diagram_dao.count_by_binder(user_id, binder_id, tag_id)
-        
-        return [DiagramResponse.model_validate(d) for d in diagrams], total
+
+        responses = [DiagramResponse.model_validate(d) for d in diagrams]
+
+        # Lors d'un listing global, inclure les diagrammes des classeurs partagés
+        # (cours), en LECTURE SEULE — symétrique des notes/PDF/decks/ensembles.
+        if binder_id is None and tag_id is None:
+            shared_binder_ids: list = []
+            for root in self._binder_dao.get_shared_root_binders(user_id):
+                shared_binder_ids.append(root._id)
+                shared_binder_ids.extend(d._id for d in self._binder_dao.get_descendants(root._id))
+            if shared_binder_ids:
+                for d in self._diagram_dao.get_by_binder_internal_ids(shared_binder_ids):
+                    resp = DiagramResponse.model_validate(d)
+                    resp.read_only = True
+                    responses.append(resp)
+                total = len(responses)
+
+        return responses, total
 
     def get_diagram(self, user_id: int, diagram_id: int) -> DiagramResponse:
         diagram = self._get_diagram_or_404(diagram_id, user_id)
         return DiagramResponse.model_validate(diagram)
 
     def update_diagram(self, user_id: int, diagram_id: int, data: DiagramUpdate) -> DiagramResponse:
-        diagram = self._get_diagram_or_404(diagram_id, user_id)
-        
+        diagram = self._get_diagram_or_404(diagram_id, user_id, write_required=True)
+
         if data.title is not None:
             diagram.title = data.title
             
@@ -77,5 +99,5 @@ class DiagramService:
         return DiagramResponse.model_validate(updated)
 
     def delete_diagram(self, user_id: int, diagram_id: int) -> None:
-        diagram = self._get_diagram_or_404(diagram_id, user_id)
+        diagram = self._get_diagram_or_404(diagram_id, user_id, write_required=True)
         self._diagram_dao.delete(diagram)

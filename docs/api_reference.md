@@ -16,6 +16,7 @@ Ce document décrit en détail chaque endpoint de l'API v1 de StudyHub pour faci
 9. [Dashboard & Statistiques](#9-dashboard--statistiques)
 10. [Espace Communautaire (Packages)](#10-espace-communautaire-packages)
 11. [Révision Blurting (Feuille Blanche IA)](#11-révision-blurting-feuille-blanche-ia)
+12. [Révision Méthode Feynman (IA)](#12-révision-méthode-feynman-ia)
 
 ---
 
@@ -1197,6 +1198,46 @@ Analyse par IA (Gemini) le contenu d'une **note** ou d'un **classeur** (toutes l
   }
   ```
 * **Erreurs** : `400` source vide/invalide · `403` source **ou deck** d'un autre utilisateur · `404` source introuvable · `502` `AI_GENERATION_FAILED` (clé Gemini absente, réseau, réponse invalide). Le client web bascule alors sur une extraction locale par motifs.
+
+---
+
+## 12. Révision Méthode Feynman (IA)
+
+La méthode Feynman consiste à expliquer un concept le plus simplement possible (comme à un enfant de 10 ans) pour révéler les zones d'ombre. L'IA (Gemini) analyse l'explication au regard de la note de référence : simplicité/clarté **et** exactitude/couverture. Flux **asynchrone** (Celery + polling), avec repli synchrone si le broker est indisponible (renvoie alors directement `{ "status": "SUCCESS", "result": … }`). Limité à 10 requêtes/heure/utilisateur. Autorisé aussi sur une **note partagée** (cours) en lecture seule.
+
+### 🧠 Analyser une explication Feynman
+* **Route** : `POST /feynman/analyze`
+* **Type** : `[Sécurisé]`
+* **Request Body** :
+  ```json
+  {
+    "note_id": 1,
+    "user_explanation": "La mitochondrie, c'est un peu comme la centrale électrique de la cellule...",
+    "duration_seconds": 180
+  }
+  ```
+* **Response** (Status `202 Accepted`) : `{ "task_id": "<id>", "status": "PENDING" }`
+* **Erreurs** : `400` `note_id`/`user_explanation` manquants · `403`/`404` note inaccessible.
+
+### ⏳ Sonder la tâche d'analyse
+* **Route** : `GET /feynman/tasks/<task_id>`
+* **Type** : `[Sécurisé]`
+* **Response** (Status `200 OK`, une fois terminée) :
+  ```json
+  {
+    "task_id": "<id>",
+    "status": "SUCCESS",
+    "result": {
+      "clarity_score": 78,
+      "jargon": ["mitochondrie"],
+      "gaps": [
+        { "concept": "ATP", "issue": "Le rôle énergétique n'est pas expliqué." }
+      ],
+      "feedback": "Bonne analogie de la centrale, mais un terme reste opaque…",
+      "suggestion": "Comparez la production d'ATP à la production d'électricité."
+    }
+  }
+  ```
 
 ---
 

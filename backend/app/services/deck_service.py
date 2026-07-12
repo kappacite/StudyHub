@@ -65,7 +65,25 @@ class DeckService:
         total = self._deck_dao.count_decks(user_id, binder_id, search, tag_id)
 
         counts = self._flashcard_dao.count_by_decks([d.id for d in decks])
-        return [self._to_response(d, counts.get(d.id, 0)) for d in decks], total
+        responses = [self._to_response(d, counts.get(d.id, 0)) for d in decks]
+
+        # Lors d'un listing global, inclure les decks des classeurs partagés
+        # (cours), en LECTURE SEULE — symétrique des notes/PDF/ensembles.
+        if binder_id is None and search is None and tag_id is None:
+            shared_binder_ids: list = []
+            for root in self._binder_dao.get_shared_root_binders(user_id):
+                shared_binder_ids.append(root._id)
+                shared_binder_ids.extend(d._id for d in self._binder_dao.get_descendants(root._id))
+            if shared_binder_ids:
+                shared_decks = self._deck_dao.get_by_binder_internal_ids(shared_binder_ids)
+                shared_counts = self._flashcard_dao.count_by_decks([d.id for d in shared_decks])
+                for d in shared_decks:
+                    resp = self._to_response(d, shared_counts.get(d.id, 0))
+                    resp.read_only = True
+                    responses.append(resp)
+                total = len(responses)
+
+        return responses, total
 
     def get_deck(self, user_id: int, deck_id: int) -> DeckResponse:
         deck = self._get_deck_or_404(deck_id, user_id, write_required=False)
