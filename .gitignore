@@ -328,6 +328,9 @@ cypress/screenshots/
 .env.test.local
 .env.production.local
 
+# Claude Code — réglages/permissions par développeur (non partagés)
+.claude/settings.local.json
+
 # ------------------------------------------
 
 # Generated changelog drafts
