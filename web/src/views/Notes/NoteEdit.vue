@@ -465,21 +465,12 @@
           
           <!-- PRINT-ONLY DEDICATED HEADER -->
           <div v-if="pdfExportOptions.includeHeader" class="hidden print:block print-header-banner mb-6 pb-4 border-b-2 border-slate-900">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-xs shadow-sm">
-                  SH
-                </div>
-                <div>
-                  <span class="text-xs font-black uppercase tracking-widest text-indigo-900 block leading-none">STUDYHUB</span>
-                  <span class="text-[10px] font-semibold text-slate-500">Document d'étude & Révision</span>
-                </div>
+            <div class="flex items-center justify-between mb-3 text-xs text-slate-500">
+              <div v-if="getBinderName(binderId)" class="font-bold text-slate-900 uppercase tracking-wider">
+                {{ getBinderName(binderId) }}
               </div>
-              <div class="text-right text-[10px] font-medium text-slate-500">
-                <div>Exporté le {{ currentExportDateFormatted }}</div>
-                <div v-if="getBinderName(binderId)" class="font-bold text-indigo-950 mt-0.5">
-                  Classeur : {{ getBinderName(binderId) }}
-                </div>
+              <div class="text-[11px] font-medium text-slate-500">
+                {{ currentExportDateFormatted }}
               </div>
             </div>
 
@@ -610,7 +601,7 @@
           <!-- PRINT-ONLY FOOTER -->
           <div v-if="pdfExportOptions.includeFooter" class="hidden print:flex print-footer-banner pt-6 mt-8 border-t border-slate-300 text-[10px] text-slate-500 justify-between items-center">
             <span>StudyHub • Document d'étude exporté en haute définition</span>
-            <span>https://studyhub.app</span>
+            <span>Fiche d'apprentissage</span>
           </div>
 
         </div>
@@ -2777,7 +2768,7 @@ async function saveNoteTags(tags: Tag[]) {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 15mm 15mm 15mm 15mm;
+    margin: 0;
   }
 
   /* Universal exact print color rendering */
@@ -2805,12 +2796,18 @@ async function saveNoteTags(tags: Tag[]) {
   }
 
   /* Page layout resets */
-  body, .min-h-screen, main, .max-w-6xl, .max-w-4xl {
+  body {
+    padding: 12mm 15mm 15mm 15mm !important;
+    margin: 0 !important;
+    background: white !important;
+    color: #0f172a !important;
+  }
+
+  .min-h-screen, main, .max-w-6xl, .max-w-4xl {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
     background: white !important;
-    color: #0f172a !important;
     box-shadow: none !important;
   }
 

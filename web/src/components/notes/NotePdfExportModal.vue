@@ -198,7 +198,7 @@
                   </div>
                   <div>
                     <span class="font-bold text-xs text-ink dark:text-white block">Bannière & Métadonnées d'en-tête</span>
-                    <span class="text-[11px] text-ink-subtle dark:text-ink-muted">Logo StudyHub, titre, classeur, tags et date</span>
+                    <span class="text-[11px] text-ink-subtle dark:text-ink-muted">Titre, classeur, tags et date d'exportation</span>
                   </div>
                 </div>
                 <input
@@ -294,8 +294,8 @@
                     <Printer class="w-4 h-4" />
                   </div>
                   <div>
-                    <span class="font-bold text-xs text-ink dark:text-white block">Pied de page & Numérotation</span>
-                    <span class="text-[11px] text-ink-subtle dark:text-ink-muted">Signature StudyHub et bas de page</span>
+                    <span class="font-bold text-xs text-ink dark:text-white block">Pied de page</span>
+                    <span class="text-[11px] text-ink-subtle dark:text-ink-muted">Titre du document et ligne de séparation en bas de page</span>
                   </div>
                 </div>
                 <input
@@ -312,7 +312,7 @@
         <div class="flex items-center justify-between border-t border-line dark:border-line pt-5 mt-6">
           <div class="text-[11px] text-ink-subtle dark:text-ink-muted flex items-center gap-1.5">
             <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-            Conseil : Choisissez <strong class="text-ink dark:text-white font-semibold">Enregistrer au format PDF</strong> dans l'impression.
+            Conseil : Décochez <strong class="text-ink dark:text-white font-semibold">« En-têtes et pieds de page »</strong> dans l'impression pour masquer les URL.
           </div>
           <div class="flex items-center gap-3">
             <button
