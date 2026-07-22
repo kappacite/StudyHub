@@ -198,7 +198,7 @@
                   </div>
                   <div>
                     <span class="font-bold text-xs text-ink dark:text-white block">Bannière & Métadonnées d'en-tête</span>
-                    <span class="text-[11px] text-ink-subtle dark:text-ink-muted">Logo StudyHub, titre, classeur, tags et date</span>
+                    <span class="text-[11px] text-ink-subtle dark:text-ink-muted">Titre, classeur, tags et date d'exportation</span>
                   </div>
                 </div>
                 <input
@@ -294,8 +294,8 @@
                     <Printer class="w-4 h-4" />
                   </div>
                   <div>
-                    <span class="font-bold text-xs text-ink dark:text-white block">Pied de page & Numérotation</span>
-                    <span class="text-[11px] text-ink-subtle dark:text-ink-muted">Signature StudyHub et bas de page</span>
+                    <span class="font-bold text-xs text-ink dark:text-white block">Pied de page</span>
+                    <span class="text-[11px] text-ink-subtle dark:text-ink-muted">Titre du document et ligne de séparation en bas de page</span>
                   </div>
                 </div>
                 <input

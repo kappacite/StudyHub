@@ -465,21 +465,12 @@
           
           <!-- PRINT-ONLY DEDICATED HEADER -->
           <div v-if="pdfExportOptions.includeHeader" class="hidden print:block print-header-banner mb-6 pb-4 border-b-2 border-slate-900">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-xs shadow-sm">
-                  SH
-                </div>
-                <div>
-                  <span class="text-xs font-black uppercase tracking-widest text-indigo-900 block leading-none">STUDYHUB</span>
-                  <span class="text-[10px] font-semibold text-slate-500">Document d'étude & Révision</span>
-                </div>
+            <div class="flex items-center justify-between mb-3 text-xs text-slate-500">
+              <div v-if="getBinderName(binderId)" class="font-bold text-slate-900 uppercase tracking-wider">
+                {{ getBinderName(binderId) }}
               </div>
-              <div class="text-right text-[10px] font-medium text-slate-500">
-                <div>Exporté le {{ currentExportDateFormatted }}</div>
-                <div v-if="getBinderName(binderId)" class="font-bold text-indigo-950 mt-0.5">
-                  Classeur : {{ getBinderName(binderId) }}
-                </div>
+              <div class="text-[11px] font-medium text-slate-500">
+                {{ currentExportDateFormatted }}
               </div>
             </div>
 
