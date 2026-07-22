@@ -312,7 +312,7 @@
         <div class="flex items-center justify-between border-t border-line dark:border-line pt-5 mt-6">
           <div class="text-[11px] text-ink-subtle dark:text-ink-muted flex items-center gap-1.5">
             <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-            Conseil : Choisissez <strong class="text-ink dark:text-white font-semibold">Enregistrer au format PDF</strong> dans l'impression.
+            Conseil : Décochez <strong class="text-ink dark:text-white font-semibold">« En-têtes et pieds de page »</strong> dans l'impression pour masquer les URL.
           </div>
           <div class="flex items-center gap-3">
             <button
