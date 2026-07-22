@@ -461,10 +461,41 @@
         </div>
 
         <!-- Cohesive Paper Sheet -->
-        <div class="max-w-4xl mx-auto bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 lg:p-12 shadow-xl shadow-soft-lg dark:shadow-soft-lg space-y-6 print:border-none print:shadow-none print:p-0">
+        <div class="max-w-4xl mx-auto bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 lg:p-12 shadow-xl shadow-soft-lg dark:shadow-soft-lg space-y-6 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black">
           
-          <!-- Note Title -->
-          <div class="border-b border-line dark:border-line pb-6 print:mb-6">
+          <!-- PRINT-ONLY DEDICATED HEADER -->
+          <div v-if="pdfExportOptions.includeHeader" class="hidden print:block print-header-banner mb-6 pb-4 border-b-2 border-slate-900">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-xs shadow-sm">
+                  SH
+                </div>
+                <div>
+                  <span class="text-xs font-black uppercase tracking-widest text-indigo-900 block leading-none">STUDYHUB</span>
+                  <span class="text-[10px] font-semibold text-slate-500">Document d'étude & Révision</span>
+                </div>
+              </div>
+              <div class="text-right text-[10px] font-medium text-slate-500">
+                <div>Exporté le {{ currentExportDateFormatted }}</div>
+                <div v-if="getBinderName(binderId)" class="font-bold text-indigo-950 mt-0.5">
+                  Classeur : {{ getBinderName(binderId) }}
+                </div>
+              </div>
+            </div>
+
+            <h1 class="text-3xl font-extrabold text-slate-950 tracking-tight leading-tight mb-2">
+              {{ title || 'Note sans titre' }}
+            </h1>
+
+            <div v-if="noteTags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+              <span v-for="tag in noteTags" :key="tag.id" class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
+                #{{ tag.name }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Screen Note Title (Hidden in print if print header banner is enabled) -->
+          <div :class="['border-b border-line dark:border-line pb-6 print:mb-4', pdfExportOptions.includeHeader ? 'print:hidden' : '']">
             <h1 class="text-3xl font-extrabold text-ink dark:text-white print:text-black">
               {{ title || 'Note sans titre' }}
             </h1>
@@ -477,12 +508,37 @@
             </div>
           </div>
 
-          <!-- 1. Context Block (Full width, integrated at the top of the paper) -->
-          <div 
-            v-if="noteContext"
-            class="bg-warning-soft border-l-4 border-warning rounded-r-2xl p-5 dark:bg-warning-soft dark:border-warning print:bg-[#fffbeb] print:border-warning"
+          <!-- PRINT-ONLY TABLE OF CONTENTS -->
+          <div
+            v-if="pdfExportOptions.includeToc && extractedHeadings.length > 0"
+            class="hidden print:block print-toc-block bg-slate-50 border border-slate-300 rounded-xl p-5 mb-6 break-inside-avoid"
           >
-            <h3 class="text-xs font-bold text-warning dark:text-warning flex items-center gap-1.5 uppercase tracking-wider mb-2 no-print">
+            <div class="text-xs font-black uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2 border-b border-slate-200 pb-2">
+              <span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span>
+              Sommaire de la note
+            </div>
+            <div class="space-y-1 text-xs">
+              <div
+                v-for="(h, idx) in extractedHeadings"
+                :key="idx"
+                :class="[
+                  'flex items-center justify-between',
+                  h.level === 1 ? 'font-bold text-slate-900 pt-1' : '',
+                  h.level === 2 ? 'font-semibold text-slate-800 pl-4' : '',
+                  h.level === 3 ? 'text-slate-600 pl-8 text-[11px]' : ''
+                ]"
+              >
+                <span>• {{ h.text }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1. Context Block -->
+          <div 
+            v-if="noteContext && pdfExportOptions.includeContext"
+            class="bg-warning-soft border-l-4 border-warning rounded-r-2xl p-5 dark:bg-warning-soft dark:border-warning print:bg-[#fffbeb] print:border-warning print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
+          >
+            <h3 class="text-xs font-bold text-warning dark:text-warning flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-amber-900">
               <Compass class="w-4 h-4" />
               Contexte de la note
             </h3>
@@ -492,12 +548,12 @@
             ></div>
           </div>
 
-          <!-- Legacy Definitions Block (for backward compatibility only if loaded) -->
+          <!-- Legacy Definitions Block -->
           <div 
             v-if="noteDefinition"
-            class="bg-success-soft border-l-4 border-success rounded-r-2xl p-5 dark:bg-success-soft dark:border-success print:bg-[#ecfdf5] print:border-success"
+            class="bg-success-soft border-l-4 border-success rounded-r-2xl p-5 dark:bg-success-soft dark:border-success print:bg-[#ecfdf5] print:border-success print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
           >
-            <h3 class="text-xs font-bold text-success dark:text-success flex items-center gap-1.5 uppercase tracking-wider mb-2">
+            <h3 class="text-xs font-bold text-success dark:text-success flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-emerald-900">
               <BookOpen class="w-4 h-4" />
               Définitions clés (Legacy)
             </h3>
@@ -515,7 +571,24 @@
             <div v-dompurify-html="renderMarkup(noteBody)"></div>
           </div>
 
-          <!-- 3. Linked Notes Block (Integrated at the bottom of the sheet) -->
+          <!-- PRINT-ONLY DEFINITIONS GLOSSARY -->
+          <div
+            v-if="pdfExportOptions.includeGlossary && extractedDefinitions.length > 0"
+            class="hidden print:block print-glossary-block border-t-2 border-slate-900 pt-6 mt-8 break-inside-avoid"
+          >
+            <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-950 mb-3 flex items-center gap-2">
+              <BookOpen class="w-4.5 h-4.5 text-emerald-600 inline-block" />
+              Index des Définitions Clés
+            </h3>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div v-for="item in extractedDefinitions" :key="item.term" class="p-3 bg-slate-50 border border-slate-300 rounded-lg">
+                <div class="font-bold text-slate-950 border-b border-slate-200 pb-1 mb-1">{{ item.term }}</div>
+                <div class="text-slate-800 text-[11px] leading-relaxed">{{ item.def }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Linked Notes Block -->
           <div v-if="noteLinks.length > 0" class="border-t border-line dark:border-line pt-6 no-print">
             <h3 class="text-xs font-bold text-ink-subtle uppercase tracking-wider flex items-center gap-1.5 mb-3">
               <LinkIcon class="w-4.5 h-4.5 text-primary" />
@@ -532,6 +605,12 @@
                 <ChevronRight class="w-3.5 h-3.5 text-ink-subtle" />
               </button>
             </div>
+          </div>
+
+          <!-- PRINT-ONLY FOOTER -->
+          <div v-if="pdfExportOptions.includeFooter" class="hidden print:flex print-footer-banner pt-6 mt-8 border-t border-slate-300 text-[10px] text-slate-500 justify-between items-center">
+            <span>StudyHub • Document d'étude exporté en haute définition</span>
+            <span>https://studyhub.app</span>
           </div>
 
         </div>
@@ -1018,6 +1097,18 @@
         </div>
       </transition>
 
+      <!-- PDF Export Modal -->
+      <NotePdfExportModal
+        :is-open="showPdfModal"
+        :note-title="title"
+        :binder-name="getBinderName(binderId)"
+        :headings-count="extractedHeadings.length"
+        :definitions-count="extractedDefinitions.length"
+        :has-context="!!noteContext"
+        @close="showPdfModal = false"
+        @export="handlePdfExport"
+      />
+
     </div>
   </div>
 </template>
@@ -1031,6 +1122,7 @@ import { useBindersStore } from '../../stores/binders'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
+import NotePdfExportModal, { type PdfExportOptions } from '../../components/notes/NotePdfExportModal.vue'
 import { 
   ChevronLeft,
   Menu,
@@ -1103,6 +1195,48 @@ const isEditMode = computed({
 const showSettings = ref(false)
 const showHelpModal = ref(false)
 const showAiModal = ref(false)
+const showPdfModal = ref(false)
+
+const pdfExportOptions = ref<PdfExportOptions>({
+  theme: 'modern',
+  fontSize: 'standard',
+  includeHeader: true,
+  includeToc: true,
+  includeContext: true,
+  includeGlossary: true,
+  includeFooter: true
+})
+
+const extractedHeadings = computed(() => {
+  if (!noteBody.value) return []
+  const matches = Array.from(noteBody.value.matchAll(/^(#{1,3})\s+(.+)$/gm))
+  return matches.map(match => ({
+    level: match[1].length,
+    text: match[2].trim().replace(/[*_~`]/g, '')
+  }))
+})
+
+const extractedDefinitions = computed(() => {
+  const fullText = (noteContext.value || '') + '\n' + (noteDefinition.value || '') + '\n' + (noteBody.value || '')
+  const matches = Array.from(fullText.matchAll(/\[([^\]]+)\]\{def:([^\}]+)\}/g))
+  const map = new Map<string, string>()
+  for (const match of matches) {
+    const term = match[1].trim()
+    const def = match[2].trim()
+    if (term && def && !map.has(term)) {
+      map.set(term, def)
+    }
+  }
+  return Array.from(map.entries()).map(([term, def]) => ({ term, def }))
+})
+
+const currentExportDateFormatted = computed(() => {
+  return new Date().toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })
+})
 
 // Activités de révision IA proposées dans la modale de choix.
 const aiActivities = [
@@ -1546,7 +1680,7 @@ function renderMarkup(text: string): string {
 
   // 3. Definition Tooltips [term]{def:definition}
   temp = temp.replace(/\[([^\]]+)\]\{def:([^\}]+)\}/g, (_match, term, definition) => {
-    const html = `<span class="group relative inline-block underline decoration-emerald-500 decoration-dashed cursor-help bg-emerald-50/30 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded transition-all duration-200">${term}<span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded-xl bg-slate-900 dark:bg-slate-950 p-3 text-xs font-medium text-slate-100 dark:text-slate-200 shadow-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100 leading-normal normal-case text-center">${definition}</span></span>`
+    const html = `<span class="group relative inline-block underline decoration-emerald-500 decoration-dashed cursor-help bg-emerald-50/30 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded transition-all duration-200" def-term="${term}">${term}<span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded-xl bg-slate-900 dark:bg-slate-950 p-3 text-xs font-medium text-slate-100 dark:text-slate-200 shadow-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100 leading-normal normal-case text-center">${definition}</span><span class="hidden print:inline text-[11px] text-emerald-800 dark:text-emerald-300 font-normal italic"> (${definition})</span></span>`
     const key = `DEFPLACEHOLDER${placeholders.length}`
     placeholders.push(html)
     return key
@@ -2609,43 +2743,203 @@ async function saveNote() {
   }
 }
 
+function printNote() {
+  showPdfModal.value = true
+}
+
+function handlePdfExport(options: PdfExportOptions) {
+  pdfExportOptions.value = options
+  showPdfModal.value = false
+
+  const themeClass = `pdf-theme-${options.theme}`
+  const sizeClass = `pdf-size-${options.fontSize}`
+  document.body.classList.add(themeClass, sizeClass)
+
+  setTimeout(() => {
+    window.print()
+    document.body.classList.remove(
+      'pdf-theme-modern', 'pdf-theme-academic', 'pdf-theme-minimal',
+      'pdf-size-compact', 'pdf-size-standard', 'pdf-size-comfortable'
+    )
+  }, 150)
+}
+
 async function saveNoteTags(tags: Tag[]) {
   if (!noteId.value) return
   noteTags.value = await tagsStore.setTagsForEntity('notes', noteId.value, tags.map(tag => tag.id))
   const note = notesStore.notes.find(item => item.id === noteId.value)
   if (note) note.tags = noteTags.value
 }
-
-function printNote() {
-  window.print()
-}
 </script>
 
 <style>
-/* Print CSS Settings */
+/* High-Definition Print & PDF Export Styling */
 @media print {
-  aside, header, nav, button, select, no-print, .no-print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm 15mm 15mm 15mm;
+  }
+
+  /* Universal exact print color rendering */
+  *, *:before, *:after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Force visibility of print-specific containers */
+  .print-header-banner,
+  .print-toc-block,
+  .print-glossary-block,
+  .print-footer-banner {
+    display: block !important;
+  }
+
+  .print-footer-banner {
+    display: flex !important;
+  }
+
+  /* Hide interactive, navigation, and modal components */
+  aside, header, nav, button, select, input, .no-print, [no-print], .teleport-modal {
     display: none !important;
   }
-  .min-h-screen, main, .max-w-6xl {
+
+  /* Page layout resets */
+  body, .min-h-screen, main, .max-w-6xl, .max-w-4xl {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
     background: white !important;
-    color: black !important;
+    color: #0f172a !important;
     box-shadow: none !important;
   }
-  .print-container {
-    border: none !important;
-    box-shadow: none !important;
-    background: transparent !important;
-    padding: 0 !important;
+
+  /* Theme styling variations */
+  body.pdf-theme-modern {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    color: #0f172a !important;
   }
-  .markdown-body p, .markdown-body ul, .markdown-body ol {
+
+  body.pdf-theme-academic {
+    font-family: Georgia, Cambria, "Times New Roman", Times, serif !important;
     color: #111827 !important;
-  }\n  .markdown-body h1, .markdown-body h2, .markdown-body h3 {
-    color: black !important;
   }
+
+  body.pdf-theme-minimal {
+    font-family: system-ui, sans-serif !important;
+    color: #000000 !important;
+  }
+
+  /* Font sizes */
+  body.pdf-size-compact .markdown-body {
+    font-size: 11px !important;
+    line-height: 1.5 !important;
+  }
+  body.pdf-size-standard .markdown-body {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+  }
+  body.pdf-size-comfortable .markdown-body {
+    font-size: 15px !important;
+    line-height: 1.75 !important;
+  }
+
+  /* Prevent orphaned headings */
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4,
+  .markdown-body h5,
+  .markdown-body h6 {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+    color: #0f172a !important;
+    font-weight: 800 !important;
+  }
+
+  .markdown-body h1 {
+    font-size: 1.65em !important;
+    margin-top: 1.2em !important;
+    margin-bottom: 0.5em !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    padding-bottom: 0.3em !important;
+  }
+
+  .markdown-body h2 {
+    font-size: 1.3em !important;
+    margin-top: 1em !important;
+    margin-bottom: 0.4em !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding-bottom: 0.2em !important;
+  }
+
+  .markdown-body h3 {
+    font-size: 1.1em !important;
+    margin-top: 0.8em !important;
+    margin-bottom: 0.3em !important;
+  }
+
+  /* Page break avoidance for compound blocks */
+  pre, code, table, blockquote, .katex-display, .not-prose, .print-toc-block, .print-glossary-block, .print-header-banner, img {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Markdown body code blocks */
+  .markdown-body pre {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 12px 16px !important;
+    font-family: "JetBrains Mono", Consolas, monospace !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+  }
+
+  .markdown-body code {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 0.9em !important;
+  }
+
+  /* Table styling */
+  .markdown-body table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 1.2em 0 !important;
+  }
+
+  .markdown-body th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px 12px !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+  }
+
+  .markdown-body td {
+    border: 1px solid #e2e8f0 !important;
+    padding: 6px 12px !important;
+  }
+
+  .markdown-body tr:nth-child(even) td {
+    background-color: #f8fafc !important;
+  }
+
+  /* Blockquote styling */
+  .markdown-body blockquote {
+    border-left: 4px solid #6366f1 !important;
+    background-color: #f8fafc !important;
+    padding: 10px 16px !important;
+    margin: 1em 0 !important;
+    border-radius: 0 8px 8px 0 !important;
+  }
+
+  /* KaTeX formula display */
   .katex-display {
     background: #f8fafc !important;
     border: 1px solid #e2e8f0 !important;
