@@ -93,43 +93,50 @@ contraintes dures, travail attendu) : `docs/PROMPT_DEMARRAGE.md` §6.
 - [ ] Skill `.claude/skills/design-system/SKILL.md` rédigée à partir du résultat
 - [ ] Hook de détection de valeurs brutes : aucune remontée sur les primitives
 
-### Prochaine action
+### Round de direction en cours (2026-08-24, reprise après revirement)
 
 **Revirement utilisateur (2026-08-24)** : la direction « Foyer » (palette, recolorage,
 contenu enrichi — voir `docs/passations/2026-08-24_0127_phase3.md` et
-`_0144_phase3.md`) est abandonnée sur demande explicite. Repartir entièrement de zéro :
-charger le skill `frontend-design` puis le skill `design` (Claude Design), concevoir une
-interface neuve pour StudyHub (notes, diagrammes, flashcards, outils de révision,
-statistiques ; clair + sombre ; desktop + mobile), **une maquette par écran** pour retour
-individuel. Ne pas reprendre la palette/typo/signature de « Foyer » ni l'UI actuelle du
-dépôt. Nouveau répertoire de travail et nouvel artifact (ne pas éditer
-`studyhub-design-foyer`).
+`_0144_phase3.md`) est abandonnée sur demande explicite. Repart entièrement de zéro via
+les skills `frontend-design` puis `design` (Claude Design), nouveau répertoire de travail
+(scratchpad, hors dépôt — pas de réutilisation de `studyhub-design-foyer`).
 
-#### Liste exhaustive des pages à designer (35 vues réelles, `docs/audit/00-CARTOGRAPHIE.md` §3.2)
+**Clarification Accueil/Dashboard (levée par lecture du code, pas par supposition)** :
+`web/src/router/index.ts:52` porte le commentaire « S1 : Accueil = fusion Dashboard +
+Focus (vue action-first) » — la fusion a déjà eu lieu au niveau routage. `/dashboard` et
+`/focus` redirigent tous deux vers `Accueil` (lignes 85-86) ; `Dashboard/Dashboard.vue` et
+`Focus/FocusPage.vue` ne sont importés par aucune route active : ce sont des fichiers
+orphelins, pas des écrans à designer. **Un seul écran à concevoir : `Home/Accueil.vue`**,
+qui porte déjà le contenu des deux (streak, file de révision, focus). Suppression des deux
+fichiers orphelins à consigner dans le backlog phase 6 (`docs/audit/05-BACKLOG.md`), pas
+une action de la phase 3.
 
-- **Coquille applicative** (transverse) : nav desktop + barre mobile, en-tête, thème
-  clair/sombre, états d'auth (`AppLayout.vue`)
-- **Auth** (2) : Connexion, Inscription
-- **Accueil/Dashboard** (2) : `Home/Accueil.vue`, `Dashboard/Dashboard.vue` (coexistent
-  toujours malgré un plan de fusion jamais terminé — clarifier avant de designer les deux)
-- **Notes** (6) : liste, éditeur (`NoteEdit.vue`, 3024 lignes), blurting IA, quiz depuis
-  note, évaluation de note, note publique
-- **Flashcards/Decks** (2) : liste des decks, session d'étude d'un deck
-- **Révisions** (6) : accueil révisions, session de révision, stats set, stats classeur,
-  gestion d'un set, QCM
-- **Diagrammes** (1) : coquille uniquement (canevas libre = phase 5, ne pas y toucher)
-- **PDF** (1) : liseuse/annotations
-- **Classeurs** (1) : `Binders.vue`
-- **Marketplace** (3) : accueil, exploration, aperçu avant clonage
-- **Groupes** (2) : liste, détail
-- **Classes** (4) : atterrissage, dashboard enseignant, vue élève, détail devoir
-- **Examens** (3) : configuration, session, résultats
-- **Focus** (1), **Planning** (1)
+**IA déjà partiellement restructurée** (à ne pas re-découvrir plus tard) : le routeur
+définit 5 « sections canoniques » (`accueil`, `bibliotheque/:id?`, `reviser`, `classes`,
+et l'ancien `decks`/`notes`/etc. pas encore repliés) — `Binders` a été renommé
+`Bibliothèque`, `Reviews` renommé `Réviser`, `Groups` et `ClassesTeacher/Student` sont
+devenus des onglets de la page `Classes` unique (`ClassesLanding.vue`, query `?tab=`).
+La liste des 35 vues de `docs/audit/00-CARTOGRAPHIE.md` §3.2 nomme encore les anciens
+écrans séparés — à corriger dans cette référence en phase 4, mais pour la phase 3 se fier
+au routeur réel (`web/src/router/index.ts`), pas à la cartographie figée. Confirmé : aucune
+route Réglages/Profil n'existe (la maquette « Foyer » l'avait inventée à tort — ne pas
+en redessiner une par supposition).
 
-**Point d'attention consigné** : aucune vue Réglages/Profil dans l'inventaire réel — ne pas
-en designer une par supposition (la maquette « Foyer » l'avait inventée à tort), confirmer
-d'abord si elle existe ailleurs ou doit être créée. Détail complet de la demande utilisateur :
-`PASSATION.md` / `docs/passations/2026-08-24_0144_phase3.md`.
+**Publié pour arbitrage** — deux directions esthétiques sur l'écran Accueil (desktop,
+bascule clair/sombre intégrée) :
+https://claude.ai/code/artifact/366dcc95-8da4-41dd-8bbd-1e625a68e2c5
+- **Direction A — « Fiche »** : papier chaud, encre indigo, rehaut ocre, empreinte
+  « tampon » sur la série, coins nets façon fiche bristol.
+- **Direction B — « Courbe »** : gris-bleu froid, accent sarcelle unique, typo
+  géométrique + mono technique, la courbe d'oubli (SM-2) comme motif structurel
+  (séparateurs, mini-graphiques par fiche, jauge de série).
+Auto-critique de chacune contre le brief consignée dans les annotations du canevas.
+Ni l'une ni l'autre ne reprend le rose/violet/orange de « Foyer ».
+
+**Prochaine action** : recueillir l'arbitrage utilisateur (A, B, ou fusion des deux) sur
+l'écran Accueil, puis construire les tokens Tailwind + primitives dans la direction
+retenue avant de dessiner le reste des écrans réels (voir liste corrigée ci-dessus,
+~30 vues une fois les orphelins et doublons de routage écartés).
 
 ## Écrans migrés (phase 4)
 

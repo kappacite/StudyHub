@@ -1555,3 +1555,28 @@ comme non acquis — repris en phases 2/3, pas supprimés).
   contre PostgreSQL réel (`TEST_DATABASE_URL`) échoue sur 12 tests liés à la recherche
   full-text — écart entre le schéma créé par `db.create_all()` en test et celui produit par
   les migrations Alembic (index GIN absents). Indépendant de l'architecture.
+
+## [2026-08-24] Phase 3 — reprise après revirement, round de direction esthétique
+
+Reprise de la phase 3 après abandon explicite de la direction « Foyer » (recolorage
+rose/violet/orange, contenu de dashboard enrichi — voir `docs/passations/2026-08-24_0144_phase3.md`).
+Repart de zéro via `frontend-design` + `design` (Claude Design), nouveau répertoire de
+travail hors dépôt.
+
+* **Clarification Accueil/Dashboard levée par lecture du routeur**, pas par supposition :
+  `web/src/router/index.ts:52` documente déjà « Accueil = fusion Dashboard + Focus » ; `/dashboard`
+  et `/focus` redirigent vers `Accueil` et `Dashboard/Dashboard.vue` / `Focus/FocusPage.vue` ne
+  sont importés par aucune route — fichiers orphelins, pas des écrans à designer. Un seul écran
+  « Accueil » à concevoir. Suppression des orphelins à verser au backlog phase 6.
+* **IA déjà partiellement restructurée en 5 sections canoniques** (`accueil`, `bibliotheque`,
+  `reviser`, `classes` avec onglets teacher/student/groups, + routes encore réelles non repliées) :
+  l'inventaire de `docs/audit/00-CARTOGRAPHIE.md` §3.2 nomme encore les anciens écrans séparés
+  (Groupes, Classeurs) — à corriger dans cette référence en phase 4 ; pour la conception, se fier
+  au routeur réel. Confirmé : aucune route Réglages/Profil (la maquette « Foyer » l'avait
+  inventée à tort).
+* **Deux directions esthétiques publiées pour arbitrage** sur l'écran Accueil (desktop, bascule
+  clair/sombre via tweak) : « Fiche » (papier chaud, encre indigo, rehaut ocre, empreinte tampon)
+  et « Courbe » (gris-bleu froid, accent sarcelle unique, la courbe d'oubli SM-2 comme motif
+  structurel). Auto-critique de chacune contre le brief consignée en annotations du canevas.
+  Aucune des deux ne reprend la palette de « Foyer ». Canevas : voir `ETAT.md` (lien artifact).
+* **Aucun code de production touché** — phase 3 en cours, pas de tests concernés.
