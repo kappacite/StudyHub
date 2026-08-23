@@ -27,7 +27,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import _context_lib as ctx  # noqa: E402
 
-RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
+RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()
 ETAT = RACINE / "ETAT.md"
 PHASE_RE = re.compile(r"^Phase:\s*(\d+)\s*$", re.M)
 
@@ -41,7 +41,7 @@ def phase_courante() -> int | None:
 
 def git(*args: str) -> str:
     try:
-        r = subprocess.run(["git", *args], capture_output=True, text=True, timeout=15, cwd=RACINE)
+        r = subprocess.run(["git", *args], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15, cwd=RACINE)
         return r.stdout if r.returncode == 0 else ""
     except Exception:
         return ""
@@ -104,7 +104,7 @@ def check_tests(fichiers: list[str]) -> tuple[str | None, list[str]]:
         if vitest.exists():
             try:
                 r = subprocess.run(
-                    [str(vitest), "run"], capture_output=True, text=True, timeout=180,
+                    [str(vitest), "run"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180,
                     cwd=RACINE / "web", shell=True,
                 )
                 if r.returncode != 0:
@@ -122,7 +122,7 @@ def check_tests(fichiers: list[str]) -> tuple[str | None, list[str]]:
         try:
             r = subprocess.run(
                 ["docker", "compose", "ps", "--status", "running", "--format", "json", "backend"],
-                capture_output=True, text=True, timeout=15, cwd=RACINE,
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15, cwd=RACINE,
             )
             backend_up = bool(r.stdout.strip())
         except Exception:
@@ -132,7 +132,7 @@ def check_tests(fichiers: list[str]) -> tuple[str | None, list[str]]:
             try:
                 r = subprocess.run(
                     ["docker", "compose", "exec", "-T", "backend", "pytest"],
-                    capture_output=True, text=True, timeout=300, cwd=RACINE,
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300, cwd=RACINE,
                 )
                 if r.returncode != 0:
                     return (

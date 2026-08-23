@@ -13,7 +13,7 @@ SEUIL = float(os.environ.get("CLAUDE_SEUIL_PASSATION", "0.90"))
 # change ou si l'estimation s'avere fausse en pratique.
 FENETRE = int(os.environ.get("CLAUDE_FENETRE_CONTEXTE", "200000"))
 
-RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
+RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()
 PASSATION = RACINE / "PASSATION.md"
 SENTINELLE = RACINE / ".claude" / "state" / "seuil-atteint"
 

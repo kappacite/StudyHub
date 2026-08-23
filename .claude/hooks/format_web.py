@@ -84,7 +84,7 @@ def main() -> None:
         try:
             result = subprocess.run(
                 [bin_path, action, str(file_path)],
-                capture_output=True, text=True, timeout=60, cwd=web_dir, shell=True,
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60, cwd=web_dir, shell=True,
             )
         except Exception:
             continue

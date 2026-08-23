@@ -11,7 +11,7 @@ import pathlib
 import re
 import sys
 
-RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
+RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()
 ETAT = RACINE / "ETAT.md"
 PHASE_RE = re.compile(r"^Phase:\s*(\d+)\s*$", re.M)
 

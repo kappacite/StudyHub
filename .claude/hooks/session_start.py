@@ -9,14 +9,14 @@ import re
 import subprocess
 import sys
 
-RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
+RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()
 ETAT = RACINE / "ETAT.md"
 PHASE_RE = re.compile(r"^Phase:\s*(\d+)\s*$", re.M)
 
 
 def git(*args: str) -> str:
     try:
-        r = subprocess.run(["git", *args], capture_output=True, text=True, timeout=10, cwd=RACINE)
+        r = subprocess.run(["git", *args], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10, cwd=RACINE)
         return r.stdout.strip() if r.returncode == 0 else ""
     except Exception:
         return ""

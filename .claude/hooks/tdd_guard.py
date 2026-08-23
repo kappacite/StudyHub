@@ -13,7 +13,7 @@ import pathlib
 import re
 import sys
 
-RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
+RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()
 ETAT = RACINE / "ETAT.md"
 EXEMPT_FILE = RACINE / ".claude" / "tdd-exempt.txt"
 PHASE_RE = re.compile(r"^Phase:\s*(\d+)\s*$", re.M)

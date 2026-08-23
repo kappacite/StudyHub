@@ -39,7 +39,7 @@ def main() -> None:
     messages = []
     for args in (["ruff", "check", "--fix", str(file_path)], ["ruff", "format", str(file_path)]):
         try:
-            result = subprocess.run(args, capture_output=True, text=True, timeout=30, cwd=RACINE / "backend")
+            result = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30, cwd=RACINE / "backend")
         except FileNotFoundError:
             sys.exit(0)  # ruff pas installe : ne bloque rien, silencieux
         except Exception:

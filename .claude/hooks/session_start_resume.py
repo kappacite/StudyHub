@@ -9,7 +9,7 @@ import os
 import pathlib
 import sys
 
-RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
+RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()
 PASSATION = RACINE / "PASSATION.md"
 ETAT = RACINE / "ETAT.md"
 
