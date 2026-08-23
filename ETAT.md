@@ -26,10 +26,12 @@ pas l'ancien état documenté (`docs/design-system.md`, `docs/performance-audit.
 - [x] Outillage format (ruff backend, ESLint+Prettier web) + hooks `PostToolUse`
 - [x] Hook `Stop` unifié (`stop_gate.py`, remplace `commit_reminder.py`)
 - [x] Mécanique de passation de contexte (`PreCompact`, `SessionStart`)
-- [ ] 5 skills de process (`audit-securite`, `conventions-dao`, `invariants-sm2`,
+- [x] 5 skills de process (`audit-securite`, `conventions-dao`, `invariants-sm2`,
       `cycle-tdd`, `migration-ecran`) — `design-system` différée à la phase 3
-- [ ] 5 subagents (`.claude/agents/*.md`)
-- [ ] Environnement conteneurisé multi-arch + `docs/ENVIRONNEMENT.md`
+- [x] 5 subagents (`.claude/agents/*.md`)
+- [x] Environnement conteneurisé multi-arch + `docs/ENVIRONNEMENT.md` (backend 100 % vert
+      SQLite arm64 natif 56,4s ; frontend 100 % vert arm64 natif 7,8s ; amd64 via CI existante,
+      non re-déclenchée cette session — pas de push)
 - [ ] Vérification des gardes (déclenchement volontaire + nettoyage)
 - [ ] Drill de passation à seuil abaissé (point de passage interactif avec l'utilisateur)
 - [ ] Passe de cohérence documentaire finale

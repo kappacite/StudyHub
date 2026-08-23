@@ -13,7 +13,7 @@
 | Routes / contrats d'endpoints | `api-spec` | `docs/api_reference.md` |
 | `web/android`, Capacitor, comportements natifs | `mobile-build` | `docs/mobile.md` |
 | `desktop/`, Electron, packaging bureau | `desktop-build` | `docs/desktop.md` |
-| Docker, CI/CD, migrations | `deployment` | `docs/migrations.md` |
+| Docker, CI/CD, migrations, multi-arch | `deployment` | `docs/migrations.md`, `docs/ENVIRONNEMENT.md` |
 
 Journal : `docs/development_journal.md` · Roadmap : `docs/FEATURES.md` · Phase courante : `ETAT.md`.
 
