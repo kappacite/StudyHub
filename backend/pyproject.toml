@@ -18,3 +18,14 @@ source = ["app"]
 [tool.coverage.report]
 show_missing = true
 precision = 1
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = ["migrations", "scratch"]
+
+[tool.ruff.lint]
+# E/F : pycodestyle+pyflakes (base). I : imports tries. UP : idiomes py312.
+# B : bugbear (pieges frequents). Volontairement pas plus strict au depart —
+# le hook tourne sur chaque fichier touche, pas en lint global du depot.
+select = ["E", "F", "I", "UP", "B"]

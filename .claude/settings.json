@@ -138,6 +138,14 @@
           {
             "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/no_secrets.py\""
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/format_backend.py\""
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/format_web.py\""
           }
         ]
       }
