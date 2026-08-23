@@ -331,6 +331,9 @@ cypress/screenshots/
 # Claude Code — réglages/permissions par développeur (non partagés)
 .claude/settings.local.json
 
+# Claude Code — état runtime des hooks (sentinelle anti-boucle stop_gate.py)
+.claude/state/
+
 # ------------------------------------------
 
 # Generated changelog drafts
