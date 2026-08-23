@@ -95,15 +95,14 @@ contraintes dures, travail attendu) : `docs/PROMPT_DEMARRAGE.md` §6.
 
 ### Prochaine action
 
-Deux directions proposées, arbitrage utilisateur reçu → direction **« Foyer »** retenue
-(clair par défaut, chaleureux, gamifié sans infantilisation ; palette sunlight/flame/gold/
-berry/ink, signature « La Jauge Solaire »). Canevas Claude Design publié pour l'affiner :
-https://claude.ai/code/artifact/47a2ad58-c872-4640-85a5-1c60a28c5fd3 (dashboard, révision
-flashcards mobile, planche de style, clair/sombre). Une relecture de fond sur les fichiers
-`.dc.html` source était en cours à l'interruption — vérifier son résultat en priorité, puis
-présenter le canevas à l'utilisateur pour validation finale. Ce n'est qu'après cette
-validation que les tokens Tailwind et les primitives (en TDD) démarrent. Détail complet :
-`PASSATION.md` / `docs/passations/2026-08-24_0114_phase3.md`.
+Direction **« Foyer »** retenue et étendue, sur demande utilisateur, à une maquette complète
+du site (11 écrans : connexion, dashboard, réglages, éditeur de notes + mode zen, blurting IA,
+révision flashcards, liseuse PDF, diagrammes en coquille, marketplace, partage public, planche
+de style) — canevas Claude Design publié et relu deux fois (2 corrections réelles appliquées) :
+https://claude.ai/code/artifact/47a2ad58-c872-4640-85a5-1c60a28c5fd3. Question posée à
+l'utilisateur (valider la maquette ou donner des retours) — **attendre sa réponse avant de
+lancer les tokens Tailwind et les primitives en TDD**, ne pas commencer seul. Détail complet :
+`PASSATION.md` / `docs/passations/2026-08-24_0127_phase3.md`.
 
 ## Écrans migrés (phase 4)
 
