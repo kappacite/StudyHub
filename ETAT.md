@@ -21,11 +21,11 @@ pas l'ancien état documenté (`docs/design-system.md`, `docs/performance-audit.
 - [x] Permissions `settings.json` (allow/deny/ask, Bash+PowerShell)
 - [x] Hook `PreToolUse` de garde (push/rm -rf/reset --hard/rebase/secrets)
 - [x] `ETAT.md` (ce fichier)
-- [ ] Garde d'écriture phase 2 (`phase_guard.py`)
-- [ ] Garde TDD phase 3+ (`tdd_guard.py`, `.claude/tdd-exempt.txt`)
-- [ ] Outillage format (ruff backend, ESLint+Prettier web) + hooks `PostToolUse`
-- [ ] Hook `Stop` unifié (`stop_gate.py`, remplace `commit_reminder.py`)
-- [ ] Mécanique de passation de contexte (`PreCompact`, `SessionStart`)
+- [x] Garde d'écriture phase 2 (`phase_guard.py`)
+- [x] Garde TDD phase 3+ (`tdd_guard.py`, `.claude/tdd-exempt.txt`)
+- [x] Outillage format (ruff backend, ESLint+Prettier web) + hooks `PostToolUse`
+- [x] Hook `Stop` unifié (`stop_gate.py`, remplace `commit_reminder.py`)
+- [x] Mécanique de passation de contexte (`PreCompact`, `SessionStart`)
 - [ ] 5 skills de process (`audit-securite`, `conventions-dao`, `invariants-sm2`,
       `cycle-tdd`, `migration-ecran`) — `design-system` différée à la phase 3
 - [ ] 5 subagents (`.claude/agents/*.md`)
