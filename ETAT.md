@@ -38,16 +38,19 @@ pas l'ancien état documenté (`docs/design-system.md`, `docs/performance-audit.
       (stop_gate — cassé/réparé TagBadge.spec.ts pour le vérifier ; a révélé et corrigé
       2 bugs réels : encodage UTF-8 et résolution de chemin relatif dans les hooks)
 - [x] Drill de passation à seuil abaissé — déclenché réellement (Stop bloqué à 290 %,
-      seuil 1 %), `PASSATION.md` écrite et archivée dans `docs/passations/`. **Point de
-      passage interactif restant : taper `/clear`**, puis confirmer que la reprise relance
-      seule la bonne action (remettre SEUIL à 0.90, committer, présenter le récap de phase 1).
+      seuil 1 %), `PASSATION.md` écrite et archivée dans `docs/passations/`, `/clear` fait
+      par l'utilisateur, reprise automatique confirmée (relance sur la bonne action : seuil
+      remis à 0.90, commit, présentation du récap).
 - [x] Passe de cohérence documentaire finale
+
+**Phase 1 terminée — tous les critères d'acceptation vérifiés.**
 
 ### Prochaine phase
 
 Phase 2 — Revue technique (lecture seule, 4 axes : sécurité, architecture, performance,
-tests/CI). Ne commence pas tant que la checklist ci-dessus n'est pas cochée et que le
-backlog de phase 1 n'a pas été présenté pour validation.
+tests/CI). **En attente de ton feu vert** avant de l'ouvrir (aucun fichier hors
+`docs/audit/` ne doit être modifié une fois commencée — le hook `phase_guard.py` l'imposera
+dès que ce fichier indiquera `Phase: 2`).
 
 ## Écrans migrés (phase 4)
 
