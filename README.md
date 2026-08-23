@@ -9,7 +9,7 @@ StudyHub est une plateforme web et mobile conçue pour centraliser tous les outi
 *   **📚 Prise de notes intelligente** : Éditeur supportant simultanément le Markdown et le LaTeX, avec mode Zen sans distraction, définitions interactives sous forme d'info-bulles et export PDF fluide.
 *   **🗃️ Flashcards & Répétition Espacée** : Révisions optimisées grâce à l'algorithme SuperMemo-2 (SM-2) avec retour haptique sur mobile et animations de cartes en 3D.
 *   **🧠 Révision Blurting (Feuille Blanche) IA** : Saisissez tout ce dont vous vous souvenez sur une note, et l'intelligence artificielle (Gemini) analyse votre restitution pour identifier vos lacunes et vous proposer des flashcards ciblées.
-*   **📊 Diagrammes interactifs** : Éditeur visuel SVG en drag-and-drop doublé d'un éditeur textuel basé sur Mermaid.js.
+*   **📊 Diagrammes interactifs** : Éditeur visuel SVG en glisser-déposer (une refonte en canevas libre est prévue).
 *   **📄 Annotations PDF** : Liseuse PDF avec possibilité d'épingler des commentaires géoréférencés directement sur les pages.
 *   **🤝 Espace Communautaire (Marketplace)** : Partagez vos classeurs de révision avec d'autres étudiants sous forme de packages publics téléchargeables et clonables en un clic.
 *   **🔗 Partage Public** : Générez des liens de partage uniques pour vos notes ou vos classeurs afin de les rendre accessibles en lecture seule sans inscription.
@@ -34,11 +34,14 @@ StudyHub est une plateforme web et mobile conçue pour centraliser tous les outi
 *   **Style** : TailwindCSS 3 + HeadlessUI (mode sombre pris en charge nativement)
 *   **State Management** : Pinia
 *   **Routage** : Vue Router 4
-*   **Librairies tierces** : Tiptap (Notes), Mermaid.js (Diagrammes), PDF.js (Liseuse), KaTeX (LaTeX)
+*   **Librairies tierces** : `marked` + DOMPurify + highlight.js (Markdown/coloration syntaxique), KaTeX (LaTeX)
 
 ### Mobile (Capacitor)
-*   **Wrapper** : Capacitor 6 pour encapsuler l'application Web sans réécriture de code.
+*   **Wrapper** : Capacitor 8 pour encapsuler l'application Web sans réécriture de code (projet natif Android dans `web/android`).
 *   **Intégration native** : Accès au stockage local, aux notifications locales et retours haptiques.
+
+### Bureau (Electron)
+*   **Wrapper** : Electron encapsule le même build Web (`desktop/`), packagé via electron-builder pour Windows/macOS/Linux.
 
 ---
 
@@ -114,8 +117,8 @@ npm run test  # ou vitest
 
 ## 📂 Structure du dépôt
 
-*   [`backend/`](file:///home/robyn/Documents/Dev/StudyHub/backend) : Code source de l'API Flask (Modèles, DAO, Services, Contrôleurs).
-*   [`web/`](file:///home/robyn/Documents/Dev/StudyHub/web) : Code source de l'application Web Vue.js 3 / Vite (également utilisé pour le build Capacitor).
-*   [`mobile/`](file:///home/robyn/Documents/Dev/StudyHub/mobile) : Configuration et intégrations natives Capacitor pour iOS et Android.
-*   [`docs/`](file:///home/robyn/Documents/Dev/StudyHub/docs) : Documentation technique approfondie de l'API, du frontend et du backend.
-*   [`AGENTS.md`](file:///home/robyn/Documents/Dev/StudyHub/AGENTS.md) : Définition des règles de conception architecturales et spécifications globales.
+*   [`backend/`](backend/) : Code source de l'API Flask (Modèles, DAO, Services, Contrôleurs).
+*   [`web/`](web/) : Code source de l'application Web Vue.js 3 / Vite ; `web/android` contient le projet natif généré par Capacitor.
+*   [`desktop/`](desktop/) : Coque bureau Electron, packagée via electron-builder.
+*   [`docs/`](docs/) : Documentation technique approfondie de l'API, du frontend et du backend.
+*   [`AGENTS.md`](AGENTS.md) : Définition des règles de conception architecturales et spécifications globales.
