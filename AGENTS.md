@@ -49,7 +49,7 @@ code (`backend/app/models`, `backend/app/dao`, `backend/app/services`, `backend/
 - **Diagrammes** : éditeur SVG maison en glisser-déposer (pas de Mermaid.js en dépendance
   runtime) — à reconstruire en canevas libre en phase 5, voir section 9
 - **PDF** : lecture intégrée sans dépendance PDF.js dans le bundle actuel
-- **Tests** : Vitest + Vue Testing Library + Playwright (E2E)
+- **Tests** : Vitest + @vue/test-utils + Playwright (E2E)
 
 ### Mobile & Bureau
 - **Mobile** : Capacitor **8** encapsule le build `web/` sans réécriture — un seul codebase
