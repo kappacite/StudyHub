@@ -100,11 +100,36 @@ contenu enrichi — voir `docs/passations/2026-08-24_0127_phase3.md` et
 `_0144_phase3.md`) est abandonnée sur demande explicite. Repartir entièrement de zéro :
 charger le skill `frontend-design` puis le skill `design` (Claude Design), concevoir une
 interface neuve pour StudyHub (notes, diagrammes, flashcards, outils de révision,
-statistiques ; clair + sombre ; desktop + mobile), une maquette par écran pour retour
+statistiques ; clair + sombre ; desktop + mobile), **une maquette par écran** pour retour
 individuel. Ne pas reprendre la palette/typo/signature de « Foyer » ni l'UI actuelle du
 dépôt. Nouveau répertoire de travail et nouvel artifact (ne pas éditer
-`studyhub-design-foyer`). Détail complet : `PASSATION.md` /
-`docs/passations/2026-08-24_0144_phase3.md`.
+`studyhub-design-foyer`).
+
+#### Liste exhaustive des pages à designer (35 vues réelles, `docs/audit/00-CARTOGRAPHIE.md` §3.2)
+
+- **Coquille applicative** (transverse) : nav desktop + barre mobile, en-tête, thème
+  clair/sombre, états d'auth (`AppLayout.vue`)
+- **Auth** (2) : Connexion, Inscription
+- **Accueil/Dashboard** (2) : `Home/Accueil.vue`, `Dashboard/Dashboard.vue` (coexistent
+  toujours malgré un plan de fusion jamais terminé — clarifier avant de designer les deux)
+- **Notes** (6) : liste, éditeur (`NoteEdit.vue`, 3024 lignes), blurting IA, quiz depuis
+  note, évaluation de note, note publique
+- **Flashcards/Decks** (2) : liste des decks, session d'étude d'un deck
+- **Révisions** (6) : accueil révisions, session de révision, stats set, stats classeur,
+  gestion d'un set, QCM
+- **Diagrammes** (1) : coquille uniquement (canevas libre = phase 5, ne pas y toucher)
+- **PDF** (1) : liseuse/annotations
+- **Classeurs** (1) : `Binders.vue`
+- **Marketplace** (3) : accueil, exploration, aperçu avant clonage
+- **Groupes** (2) : liste, détail
+- **Classes** (4) : atterrissage, dashboard enseignant, vue élève, détail devoir
+- **Examens** (3) : configuration, session, résultats
+- **Focus** (1), **Planning** (1)
+
+**Point d'attention consigné** : aucune vue Réglages/Profil dans l'inventaire réel — ne pas
+en designer une par supposition (la maquette « Foyer » l'avait inventée à tort), confirmer
+d'abord si elle existe ailleurs ou doit être créée. Détail complet de la demande utilisateur :
+`PASSATION.md` / `docs/passations/2026-08-24_0144_phase3.md`.
 
 ## Écrans migrés (phase 4)
 
