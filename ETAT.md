@@ -8,10 +8,13 @@ Phase: 1
 
 ## Phase courante — 1 : Outillage agentique
 
-Plan détaillé : `C:\Users\denoe\.claude\plans\fuzzy-petting-waffle.md` (séquence de
-15 commits atomiques). Arbitrage acté : on prend le nouveau prompt de démarrage,
-pas l'ancien état documenté (`docs/design-system.md`, `docs/performance-audit.md`,
-`docs/ui-redesign-plan.md` seront traités comme non acquis en phase 2/3).
+**Feuille de route complète et durable (phases 0→5, règles, critères d'acceptation) :
+`docs/PROMPT_DEMARRAGE.md`** — versionné dans le dépôt, annoté phase par phase de ce qui
+est fait. C'est la référence à relire pour toute question sur une phase future ; ne pas se
+fier à une conversation passée ou à un fichier de plan local
+(`~/.claude/plans/*.md`, propre à une machine, non versionné, non durable). Arbitrage
+acté : on prend ce prompt intégralement, pas l'ancien état documenté (`docs/design-system.md`,
+`docs/performance-audit.md`, `docs/ui-redesign-plan.md` traités comme non acquis en phase 2/3).
 
 ### Checklist phase 1
 

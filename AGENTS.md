@@ -183,7 +183,10 @@ Ce dépôt avance par phases strictement ordonnées : 0 (reconnaissance) → 1 (
 agentique) → 2 (revue technique, lecture seule) → 3 (design system) → 4 (refonte UI
 écran par écran) → 5 (refonte de l'éditeur de diagrammes). L'état courant, la checklist de la
 phase active et le pointeur vers la phase suivante sont dans `ETAT.md` (racine, versionné) —
-**c'est la source de vérité sur "où on en est"**, pas ce fichier.
+**c'est la source de vérité sur "où on en est"**, pas ce fichier. Le détail complet de
+chaque phase (règles, livrables, critères d'acceptation), y compris les phases pas encore
+commencées, vit dans `docs/PROMPT_DEMARRAGE.md` — versionné, annoté au fil de l'avancement,
+et donc la référence à relire même si la conversation d'origine n'est plus disponible.
 
 Interdiction permanente, quelle que soit la phase : `git push`. Aucune commande de publication
 distante n'est exécutée sans que l'utilisateur l'ait tapée lui-même.
