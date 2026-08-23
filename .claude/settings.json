@@ -6,11 +6,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/no_debug.py\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/no_debug.py\""
           },
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/no_secrets.py\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/no_secrets.py\""
           }
         ]
       }
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/commit_reminder.py\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/commit_reminder.py\""
           }
         ]
       }
