@@ -32,9 +32,16 @@ pas l'ancien état documenté (`docs/design-system.md`, `docs/performance-audit.
 - [x] Environnement conteneurisé multi-arch + `docs/ENVIRONNEMENT.md` (backend 100 % vert
       SQLite arm64 natif 56,4s ; frontend 100 % vert arm64 natif 7,8s ; amd64 via CI existante,
       non re-déclenchée cette session — pas de push)
-- [ ] Vérification des gardes (déclenchement volontaire + nettoyage)
-- [ ] Drill de passation à seuil abaissé (point de passage interactif avec l'utilisateur)
-- [ ] Passe de cohérence documentaire finale
+- [x] Vérification des gardes : `git push --help` bloqué (guard_dangerous_commands),
+      écriture hors docs/audit/ bloquée en phase 2 simulée (phase_guard), écriture sans
+      test bloquée en phase 3 simulée (tdd_guard), test réellement rouge bloque le Stop
+      (stop_gate — cassé/réparé TagBadge.spec.ts pour le vérifier ; a révélé et corrigé
+      2 bugs réels : encodage UTF-8 et résolution de chemin relatif dans les hooks)
+- [x] Drill de passation à seuil abaissé — déclenché réellement (Stop bloqué à 290 %,
+      seuil 1 %), `PASSATION.md` écrite et archivée dans `docs/passations/`. **Point de
+      passage interactif restant : taper `/clear`**, puis confirmer que la reprise relance
+      seule la bonne action (remettre SEUIL à 0.90, committer, présenter le récap de phase 1).
+- [x] Passe de cohérence documentaire finale
 
 ### Prochaine phase
 

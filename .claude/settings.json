@@ -195,6 +195,6 @@
   },
   "env": {
     "CLAUDE_FENETRE_CONTEXTE": "200000",
-    "CLAUDE_SEUIL_PASSATION": "0.90"
+    "CLAUDE_SEUIL_PASSATION": "0.01"
   }
 }
