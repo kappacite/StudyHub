@@ -95,14 +95,16 @@ contraintes dures, travail attendu) : `docs/PROMPT_DEMARRAGE.md` §6.
 
 ### Prochaine action
 
-Direction **« Foyer »** retenue et étendue, sur demande utilisateur, à une maquette complète
-du site (11 écrans : connexion, dashboard, réglages, éditeur de notes + mode zen, blurting IA,
-révision flashcards, liseuse PDF, diagrammes en coquille, marketplace, partage public, planche
-de style) — canevas Claude Design publié et relu deux fois (2 corrections réelles appliquées) :
-https://claude.ai/code/artifact/47a2ad58-c872-4640-85a5-1c60a28c5fd3. Question posée à
-l'utilisateur (valider la maquette ou donner des retours) — **attendre sa réponse avant de
-lancer les tokens Tailwind et les primitives en TDD**, ne pas commencer seul. Détail complet :
-`PASSATION.md` / `docs/passations/2026-08-24_0127_phase3.md`.
+**Revirement utilisateur (2026-08-24)** : la direction « Foyer » (palette, recolorage,
+contenu enrichi — voir `docs/passations/2026-08-24_0127_phase3.md` et
+`_0144_phase3.md`) est abandonnée sur demande explicite. Repartir entièrement de zéro :
+charger le skill `frontend-design` puis le skill `design` (Claude Design), concevoir une
+interface neuve pour StudyHub (notes, diagrammes, flashcards, outils de révision,
+statistiques ; clair + sombre ; desktop + mobile), une maquette par écran pour retour
+individuel. Ne pas reprendre la palette/typo/signature de « Foyer » ni l'UI actuelle du
+dépôt. Nouveau répertoire de travail et nouvel artifact (ne pas éditer
+`studyhub-design-foyer`). Détail complet : `PASSATION.md` /
+`docs/passations/2026-08-24_0144_phase3.md`.
 
 ## Écrans migrés (phase 4)
 
