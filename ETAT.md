@@ -56,19 +56,24 @@ vaut `2`. Spécification complète des quatre axes : `docs/PROMPT_DEMARRAGE.md` 
 
 ### Checklist phase 2
 
-- [ ] `docs/audit/01-SECURITE.md`
-- [ ] `docs/audit/02-ARCHITECTURE.md`
-- [ ] `docs/audit/03-PERFORMANCE.md`
-- [ ] `docs/audit/04-TESTS-CI.md`
-- [ ] `docs/audit/05-BACKLOG.md` (table triée gravité puis effort, section « à traiter
-      avant la refonte UI »)
-- [ ] Aucun fichier hors `docs/audit/` modifié pendant la phase
-- [ ] Backlog présenté à l'utilisateur — **attendre validation avant d'ouvrir la phase 3**
+- [x] `docs/audit/01-SECURITE.md` (9 constats : S1×2, S2×3, S3×4)
+- [x] `docs/audit/02-ARCHITECTURE.md` (12 constats : S2×4, S3×5, S4×3)
+- [x] `docs/audit/03-PERFORMANCE.md` (7 constats : S1×1, S2×3, S3×3)
+- [x] `docs/audit/04-TESTS-CI.md` (7 constats : S1×1, S2×2, S3×2, S4×2)
+- [x] `docs/audit/05-BACKLOG.md` (35 constats consolidés, triés gravité puis effort,
+      section « à traiter avant la refonte UI »)
+- [x] Aucun fichier hors `docs/audit/` (et ce fichier) modifié pendant la phase
+- [ ] Backlog présenté à l'utilisateur — **en attente de validation avant d'ouvrir la
+      phase 3** (ne pas l'ouvrir seul)
+
+**Phase 2 terminée côté production documentaire.** 4 constats S1 : SEC-01 (clé secrète de
+repli, conditionnel), SEC-02 (fuite de contenu privé sous classeur public), PERF-05 (rendu
+KaTeX bloquant à chaque frappe dans `NoteEdit.vue`), TEST-01 (CI PostgreSQL rouge en
+permanence). Détail et séquencement recommandé : `docs/audit/05-BACKLOG.md`.
 
 ### Prochaine action
 
-Lancer les quatre investigations (sécurité, architecture, performance, tests/CI), puis
-consolider `05-BACKLOG.md`.
+Présenter le backlog à l'utilisateur. **Ne pas ouvrir la phase 3 sans son feu vert explicite.**
 
 ## Écrans migrés (phase 4)
 
