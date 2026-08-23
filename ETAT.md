@@ -95,9 +95,15 @@ contraintes dures, travail attendu) : `docs/PROMPT_DEMARRAGE.md` §6.
 
 ### Prochaine action
 
-Produire les deux directions esthétiques (plan compact, pas de code), les confronter au
-brief et aux garde-fous de `docs/PROMPT_DEMARRAGE.md` §6, puis les soumettre à
-l'utilisateur pour arbitrage — aucune implémentation avant ce choix.
+Deux directions proposées, arbitrage utilisateur reçu → direction **« Foyer »** retenue
+(clair par défaut, chaleureux, gamifié sans infantilisation ; palette sunlight/flame/gold/
+berry/ink, signature « La Jauge Solaire »). Canevas Claude Design publié pour l'affiner :
+https://claude.ai/code/artifact/47a2ad58-c872-4640-85a5-1c60a28c5fd3 (dashboard, révision
+flashcards mobile, planche de style, clair/sombre). Une relecture de fond sur les fichiers
+`.dc.html` source était en cours à l'interruption — vérifier son résultat en priorité, puis
+présenter le canevas à l'utilisateur pour validation finale. Ce n'est qu'après cette
+validation que les tokens Tailwind et les primitives (en TDD) démarrent. Détail complet :
+`PASSATION.md` / `docs/passations/2026-08-24_0114_phase3.md`.
 
 ## Écrans migrés (phase 4)
 
