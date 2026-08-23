@@ -678,3 +678,45 @@ Fais maintenant, dans l'ordre, sans me demander de confirmation intermédiaire j
 4. **Arrête-toi là** et propose-moi le plan détaillé de la phase 1 avant de créer le moindre fichier dans `.claude/`.
 
 > **Fait intégralement** — voir historique de commits (`5929bb7` à `8a49100`) et `ETAT.md`.
+
+---
+
+## 10. Phase 6 — Résorption du backlog technique
+
+> Section ajoutée le 2026-08-24, sur instruction explicite de l'utilisateur : le backlog produit
+> par la phase 2 (`docs/audit/05-BACKLOG.md`, 35 constats) devient une phase à part entière,
+> placée **à la fin** de la séquence déjà prévue (après la phase 5 — diagrammes), et non insérée
+> avant la phase 3. Conformément à la règle d'origine de ce fichier (préambule), le texte des
+> sections 0 à 9 n'est pas réécrit — cette section s'ajoute.
+
+### Pourquoi à la fin plutôt qu'avant la refonte
+
+`05-BACKLOG.md` distingue déjà une poignée de constats à traiter **au moment opportun** d'un
+cycle de migration (section « à traiter avant la refonte UI » : TEST-01 isolément, PERF-05 au
+cycle éditeur de notes, SEC-02/ARCH-02/ARCH-03/ARCH-04 ensemble au cycle marketplace/partage
+public, TEST-03/TEST-04 avant leurs écrans respectifs, SEC-01 dès que possible). Ces cas-là
+restent traités **dans** les phases 3 à 5, à l'endroit indiqué — ils ne sont pas reportés ici.
+La phase 6 couvre le **reste** de la table (la majorité des 35 constats, notamment la dette
+d'architecture backend systémique ARCH-01/05/06 et les points S3/S4 non couplés à un écran
+précis) : rien n'empêche de livrer la refonte produit avant de solder cette dette-là.
+
+### Périmètre et règles
+
+- À l'ouverture de cette phase, on ne repart pas de zéro : on solde ce qu'il reste de
+  `docs/audit/05-BACKLOG.md` une fois les phases 3 à 5 terminées (et leurs corrections
+  ponctuelles déjà faites en route soustraites de la table).
+- Chaque constat traité suit le cycle TDD normal : test qui reproduit le comportement actuel
+  (ou son absence), rouge, puis correction minimale.
+- Un constat non traité en phase 6 doit être **explicitement déclassé**, avec justification
+  écrite dans `ETAT.md` — jamais abandonné silencieusement.
+- Ordre de traitement : gravité (S1→S4) puis effort croissant, sauf dépendance technique
+  explicite entre constats déjà signalée dans `05-BACKLOG.md` (ex. le groupe SEC-02/ARCH-02-04
+  s'il n'a pas déjà été traité en phase 4).
+- Un commit par constat (ou par petit groupe fortement couplé), `fix(<domaine>): …` ou
+  `refactor(<domaine>): …` selon la nature du changement.
+
+### Critère d'acceptation
+
+Chaque ligne de `docs/audit/05-BACKLOG.md` porte un statut final consigné dans `ETAT.md` :
+corrigée (avec le commit correspondant) ou déclassée (avec justification). Aucun constat ne
+reste sans décision explicite.

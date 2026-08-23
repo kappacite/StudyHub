@@ -4,7 +4,7 @@
 > (`phase_guard.py`, `tdd_guard.py`, `stop_gate.py`) lisent le champ **Phase**
 > ci-dessous — format `Phase: N` sur sa propre ligne, ne pas le reformuler.
 
-Phase: 2
+Phase: 3
 
 ## Phase précédente — 1 : Outillage agentique
 
@@ -48,11 +48,10 @@ acté : on prend ce prompt intégralement, pas l'ancien état documenté (`docs/
 
 **Phase 1 terminée — tous les critères d'acceptation vérifiés.**
 
-## Phase courante — 2 : Revue technique (lecture seule)
+## Phase précédente — 2 : Revue technique (lecture seule)
 
-Feu vert utilisateur reçu le 2026-08-23. `phase_guard.py` impose désormais qu'aucune
-écriture n'ait lieu hors `docs/audit/` (et ce fichier) tant que la ligne `Phase:` ci-dessus
-vaut `2`. Spécification complète des quatre axes : `docs/PROMPT_DEMARRAGE.md` §5.
+Feu vert utilisateur reçu le 2026-08-23. Spécification complète des quatre axes :
+`docs/PROMPT_DEMARRAGE.md` §5.
 
 ### Checklist phase 2
 
@@ -63,17 +62,42 @@ vaut `2`. Spécification complète des quatre axes : `docs/PROMPT_DEMARRAGE.md` 
 - [x] `docs/audit/05-BACKLOG.md` (35 constats consolidés, triés gravité puis effort,
       section « à traiter avant la refonte UI »)
 - [x] Aucun fichier hors `docs/audit/` (et ce fichier) modifié pendant la phase
-- [ ] Backlog présenté à l'utilisateur — **en attente de validation avant d'ouvrir la
-      phase 3** (ne pas l'ouvrir seul)
+- [x] Backlog présenté à l'utilisateur — validé le 2026-08-24 : le backlog devient une
+      phase à part entière (**phase 6**, ajoutée en fin de séquence dans
+      `docs/PROMPT_DEMARRAGE.md` §10), pas un préalable à la phase 3. Quelques constats
+      restent traités au fil des phases 3-5 aux moments indiqués dans
+      `docs/audit/05-BACKLOG.md` (« à traiter avant la refonte UI »).
 
-**Phase 2 terminée côté production documentaire.** 4 constats S1 : SEC-01 (clé secrète de
-repli, conditionnel), SEC-02 (fuite de contenu privé sous classeur public), PERF-05 (rendu
-KaTeX bloquant à chaque frappe dans `NoteEdit.vue`), TEST-01 (CI PostgreSQL rouge en
-permanence). Détail et séquencement recommandé : `docs/audit/05-BACKLOG.md`.
+**Phase 2 terminée.** 4 constats S1 : SEC-01 (clé secrète de repli, conditionnel), SEC-02
+(fuite de contenu privé sous classeur public), PERF-05 (rendu KaTeX bloquant à chaque
+frappe dans `NoteEdit.vue`), TEST-01 (CI PostgreSQL rouge en permanence). Détail et
+séquencement : `docs/audit/05-BACKLOG.md`.
+
+## Phase courante — 3 : Design system
+
+Feu vert utilisateur reçu le 2026-08-24. Spécification complète (brief, garde-fous,
+contraintes dures, travail attendu) : `docs/PROMPT_DEMARRAGE.md` §6.
+
+### Checklist phase 3
+
+- [ ] Deux directions esthétiques proposées (palette 4-6 valeurs hex, appariement
+      typographique display/texte/données, échelle typographique, principe de mise en
+      page, élément signature) + auto-critique de chacune contre le brief
+- [ ] Arbitrage utilisateur reçu — une seule direction retenue
+- [ ] Tokens Tailwind (couleur, espacement, rayon, ombre, typographie, durées/courbes de
+      transition)
+- [ ] Primitives développées en TDD, états et variantes couverts (bouton, champ, carte,
+      modale, onglet, badge, info-bulle, état vide, squelette de chargement, toast)
+- [ ] Page de démonstration interne (toutes primitives, tous états, clair/sombre) +
+      vérification de contraste AA
+- [ ] Skill `.claude/skills/design-system/SKILL.md` rédigée à partir du résultat
+- [ ] Hook de détection de valeurs brutes : aucune remontée sur les primitives
 
 ### Prochaine action
 
-Présenter le backlog à l'utilisateur. **Ne pas ouvrir la phase 3 sans son feu vert explicite.**
+Produire les deux directions esthétiques (plan compact, pas de code), les confronter au
+brief et aux garde-fous de `docs/PROMPT_DEMARRAGE.md` §6, puis les soumettre à
+l'utilisateur pour arbitrage — aucune implémentation avant ce choix.
 
 ## Écrans migrés (phase 4)
 

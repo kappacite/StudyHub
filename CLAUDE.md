@@ -57,4 +57,4 @@ Commit après chaque modif · `docs/` + journal + `ETAT.md` à jour.
 
 ---
 
-*Phases : 0 (reco) → 1 (outillage) → 2 (audit) → 3 (design) → 4 (UI) → 5 (diagrammes) — phase active : `ETAT.md`, détail complet des phases : `docs/PROMPT_DEMARRAGE.md`. Décision d'archi majeure → `AGENTS.md` + skill/doc concerné, même commit.*
+*Phases : 0 (reco) → 1 (outillage) → 2 (audit) → 3 (design) → 4 (UI) → 5 (diagrammes) → 6 (backlog technique) — phase active : `ETAT.md`, détail complet des phases : `docs/PROMPT_DEMARRAGE.md`. Décision d'archi majeure → `AGENTS.md` + skill/doc concerné, même commit.*
