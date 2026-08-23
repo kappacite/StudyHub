@@ -1519,3 +1519,39 @@ en `min-h-screen` → c'est le document qui défile. `AppLayout.vue` borné au v
 PDF des notes.
 
 **Validation** : 281 tests backend, 69 tests frontend, `vue-tsc` — tous verts.
+
+## [2026-08-23] Phase 1 — outillage agentique complet
+
+Reconnaissance (phase 0) puis outillage complet de `.claude/` sur la base d'un nouveau prompt
+de démarrage. Arbitrage explicite : le nouveau prompt l'emporte sur l'état déjà documenté
+(`docs/design-system.md`, `docs/performance-audit.md`, `docs/ui-redesign-plan.md` traités
+comme non acquis — repris en phases 2/3, pas supprimés).
+
+* **Cartographie** (`docs/audit/00-CARTOGRAPHIE.md`) : `AGENTS.md` décrivait une architecture
+  très en retard sur le code réel (7 modèles vs 21, `mobile/` vs `web/android`, Capacitor 6
+  vs 8, pas de `desktop/`, docker-compose sans Redis/Celery). `AGENTS.md`/`CLAUDE.md`/
+  `README.md` réécrits pour refléter l'état réel, sans réénumérer ce qui vit déjà dans
+  `docs/audit/` ou les skills (évite la re-dérive).
+* **Permissions** (`settings.json`) : deny dur sur `git push`, `git reset --hard`, `git
+  rebase`, `rm -rf`, `docker compose down -v`, `deploy.sh`, `flask db upgrade` en direct,
+  écriture `.env` ; ask sur `pip`/`npm install`, `flask db migrate` — dupliqué Bash+PowerShell.
+* **6 hooks** : garde commandes destructrices (`guard_dangerous_commands.py`, regex +
+  heredoc-aware pour ne pas se bloquer sur ses propres messages de commit), garde d'écriture
+  phase 2, garde TDD phase 3+ (`.claude/tdd-exempt.txt`), formatage auto backend (ruff,
+  nouvellement ajouté) et web (ESLint 10 flat config + Prettier, nouvellement ajoutés — `npx`
+  échoue en `shell=False` sur Windows, invocation directe de `node_modules/.bin/*.cmd`), hook
+  `Stop` unifié (`stop_gate.py`, remplace `commit_reminder.py`) avec mécanique de passation de
+  contexte (`PreCompact`, `SessionStart` — `_context_lib.py` partagé).
+* **5 skills** (`audit-securite`, `conventions-dao`, `invariants-sm2`, `cycle-tdd`,
+  `migration-ecran`) et **5 subagents** — `design-system` différée à la phase 3.
+* **Environnement multi-arch** : vérifié réellement (pas seulement écrit) sur cette machine
+  arm64 — `psycopg2-binary`/`cryptography`/`gevent` s'installent en roues aarch64 sans
+  compilation, build backend 1 min 10, suite pytest complète 100 % verte en 56 s (après
+  correction d'un bug réel : `backend/Dockerfile` ne créait pas `/app/uploads` avant le
+  `chown`, donc le volume nommé se montait avec l'ownership root), suite vitest 100 % verte
+  en 8 s. amd64 non re-testé cette session (aucun push) — repose sur la CI existante.
+  Détail : `docs/ENVIRONNEMENT.md`.
+* **Constat versé au backlog phase 2** (non corrigé ici, hors périmètre) : la suite de tests
+  contre PostgreSQL réel (`TEST_DATABASE_URL`) échoue sur 12 tests liés à la recherche
+  full-text — écart entre le schéma créé par `db.create_all()` en test et celui produit par
+  les migrations Alembic (index GIN absents). Indépendant de l'architecture.

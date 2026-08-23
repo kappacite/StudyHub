@@ -70,7 +70,9 @@ code (`backend/app/models`, `backend/app/dao`, `backend/app/services`, `backend/
 ```
 studyhub/
 ├── AGENTS.md, CLAUDE.md, README.md
-├── docker-compose.yml            ← un seul fichier, db+redis+backend+worker+frontend
+├── docker-compose.yml            ← socle, db+redis+backend+worker+frontend
+├── docker-compose.{amd64,arm64}.yml  ← surcouches d'architecture (vides pour l'instant)
+├── .env.example, Makefile, scripts/dev-up.sh
 ├── deploy.sh, start.sh
 ├── backend/
 │   ├── Dockerfile, requirements.txt, requirements-dev.txt, pyproject.toml
@@ -164,8 +166,10 @@ Topologie Docker, migrations et CI : skill `deployment` (référence canonique) 
 qu'il contenait précédemment (deux fichiers dev/prod sans Redis ni Celery) ne correspondait
 plus au fichier réel.
 
-**Décision en cours (phase 1)** : l'environnement conteneurisé devient multi-architecture
-(amd64/arm64 natifs, sans émulation). Voir `docs/ENVIRONNEMENT.md` une fois produit.
+**Multi-architecture (phase 1, fait)** : l'environnement conteneurisé fonctionne nativement en
+amd64 (CI GitHub Actions) et arm64 (vérifié directement — build, migrations auto-appliquées,
+suites pytest et vitest complètes 100 % vertes), sans émulation. Détail et chiffres mesurés :
+`docs/ENVIRONNEMENT.md`.
 
 ## 7. Discipline TDD (obligatoire à partir de la phase 3)
 
@@ -176,7 +180,7 @@ de l'algorithme SM-2 (ne pas réimplémenter sans les relire) : skill `invariant
 ## 8. Séquence de travail par phases
 
 Ce dépôt avance par phases strictement ordonnées : 0 (reconnaissance) → 1 (outillage
-agentique, en cours) → 2 (revue technique, lecture seule) → 3 (design system) → 4 (refonte UI
+agentique) → 2 (revue technique, lecture seule) → 3 (design system) → 4 (refonte UI
 écran par écran) → 5 (refonte de l'éditeur de diagrammes). L'état courant, la checklist de la
 phase active et le pointeur vers la phase suivante sont dans `ETAT.md` (racine, versionné) —
 **c'est la source de vérité sur "où on en est"**, pas ce fichier.

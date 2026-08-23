@@ -52,10 +52,15 @@ StudyHub est une plateforme web et mobile conçue pour centraliser tous les outi
 *   Ou pour un lancement manuel : **Python 3.12+** et **Node.js 18+**
 
 ### Option 1 : Lancement rapide avec Docker Compose
-Pour lancer toute la stack (Flask backend + Vue.js frontend + base de données PostgreSQL) en développement :
+Pour lancer toute la stack (Flask backend + Vue.js frontend + base de données PostgreSQL + Redis) :
 
 ```bash
-# Lancer les conteneurs
+# Copier .env.example en .env et renseigner les valeurs (obligatoire, pas de valeurs par défaut)
+cp .env.example .env
+
+# Lancer les conteneurs — ./scripts/dev-up.sh détecte l'architecture (amd64/arm64)
+./scripts/dev-up.sh --build
+# ou directement :
 docker compose up --build
 ```
 *   Le frontend est accessible sur : `http://localhost:3000`
