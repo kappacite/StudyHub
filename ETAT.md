@@ -4,9 +4,9 @@
 > (`phase_guard.py`, `tdd_guard.py`, `stop_gate.py`) lisent le champ **Phase**
 > ci-dessous — format `Phase: N` sur sa propre ligne, ne pas le reformuler.
 
-Phase: 1
+Phase: 2
 
-## Phase courante — 1 : Outillage agentique
+## Phase précédente — 1 : Outillage agentique
 
 **Feuille de route complète et durable (phases 0→5, règles, critères d'acceptation) :
 `docs/PROMPT_DEMARRAGE.md`** — versionné dans le dépôt, annoté phase par phase de ce qui
@@ -48,12 +48,27 @@ acté : on prend ce prompt intégralement, pas l'ancien état documenté (`docs/
 
 **Phase 1 terminée — tous les critères d'acceptation vérifiés.**
 
-### Prochaine phase
+## Phase courante — 2 : Revue technique (lecture seule)
 
-Phase 2 — Revue technique (lecture seule, 4 axes : sécurité, architecture, performance,
-tests/CI). **En attente de ton feu vert** avant de l'ouvrir (aucun fichier hors
-`docs/audit/` ne doit être modifié une fois commencée — le hook `phase_guard.py` l'imposera
-dès que ce fichier indiquera `Phase: 2`).
+Feu vert utilisateur reçu le 2026-08-23. `phase_guard.py` impose désormais qu'aucune
+écriture n'ait lieu hors `docs/audit/` (et ce fichier) tant que la ligne `Phase:` ci-dessus
+vaut `2`. Spécification complète des quatre axes : `docs/PROMPT_DEMARRAGE.md` §5.
+
+### Checklist phase 2
+
+- [ ] `docs/audit/01-SECURITE.md`
+- [ ] `docs/audit/02-ARCHITECTURE.md`
+- [ ] `docs/audit/03-PERFORMANCE.md`
+- [ ] `docs/audit/04-TESTS-CI.md`
+- [ ] `docs/audit/05-BACKLOG.md` (table triée gravité puis effort, section « à traiter
+      avant la refonte UI »)
+- [ ] Aucun fichier hors `docs/audit/` modifié pendant la phase
+- [ ] Backlog présenté à l'utilisateur — **attendre validation avant d'ouvrir la phase 3**
+
+### Prochaine action
+
+Lancer les quatre investigations (sécurité, architecture, performance, tests/CI), puis
+consolider `05-BACKLOG.md`.
 
 ## Écrans migrés (phase 4)
 
