@@ -133,10 +133,15 @@ https://claude.ai/code/artifact/366dcc95-8da4-41dd-8bbd-1e625a68e2c5
 Auto-critique de chacune contre le brief consignée dans les annotations du canevas.
 Ni l'une ni l'autre ne reprend le rose/violet/orange de « Foyer ».
 
-**Prochaine action** : recueillir l'arbitrage utilisateur (A, B, ou fusion des deux) sur
-l'écran Accueil, puis construire les tokens Tailwind + primitives dans la direction
-retenue avant de dessiner le reste des écrans réels (voir liste corrigée ci-dessus,
-~30 vues une fois les orphelins et doublons de routage écartés).
+**Arbitrage reçu (2026-08-24)** : direction **A « Fiche »** retenue. Consigne utilisateur :
+construire l'ensemble des écrans réels sur Claude Design dans cette direction, faire
+valider par l'utilisateur écran par écran, **puis seulement** reprendre la suite de la
+phase 3 (tokens Tailwind, primitives TDD).
+
+**État à l'arrêt (contexte 98 %, voir `PASSATION.md`)** : spec partagée de la direction A
+écrite, 5 lots parallèles lancés pour couvrir les ~32 écrans réels restants — état des
+fichiers non confirmé à l'arrêt. Reprendre via `PASSATION.md` (chemin exact du dossier de
+travail, à ne pas confondre avec le scratchpad de la nouvelle session).
 
 ## Écrans migrés (phase 4)
 
