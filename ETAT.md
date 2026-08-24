@@ -4,7 +4,7 @@
 > (`phase_guard.py`, `tdd_guard.py`, `stop_gate.py`) lisent le champ **Phase**
 > ci-dessous — format `Phase: N` sur sa propre ligne, ne pas le reformuler.
 
-Phase: 3
+Phase: 4
 
 ## Phase précédente — 1 : Outillage agentique
 
@@ -73,7 +73,7 @@ Feu vert utilisateur reçu le 2026-08-23. Spécification complète des quatre ax
 frappe dans `NoteEdit.vue`), TEST-01 (CI PostgreSQL rouge en permanence). Détail et
 séquencement : `docs/audit/05-BACKLOG.md`.
 
-## Phase courante — 3 : Design system
+## Phase précédente — 3 : Design system
 
 Feu vert utilisateur reçu le 2026-08-24. Spécification complète (brief, garde-fous,
 contraintes dures, travail attendu) : `docs/PROMPT_DEMARRAGE.md` §6.
@@ -255,6 +255,92 @@ toute valeur de style brute écrite dans `web/src/components/ui/`.
   l'ancienne palette rose — hors périmètre de ce plan (la tâche 1 n'a touché que la définition
   des tokens), migration écran par écran prévue en phase 4.
 
+## Phase courante — 4 : Refonte totale du layer UI
+
+Feu vert utilisateur reçu le 2026-08-24 (« continue »). Spécification complète (ordre des
+écrans, cycle par écran, règle d'or, copie) : `docs/PROMPT_DEMARRAGE.md` §7, procédure
+détaillée : skill `migration-ecran`.
+
+### Ordre des écrans (du plus structurant au plus périphérique)
+
+1. Coquille applicative — navigation, en-tête, barre mobile, thème, états d'authentification
+   (`web/src/components/layout/AppLayout.vue`) — **en cours**
+2. Accueil (dashboard fusionné : heatmap, streaks, métriques de rétention, file de révision)
+3. Session de révision flashcards
+4. Éditeur de notes et mode Zen
+5. Blurting IA
+6. Liseuse PDF et annotations
+7. Éditeur de diagrammes — coquille uniquement (pas le canevas/moteur, phase 5)
+8. Marketplace et pages de partage public
+9. Réglages, profil, écrans d'authentification
+
+### Note (rappel du process)
+
+Chaque écran suit le cycle en 8 étapes de la skill `migration-ecran` : inventaire → états
+écrits dans ce fichier → tests rouges → composition depuis les primitives seules → copie →
+refactor vert → capture d'écran clair/sombre × desktop/mobile → mise à jour de ce fichier +
+commit. Le sous-agent `migrateur-ecran` n'a pas le droit de modifier les tokens ; toute
+lacune de token remonte au contrôleur plutôt que d'être improvisée. Contraste AA, cibles
+tactiles ≥44px, `safe-area-inset` iOS, `prefers-reduced-motion` : non négociables à chaque
+écran — c'est notamment l'occasion de résorber au fil de l'eau les deux écarts reportés en
+phase 3 (contraste sur badges `*-soft`, cibles tactiles `BaseButton`/`Tabs`) sur les écrans
+qui les utilisent réellement, avec cette fois une vérification visuelle réelle.
+
+### Écran 1 — Coquille applicative (`AppLayout.vue`) — en cours
+
+**Inventaire de l'existant** (lecture complète du fichier, 2026-08-24) :
+- Sidebar gauche (desktop statique, drawer mobile) : logo + wordmark cliquable (→ `/`), 6
+  destinations (Accueil, Bibliothèque, Réviser, Planning, Classes, Communauté) avec icône +
+  libellé, état actif par préfixe de route ; pied : bascule thème (`BaseToggle`), bloc profil
+  (avatar initiales, nom, email, déconnexion) si authentifié sinon CTA « Se connecter ».
+- Mode Zen (édition de note) : sidebar devient overlay déclenché au survol/toggle plutôt que
+  statique ; en-tête se masque et réapparaît au survol d'une bande invisible en haut.
+- En-tête (masqué si `route.meta.immersive`) : hamburger mobile, titre de route courante,
+  recherche globale (`⌘K`/`Ctrl+K` → `SearchModal`), `NotificationBell` (si authentifié), date
+  du jour (masquée en très petit écran).
+- Widgets globaux : `SearchModal`, `PomodoroTimer` (masqué si immersif).
+- Raccourcis clavier : `Ctrl/Cmd+K` (recherche), événement custom
+  `studyhub:toggle-sidebar` (bascule menu mobile ou sidebar Zen selon le mode).
+- Persistance thème : `localStorage['sh_theme']`, résolution initiale via
+  `prefers-color-scheme` si rien de sauvegardé.
+- Aucun appel API direct dans ce composant (délégué à `authStore`, aux enfants) — conforme.
+
+**Écart maquette Direction A vs existant, arbitré par l'utilisateur (2026-08-24)** : la
+maquette (`docs/design-system-direction-a-spec.md:105-154`) ne montre que 4 destinations
+primaires (Accueil/Bibliothèque/Réviser/Classes) en nav horizontale desktop + barre basse
+mobile, contre 6 aujourd'hui. **Décision** : 5 pills primaires (Accueil, Bibliothèque,
+Réviser, **Planning**, Classes) dans la nav desktop ; **Communauté** devient une icône
+secondaire dans le cluster d'actions à droite (à côté recherche/thème/avatar) — cohérent avec
+le commentaire déjà présent dans le code actuel (« 5 sections par intention + lien
+Communauté »). Mobile : barre basse conforme à la maquette (4 onglets, Accueil/Bibliothèque/
+Réviser/Classes inchangés) ; Planning et Communauté deviennent des icônes dans le mini-en-tête
+mobile (52px), miroir du traitement desktop de Communauté. Aucune destination supprimée.
+
+**États à couvrir** (skill `migration-ecran` étape 2) :
+- **Vide** : non authentifié → sidebar/nav affiche le CTA « Se connecter » au lieu du bloc
+  profil ; pas de `NotificationBell`.
+- **Chargement** : non applicable à ce composant — `authStore.init()` est synchrone (lecture
+  `localStorage` directe, aucun appel réseau), aucun état de chargement à couvrir ici.
+- **Erreur** : échec de déconnexion (API) — confirmé sur `authStore.logout()`
+  (`web/src/stores/auth.ts:68-82`) : l'appel réseau est déjà avalé dans un `try/catch` vide et
+  l'état local (token, user, `localStorage`) est toujours nettoyé dans un `finally`. Le bouton
+  déconnexion de la coquille doit donc systématiquement rediriger vers `/login`, y compris
+  quand l'API échoue — comportement déjà garanti par le store, à tester tel quel côté
+  composant (pas de nouveau comportement à inventer).
+- **Dense** : nom d'utilisateur/email longs → troncature déjà présente (`truncate`), à
+  conserver ; badge de notifications à 2+ chiffres ne doit pas casser la mise en page de
+  l'en-tête.
+- **Hors ligne** (mobile/Capacitor) : **fonctionnalité absente aujourd'hui** (`grep` confirmé :
+  aucune détection `navigator.onLine`/`online`/`offline` nulle part dans `web/src`). Ajout
+  scopé à ce cycle : indicateur discret (pill neutre, non bloquant, pas de modale) dans
+  l'en-tête quand `navigator.onLine === false`, basé sur les événements `online`/`offline` de
+  `window`. N'affecte aucune fonctionnalité existante — pur ajout.
+
+**Prochaine étape** : tests rouges (étape 3), puis composition depuis les primitives
+(étape 4). Dispatché au subagent `migrateur-ecran` pour les étapes 3-6 ; captures d'écran
+(étape 7, navigateur maintenant connecté) et finalisation (étape 8) faites par le
+contrôleur.
+
 ## Écrans migrés (phase 4)
 
-Aucun — phase non commencée. Démarre au merge de la PR ci-dessus.
+Aucun encore committé — Écran 1 (coquille applicative) en cours.
