@@ -202,6 +202,19 @@ entièrement nouvelles (`BaseTooltip`, `BaseToast`). Page de démonstration inte
 avec bascule clair/sombre. Hook `PostToolUse` non bloquant `raw_value_guard.py` : avertit sur
 toute valeur de style brute écrite dans `web/src/components/ui/`.
 
+**Écarts connus (revue finale de branche, non bloquants, consignés délibérément)** :
+- `contrast.spec.ts` vérifie 8 paires de tokens choisies à la main, pas toutes les paires
+  réellement rendues par les primitives ; certaines combinaisons fond `*-soft` + texte fort
+  mesurent sous l'AA (4,5:1) en clair une fois vérifiées contre leur fond réel d'affichage.
+  Reporté à un suivi avec vérification visuelle.
+- La contrainte cible tactile ≥44px a été appliquée aux deux boutons de fermeture (BaseToast,
+  BaseModal) mais pas encore auditée sur les variantes de taille de `BaseButton` ni la hauteur
+  des pilules de `Tabs` — reporté, nécessiterait une passe visuelle sur les ~100+ sites d'appel
+  existants.
+- `web/src/style.css` (`.markdown-body`/`.katex-display`, rendu des notes) utilise encore
+  l'ancienne palette rose — hors périmètre de ce plan (la tâche 1 n'a touché que la définition
+  des tokens), migration écran par écran prévue en phase 4.
+
 ## Écrans migrés (phase 4)
 
 Aucun — phase non commencée.

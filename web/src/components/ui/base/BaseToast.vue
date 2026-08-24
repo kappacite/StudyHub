@@ -5,7 +5,7 @@
     class="flex items-start gap-3 rounded-lg border p-4 shadow-elev-2"
     :class="variantClass"
   >
-    <component :is="icon" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+    <component :is="icon" aria-hidden="true" class="w-5 h-5 flex-shrink-0 mt-0.5" />
     <div class="flex-1 min-w-0">
       <p v-if="title" class="text-sm font-bold">{{ title }}</p>
       <p class="text-sm" :class="title ? 'mt-0.5' : ''">
@@ -19,7 +19,7 @@
       aria-label="Fermer"
       @click="$emit('close')"
     >
-      <X class="w-4 h-4" />
+      <X aria-hidden="true" class="w-4 h-4" />
     </button>
   </div>
 </template>
@@ -48,9 +48,9 @@ defineEmits<{ close: [] }>()
 const variantClass = computed(
   () =>
     ({
-      info: 'bg-primary-soft border-primary/30 text-primary',
+      info: 'bg-info-soft border-info/30 text-info',
       success: 'bg-success-soft border-success/30 text-success',
-      warning: 'bg-accent-soft border-accent/30 text-accent',
+      warning: 'bg-warning-soft border-warning/30 text-warning',
       danger: 'bg-danger-soft border-danger/30 text-danger',
     })[props.variant],
 )

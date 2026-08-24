@@ -76,3 +76,9 @@ d'en écrire une nouvelle (`web/src/components/CLAUDE.md`).
   re-thématisent automatiquement pour la couleur (tokens sémantiques) mais n'ont pas été
   auditées structurellement (rayons/typo) contre Direction A — à faire au fil de la
   migration phase 4, écran par écran, pas en bloc.
+- Écarts connus (revue finale de branche) : `contrast.spec.ts` ne couvre que 8 paires
+  choisies à la main, pas toutes les combinaisons réellement rendues — certains fonds
+  `*-soft` + texte fort passent sous l'AA en clair une fois vérifiés contre leur fond réel.
+  Cible tactile ≥44px appliquée seulement aux boutons de fermeture (BaseToast, BaseModal),
+  pas encore auditée sur `BaseButton`/`Tabs`. `.markdown-body`/`.katex-display` de
+  `style.css` gardent l'ancienne palette rose (hors périmètre, migration phase 4).

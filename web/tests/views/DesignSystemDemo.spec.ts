@@ -18,7 +18,6 @@ describe('DesignSystemDemo', () => {
 
   it('affiche au moins un exemple de chacune des 10 primitives de la checklist phase 3', () => {
     const wrapper = mount(DesignSystemDemo)
-    const html = wrapper.html()
     // Un marqueur data-demo par section suffit à garantir qu'aucune n'a été oubliée.
     for (const name of ['bouton', 'champ', 'carte', 'modale', 'onglet', 'badge', 'info-bulle', 'etat-vide', 'squelette', 'toast']) {
       expect(wrapper.find(`[data-demo="${name}"]`).exists()).toBe(true)

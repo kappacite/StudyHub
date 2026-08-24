@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BaseToast from '../../../../src/components/ui/base/BaseToast.vue'
 
+type Variant = 'info' | 'success' | 'warning' | 'danger'
+
 describe('BaseToast', () => {
   it('affiche le message fourni en prop', () => {
     const wrapper = mount(BaseToast, { props: { message: 'Deck enregistré.' } })
@@ -13,14 +15,19 @@ describe('BaseToast', () => {
     expect(wrapper.text()).toContain('Enregistré')
   })
 
-  it('applique la classe de fond correspondant à variant="danger"', () => {
-    const wrapper = mount(BaseToast, { props: { variant: 'danger', message: 'Échec de la synchronisation.' } })
-    expect(wrapper.classes()).toContain('bg-danger-soft')
+  it.each<[Variant, string]>([
+    ['info', 'bg-info-soft'],
+    ['success', 'bg-success-soft'],
+    ['warning', 'bg-warning-soft'],
+    ['danger', 'bg-danger-soft'],
+  ])('applique la classe de fond pour la variante %s', (variant, expectedClass) => {
+    const wrapper = mount(BaseToast, { props: { variant, message: 'X' } })
+    expect(wrapper.classes()).toContain(expectedClass)
   })
 
   it('utilise info comme variante par défaut', () => {
     const wrapper = mount(BaseToast, { props: { message: 'X' } })
-    expect(wrapper.classes()).toContain('bg-primary-soft')
+    expect(wrapper.classes()).toContain('bg-info-soft')
   })
 
   it('affiche le bouton de fermeture par défaut et émet close au clic', async () => {

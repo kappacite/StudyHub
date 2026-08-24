@@ -5,7 +5,7 @@ description: Patterns du frontend Vue 3 StudyHub (script setup TS, Pinia, servic
 
 # frontend-patterns
 
-Références canoniques : `docs/frontend.md` (archi) · `docs/design-system.md` (tokens & primitives).
+Références canoniques : `docs/frontend.md` (archi) · skill `design-system` (tokens & primitives).
 Ce skill = règles à respecter avant d'éditer `web/src/`.
 
 ## Stack & conventions
@@ -37,8 +37,8 @@ pilules/badges/onglets `rounded-full`. Élévation `shadow-elev-1/2/3`, CTA
 
 Réutiliser plutôt que recopier : `BaseButton` (variant primary/secondary/ghost/soft/danger,
 `loading`), `BaseCard`, `BaseBadge`, `BaseInput`, `BaseField`, `BaseToggle`, `BaseModal`,
-`BaseEmptyState`, `BaseSkeleton`, `StatCard`, `PageContainer`, `PageHeader`, `Tabs`, `ListRow`,
-`SplitView`. Elles sont typées et **sans appel API**.
+`BaseTooltip`, `BaseEmptyState`, `BaseSkeleton`, `BaseToast`, `StatCard`, `PageContainer`,
+`PageHeader`, `Tabs`, `ListRow`, `SplitView`. Elles sont typées et **sans appel API**.
 
 ## Checklist avant PR (web)
 

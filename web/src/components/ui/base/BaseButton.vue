@@ -2,7 +2,7 @@
   <button
     :type="type"
     :disabled="disabled || loading"
-    class="inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 active:scale-[.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-app disabled:opacity-50 disabled:pointer-events-none"
+    class="inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-app disabled:opacity-50 disabled:pointer-events-none"
     :class="[sizeClass, variantClass, radiusClass, block ? 'w-full' : '']"
   >
     <svg v-if="loading" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">

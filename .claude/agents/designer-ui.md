@@ -15,10 +15,8 @@ périmètre est `web/src/style.css` (tokens, custom properties CSS), `tailwind.c
 token qui n'existe pas, tu l'ajoutes ici — tu ne vas pas le corriger dans l'écran toi-même, et
 tu ne vas pas improviser une valeur brute : soit le token existe, soit tu le crées ici d'abord.
 
-Charge le skill `design-system` une fois qu'il existera (phase 3) ; en attendant,
-`docs/design-system.md` et le skill `frontend-patterns` décrivent l'état actuel — traite-les
-comme des références de départ à réévaluer, pas comme acquis (arbitrage de phase 3 : la
-direction esthétique repart de zéro).
+Charge le skill `design-system` (`.claude/skills/design-system/SKILL.md`) — référence canonique
+tokens/primitives Direction A « Fiche » — avant de toucher un token ou une primitive.
 
 Chaque primitive : TDD (skill `cycle-tdd`) sur ses états, variantes, navigation clavier, focus
 — seuls les tokens et le rendu purement visuel relèvent de l'exception "capture d'écran".

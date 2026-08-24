@@ -1607,11 +1607,13 @@ Utilisateur a tranché : direction **A « Fiche »**, avec consigne de construir
 ## [2026-08-24] Phase 3 — tokens, primitives, démo, hook, skill : Direction A en place
 
 Suite et clôture du round de direction esthétique : les 33 écrans validés sur Claude Design
-(entrée précédente) sont maintenant traduits en tokens Tailwind et primitives réelles,
-remplaçant l'ancien thème **White/Pink** (« Foyer », toujours en prod avant cette session)
-par la Direction A **« Fiche »** (papier chaud, encre indigo, rehaut ocre, typo Bitter/Karla/
-Space Mono). Exécuté via un plan écrit à l'avance (14 tâches TDD, `subagent-driven-development`
-— un subagent implémenteur puis un subagent relecteur frais par tâche), commits `1cd074c..c655585`.
+(entrée précédente) sont maintenant traduits en tokens Tailwind et primitives réelles. Les
+tokens de design (palette, typo, rayons, ombres) et les 10 primitives remplacent l'ancien
+thème **White/Pink** (« Foyer », toujours en prod avant cette session) par la Direction A
+**« Fiche »** (papier chaud, encre indigo, rehaut ocre, typo Bitter/Karla/Space Mono) ; le CSS
+hors primitives (ex. rendu markdown des notes, `.markdown-body`) reste à migrer en phase 4.
+Exécuté via un plan écrit à l'avance (14 tâches TDD, `subagent-driven-development` — un
+subagent implémenteur puis un subagent relecteur frais par tâche), commits `1cd074c..c655585`.
 
 * **Tokens** (`web/src/style.css`) : palette sémantique complète (fonds, bordures, encre,
   primaire/accent/succès/danger), typographie (`font-display` Bitter pour les titres,

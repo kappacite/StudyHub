@@ -14,7 +14,9 @@ import sys
 HEX_COLOR = re.compile(r"#[0-9A-Fa-f]{3,8}\b")
 RGB_FUNC = re.compile(r"\brgba?\(\s*\d")
 ARBITRARY_TAILWIND = re.compile(
-    r"\b(?:bg|text|border|shadow|rounded|w|h|p|m|gap|top|left|right|bottom|inset)-\[[^\]]+\]"
+    r"\b(?:bg|text|border|shadow|rounded|w|h|p|m|gap|top|left|right|bottom|inset|"
+    r"scale|translate|rotate|ring|opacity|duration|z|leading|tracking|max-w|min-h|"
+    r"content|space|grid-cols|stroke|fill)-\[[^\]]+\]"
 )
 RAW_PX = re.compile(r"\b(?:[2-9]|\d{2,})px\b")
 
@@ -22,8 +24,7 @@ RAW_PX = re.compile(r"\b(?:[2-9]|\d{2,})px\b")
 def is_ui_primitive(path: str) -> bool:
     norm = path.replace("\\", "/")
     # Match both absolute and relative paths that contain web/src/components/ui/
-    return (("web/src/components/ui/" in norm or "/web/src/components/ui/" in norm)
-            and norm.endswith(".vue"))
+    return "web/src/components/ui/" in norm and norm.endswith(".vue")
 
 
 def new_text(tool_input: dict) -> str:

@@ -9,7 +9,7 @@
 | Tu travailles sur… | Charge le skill | Référence canonique |
 |---|---|---|
 | `backend/` (dao, services, api, models, schemas) | `backend-patterns` | `docs/backend.md` |
-| `web/src` (views, components, stores, services) | `frontend-patterns` | `docs/frontend.md`, `docs/design-system.md` |
+| `web/src` (views, components, stores, services) | `frontend-patterns` | `docs/frontend.md` |
 | Routes / contrats d'endpoints | `api-spec` | `docs/api_reference.md` |
 | `web/android`, Capacitor, comportements natifs | `mobile-build` | `docs/mobile.md` |
 | `desktop/`, Electron, packaging bureau | `desktop-build` | `docs/desktop.md` |

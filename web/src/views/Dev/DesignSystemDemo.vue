@@ -27,7 +27,7 @@
         <BaseInput v-model="demoInput" placeholder="Chimie organique" />
       </BaseField>
       <BaseField label="Email" required error="Adresse invalide">
-        <BaseInput v-model="demoInput" type="email" />
+        <BaseInput v-model="demoInputEmail" type="email" />
       </BaseField>
     </section>
 
@@ -65,7 +65,9 @@
     <section data-demo="info-bulle" class="space-y-3">
       <h2 class="font-display text-display-md">Info-bulle</h2>
       <BaseTooltip content="Facteur de facilité SM2 : 2.5 par défaut">
-        <span class="underline decoration-dotted cursor-help text-sm">Survoler ce texte</span>
+        <span tabindex="0" class="underline decoration-dotted cursor-help text-sm"
+          >Survoler ce texte</span
+        >
       </BaseTooltip>
     </section>
 
@@ -115,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import {
   BaseButton,
   BaseCard,
@@ -132,13 +134,35 @@ import {
   PageHeader,
 } from '../../components/ui/base'
 
+// Mécanisme de thème identique à AppLayout.vue (clé localStorage 'sh_theme' +
+// classe 'dark' sur <html>) pour que la démo reste synchronisée avec l'appli réelle.
 const isDark = ref(document.documentElement.classList.contains('dark'))
 const demoInput = ref('')
+const demoInputEmail = ref('')
 const activeTab = ref('a')
 const modalOpen = ref(false)
 
 function toggleDark() {
   isDark.value = !isDark.value
-  document.documentElement.classList.toggle('dark', isDark.value)
+  if (isDark.value) {
+    document.documentElement.classList.add('dark')
+    localStorage.setItem('sh_theme', 'dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+    localStorage.setItem('sh_theme', 'light')
+  }
 }
+
+onMounted(() => {
+  const savedTheme = localStorage.getItem('sh_theme')
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+
+  if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+    isDark.value = true
+    document.documentElement.classList.add('dark')
+  } else {
+    isDark.value = false
+    document.documentElement.classList.remove('dark')
+  }
+})
 </script>

@@ -34,7 +34,7 @@
                 </DialogTitle>
                 <button
                   type="button"
-                  class="p-1.5 -mr-1 -mt-1 rounded-lg text-ink-subtle hover:text-ink hover:bg-surface-soft transition-colors"
+                  class="p-3 -mr-2.5 -mt-2.5 rounded-lg text-ink-subtle hover:text-ink hover:bg-surface-soft transition-colors"
                   @click="$emit('close')"
                 >
                   <X class="w-5 h-5" />
