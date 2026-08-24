@@ -138,10 +138,29 @@ construire l'ensemble des écrans réels sur Claude Design dans cette direction,
 valider par l'utilisateur écran par écran, **puis seulement** reprendre la suite de la
 phase 3 (tokens Tailwind, primitives TDD).
 
-**État à l'arrêt (contexte 98 %, voir `PASSATION.md`)** : spec partagée de la direction A
-écrite, 5 lots parallèles lancés pour couvrir les ~32 écrans réels restants — état des
-fichiers non confirmé à l'arrêt. Reprendre via `PASSATION.md` (chemin exact du dossier de
-travail, à ne pas confondre avec le scratchpad de la nouvelle session).
+**Les 33 écrans construits et republiés (2026-08-24)** — même artifact, 7 pages :
+https://claude.ai/code/artifact/366dcc95-8da4-41dd-8bbd-1e625a68e2c5
+1. Coquille & Accueil — coquille nav desktop/mobile, Accueil
+2. Auth & Marketplace — Connexion, Inscription, Marketplace (accueil/explorer/aperçu),
+   Note publique
+3. Bibliothèque & Notes — Bibliothèque, Notes (liste/éditeur/blurting/quiz/évaluation)
+4. Decks & sessions de révision — Decks, session deck (desktop+mobile), session QCM
+   (desktop+mobile), session set de révision, gestion d'un set
+5. Stats & Réviser — stats set, stats classeur, accueil section Réviser
+6. Classes & Groupes — Classes (onglet Enseignant), Groupe, Devoir
+7. Examens, Planning, PDF, Diagrammes — configuration/session/résultats examen,
+   planning, liseuse PDF, diagrammes (coquille liste seulement, pas l'éditeur — hors
+   périmètre phase 5)
+
+Chaque écran a la bascule clair/sombre intégrée. Une seule fiche par écran (pas de
+variantes loading/error/empty systématiques — couvert plus tard par `migration-ecran`
+en phase 4). Spec de la direction (palette, typo, composants réutilisables) :
+`_DIRECTION_A_SPEC.md` dans le dossier de travail (hors dépôt, voir historique de
+session pour le chemin si besoin). Relecture qualité en cours (agent tâche de fond).
+
+**Prochaine action** : recueillir la validation utilisateur écran par écran (le canevas
+est éditable/commentable directement). Une fois validé → reprendre la phase 3 : tokens
+Tailwind, primitives en TDD, page de démonstration, skill `design-system`.
 
 ## Écrans migrés (phase 4)
 

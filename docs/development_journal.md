@@ -1580,3 +1580,26 @@ travail hors dépôt.
   structurel). Auto-critique de chacune contre le brief consignée en annotations du canevas.
   Aucune des deux ne reprend la palette de « Foyer ». Canevas : voir `ETAT.md` (lien artifact).
 * **Aucun code de production touché** — phase 3 en cours, pas de tests concernés.
+
+## [2026-08-24] Phase 3 — arbitrage direction A, 33 écrans construits sur Claude Design
+
+Utilisateur a tranché : direction **A « Fiche »**, avec consigne de construire tous les
+écrans réels avant de reprendre la suite de la phase 3.
+
+* Écrit une spec partagée de la direction (`_DIRECTION_A_SPEC.md`, hors dépôt) : palette
+  claire/sombre figée, typo (Bitter/Karla/Space Mono), composants réutilisables (nav
+  desktop/mobile, boutons, 4 boutons de notation SM2 avec icône+libellé pour l'accessibilité
+  daltonisme, carte liste, champ, état vide, tweak dark/light) — pour garantir un langage
+  visuel identique sur tous les écrans.
+* Tentative de parallélisation (5 forks) interrompue par une limite de session côté API ;
+  26 des 32 fichiers restants avaient déjà été écrits avant l'échec. Les 6 manquants
+  (`RevisionSetManage`, `GroupDetail`, `AssignmentDetail`, `Planning`, `PDFs`, `Diagrams`)
+  complétés directement, à la main, dans le même langage.
+* Assemblé les 33 écrans (32 + Accueil déjà fait) en un seul canevas Claude Design, 7 pages
+  logiques (coquille+Accueil, auth+marketplace, bibliothèque+notes, decks+révision,
+  stats+réviser, classes+groupes, examens/planning/PDF/diagrammes). Republié sur le même
+  artifact que le round de direction : https://claude.ai/code/artifact/366dcc95-8da4-41dd-8bbd-1e625a68e2c5
+* Mobile dessiné seulement pour les sessions de révision (deck, QCM) — usage mobile central
+  selon le brief ; le reste suit desktop pour cette passe. Diagrammes = coquille liste
+  uniquement, l'éditeur de canevas reste hors périmètre (phase 5).
+* **Aucun code de production touché.**
