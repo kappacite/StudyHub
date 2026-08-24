@@ -18,8 +18,14 @@
   le texte de remplacement suggéré pour le commentaire.
 
 ## État
-- Worktree : `web/src/style.css` modifié, **non committé** au moment de
-  l'arrêt (le sous-agent de correction a commencé mais pas fini/commité).
+- **Mise à jour post-écriture** : le sous-agent a fini et committé après
+  l'arrêt ci-dessus — `a5c5f77 fix(design-system): corriger le commentaire
+  d'en-tete obsolete dans style.css`, 8/8 tests de contraste toujours
+  verts. Tour de correction 1/5 terminé côté implémenteur, **pas encore
+  re-revuè** (re-revue scopée à dispatcher sur cette seule plage avant de
+  clore la Tâche 1).
+- Worktree : propre après ce commit (à vérifier par `git status` à la
+  reprise).
 - Branche `main` : propre, rien en attente côté main hormis cette
   passation.
 - Ledger à jour : `.superpowers/sdd/2026-08-24-design-system-direction-a/
@@ -27,18 +33,15 @@
   (scan de pré-vol, dispatch, revue, tour de correction).
 
 ## Prochaine action
-1. Vérifier si le sous-agent `af3d34f02edae79ab` a terminé le tour de
-   correction 1 (`ListAgents`, ou `git log`/`git status` dans la worktree
-   pour voir s'il a committé `fix(design-system): ...`).
-2. S'il a fini : dispatcher une re-revue **scopée** sur ce seul diff de
-   correctif (`scripts/review-package` sur la plage fix), pas une revue
-   complète de la tâche.
-3. Si tous les constats sont adressés : marquer la Tâche 1 complète dans
-   le ledger, puis enchaîner la Tâche 2 (`task-2-brief.md`, déjà extrait).
-4. S'il est injoignable : relancer depuis le constat ci-dessus (le diff
-   `web/src/style.css` modifié mais non committé est peut-être encore
-   présent dans la worktree — vérifier avant de recommencer pour ne pas
-   écraser un travail en cours).
+1. Dispatcher la re-revue **scopée** du tour de correction 1 :
+   `scripts/review-package PLAN 8b1c860 a5c5f77` (FIX_BASE = `8b1c860`, le
+   HEAD que la 1ère revue a vu), gabarit `re-review-prompt.md`, avec le
+   constat Important d'origine (commentaire obsolète), le brief, le
+   rapport.
+2. Si adressé (attendu — le fix est un commentaire, changement trivial) :
+   marquer `Task 1: complete` dans le ledger, puis enchaîner la Tâche 2
+   (`task-2-brief.md`, déjà extrait, BaseButton).
+3. Continuer les Tâches 3 à 14 dans l'ordre du plan.
 
 ## À relire en priorité
 - Ce fichier
