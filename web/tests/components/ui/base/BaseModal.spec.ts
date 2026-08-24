@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import BaseModal from '../../../../src/components/ui/base/BaseModal.vue'
 
-let wrapper: VueWrapper<any> | undefined
+let wrapper: VueWrapper<InstanceType<typeof BaseModal>> | undefined
 
 afterEach(() => {
   wrapper?.unmount()
