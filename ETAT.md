@@ -162,6 +162,10 @@ session pour le chemin si besoin). Relecture qualité en cours (agent tâche de 
 est éditable/commentable directement). Une fois validé → reprendre la phase 3 : tokens
 Tailwind, primitives en TDD, page de démonstration, skill `design-system`.
 
+**Arrêt contexte 139 % (2026-08-24 10:58, voir `PASSATION.md`)** : livrable publié, rien
+de bloquant. Une relecture qualité en tâche de fond n'a pas renvoyé de résultat avant
+l'arrêt — vérifier les commentaires du canevas à la reprise plutôt que de la rechercher.
+
 ## Écrans migrés (phase 4)
 
 Aucun — phase non commencée.
