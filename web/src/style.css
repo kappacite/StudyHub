@@ -4,8 +4,9 @@
 
 @layer base {
   /* ──────────────────────────────────────────────────────────────────
-     Design tokens — White/Pink × Material épuré.
-     Primaire = Pink 400 (#F06292). Danger = rouge (séparé du rose marque).
+     Design tokens — Direction A « Fiche ».
+     Primaire = encre indigo (#2E4374). Accent = rehaut ocre (#C99A2E).
+     Danger = brique (#B24C3A), séparé de l'accent.
      Valeurs en "R G B" pour permettre l'alpha Tailwind (rgb(var(--x)/.5)).
      Réglez le thème ici : ça se propage à tous les tokens sémantiques.
      ────────────────────────────────────────────────────────────────── */
