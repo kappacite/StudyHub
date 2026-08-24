@@ -190,11 +190,17 @@ défaut de plan trouvé et tranché au scan de pré-vol (Tâche 12 : import `@/.
 import relatif, cf. ledger). Les 14 briefs de tâches extraits (le script `task-brief` attend
 des titres anglais, le plan est en français — contournement documenté dans le ledger).
 
-**Arrêt contexte 155 % (2026-08-24 13:05, voir `PASSATION.md`)** : Tâche 1 (tokens)
-dispatchée à un sous-agent (`af3d34f02edae79ab`) — **encore en cours, non committée** au
-moment de l'arrêt. Vérifier d'abord si elle a terminé (`ListAgents`) avant de relancer quoi
-que ce soit ; sinon re-dispatcher la Tâche 1 depuis son brief déjà écrit, puis continuer les
-Tâches 2 à 14. Rien n'est mergé sur `main` — sans risque.
+**Arrêt contexte 155 % (2026-08-24 13:05)** : résolu à la reprise — Tâche 1 terminée par le
+sous-agent (`8b1c860`, 8/8 tests contraste verts), revuée (spec ✅, qualité Approved, 1
+constat Important sur un commentaire obsolète dans `style.css`), tour de correction 1/5
+dispatché à l'implémenteur original.
+
+**Arrêt contexte 165 % (2026-08-24 14:10, voir `PASSATION.md`)** : tour de correction 1 en
+cours — `web/src/style.css` modifié dans la worktree mais **non committé** au moment de
+l'arrêt. Vérifier si le sous-agent `af3d34f02edae79ab` a fini avant de relancer quoi que ce
+soit. Une fois la Tâche 1 close (re-revue scopée propre) → enchaîner les Tâches 2 à 14 du
+plan (`docs/superpowers/plans/2026-08-24-design-system-direction-a.md`) via
+`subagent-driven-development`, briefs déjà extraits dans le ledger de la worktree.
 
 ## Écrans migrés (phase 4)
 
