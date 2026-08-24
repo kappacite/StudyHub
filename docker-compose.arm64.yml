@@ -1,0 +1,9 @@
+# Surcouche arm64 — ne contient que les differences irreductibles par rapport
+# au socle docker-compose.yml. Actuellement vide : verifie nativement sur une
+# machine de dev arm64 (Docker Desktop, linux/aarch64) le 2026-08-23 —
+# postgres:16-alpine et redis:7-alpine se pullent en manifeste natif aarch64,
+# et l'image backend (python:3.12-slim) installe psycopg2-binary, cryptography
+# et gevent depuis des roues aarch64 precompilees (aucune compilation source
+# requise). Voir docs/ENVIRONNEMENT.md pour le detail de la verification.
+#
+# Usage : docker compose -f docker-compose.yml -f docker-compose.arm64.yml up

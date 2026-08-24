@@ -5,7 +5,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 FROM base AS production
 COPY . .
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+# uploads/ n'existe pas dans le depot (cree au runtime par UPLOAD_FOLDER) : sans
+# ce mkdir+chown explicite ici, le volume nomme uploads_data monte par-dessus
+# se cree avec le proprietaire root par defaut (Docker ne copie l'ownership
+# du repertoire image que s'il existe deja avant le premier montage), et
+# appuser n'a plus le droit d'y ecrire au runtime.
+RUN adduser --disabled-password --gecos '' appuser \
+    && mkdir -p /app/uploads \
+    && chown -R appuser /app
 USER appuser
 EXPOSE 5000
 # Entrypoint wsgi:app -> applique automatiquement les migrations en attente au

@@ -100,8 +100,8 @@ if [ -f "backend/venv/bin/python" ]; then
     (cd backend && venv/bin/python -m flask run --port 5000 --debug) > "$LOG_DIR/backend.log" 2>&1 &
     BACKEND_PID=$!
 else
-    echo -e "${YELLOW}⚠️  Environnement virtuel non trouvé dans backend/venv. Essai avec le python3 global...${NC}"
-    (cd backend && python3 -m flask run --port 5000 --debug) > "$LOG_DIR/backend.log" 2>&1 &
+    echo -e "${YELLOW}⚠️  Environnement virtuel non trouvé dans backend/venv. Essai avec le python global...${NC}"
+    (cd backend && python -m flask run --port 5000 --debug) > "$LOG_DIR/backend.log" 2>&1 &
     BACKEND_PID=$!
 fi
 

@@ -1,0 +1,9 @@
+# Surcouche amd64 — ne contient que les differences irreductibles par rapport
+# au socle docker-compose.yml. Actuellement vide : postgres:16-alpine,
+# redis:7-alpine, python:3.12-slim et node:20-alpine publient tous des
+# manifestes multi-architecture couvrant amd64 nativement (verifie via la CI
+# GitHub Actions existante, runners amd64 — .github/workflows/ci.yml), et
+# aucune dependance backend/web ne force de plateforme. Un fichier vide est un
+# bon signe : voir docs/ENVIRONNEMENT.md.
+#
+# Usage : docker compose -f docker-compose.yml -f docker-compose.amd64.yml up

@@ -3,11 +3,14 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{
-  rounded?: string
-  customClass?: string
-}>(), {
-  rounded: 'rounded-xl',
-  customClass: 'h-4 w-full',
-})
+withDefaults(
+  defineProps<{
+    rounded?: string
+    customClass?: string
+  }>(),
+  {
+    rounded: 'rounded-lg',
+    customClass: 'h-4 w-full',
+  },
+)
 </script>

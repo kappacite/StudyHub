@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: { androidScheme: 'https' },
   plugins: {
-    LocalNotifications: { smallIcon: 'ic_stat_icon', iconColor: '#4F46E5' },
+    LocalNotifications: { smallIcon: 'ic_stat_icon', iconColor: '#2E4374' },
   },
 }
 

@@ -13,7 +13,9 @@
     "test:e2e": "playwright test",
     "build:mobile": "vue-tsc -b && cross-env VITE_API_BASE_URL=https://study.leshen.cloud vite build",
     "cap:sync": "npm run build:mobile && cap sync android",
-    "cap:android": "cap open android"
+    "cap:android": "cap open android",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@capacitor/core": "^8.4.1",
@@ -36,6 +38,7 @@
   "devDependencies": {
     "@capacitor/android": "^8.4.1",
     "@capacitor/cli": "^8.4.1",
+    "@eslint/js": "^10.0.1",
     "@lucide/vue": "^1.17.0",
     "@playwright/test": "^1.60.0",
     "@types/dompurify": "^3.0.5",
@@ -48,10 +51,15 @@
     "@vue/tsconfig": "^0.9.1",
     "autoprefixer": "^10.5.0",
     "cross-env": "^7.0.3",
+    "eslint": "^10.9.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.10.0",
     "happy-dom": "^20.10.2",
     "postcss": "^8.5.15",
+    "prettier": "^3.9.6",
     "tailwindcss": "^3.4.19",
     "typescript": "~6.0.2",
+    "typescript-eslint": "^8.67.0",
     "vite": "^8.0.12",
     "vitest": "^4.1.8",
     "vue-tsc": "^3.2.8"

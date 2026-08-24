@@ -4,97 +4,97 @@
 
 @layer base {
   /* ──────────────────────────────────────────────────────────────────
-     Design tokens — White/Pink × Material épuré.
-     Primaire = Pink 400 (#F06292). Danger = rouge (séparé du rose marque).
+     Design tokens — Direction A « Fiche ».
+     Primaire = encre indigo (#2E4374). Accent = rehaut ocre (#C99A2E).
+     Danger = brique (#B24C3A), séparé de l'accent.
      Valeurs en "R G B" pour permettre l'alpha Tailwind (rgb(var(--x)/.5)).
      Réglez le thème ici : ça se propage à tous les tokens sémantiques.
      ────────────────────────────────────────────────────────────────── */
   :root {
-    --sh-app: 253 247 249;          /* blanc tiède rosé (#FDF7F9) */
-    --sh-surface: 255 255 255;      /* cartes (élévation 0) */
-    --sh-surface-soft: 252 241 244; /* fonds imbriqués / hover (Pink 50, #FCF1F4) */
+    --sh-app: 239 234 224;          /* papier chaud (#EFEAE0) */
+    --sh-surface: 251 248 242;      /* cartes (#FBF8F2) */
+    --sh-surface-soft: 242 236 222; /* fonds imbriqués / hover (#F2ECDE) */
 
-    --sh-line: 244 224 231;         /* bordures (#F4E0E7) */
-    --sh-line-soft: 250 238 242;    /* bordures discrètes */
+    --sh-line: 217 208 188;         /* filets (#D9D0BC) */
+    --sh-line-soft: 232 225 210;    /* filets discrets */
 
-    --sh-ink: 40 30 35;             /* texte principal (#281E23) */
-    --sh-ink-muted: 124 110 116;    /* texte secondaire */
-    --sh-ink-subtle: 176 160 167;   /* texte ténu */
+    --sh-ink: 35 36 31;             /* texte principal (#23241F) */
+    --sh-ink-muted: 107 104 88;     /* texte secondaire (#6B6858) */
+    --sh-ink-subtle: 150 145 125;   /* texte ténu */
 
-    --sh-primary: 240 98 146;       /* Pink 400 (#F06292) — marque + lien */
-    --sh-primary-strong: 216 27 96; /* Pink 600 (#D81B60) — hover/pressed */
-    --sh-primary-soft: 252 228 236; /* Pink 50 (#FCE4EC) — fond teinté */
+    --sh-primary: 46 67 116;        /* encre indigo — actions, "Bien" SM2 (#2E4374) */
+    --sh-primary-strong: 31 46 82;  /* hover/pressed */
+    --sh-primary-soft: 221 227 240; /* fond teinté indigo */
+    --sh-primary-ink: 255 255 255;  /* texte sur fond primary */
 
-    --sh-accent: 255 167 38;        /* amber (#FFA726) — gamification */
-    --sh-accent-soft: 255 243 224;  /* amber-50 */
+    --sh-accent: 201 154 46;        /* rehaut ocre — échéance, "Difficile" SM2 (#C99A2E) */
+    --sh-accent-soft: 234 223 192;
 
-    --sh-success: 46 174 110;       /* vert lisible */
-    --sh-success-soft: 220 247 233;
-    --sh-warning: 245 158 11;       /* amber-500 */
-    --sh-warning-soft: 254 243 199;
-    --sh-danger: 220 38 38;         /* red-600 — erreur (distinct du rose) */
-    --sh-danger-strong: 185 28 28;  /* red-700 */
-    --sh-danger-soft: 254 226 226;  /* red-100 */
-    --sh-info: 2 132 199;           /* sky-600 */
-    --sh-info-soft: 224 242 254;    /* sky-100 */
+    --sh-success: 92 122 90;        /* sauge — "Facile" SM2 */
+    --sh-success-soft: 217 224 211;
+    --sh-warning: 201 154 46;       /* alias de accent (pas de teinte distincte en Direction A) */
+    --sh-warning-soft: 234 223 192;
+    --sh-danger: 178 76 58;         /* brique — suppression, "Encore" SM2 */
+    --sh-danger-strong: 143 60 45;
+    --sh-danger-soft: 231 207 198;
+    --sh-info: 46 67 116;           /* alias de primary (pas de teinte distincte) */
+    --sh-info-soft: 221 227 240;
 
-    /* Couleurs de catégorie de contenu (Bibliothèque) — icônes & pastilles. */
-    --sh-cat-note: 139 92 246;      /* violet-500 */
-    --sh-cat-note-soft: 237 233 254;
-    --sh-cat-pdf: 239 68 68;        /* red-500 */
-    --sh-cat-pdf-soft: 254 226 226;
-    --sh-cat-diagram: 13 148 136;   /* teal-600 */
-    --sh-cat-diagram-soft: 204 251 241;
-    --sh-cat-deck: 37 99 235;       /* blue-600 */
-    --sh-cat-deck-soft: 219 234 254;
-    --sh-cat-set: 217 119 6;        /* amber-600 */
-    --sh-cat-set-soft: 254 243 199;
+    --sh-shadow: 0 1px 2px rgb(35 36 31 / 0.06), 0 8px 20px -12px rgb(35 36 31 / 0.18);
+    --sh-shadow-lg: 0 4px 8px rgb(35 36 31 / 0.10), 0 20px 40px -16px rgb(35 36 31 / 0.28);
+
+    /* Couleurs de catégorie de contenu (Bibliothèque) — icônes & pastilles.
+       Non couvertes par les maquettes Direction A (qui différencient par icône,
+       pas par couleur) : teintes dérivées, harmonisées avec la palette. */
+    --sh-cat-note: 110 90 115;      --sh-cat-note-soft: 231 224 232;
+    --sh-cat-pdf: 156 90 60;        --sh-cat-pdf-soft: 239 224 214;
+    --sh-cat-diagram: 63 110 112;   --sh-cat-diagram-soft: 220 231 231;
+    --sh-cat-deck: 46 67 116;       --sh-cat-deck-soft: 221 227 240;   /* = primary */
+    --sh-cat-set: 201 154 46;       --sh-cat-set-soft: 234 223 192;    /* = accent */
   }
 
   .dark {
-    --sh-app: 26 22 24;             /* sombre tiède rosé (#1A1618) */
-    --sh-surface: 35 29 32;         /* cartes (#231D20) */
-    --sh-surface-soft: 44 36 40;    /* fonds imbriqués (#2C2428) */
+    --sh-app: 27 25 18;             /* #1B1912 */
+    --sh-surface: 36 33 25;         /* #242119 */
+    --sh-surface-soft: 44 40 32;
 
-    --sh-line: 56 46 51;            /* bordures */
-    --sh-line-soft: 44 36 40;
+    --sh-line: 58 54 39;            /* #3A3627 */
+    --sh-line-soft: 50 46 36;
 
-    --sh-ink: 240 232 235;          /* texte principal */
-    --sh-ink-muted: 176 162 168;
-    --sh-ink-subtle: 124 110 116;
+    --sh-ink: 243 239 227;          /* #F3EFE3 */
+    --sh-ink-muted: 184 178 156;    /* #B8B29C */
+    --sh-ink-subtle: 138 132 112;
 
-    --sh-primary: 244 143 177;      /* Pink 300 (contraste sur sombre) */
-    --sh-primary-strong: 248 187 208; /* Pink 200 (hover) */
-    --sh-primary-soft: 60 36 48;    /* rose tamisé sombre */
+    --sh-primary: 147 169 222;      /* #93A9DE */
+    --sh-primary-strong: 183 196 233;
+    --sh-primary-soft: 43 51 71;
+    --sh-primary-ink: 27 25 18;     /* texte sombre sur fond indigo clair */
 
-    --sh-accent: 251 191 36;        /* amber-400 */
-    --sh-accent-soft: 61 44 10;     /* miel sombre */
+    --sh-accent: 224 184 74;        /* #E0B84A */
+    --sh-accent-soft: 58 49 28;
 
-    --sh-success: 74 222 128;       /* green-400 */
-    --sh-success-soft: 20 51 33;
-    --sh-warning: 251 191 36;       /* amber-400 */
-    --sh-warning-soft: 61 44 10;
-    --sh-danger: 248 113 113;       /* red-400 */
-    --sh-danger-strong: 239 68 68;  /* red-500 */
-    --sh-danger-soft: 60 23 23;
-    --sh-info: 56 189 248;          /* sky-400 */
-    --sh-info-soft: 12 43 64;
+    --sh-success: 143 174 139;      /* #8FAE8B */
+    --sh-success-soft: 38 48 31;
+    --sh-warning: 224 184 74;
+    --sh-warning-soft: 58 49 28;
+    --sh-danger: 224 136 114;       /* #E08872 */
+    --sh-danger-strong: 234 160 144;
+    --sh-danger-soft: 61 42 34;
+    --sh-info: 147 169 222;
+    --sh-info-soft: 43 51 71;
 
-    --sh-cat-note: 167 139 250;     /* violet-400 */
-    --sh-cat-note-soft: 49 33 84;
-    --sh-cat-pdf: 248 113 113;      /* red-400 */
-    --sh-cat-pdf-soft: 60 23 23;
-    --sh-cat-diagram: 45 212 191;   /* teal-400 */
-    --sh-cat-diagram-soft: 12 51 47;
-    --sh-cat-deck: 96 165 250;      /* blue-400 */
-    --sh-cat-deck-soft: 23 37 64;
-    --sh-cat-set: 251 191 36;       /* amber-400 */
-    --sh-cat-set-soft: 61 44 10;
+    --sh-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.5);
+    --sh-shadow-lg: 0 4px 8px rgb(0 0 0 / 0.4), 0 20px 44px -16px rgb(0 0 0 / 0.6);
+
+    --sh-cat-note: 165 145 170;     --sh-cat-note-soft: 45 38 48;
+    --sh-cat-pdf: 206 145 115;      --sh-cat-pdf-soft: 48 38 32;
+    --sh-cat-diagram: 123 165 167;  --sh-cat-diagram-soft: 34 44 44;
+    --sh-cat-deck: 147 169 222;     --sh-cat-deck-soft: 43 51 71;
+    --sh-cat-set: 224 184 74;       --sh-cat-set-soft: 58 49 28;
   }
 
   body {
-    @apply bg-app text-ink transition-colors duration-200;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    @apply bg-app text-ink font-sans transition-colors duration-200;
   }
   button {
     @apply text-ink;

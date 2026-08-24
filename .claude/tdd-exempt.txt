@@ -1,0 +1,6 @@
+# Liste blanche de la garde TDD (.claude/hooks/tdd_guard.py).
+# Un chemin relatif au depot par ligne (glob fnmatch), commentaires avec #.
+# Reservee au pur travail de tokens/mise en page visuelle, non testable
+# utilement en automatique (validation par capture d'ecran a la place) —
+# jamais au comportement d'un composant (etats, focus, interactions).
+# Reste courte : chaque entree doit se justifier au moment ou elle est ajoutee.

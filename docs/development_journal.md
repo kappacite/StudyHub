@@ -1519,3 +1519,128 @@ en `min-h-screen` → c'est le document qui défile. `AppLayout.vue` borné au v
 PDF des notes.
 
 **Validation** : 281 tests backend, 69 tests frontend, `vue-tsc` — tous verts.
+
+## [2026-08-23] Phase 1 — outillage agentique complet
+
+Reconnaissance (phase 0) puis outillage complet de `.claude/` sur la base d'un nouveau prompt
+de démarrage. Arbitrage explicite : le nouveau prompt l'emporte sur l'état déjà documenté
+(`docs/design-system.md`, `docs/performance-audit.md`, `docs/ui-redesign-plan.md` traités
+comme non acquis — repris en phases 2/3, pas supprimés).
+
+* **Cartographie** (`docs/audit/00-CARTOGRAPHIE.md`) : `AGENTS.md` décrivait une architecture
+  très en retard sur le code réel (7 modèles vs 21, `mobile/` vs `web/android`, Capacitor 6
+  vs 8, pas de `desktop/`, docker-compose sans Redis/Celery). `AGENTS.md`/`CLAUDE.md`/
+  `README.md` réécrits pour refléter l'état réel, sans réénumérer ce qui vit déjà dans
+  `docs/audit/` ou les skills (évite la re-dérive).
+* **Permissions** (`settings.json`) : deny dur sur `git push`, `git reset --hard`, `git
+  rebase`, `rm -rf`, `docker compose down -v`, `deploy.sh`, `flask db upgrade` en direct,
+  écriture `.env` ; ask sur `pip`/`npm install`, `flask db migrate` — dupliqué Bash+PowerShell.
+* **6 hooks** : garde commandes destructrices (`guard_dangerous_commands.py`, regex +
+  heredoc-aware pour ne pas se bloquer sur ses propres messages de commit), garde d'écriture
+  phase 2, garde TDD phase 3+ (`.claude/tdd-exempt.txt`), formatage auto backend (ruff,
+  nouvellement ajouté) et web (ESLint 10 flat config + Prettier, nouvellement ajoutés — `npx`
+  échoue en `shell=False` sur Windows, invocation directe de `node_modules/.bin/*.cmd`), hook
+  `Stop` unifié (`stop_gate.py`, remplace `commit_reminder.py`) avec mécanique de passation de
+  contexte (`PreCompact`, `SessionStart` — `_context_lib.py` partagé).
+* **5 skills** (`audit-securite`, `conventions-dao`, `invariants-sm2`, `cycle-tdd`,
+  `migration-ecran`) et **5 subagents** — `design-system` différée à la phase 3.
+* **Environnement multi-arch** : vérifié réellement (pas seulement écrit) sur cette machine
+  arm64 — `psycopg2-binary`/`cryptography`/`gevent` s'installent en roues aarch64 sans
+  compilation, build backend 1 min 10, suite pytest complète 100 % verte en 56 s (après
+  correction d'un bug réel : `backend/Dockerfile` ne créait pas `/app/uploads` avant le
+  `chown`, donc le volume nommé se montait avec l'ownership root), suite vitest 100 % verte
+  en 8 s. amd64 non re-testé cette session (aucun push) — repose sur la CI existante.
+  Détail : `docs/ENVIRONNEMENT.md`.
+* **Constat versé au backlog phase 2** (non corrigé ici, hors périmètre) : la suite de tests
+  contre PostgreSQL réel (`TEST_DATABASE_URL`) échoue sur 12 tests liés à la recherche
+  full-text — écart entre le schéma créé par `db.create_all()` en test et celui produit par
+  les migrations Alembic (index GIN absents). Indépendant de l'architecture.
+
+## [2026-08-24] Phase 3 — reprise après revirement, round de direction esthétique
+
+Reprise de la phase 3 après abandon explicite de la direction « Foyer » (recolorage
+rose/violet/orange, contenu de dashboard enrichi — voir `docs/passations/2026-08-24_0144_phase3.md`).
+Repart de zéro via `frontend-design` + `design` (Claude Design), nouveau répertoire de
+travail hors dépôt.
+
+* **Clarification Accueil/Dashboard levée par lecture du routeur**, pas par supposition :
+  `web/src/router/index.ts:52` documente déjà « Accueil = fusion Dashboard + Focus » ; `/dashboard`
+  et `/focus` redirigent vers `Accueil` et `Dashboard/Dashboard.vue` / `Focus/FocusPage.vue` ne
+  sont importés par aucune route — fichiers orphelins, pas des écrans à designer. Un seul écran
+  « Accueil » à concevoir. Suppression des orphelins à verser au backlog phase 6.
+* **IA déjà partiellement restructurée en 5 sections canoniques** (`accueil`, `bibliotheque`,
+  `reviser`, `classes` avec onglets teacher/student/groups, + routes encore réelles non repliées) :
+  l'inventaire de `docs/audit/00-CARTOGRAPHIE.md` §3.2 nomme encore les anciens écrans séparés
+  (Groupes, Classeurs) — à corriger dans cette référence en phase 4 ; pour la conception, se fier
+  au routeur réel. Confirmé : aucune route Réglages/Profil (la maquette « Foyer » l'avait
+  inventée à tort).
+* **Deux directions esthétiques publiées pour arbitrage** sur l'écran Accueil (desktop, bascule
+  clair/sombre via tweak) : « Fiche » (papier chaud, encre indigo, rehaut ocre, empreinte tampon)
+  et « Courbe » (gris-bleu froid, accent sarcelle unique, la courbe d'oubli SM-2 comme motif
+  structurel). Auto-critique de chacune contre le brief consignée en annotations du canevas.
+  Aucune des deux ne reprend la palette de « Foyer ». Canevas : voir `ETAT.md` (lien artifact).
+* **Aucun code de production touché** — phase 3 en cours, pas de tests concernés.
+
+## [2026-08-24] Phase 3 — arbitrage direction A, 33 écrans construits sur Claude Design
+
+Utilisateur a tranché : direction **A « Fiche »**, avec consigne de construire tous les
+écrans réels avant de reprendre la suite de la phase 3.
+
+* Écrit une spec partagée de la direction (`_DIRECTION_A_SPEC.md`, hors dépôt) : palette
+  claire/sombre figée, typo (Bitter/Karla/Space Mono), composants réutilisables (nav
+  desktop/mobile, boutons, 4 boutons de notation SM2 avec icône+libellé pour l'accessibilité
+  daltonisme, carte liste, champ, état vide, tweak dark/light) — pour garantir un langage
+  visuel identique sur tous les écrans.
+* Tentative de parallélisation (5 forks) interrompue par une limite de session côté API ;
+  26 des 32 fichiers restants avaient déjà été écrits avant l'échec. Les 6 manquants
+  (`RevisionSetManage`, `GroupDetail`, `AssignmentDetail`, `Planning`, `PDFs`, `Diagrams`)
+  complétés directement, à la main, dans le même langage.
+* Assemblé les 33 écrans (32 + Accueil déjà fait) en un seul canevas Claude Design, 7 pages
+  logiques (coquille+Accueil, auth+marketplace, bibliothèque+notes, decks+révision,
+  stats+réviser, classes+groupes, examens/planning/PDF/diagrammes). Republié sur le même
+  artifact que le round de direction : https://claude.ai/code/artifact/366dcc95-8da4-41dd-8bbd-1e625a68e2c5
+* Mobile dessiné seulement pour les sessions de révision (deck, QCM) — usage mobile central
+  selon le brief ; le reste suit desktop pour cette passe. Diagrammes = coquille liste
+  uniquement, l'éditeur de canevas reste hors périmètre (phase 5).
+* **Aucun code de production touché.**
+
+## [2026-08-24] Phase 3 — tokens, primitives, démo, hook, skill : Direction A en place
+
+Suite et clôture du round de direction esthétique : les 33 écrans validés sur Claude Design
+(entrée précédente) sont maintenant traduits en tokens Tailwind et primitives réelles. Les
+tokens de design (palette, typo, rayons, ombres) et les 10 primitives remplacent l'ancien
+thème **White/Pink** (« Foyer », toujours en prod avant cette session) par la Direction A
+**« Fiche »** (papier chaud, encre indigo, rehaut ocre, typo Bitter/Karla/Space Mono) ; le CSS
+hors primitives (ex. rendu markdown des notes, `.markdown-body`) reste à migrer en phase 4.
+Exécuté via un plan écrit à l'avance (14 tâches TDD, `subagent-driven-development` — un
+subagent implémenteur puis un subagent relecteur frais par tâche), commits `1cd074c..c655585`.
+
+* **Tokens** (`web/src/style.css`) : palette sémantique complète (fonds, bordures, encre,
+  primaire/accent/succès/danger), typographie (`font-display` Bitter pour les titres,
+  `font-sans` Karla pour le corps, `font-mono` Space Mono pour les données), rayons
+  (`rounded-btn-primary` 10px, `rounded-lg` 8px, `rounded-full` pilules) et ombres
+  (`shadow-elev-1/2/3`, `shadow-elev-primary`). Test de contraste AA automatisé
+  (`web/tests/design-tokens/contrast.spec.ts`), clair et sombre.
+* **10 primitives** requises par la checklist phase 3 refaites ou créées, chacune testée
+  (`web/tests/components/ui/base/`) : `BaseButton` (variante `danger` passée en outline plutôt
+  qu'en rempli), `BaseCard`, `BaseBadge`, `BaseField`/`BaseInput`, `BaseModal`, `Tabs`, et
+  **2 primitives entièrement nouvelles** — `BaseTooltip` et `BaseToast` — plus `BaseEmptyState`
+  et `BaseSkeleton` réalignées sur la Direction A.
+* **Page de démonstration interne** (`/dev/design-system`,
+  `web/src/views/Dev/DesignSystemDemo.vue`) : les 10 primitives, leurs variantes/états, bascule
+  clair/sombre — sert de référence visuelle vivante pour la migration écran par écran (phase 4).
+* **Garde-fou** : hook `PostToolUse` non bloquant `raw_value_guard.py` — avertit (sans bloquer)
+  sur toute couleur hex/`rgb()` brute, valeur `px` hors 0-1px, ou classe Tailwind arbitraire
+  écrite dans `web/src/components/ui/`.
+* **Skill `design-system`** (`.claude/skills/design-system/SKILL.md`) rédigée à partir du
+  résultat — référence canonique tokens/primitives pour la suite (phase 4) — et pointeurs mis à
+  jour dans `frontend-patterns`, `web/CLAUDE.md`, `web/src/components/CLAUDE.md`.
+* Sur les 13 tâches de production du plan, 2 ont nécessité un tour de correction après relecture
+  (tâche 1 tokens, tâche 11 `BaseToast`) et une (tâche 6 `BaseModal`) deux tours ; toutes
+  approuvées en l'état final. Une revue de branche entière reste prévue en dernière étape du
+  plan, pas encore lancée.
+* `BaseToggle`, `ListRow`, `PageContainer`, `PageHeader`, `SplitView`, `StatCard` se
+  re-thématisent automatiquement via les tokens mais n'ont pas été auditées structurellement
+  (rayons/typo) contre la Direction A — à faire au fil de la migration phase 4, écran par écran.
+* **Validation** : suite `vitest` frontend complète verte, `npm run build` sans erreur
+  TypeScript.
