@@ -13,9 +13,11 @@
 - **Les 33 écrans (32 + Accueil) assemblés et republiés** — 7 pages, même
   artifact : https://claude.ai/code/artifact/366dcc95-8da4-41dd-8bbd-1e625a68e2c5
   `--check` du helper : ok, aucun avertissement.
-- Un fork de relecture qualité (lecture seule, contrôle spec) a été lancé
-  en tâche de fond juste avant l'arrêt — **résultat non reçu**, peut-être
-  perdu à la reprise (voir Pièges).
+- Relecture qualité (32 fichiers, lecture seule) revenue APRÈS l'écriture
+  de ce fichier : **rien à corriger**. Seul écart cosmétique relevé :
+  `PackagePreview.dc.html` n'a pas les liens "Explorer"/"Se connecter"
+  dans son en-tête public, contrairement à `MarketplaceHome`/`Explore` —
+  à aligner à l'occasion, non bloquant.
 
 ## État
 - Tests : verts, aucun code de production touché (phase 3 = design only).
