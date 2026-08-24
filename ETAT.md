@@ -162,9 +162,28 @@ session pour le chemin si besoin). Relecture qualité en cours (agent tâche de 
 est éditable/commentable directement). Une fois validé → reprendre la phase 3 : tokens
 Tailwind, primitives en TDD, page de démonstration, skill `design-system`.
 
-**Arrêt contexte 139 % (2026-08-24 10:58, voir `PASSATION.md`)** : livrable publié, rien
-de bloquant. Une relecture qualité en tâche de fond n'a pas renvoyé de résultat avant
-l'arrêt — vérifier les commentaires du canevas à la reprise plutôt que de la rechercher.
+**Arrêt contexte 139 % (2026-08-24 10:58)** : livrable publié, rien de bloquant — résolu à
+la reprise (voir ci-dessous).
+
+**Utilisateur satisfait des 33 écrans (2026-08-24)** : « les pages sont très bien, continue
+le travail ? » — validation acquise, la reprise de la phase 3 (tokens/primitives) est
+lancée. Découverte au passage : l'ancien thème **White/Pink** (« Foyer ») est toujours en
+prod sur `main` (commits `6f6a457`, `1a01215`) — ce n'est pas de la maquette jetable, la
+suite de la phase 3 le remplace réellement.
+
+**Plan d'implémentation écrit et committé (`c01bbd9`)** :
+`docs/superpowers/plans/2026-08-24-design-system-direction-a.md` — 14 tâches TDD couvrant
+le reste de la checklist ci-dessus (tokens Tailwind + test de contraste AA automatisé, les
+10 primitives requises dont 2 nouvelles à créer — `BaseTooltip`, `BaseToast` —, page de
+démonstration `/dev/design-system`, hook `raw_value_guard.py`, skill `design-system`). Spec
+source (`_DIRECTION_A_SPEC.md`, palette/typo/patterns exacts) récupérée depuis le scratchpad
+d'une session précédente et reprise dans le plan.
+
+**Arrêt contexte 125 % (2026-08-24 12:15, voir `PASSATION.md`)** : aucune tâche du plan
+encore exécutée. Question posée à l'utilisateur juste avant l'arrêt — exécution pilotée par
+sous-agents ou en ligne ? — **sans réponse reçue**. Reprendre en posant la question si pas
+encore répondu, puis exécuter le plan via `subagent-driven-development` ou
+`executing-plans`.
 
 ## Écrans migrés (phase 4)
 
