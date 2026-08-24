@@ -196,12 +196,35 @@ constat Important sur un commentaire obsolète dans `style.css`), tour de correc
 dispatché à l'implémenteur original.
 
 **Arrêt contexte 165 % (2026-08-24 14:10, voir `PASSATION.md`)** : tour de correction 1 en
-cours — `web/src/style.css` modifié dans la worktree mais **non committé** au moment de
-l'arrêt. Vérifier si le sous-agent `af3d34f02edae79ab` a fini avant de relancer quoi que ce
-soit. Une fois la Tâche 1 close (re-revue scopée propre) → enchaîner les Tâches 2 à 14 du
-plan (`docs/superpowers/plans/2026-08-24-design-system-direction-a.md`) via
-`subagent-driven-development`, briefs déjà extraits dans le ledger de la worktree.
+cours — résolu à la reprise (voir ci-dessous).
+
+**Exécution du plan terminée (2026-08-24)** : les 14 tâches du plan
+(`docs/superpowers/plans/2026-08-24-design-system-direction-a.md`) sont closes — tokens,
+10 primitives (dont 2 nouvelles, `BaseTooltip`/`BaseToast`), page de démo `/dev/design-system`,
+hook `raw_value_guard.py`, skill `design-system`. 5 des 14 tâches ont demandé un ou plusieurs
+tours de correction après revue (Tâches 1, 6 ×2, 11, 14), toutes re-revuées propres ensuite.
+Revue finale de branche (modèle le plus capable) : prête à merger « avec correctifs » — 6
+constats Important, aucun Critical. Un correctif unique (16 constats, la seule vague autorisée
+par le process) appliqué et re-revué propre.
+
+Deux constats **délibérément non corrigés**, faute de vérification visuelle possible cette
+session (extension Chrome déconnectée) — arbitrage explicite de l'utilisateur, reçu après
+consultation d'un artifact dédié montrant les écarts mesurés sur les tokens réels : **reportés
+en phase 4** dans les deux cas.
+- Contraste AA : certaines paires `*-soft` + texte fort (badge « Difficile », etc.) sous 4,5:1
+  en mode clair — documenté dans la skill `design-system` (« Garde-fous ») et ci-dessous.
+- Cibles tactiles : `BaseButton` (sm/md) et l'onglet actif de `Tabs` restent sous 44px — seuls
+  les boutons de fermeture (`BaseToast`, `BaseModal`) ont été remontés.
+- `web/src/style.css` (`.markdown-body`/`.katex-display`, rendu des notes) reste sur l'ancienne
+  palette rose — hors périmètre de la Tâche 1, territoire phase 4 (migration écran par écran).
+
+**Branche `feature/design-system-direction-a` poussée, PR ouverte** :
+https://github.com/kappacite/StudyHub/pull/123 — 20 commits, 145/145 tests verts, build propre.
+En attente de revue/merge humain.
+
+**Checklist phase 3 ci-dessus** : tous les items cochés dans la branche (à jour dans
+`ETAT.md` de la worktree/PR) — ce fichier sur `main` se met à jour au merge de la PR.
 
 ## Écrans migrés (phase 4)
 
-Aucun — phase non commencée.
+Aucun — phase non commencée. Démarre au merge de la PR ci-dessus.
