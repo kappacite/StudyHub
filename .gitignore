@@ -341,3 +341,6 @@ cypress/screenshots/
 # ------------------------------------------
 
 .changelog/
+
+# Worktrees d'exécution de plan (superpowers:subagent-driven-development)
+.worktrees/
