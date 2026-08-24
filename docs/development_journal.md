@@ -1602,6 +1602,7 @@ Utilisateur a tranché : direction **A « Fiche »**, avec consigne de construir
 * Mobile dessiné seulement pour les sessions de révision (deck, QCM) — usage mobile central
   selon le brief ; le reste suit desktop pour cette passe. Diagrammes = coquille liste
   uniquement, l'éditeur de canevas reste hors périmètre (phase 5).
+* **Aucun code de production touché.**
 
 ## [2026-08-24] Phase 3 — tokens, primitives, démo, hook, skill : Direction A en place
 
@@ -1641,4 +1642,3 @@ Space Mono). Exécuté via un plan écrit à l'avance (14 tâches TDD, `subagent
   (rayons/typo) contre la Direction A — à faire au fil de la migration phase 4, écran par écran.
 * **Validation** : suite `vitest` frontend complète verte, `npm run build` sans erreur
   TypeScript.
-* **Aucun code de production touché.**

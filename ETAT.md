@@ -80,10 +80,10 @@ contraintes dures, travail attendu) : `docs/PROMPT_DEMARRAGE.md` §6.
 
 ### Checklist phase 3
 
-- [ ] Deux directions esthétiques proposées (palette 4-6 valeurs hex, appariement
+- [x] Deux directions esthétiques proposées (palette 4-6 valeurs hex, appariement
       typographique display/texte/données, échelle typographique, principe de mise en
       page, élément signature) + auto-critique de chacune contre le brief
-- [ ] Arbitrage utilisateur reçu — une seule direction retenue
+- [x] Arbitrage utilisateur reçu — une seule direction retenue
 - [x] Tokens Tailwind (couleur, espacement, rayon, ombre, typographie, durées/courbes de
       transition)
 - [x] Primitives développées en TDD, états et variantes couverts (bouton, champ, carte,
