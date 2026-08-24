@@ -179,11 +179,22 @@ démonstration `/dev/design-system`, hook `raw_value_guard.py`, skill `design-sy
 source (`_DIRECTION_A_SPEC.md`, palette/typo/patterns exacts) récupérée depuis le scratchpad
 d'une session précédente et reprise dans le plan.
 
-**Arrêt contexte 125 % (2026-08-24 12:15, voir `PASSATION.md`)** : aucune tâche du plan
-encore exécutée. Question posée à l'utilisateur juste avant l'arrêt — exécution pilotée par
-sous-agents ou en ligne ? — **sans réponse reçue**. Reprendre en posant la question si pas
-encore répondu, puis exécuter le plan via `subagent-driven-development` ou
-`executing-plans`.
+**Arrêt contexte 125 % (2026-08-24 12:15)** : résolu à la reprise — utilisateur a choisi
+l'exécution pilotée par sous-agents.
+
+**Exécution du plan démarrée (2026-08-24, skill `subagent-driven-development`)** : worktree
+isolée créée (`.worktrees/design-system-direction-a`, branche
+`feature/design-system-direction-a`, baseline 69/69 tests verts). Ledger de suivi :
+`.superpowers/sdd/2026-08-24-design-system-direction-a/progress.md` (dans la worktree) — un
+défaut de plan trouvé et tranché au scan de pré-vol (Tâche 12 : import `@/...` inexistant →
+import relatif, cf. ledger). Les 14 briefs de tâches extraits (le script `task-brief` attend
+des titres anglais, le plan est en français — contournement documenté dans le ledger).
+
+**Arrêt contexte 155 % (2026-08-24 13:05, voir `PASSATION.md`)** : Tâche 1 (tokens)
+dispatchée à un sous-agent (`af3d34f02edae79ab`) — **encore en cours, non committée** au
+moment de l'arrêt. Vérifier d'abord si elle a terminé (`ListAgents`) avant de relancer quoi
+que ce soit ; sinon re-dispatcher la Tâche 1 depuis son brief déjà écrit, puis continuer les
+Tâches 2 à 14. Rien n'est mergé sur `main` — sans risque.
 
 ## Écrans migrés (phase 4)
 
