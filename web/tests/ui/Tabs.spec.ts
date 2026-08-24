@@ -18,8 +18,8 @@ describe('Tabs', () => {
   it("marque l'onglet actif avec la surface élevée", () => {
     const wrapper = mount(Tabs, { props: { modelValue: 'a', tabs } })
     const active = wrapper.findAll('button')[0]
-    expect(active.classes()).toContain('bg-surface')
-    expect(active.classes()).toContain('text-primary')
+    expect(active.classes()).toContain('bg-primary')
+    expect(active.classes()).toContain('text-primary-ink')
   })
 
   it("émet update:modelValue avec la clé au clic", async () => {
