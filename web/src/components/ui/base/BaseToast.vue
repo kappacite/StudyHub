@@ -15,7 +15,7 @@
     <button
       v-if="closable"
       type="button"
-      class="flex-shrink-0 -mr-1 -mt-1 p-1 rounded hover:bg-black/5 dark:hover:bg-white/5"
+      class="flex-shrink-0 -mr-3 -mt-3 p-3.5 rounded hover:bg-black/5 dark:hover:bg-white/5"
       aria-label="Fermer"
       @click="$emit('close')"
     >
