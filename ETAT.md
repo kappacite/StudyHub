@@ -80,18 +80,18 @@ contraintes dures, travail attendu) : `docs/PROMPT_DEMARRAGE.md` §6.
 
 ### Checklist phase 3
 
-- [ ] Deux directions esthétiques proposées (palette 4-6 valeurs hex, appariement
+- [x] Deux directions esthétiques proposées (palette 4-6 valeurs hex, appariement
       typographique display/texte/données, échelle typographique, principe de mise en
       page, élément signature) + auto-critique de chacune contre le brief
-- [ ] Arbitrage utilisateur reçu — une seule direction retenue
-- [ ] Tokens Tailwind (couleur, espacement, rayon, ombre, typographie, durées/courbes de
+- [x] Arbitrage utilisateur reçu — une seule direction retenue
+- [x] Tokens Tailwind (couleur, espacement, rayon, ombre, typographie, durées/courbes de
       transition)
-- [ ] Primitives développées en TDD, états et variantes couverts (bouton, champ, carte,
+- [x] Primitives développées en TDD, états et variantes couverts (bouton, champ, carte,
       modale, onglet, badge, info-bulle, état vide, squelette de chargement, toast)
-- [ ] Page de démonstration interne (toutes primitives, tous états, clair/sombre) +
+- [x] Page de démonstration interne (toutes primitives, tous états, clair/sombre) +
       vérification de contraste AA
-- [ ] Skill `.claude/skills/design-system/SKILL.md` rédigée à partir du résultat
-- [ ] Hook de détection de valeurs brutes : aucune remontée sur les primitives
+- [x] Skill `.claude/skills/design-system/SKILL.md` rédigée à partir du résultat
+- [x] Hook de détection de valeurs brutes : aucune remontée sur les primitives
 
 ### Round de direction en cours (2026-08-24, reprise après revirement)
 
@@ -224,6 +224,36 @@ En attente de revue/merge humain.
 
 **Checklist phase 3 ci-dessus** : tous les items cochés dans la branche (à jour dans
 `ETAT.md` de la worktree/PR) — ce fichier sur `main` se met à jour au merge de la PR.
+
+**Plan exécuté, 14 tâches terminées (2026-08-24)** : exécution via `subagent-driven-development`
+(un subagent implémenteur puis un subagent relecteur frais par tâche, `1cd074c..c655585`). Les
+13 tâches de production (1-13) sont toutes complétées et relues — 2 (tâche 1 tokens, tâche 11
+`BaseToast`) ont nécessité un tour de correction après relecture, la tâche 6 (`BaseModal`) deux
+tours ; toutes approuvées en l'état final. Tâche 14 (celle-ci) documente le résultat. Une revue
+de branche entière reste prévue comme dernière étape du plan et **n'a pas encore eu lieu** — ne
+pas la considérer faite avant qu'elle ait tourné.
+
+Résultat : les tokens remplacent entièrement l'ancien thème White/Pink par la Direction A
+« Fiche » (palette, typographie, rayons, ombres — `web/src/style.css` — + test de contraste
+AA automatisé, `web/tests/design-tokens/contrast.spec.ts`). Les 10 primitives requises par la
+checklist ci-dessus sont faites, testées en TDD (`web/tests/components/ui/base/`), dont 2
+entièrement nouvelles (`BaseTooltip`, `BaseToast`). Page de démonstration interne
+`/dev/design-system` (`web/src/views/Dev/DesignSystemDemo.vue`) présentant les 10 primitives
+avec bascule clair/sombre. Hook `PostToolUse` non bloquant `raw_value_guard.py` : avertit sur
+toute valeur de style brute écrite dans `web/src/components/ui/`.
+
+**Écarts connus (revue finale de branche, non bloquants, consignés délibérément)** :
+- `contrast.spec.ts` vérifie 8 paires de tokens choisies à la main, pas toutes les paires
+  réellement rendues par les primitives ; certaines combinaisons fond `*-soft` + texte fort
+  mesurent sous l'AA (4,5:1) en clair une fois vérifiées contre leur fond réel d'affichage.
+  Reporté à un suivi avec vérification visuelle.
+- La contrainte cible tactile ≥44px a été appliquée aux deux boutons de fermeture (BaseToast,
+  BaseModal) mais pas encore auditée sur les variantes de taille de `BaseButton` ni la hauteur
+  des pilules de `Tabs` — reporté, nécessiterait une passe visuelle sur les ~100+ sites d'appel
+  existants.
+- `web/src/style.css` (`.markdown-body`/`.katex-display`, rendu des notes) utilise encore
+  l'ancienne palette rose — hors périmètre de ce plan (la tâche 1 n'a touché que la définition
+  des tokens), migration écran par écran prévue en phase 4.
 
 ## Écrans migrés (phase 4)
 

@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{vue,js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
   darkMode: 'class',
   theme: {
     extend: {
@@ -28,6 +25,7 @@ export default {
           DEFAULT: 'rgb(var(--sh-primary) / <alpha-value>)',
           strong: 'rgb(var(--sh-primary-strong) / <alpha-value>)',
           soft: 'rgb(var(--sh-primary-soft) / <alpha-value>)',
+          ink: 'rgb(var(--sh-primary-ink) / <alpha-value>)',
         },
         accent: {
           DEFAULT: 'rgb(var(--sh-accent) / <alpha-value>)',
@@ -50,28 +48,51 @@ export default {
           DEFAULT: 'rgb(var(--sh-info) / <alpha-value>)',
           soft: 'rgb(var(--sh-info-soft) / <alpha-value>)',
         },
-        // Couleurs de catégorie de contenu (Bibliothèque).
-        'cat-note': { DEFAULT: 'rgb(var(--sh-cat-note) / <alpha-value>)', soft: 'rgb(var(--sh-cat-note-soft) / <alpha-value>)' },
-        'cat-pdf': { DEFAULT: 'rgb(var(--sh-cat-pdf) / <alpha-value>)', soft: 'rgb(var(--sh-cat-pdf-soft) / <alpha-value>)' },
-        'cat-diagram': { DEFAULT: 'rgb(var(--sh-cat-diagram) / <alpha-value>)', soft: 'rgb(var(--sh-cat-diagram-soft) / <alpha-value>)' },
-        'cat-deck': { DEFAULT: 'rgb(var(--sh-cat-deck) / <alpha-value>)', soft: 'rgb(var(--sh-cat-deck-soft) / <alpha-value>)' },
-        'cat-set': { DEFAULT: 'rgb(var(--sh-cat-set) / <alpha-value>)', soft: 'rgb(var(--sh-cat-set-soft) / <alpha-value>)' },
+        'cat-note': {
+          DEFAULT: 'rgb(var(--sh-cat-note) / <alpha-value>)',
+          soft: 'rgb(var(--sh-cat-note-soft) / <alpha-value>)',
+        },
+        'cat-pdf': {
+          DEFAULT: 'rgb(var(--sh-cat-pdf) / <alpha-value>)',
+          soft: 'rgb(var(--sh-cat-pdf-soft) / <alpha-value>)',
+        },
+        'cat-diagram': {
+          DEFAULT: 'rgb(var(--sh-cat-diagram) / <alpha-value>)',
+          soft: 'rgb(var(--sh-cat-diagram-soft) / <alpha-value>)',
+        },
+        'cat-deck': {
+          DEFAULT: 'rgb(var(--sh-cat-deck) / <alpha-value>)',
+          soft: 'rgb(var(--sh-cat-deck-soft) / <alpha-value>)',
+        },
+        'cat-set': {
+          DEFAULT: 'rgb(var(--sh-cat-set) / <alpha-value>)',
+          soft: 'rgb(var(--sh-cat-set-soft) / <alpha-value>)',
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'Inter Variable', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        display: ['Bitter', 'Georgia', 'serif'],
+        sans: ['Karla', 'system-ui', 'sans-serif'],
+        mono: ['Space Mono', 'Courier New', 'monospace'],
+      },
+      fontSize: {
+        tiny: ['10px', { lineHeight: '1.3' }],
+        meta: ['13px', { lineHeight: '1.4' }],
+        'display-md': ['19px', { lineHeight: '1.25', fontWeight: '700' }],
+        'display-lg': ['30px', { lineHeight: '1.15', fontWeight: '700' }],
+      },
+      borderRadius: {
+        'btn-primary': '10px',
+        checkbox: '3px',
       },
       boxShadow: {
-        // Échelle d'élévation Material épuré (ombres douces, jamais dures).
-        'elev-1': '0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.10)',
-        'elev-2': '0 2px 6px rgb(0 0 0 / 0.08), 0 4px 12px -2px rgb(0 0 0 / 0.10)',
-        'elev-3': '0 8px 24px -6px rgb(0 0 0 / 0.18)',
-        'elev-primary': '0 6px 20px -6px rgb(var(--sh-primary) / 0.45)',
-        // Alias rétro-compat : les composants existants (shadow-soft*) héritent
-        // automatiquement de la nouvelle échelle d'élévation.
-        soft: '0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.10)',
-        'soft-lg': '0 2px 6px rgb(0 0 0 / 0.08), 0 4px 12px -2px rgb(0 0 0 / 0.10)',
-        'soft-primary': '0 6px 20px -6px rgb(var(--sh-primary) / 0.45)',
+        'elev-1': 'var(--sh-shadow)',
+        'elev-2': 'var(--sh-shadow-lg)',
+        'elev-3': 'var(--sh-shadow-lg)',
+        'elev-primary': '0 6px 20px -8px rgb(var(--sh-primary) / 0.35)',
+        // Alias rétro-compat : composants existants (shadow-soft*) non touchés par ce plan.
+        soft: 'var(--sh-shadow)',
+        'soft-lg': 'var(--sh-shadow-lg)',
+        'soft-primary': '0 6px 20px -8px rgb(var(--sh-primary) / 0.35)',
       },
       keyframes: {
         'fade-up': {

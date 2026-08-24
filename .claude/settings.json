@@ -137,6 +137,10 @@
           },
           {
             "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/raw_value_guard.py\""
+          },
+          {
+            "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/no_secrets.py\""
           },
           {
