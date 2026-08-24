@@ -1,7 +1,7 @@
 # web/src/components/ — primitives & composants UI
 
-> Portée : `web/src/components/`. Skill `frontend-patterns` (primitives actuelles) — sera
-> complétée par la skill `design-system` à partir de la phase 3.
+> Portée : `web/src/components/`. Skill `frontend-patterns` (primitives actuelles) — voir
+> skill `design-system`.
 
 - `components/ui/` : primitives présentationnelles pures — **aucun appel API**, aucune logique
   métier. Elles consomment des props/slots, pas des stores directement.

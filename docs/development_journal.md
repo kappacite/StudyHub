@@ -1602,4 +1602,43 @@ Utilisateur a tranché : direction **A « Fiche »**, avec consigne de construir
 * Mobile dessiné seulement pour les sessions de révision (deck, QCM) — usage mobile central
   selon le brief ; le reste suit desktop pour cette passe. Diagrammes = coquille liste
   uniquement, l'éditeur de canevas reste hors périmètre (phase 5).
+
+## [2026-08-24] Phase 3 — tokens, primitives, démo, hook, skill : Direction A en place
+
+Suite et clôture du round de direction esthétique : les 33 écrans validés sur Claude Design
+(entrée précédente) sont maintenant traduits en tokens Tailwind et primitives réelles,
+remplaçant l'ancien thème **White/Pink** (« Foyer », toujours en prod avant cette session)
+par la Direction A **« Fiche »** (papier chaud, encre indigo, rehaut ocre, typo Bitter/Karla/
+Space Mono). Exécuté via un plan écrit à l'avance (14 tâches TDD, `subagent-driven-development`
+— un subagent implémenteur puis un subagent relecteur frais par tâche), commits `1cd074c..c655585`.
+
+* **Tokens** (`web/src/style.css`) : palette sémantique complète (fonds, bordures, encre,
+  primaire/accent/succès/danger), typographie (`font-display` Bitter pour les titres,
+  `font-sans` Karla pour le corps, `font-mono` Space Mono pour les données), rayons
+  (`rounded-btn-primary` 10px, `rounded-lg` 8px, `rounded-full` pilules) et ombres
+  (`shadow-elev-1/2/3`, `shadow-elev-primary`). Test de contraste AA automatisé
+  (`web/tests/design-tokens/contrast.spec.ts`), clair et sombre.
+* **10 primitives** requises par la checklist phase 3 refaites ou créées, chacune testée
+  (`web/tests/components/ui/base/`) : `BaseButton` (variante `danger` passée en outline plutôt
+  qu'en rempli), `BaseCard`, `BaseBadge`, `BaseField`/`BaseInput`, `BaseModal`, `Tabs`, et
+  **2 primitives entièrement nouvelles** — `BaseTooltip` et `BaseToast` — plus `BaseEmptyState`
+  et `BaseSkeleton` réalignées sur la Direction A.
+* **Page de démonstration interne** (`/dev/design-system`,
+  `web/src/views/Dev/DesignSystemDemo.vue`) : les 10 primitives, leurs variantes/états, bascule
+  clair/sombre — sert de référence visuelle vivante pour la migration écran par écran (phase 4).
+* **Garde-fou** : hook `PostToolUse` non bloquant `raw_value_guard.py` — avertit (sans bloquer)
+  sur toute couleur hex/`rgb()` brute, valeur `px` hors 0-1px, ou classe Tailwind arbitraire
+  écrite dans `web/src/components/ui/`.
+* **Skill `design-system`** (`.claude/skills/design-system/SKILL.md`) rédigée à partir du
+  résultat — référence canonique tokens/primitives pour la suite (phase 4) — et pointeurs mis à
+  jour dans `frontend-patterns`, `web/CLAUDE.md`, `web/src/components/CLAUDE.md`.
+* Sur les 13 tâches de production du plan, 2 ont nécessité un tour de correction après relecture
+  (tâche 1 tokens, tâche 11 `BaseToast`) et une (tâche 6 `BaseModal`) deux tours ; toutes
+  approuvées en l'état final. Une revue de branche entière reste prévue en dernière étape du
+  plan, pas encore lancée.
+* `BaseToggle`, `ListRow`, `PageContainer`, `PageHeader`, `SplitView`, `StatCard` se
+  re-thématisent automatiquement via les tokens mais n'ont pas été auditées structurellement
+  (rayons/typo) contre la Direction A — à faire au fil de la migration phase 4, écran par écran.
+* **Validation** : suite `vitest` frontend complète verte, `npm run build` sans erreur
+  TypeScript.
 * **Aucun code de production touché.**

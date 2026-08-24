@@ -1,7 +1,8 @@
 # web/ — StudyHub frontend Vue 3
 
 > Portée : tout `web/src`. Skill `frontend-patterns` pour le détail complet (charge-la avant
-> d'éditer). `AGENTS.md` fait autorité en cas de doute.
+> d'éditer) — voir skill `design-system` pour les tokens/primitives. `AGENTS.md` fait
+> autorité en cas de doute.
 
 - `<script setup lang="ts">` exclusivement. TypeScript strict — jamais `any`.
 - Appels API **uniquement** dans `stores/` et `services/` — jamais de `fetch`/Axios direct dans

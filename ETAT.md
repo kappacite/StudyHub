@@ -84,14 +84,14 @@ contraintes dures, travail attendu) : `docs/PROMPT_DEMARRAGE.md` §6.
       typographique display/texte/données, échelle typographique, principe de mise en
       page, élément signature) + auto-critique de chacune contre le brief
 - [ ] Arbitrage utilisateur reçu — une seule direction retenue
-- [ ] Tokens Tailwind (couleur, espacement, rayon, ombre, typographie, durées/courbes de
+- [x] Tokens Tailwind (couleur, espacement, rayon, ombre, typographie, durées/courbes de
       transition)
-- [ ] Primitives développées en TDD, états et variantes couverts (bouton, champ, carte,
+- [x] Primitives développées en TDD, états et variantes couverts (bouton, champ, carte,
       modale, onglet, badge, info-bulle, état vide, squelette de chargement, toast)
-- [ ] Page de démonstration interne (toutes primitives, tous états, clair/sombre) +
+- [x] Page de démonstration interne (toutes primitives, tous états, clair/sombre) +
       vérification de contraste AA
-- [ ] Skill `.claude/skills/design-system/SKILL.md` rédigée à partir du résultat
-- [ ] Hook de détection de valeurs brutes : aucune remontée sur les primitives
+- [x] Skill `.claude/skills/design-system/SKILL.md` rédigée à partir du résultat
+- [x] Hook de détection de valeurs brutes : aucune remontée sur les primitives
 
 ### Round de direction en cours (2026-08-24, reprise après revirement)
 
@@ -184,6 +184,23 @@ encore exécutée. Question posée à l'utilisateur juste avant l'arrêt — ex�
 sous-agents ou en ligne ? — **sans réponse reçue**. Reprendre en posant la question si pas
 encore répondu, puis exécuter le plan via `subagent-driven-development` ou
 `executing-plans`.
+
+**Plan exécuté, 14 tâches terminées (2026-08-24)** : exécution via `subagent-driven-development`
+(un subagent implémenteur puis un subagent relecteur frais par tâche, `1cd074c..c655585`). Les
+13 tâches de production (1-13) sont toutes complétées et relues — 2 (tâche 1 tokens, tâche 11
+`BaseToast`) ont nécessité un tour de correction après relecture, la tâche 6 (`BaseModal`) deux
+tours ; toutes approuvées en l'état final. Tâche 14 (celle-ci) documente le résultat. Une revue
+de branche entière reste prévue comme dernière étape du plan et **n'a pas encore eu lieu** — ne
+pas la considérer faite avant qu'elle ait tourné.
+
+Résultat : les tokens remplacent entièrement l'ancien thème White/Pink par la Direction A
+« Fiche » (palette, typographie, rayons, ombres — `web/src/style.css` — + test de contraste
+AA automatisé, `web/tests/design-tokens/contrast.spec.ts`). Les 10 primitives requises par la
+checklist ci-dessus sont faites, testées en TDD (`web/tests/components/ui/base/`), dont 2
+entièrement nouvelles (`BaseTooltip`, `BaseToast`). Page de démonstration interne
+`/dev/design-system` (`web/src/views/Dev/DesignSystemDemo.vue`) présentant les 10 primitives
+avec bascule clair/sombre. Hook `PostToolUse` non bloquant `raw_value_guard.py` : avertit sur
+toute valeur de style brute écrite dans `web/src/components/ui/`.
 
 ## Écrans migrés (phase 4)
 

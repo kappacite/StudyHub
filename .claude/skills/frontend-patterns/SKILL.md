@@ -22,17 +22,16 @@ Ce skill = règles à respecter avant d'éditer `web/src/`.
 - **Composants** : consomment les stores/services, ne parlent pas à Axios directement.
 - Conditionnel natif (web vs Capacitor) : `usePlatform()` (`isNative`), jamais de détection ad hoc.
 
-## Design system — « White/Pink × Material épuré »
+## Design system — Direction A « Fiche »
 
-- **Couleurs = tokens sémantiques** (`bg-app`, `bg-surface`, `border-line`, `text-ink/-muted`,
-  `bg-primary` Pink 400, `bg-accent` amber, `success/warning/danger/info`). Régler le thème =
-  éditer les CSS custom properties dans `web/src/style.css`, **jamais** de couleur brute (`#...`,
-  `indigo-500`) dans une vue nouvellement écrite.
-- ⚠️ `danger` = **rouge** = erreur/destruction uniquement. Accent rose décoratif → `primary`/`primary-soft`.
-- Fonds `*-soft` portent un texte en teinte forte (`text-primary` sur `bg-primary-soft`).
-- Formes : cartes `rounded-2xl`, inputs `rounded-xl`, boutons/chips/FAB `rounded-full`.
-- Élévation : `shadow-elev-1/2/3`, CTA `shadow-elev-primary`. Transitions `duration-200 ease-out`.
-- Motion : `@vueuse/motion` + presets `@/composables/useMotionPresets` (`fadeUp`, `pop`, `listItem(i)`).
+Détail complet (palette, typo, rayons, ombres, primitives) : skill `design-system`
+(`.claude/skills/design-system/SKILL.md`), à charger avant de toucher un token ou une
+primitive. Résumé : couleurs = tokens sémantiques (`bg-app`, `bg-surface`, `border-line`,
+`text-ink/-muted`, `bg-primary` encre indigo, `bg-accent` rehaut ocre) — jamais de couleur
+brute dans une vue nouvellement écrite. `danger` = brique = erreur/destruction uniquement.
+Formes : cartes/inputs `rounded-lg` (8px), boutons primaires `rounded-btn-primary` (10px),
+pilules/badges/onglets `rounded-full`. Élévation `shadow-elev-1/2/3`, CTA
+`shadow-elev-primary`. Police display (titres) = Bitter, corps = Karla, données = Space Mono.
 
 ## Primitives — `@/components/ui/base`
 
