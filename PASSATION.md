@@ -28,12 +28,18 @@
   4/5/6 pas commencées.
 
 ## Prochaine action
-1. Dispatcher la re-revue scopée du correctif `a5c5f77`
-   (`scripts/review-package` sur `8b1c860..a5c5f77`, gabarit
-   `re-review-prompt.md`, skill `subagent-driven-development`).
-2. Marquer `Task 1: complete` dans le ledger si adressé.
+1. **Re-revue scopée du correctif `a5c5f77` dispatchée** (sous-agent
+   `a8ae1c9eb9c98437f`, haiku) — en attente du verdict.
+2. Si adressé : marquer `Task 1: complete` dans le ledger.
 3. Enchaîner Tâche 2 (BaseButton, `task-2-brief.md` déjà écrit), puis 3 à
    14 dans l'ordre du plan.
+
+**Piège noté dans le ledger** : toujours `cd` dans la worktree avant
+d'appeler `scripts/review-package`/`sdd-workspace` — ils dérivent leur
+dossier de travail du répertoire courant, pas du chemin du plan passé en
+argument (un premier essai lancé depuis la racine du repo principal a créé
+un `.superpowers/sdd/...` parasite, gitignoré, inoffensif, laissé en
+l'état — pas de piste à faire, juste rester vigilant).
 
 ## À relire en priorité
 - Ce fichier
