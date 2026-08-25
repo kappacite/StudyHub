@@ -264,7 +264,7 @@ détaillée : skill `migration-ecran`.
 ### Ordre des écrans (du plus structurant au plus périphérique)
 
 1. Coquille applicative — navigation, en-tête, barre mobile, thème, états d'authentification
-   (`web/src/components/layout/AppLayout.vue`) — **en cours**
+   (`web/src/components/layout/AppLayout.vue`) — **terminé**
 2. Accueil (dashboard fusionné : heatmap, streaks, métriques de rétention, file de révision)
 3. Session de révision flashcards
 4. Éditeur de notes et mode Zen
@@ -286,7 +286,7 @@ tactiles ≥44px, `safe-area-inset` iOS, `prefers-reduced-motion` : non négocia
 phase 3 (contraste sur badges `*-soft`, cibles tactiles `BaseButton`/`Tabs`) sur les écrans
 qui les utilisent réellement, avec cette fois une vérification visuelle réelle.
 
-### Écran 1 — Coquille applicative (`AppLayout.vue`) — en cours
+### Écran 1 — Coquille applicative (`AppLayout.vue`) — terminé
 
 **Inventaire de l'existant** (lecture complète du fichier, 2026-08-24) :
 - Sidebar gauche (desktop statique, drawer mobile) : logo + wordmark cliquable (→ `/`), 6
@@ -316,6 +316,11 @@ Communauté »). Mobile : barre basse conforme à la maquette (4 onglets, Accuei
 Réviser/Classes inchangés) ; Planning et Communauté deviennent des icônes dans le mini-en-tête
 mobile (52px), miroir du traitement desktop de Communauté. Aucune destination supprimée.
 
+**Amendement (fix round 2, voir plus bas)** : Planning et Communauté sont finalement retirés
+du mini-en-tête mobile (ils restent dans le tiroir hamburger, qui liste déjà les 6
+destinations) — la densité initialement prévue ci-dessus s'est révélée cassante en pratique.
+Communauté reste une icône desktop uniquement (`hidden lg:flex`).
+
 **États à couvrir** (skill `migration-ecran` étape 2) :
 - **Vide** : non authentifié → sidebar/nav affiche le CTA « Se connecter » au lieu du bloc
   profil ; pas de `NotificationBell`.
@@ -336,11 +341,66 @@ mobile (52px), miroir du traitement desktop de Communauté. Aucune destination s
   l'en-tête quand `navigator.onLine === false`, basé sur les événements `online`/`offline` de
   `window`. N'affecte aucune fonctionnalité existante — pur ajout.
 
-**Prochaine étape** : tests rouges (étape 3), puis composition depuis les primitives
-(étape 4). Dispatché au subagent `migrateur-ecran` pour les étapes 3-6 ; captures d'écran
-(étape 7, navigateur maintenant connecté) et finalisation (étape 8) faites par le
-contrôleur.
+**Implémentation (étapes 3-6) faite** par le subagent `migrateur-ecran` : 41 nouveaux tests
+(rouge confirmé 24/40 échecs → vert 41/41, suite complète 186/186), bascule structurelle
+sidebar→nav en-tête desktop (conforme à la maquette Direction A), 5 pastilles + Communauté
+en icône, indicateur hors ligne ajouté. Rapport complet :
+`docs/passations/scratch-appshell-migration-report.md`.
+
+**Revue de code (contrôleur, modèle le plus capable)** : conforme sur la règle d'or et
+l'arbitrage nav (vérifié directement contre le diff, pas seulement le rapport). 4 constats
+Important réels : bug de modèle de boîte sur `pb-safe` (rétrécit la barre au lieu de
+l'étendre), collision avec le FAB Pomodoro existant sur mobile, 3 contrôles sous 44px malgré
+le rapport, densité de l'en-tête mobile à 375px probablement trop serrée.
+
+**Captures d'écran réelles (contrôleur, ~1080px — largeur maximale atteignable dans cet
+environnement, juste au-dessus du seuil `lg`)** : **bug confirmé, clair et sombre** — la
+boîte de recherche chevauche visuellement la pastille « Réviser », la cloche de notification
+chevauche « Classes ». Reproductible dans les deux thèmes (donc un problème de largeur, pas
+de thème). Captures : `screenshot-1787603976843-0.jpg` (clair),
+`screenshot-1787603990027-1.jpg` (sombre).
+
+**Tour de correction 1 dispatché** au même sous-agent : 8 constats consolidés (le
+chevauchement confirmé + les 4 de la revue + 3 corrections mineures rapides pendant qu'il est
+dans le fichier). Ruling consigné : la couleur de la pastille active (indigo `bg-primary`,
+pas l'ocre `var(--accent)` de la maquette littérale) est conservée telle quelle — cohérente
+avec le reste de l'app, pas une régression à corriger.
+
+**Re-vérification visuelle du tour de correction 1** (navigateur connecté, contournement par
+iframe de largeur contrôlée — `resize_window` de la fenêtre réelle plafonné dans cet
+environnement, voir passation) : **item 1 (chevauchement) confirmé corrigé**, testé à 1045px,
+1100px et 1279px (toute la plage critique lg→xl), clair et sombre — plus aucun chevauchement.
+
+**Item 5 (titre mobile) : bug réel trouvé, pire que l'estimation** — mesure DOM (pas
+seulement visuelle) à 375px avec l'indicateur hors ligne affiché : le titre de route tombait à
+**1px de large, invisible**. Cause : le groupe gauche de l'en-tête mobile portait hamburger +
+titre + [badge hors ligne] + recherche + Planning (icône) + Communauté (icône) + cloche +
+thème — trop dense pour 375px ; seul le titre a `min-w-0`, donc lui seul absorbait tout le
+déficit d'espace jusqu'à disparaître.
+
+**Décision utilisateur** (question posée avec 3 options : retirer Planning/Communauté du
+mini-en-tête vs. en-tête mobile deux lignes vs. masquer le titre mobile) : **retirer
+Planning/Communauté du mini-en-tête mobile**, conservés dans le tiroir hamburger (déjà
+présents, aucune destination perdue).
+
+**Tour de correction 2 appliqué** (TDD : tests rouges d'abord — `header-planning-link`
+retiré du DOM, `header-communaute-link` passé en `hidden lg:flex` — puis code) :
+`web/src/components/layout/AppLayout.vue`. Suite complète re-confirmée verte : **198/198**.
+Re-vérifié visuellement (mesure DOM + capture) : titre repasse à 55,6px (« Accueil ») / 139px
+(« Planning des révisions », cas long) à 375px avec indicateur hors ligne — lisible, troncature
+gracieuse, plus de chevauchement avec les icônes.
+
+**Limite d'environnement rencontrée en fin de cycle** : la fenêtre du navigateur (extension
+Chrome) est devenue non-réactive après plusieurs `resize_window` — capture desktop finale de
+confirmation (Communauté visible en desktop après le fix round 2) non reprise, jugée à faible
+risque : classe `hidden lg:flex` identique au pattern déjà utilisé et testé ailleurs dans ce
+même fichier (logo, nav desktop), et couverte par un test dédié qui passe.
+
+**Écran 1 terminé** — étape 8 (skill `migration-ecran`) : cette section à jour, commit à
+suivre.
 
 ## Écrans migrés (phase 4)
 
-Aucun encore committé — Écran 1 (coquille applicative) en cours.
+1. **Coquille applicative** (`AppLayout.vue`) — 2 tours de correction (chevauchement en-tête
+   1024-1279px ; titre mobile écrasé à 1px avec indicateur hors ligne, résolu en retirant
+   Planning/Communauté du mini-en-tête mobile). 198/198 tests verts. Détail complet ci-dessus.
