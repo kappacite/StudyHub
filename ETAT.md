@@ -505,3 +505,117 @@ avant l'injection de la panne. Pas de vérification visuelle mobile (375px) ni c
 
 **Écran 2 terminé** — étape 8 : cette section à jour, déjà committé par le subagent
 (`c7a6093`).
+
+3. **Session de révision flashcards** (`web/src/views/Decks/StudyDeck.vue`) — **en cours**.
+
+### Écran 3 — Session de révision flashcards (`web/src/views/Decks/StudyDeck.vue`) — en cours
+
+**Inventaire de l'existant** (lecture complète du fichier, 2026-08-25) : contrairement à
+l'écran 2, ce fichier **n'utilise aucune primitive** et **aucun token** pour ses éléments les
+plus visibles — les 6 boutons de notation sont en couleurs Tailwind brutes
+(`bg-rose-50`, `bg-amber-50`, `bg-indigo-50`, `bg-emerald-50`, doublées de variantes `dark:`
+manuelles). Certains autres éléments utilisent déjà les tokens (`bg-primary`, `text-ink`,
+`border-line`) mais avec des préfixes `dark:` redondants et incorrects hérités de l'ancien
+système (les tokens se re-thématisent déjà seuls via les variables CSS — un `dark:bg-surface-soft`
+posé sur un `bg-surface` de base mélange deux teintes différentes au lieu de simplement laisser
+le token faire son travail). **Aucun fichier de test n'existe actuellement pour cette vue.**
+
+Éléments d'interface / actions / appels API recensés :
+- Fil d'ariane : bouton retour (libellé variable selon le mode d'entrée : « Retour au Focus »
+  / « Retour au Planning » / « Retour aux decks ») → `goBack()` (route différente selon
+  isFocusMode / advance=true / isBinderMode / mode simple) + pastille nom du deck/dossier.
+- **4 modes d'entrée distincts, tous à préserver** (règle d'or) : mode deck simple
+  (`/decks/:id/study`), mode dossier/binder (`StudyBinder`, cartes dues agrégées sur tous les
+  decks d'un classeur), mode focus (`?focus=true`, vient de l'écran Accueil), mode révision
+  anticipée (`?advance=true`, cartes vient de `planningStore.advanceReviewCards`). Chaque mode
+  a sa propre source de données ET sa propre destination de retour/complétion.
+- Chargement : spinner + « Préparation de la session... ».
+- **Carte recto/verso (effet 3D)** : face recto (label, question, indice), face verso (label,
+  réponse, indice), clic n'importe où sur la carte → `flipCard()`.
+- Barre de progression : « Carte N sur Total » + « X% complété ».
+- Contrôles de notation (visibles seulement carte retournée) → `rateCard(score)` →
+  `decksStore.answerCard(deckId, cardId, score)` ; si `score < 3` la carte est replacée en fin
+  de file (revue à nouveau dans la session) ; sinon on avance ; fin de file → état complet.
+- État complet (`studyCards.length === 0` après chargement) : icône succès, titre, description,
+  **1 des 3 CTA selon le mode** (focus → continuer les révisions/retour focus ; advance →
+  retour planning ; sinon → retour liste).
+- `watch` sur `route.params.id` : recharge la session en SPA sans démonter le composant
+  (changement de deck/dossier sans revenir à `/decks` entre deux).
+
+**Maquette Claude Design validée pour cet écran** (déjà construite et approuvée par
+l'utilisateur, page 4 de l'artifact) — extraite et copiée dans le dépôt pour référence exacte
+(non trackée par git, `.superpowers/` est gitignoré) :
+`.superpowers/mockups/StudyDeckDesktop.html` et `StudyDeckMobile.html`. **Écart réel trouvé et
+tranché par l'utilisateur (2026-08-25)** : la maquette montre **4 boutons de notation**
+(Encore/Difficile/Bien/Facile) au lieu des 6 actuels (Oubli/Flou/Difficile/Correct/Bien/Facile,
+score brut 0-5). Décision utilisateur : adopter les 4 boutons de la maquette, avec le mapping
+suivant vers `calculate_sm2` (`backend/app/services/spaced_repetition.py`, cf. skill
+`invariants-sm2`) :
+
+| Bouton | Score envoyé | Branche SM-2 |
+|---|---|---|
+| Encore | 0 | échec (`score < 3`) — repetitions/interval reset |
+| Difficile | 3 | réussite de justesse |
+| Bien | 4 | réussite normale |
+| Facile | 5 | réussite forte |
+
+Aucun bouton ne peut plus produire un score de 1 ou 2 — ces valeurs restent valides côté
+`calculate_sm2` (fonction pure, non modifiée) mais ne sont plus atteignables depuis cette UI.
+La logique existante « `score < 3` → carte remise en fin de file » continue de fonctionner sans
+changement : seul « Encore » (0) est `< 3`, donc c'est le seul bouton qui redemande la carte
+dans la session — comportement inchangé, vérifié par le mapping choisi.
+
+**Style exact des 4 boutons** (lu directement dans la maquette, tokens du projet entre
+parenthèses — correspondance déjà documentée dans la skill `design-system` et les commentaires
+de `style.css`) :
+- **Encore** : contour 1.5px `--danger` (`border-danger`), fond transparent, texte `--danger`
+  (`text-danger`), icône croix (X, `lucide` `X` ou équivalent), raccourci clavier « 1 ».
+- **Difficile** : contour 1.5px `--highlight` (`border-accent`), fond transparent, texte
+  `--highlight` (`text-accent`), icône flèche (`ArrowRight` ou équivalent bifurqué), raccourci
+  « 2 ».
+- **Bien** : rempli `--accent` (`bg-primary`), texte `--accent-ink` (`text-primary-ink`), pas de
+  bordure, icône coche simple (`Check`), raccourci « 3 ».
+- **Facile** : contour 1.5px `--success` (`border-success`), fond transparent, texte `--success`
+  (`text-success`), icône double coche (`CheckCheck`), raccourci « 4 ».
+- Les 4 boutons sont en grille (`grid-cols-4`), `min-h-11` (44px, cible tactile) déjà respecté
+  dans la maquette mobile — à vérifier explicitement dans l'implémentation.
+- **Raccourcis clavier 1-4 visibles dans la maquette (`<span class="kbd">`) — fonctionnalité
+  additive à implémenter** : touches 1/2/3/4 déclenchent respectivement Encore/Difficile/
+  Bien/Facile quand la carte est retournée (cohérent avec le raccourci `Ctrl/Cmd+K` déjà
+  existant pour la recherche globale, même registre d'écouteur clavier au niveau composant).
+- Libellés recto/verso alignés sur la maquette (cohérence avec le vocabulaire « fiche » de la
+  Direction A, déjà utilisé ailleurs) : « Recto » / « Verso » (au lieu de « Question / Terme » /
+  « Réponse / Définition »), indice recto « Cliquer sur la fiche pour retourner ».
+
+**Comportement attendu, état par état** (skill `migration-ecran` étape 2) :
+- **Chargement** : déjà présent (spinner + texte) — à couvrir par un test, restylé en tokens
+  purs (retrait des `dark:` redondants).
+- **Vide** — **distinction à introduire** : le code actuel confond « aucune carte due dès le
+  départ » et « session terminée après révision » sous le même message « Session terminée ! 🎉 »,
+  copie trompeuse si l'utilisateur n'a jamais rien révisé. Nouveau : si `totalCards === 0` dès
+  le chargement initial (aucune carte n'a jamais été présentée), afficher un message distinct
+  (« Rien à réviser ici pour le moment. »), sinon garder le message de complétion actuel.
+  Les 3 CTA selon le mode restent inchangés dans les deux cas.
+- **Erreur** — **deux lacunes réelles trouvées, à corriger** (même pattern que l'écran 2,
+  cohérence d'app) :
+  - Échec de `loadSession` (chargement initial) : actuellement avalé en `console.error` seul.
+    Remplacer par `BaseEmptyState` (titre « Le chargement a échoué », description, action
+    Réessayer → relance `loadSession`), même traitement que `Accueil.vue`.
+  - Échec de `rateCard` (notation en cours de session) : actuellement avalé en `console.error`
+    seul, la carte reste retournée sans aucun retour visuel — l'utilisateur ne sait pas que sa
+    notation n'a pas été enregistrée. Utiliser `BaseToast` (variante erreur) — **premier
+    câblage réel de cette primitive, prévu explicitivement en phase 4 par la skill
+    `design-system`** (« présentationnel seul — pas de file d'attente globale — à câbler en
+    phase 4 au premier besoin réel »). Message : « La notation n'a pas été enregistrée.
+    Réessayez. » — la carte reste sur place, l'utilisateur peut recliquer un bouton de notation.
+- **Dense** : texte recto/verso long — déjà en layout flexible (pas de troncature nécessaire,
+  le contenu doit rester lisible en entier) ; à couvrir par un test avec texte long qui ne casse
+  pas la mise en page. Beaucoup de cartes dans la session : déjà géré par la barre de
+  progression générique (aucun cas particulier).
+- **Hors ligne** : pas de traitement spécifique — un échec réseau tombe dans l'état erreur
+  ci-dessus ; indicateur hors ligne global (coquille) indépendant.
+
+**Prochaine action** : dispatcher au subagent `migrateur-ecran` (étapes 3-6). Contraintes
+supplémentaires à lui transmettre : lire les deux fichiers maquette avant de commencer,
+préserver impérativement les 4 modes d'entrée et leurs 3 CTA de complétion distincts, ne pas
+inventer d'autre écart avec la maquette sans le signaler au contrôleur.
