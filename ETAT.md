@@ -709,4 +709,81 @@ si l'environnement se stabilise avant la fin de la phase.
 
 **Écran 3 terminé** — étape 8 : cette section à jour, déjà committé (`0766c40`).
 
-**Écran 3 terminé** — étape 8 : cette section à jour, commit à suivre.
+## Réouverture Écran 2 — Accueil : recomposition selon la maquette réelle (2026-08-25)
+
+**Défaut de process trouvé (question directe de l'utilisateur)** : lors du premier passage sur
+l'écran 2, j'ai conclu « aucune restructuration nécessaire » sur la seule base que le fichier
+utilisait déjà primitives/tokens — sans jamais ouvrir la maquette Claude Design réelle de cet
+écran (`Main.dc.html`, page « Coquille & Accueil » de l'artifact). C'est la même erreur de
+raisonnement qu'évitée de justesse sur l'écran 3 (« utilise des tokens » ne dit rien de
+l'organisation), appliquée à tort ici. Extraction et lecture de `Main.dc.html` faite a
+posteriori (copiée dans `.superpowers/mockups/Main.html`, gitignore) : révèle une organisation
+réellement différente, pas seulement une question de couleur.
+
+**Écarts réels trouvés** (maquette vs `Accueil.vue` actuel) :
+- Bandeau du jour : phrase narrative + badge série en cercle pointillé (maquette) vs carte hero
+  générique + badge flamme (actuel).
+- « À réviser maintenant » : regroupement par **deck/matière** avec badge AUJOURD'HUI/DEMAIN et
+  « dernier passage il y a N jours » (maquette) vs liste par **item individuel** dû aujourd'hui
+  (actuel, `focusStore.items` — inclut aussi notes/devoirs, pas seulement des decks).
+- 3 widgets de la maquette absents du code : « Cette semaine » (7 barres), « Maturité des
+  cartes » (Nouvelles/En cours/Maîtrisées), « Activité récente » (timeline horodatée).
+- 6 widgets réels du code absents de la maquette : compteurs « Aujourd'hui » (5 lignes), «
+  Charge à venir » (14j), 4 `StatCard`, heatmap 365j, « Objectif Hebdomadaire », « Rétention par
+  matière » SM-2.
+
+**Vérification backend faite avant de proposer un plan** (pas d'hypothèse) :
+- `GET /stats/dashboard` (`backend/app/services/stats_service.py:161`, schéma
+  `DashboardStatsResponse`) existe, est déjà fonctionnel, **jamais appelé par `Accueil.vue`** —
+  renvoie `maturity_distribution: {learning, young, mature}` (classification par `interval` de
+  carte : `<1` apprentissage, `1-21` jeune, `>21` mature), soit exactement le widget « Maturité
+  des cartes » de la maquette avec de vraies données. Seul appelant actuel : la vue **orpheline**
+  `web/src/views/Dashboard/Dashboard.vue:511` (non routée, cf. phase 3 — à supprimer en phase 6,
+  pas dans ce cycle), qui contient déjà un calcul de pourcentages réutilisable comme référence
+  (`Dashboard.vue:431-449`, `maturityLearningPercent`/`maturityYoungPercent`/
+  `maturityMaturePercent`).
+- « Cette semaine » (7 barres) : dérivable des données de heatmap déjà chargées par
+  `Accueil.vue` (`GET /stats/heatmap`, déjà appelé) — 7 derniers jours du dictionnaire existant,
+  **aucun nouvel appel réseau**.
+- « Activité récente » (timeline d'événements) : **aucune fonctionnalité backend équivalente**
+  (`grep` confirmé : seul un flux d'activité de **classe/groupe** existe
+  `group_service.py`/`add_group_activity`, rien de personnel). Comme « À faire » (checklist,
+  également sans backend), ces deux éléments de la maquette sont illustratifs, pas une spec
+  fonctionnelle — non implémentés.
+
+**Décisions utilisateur (2026-08-25)** :
+1. Recomposer selon la maquette, adapté aux vraies données (pas une copie littérale).
+2. Garder tous les widgets réels actuels absents de la maquette, **en plus** de la structure de
+   la maquette (rien ne disparaît) — ils viennent après la section réorganisée, inchangés.
+
+**Plan de recomposition retenu** :
+- En-tête : titre + sous-titre dynamique « Bon retour, {username}. » (remplace le sous-titre
+  statique actuel) + CTA action inchangé dans sa logique (`continueReview`, désactivé si
+  `totalDue === 0`), copie rapprochée du format maquette (« Continuer à réviser · N cartes »).
+- Bandeau du jour : **copie `todaySummary` existante conservée telle quelle** (déjà testée,
+  déjà correcte — pas de raison de la ré-écrire) ; conteneur restylé façon maquette (bordure
+  d'accent, ton narratif) ; badge série passe de la pastille flamme à un badge cercle pointillé
+  (même valeur `streak`, traitement visuel de la maquette).
+- Grille principale 2/1 colonnes (comme la maquette, breakpoint `lg` déjà utilisé ailleurs sur
+  cet écran) :
+  - Gauche : **contenu de « À réviser maintenant » inchangé** (tous les items réels, decks ET
+    notes ET devoirs — ne pas régresser vers un regroupement par deck qui perdrait les
+    notes/devoirs), habillage visuel de la maquette (barre d'accent colorée par ligne, badge
+    d'échéance). Sans donnée « dû demain » disponible dans `focusStore.items`, ne pas inventer
+    de badge DEMAIN : tout item non en retard de cette liste est par construction dû aujourd'hui
+    (l'API ne retourne que les items dus aujourd'hui) → badge « AUJOURD'HUI » par défaut, «
+    EN RETARD » si `is_late` (inchangé dans le fond, juste dans le style).
+  - Droite : « Cette semaine » (nouveau, dérivé du heatmap déjà chargé) + « Maturité des cartes »
+    (nouveau, `GET /stats/dashboard`, nouvel appel réseau ajouté au `Promise.all` du montage).
+- **Après** la grille principale, dans l'ordre déjà existant, inchangés : compteurs
+  « Aujourd'hui », « Charge à venir (14j) », 4 `StatCard`, heatmap 365j, « Objectif
+  Hebdomadaire », « Rétention par matière ».
+- « À faire » et « Activité récente » : non implémentés (pas de backend, cf. ci-dessus).
+
+**États à revérifier** (le cycle `migration-ecran` reste actif, ne pas juste patcher) : le
+nouvel appel `GET /stats/dashboard` doit être couvert par les états déjà définis à l'écran 2
+(chargement/erreur groupés avec les autres appels existants, pas un état séparé).
+
+**Prochaine action** : dispatcher au subagent `migrateur-ecran` pour l'implémentation (tests
+d'abord pour la nouvelle structure et le nouvel appel réseau, puis composition, puis refactor à
+tests verts).
