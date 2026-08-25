@@ -404,3 +404,89 @@ suivre.
 1. **Coquille applicative** (`AppLayout.vue`) — 2 tours de correction (chevauchement en-tête
    1024-1279px ; titre mobile écrasé à 1px avec indicateur hors ligne, résolu en retirant
    Planning/Communauté du mini-en-tête mobile). 198/198 tests verts. Détail complet ci-dessus.
+
+2. **Accueil** (`Accueil.vue`) — aucune restructuration visuelle nécessaire (déjà 100 %
+   primitives + tokens, héritage automatique Direction A). Travail : suite de tests TDD créée
+   de zéro (36 tests, `web/tests/views/Home/Accueil.spec.ts`) + ajout de l'état d'erreur au
+   chargement (seule lacune réelle trouvée). 36/36 tests verts, 234/234 tests web verts,
+   `vue-tsc -b` sans erreur. Détail complet ci-dessous.
+
+### Écran 2 — Accueil (`web/src/views/Home/Accueil.vue`) — terminé
+
+**Inventaire de l'existant** (lecture complète du fichier, 2026-08-25) : le fichier est déjà
+composé à 100 % à partir des primitives (`PageContainer`, `PageHeader`, `BaseCard`,
+`BaseButton`, `BaseEmptyState`, `StatCard`, `ListRow`) et de classes-token uniquement (aucune
+valeur brute) — dernier commit de fond `a617bdc` (refonte pré-Direction A). Confirmé en
+production locale (capture navigateur pendant la vérification de l'écran 1) : la palette
+Direction A s'applique déjà entièrement via les tokens. **Aucun fichier de test n'existe
+actuellement pour cette vue.**
+
+Éléments d'interface / actions / appels API recensés :
+- En-tête : titre « Accueil », sous-titre statique, bouton d'action « Continuer à réviser (N)
+  » / « Tout est à jour » (désactivé si `totalDue === 0`) → `continueReview()` →
+  `focusStore.startUnifiedReview()` puis navigation vers l'item.
+- Carte « hero » : salutation + nom d'utilisateur, résumé du jour, série (streak).
+- Carte « À réviser maintenant » : liste des items dus (`ListRow`, icône par type, badge « En
+  retard », bouton « Réviser » → `studyItem(item)`, route selon type deck/note/assignment) ;
+  état vide dédié déjà présent (« Tout est à jour ! »).
+- Carte « Aujourd'hui » : 5 compteurs (À réviser, En retard, Flashcards, Feuilles blanches,
+  Devoirs).
+- Carte « Charge à venir (14j) » : histogramme de prévision, info-bulle par barre au survol,
+  légende Bas/Moyen/Fort.
+- Ligne de 4 `StatCard` (Cartes révisées, Taux de réussite, Temps d'étude, Decks actifs).
+- Carte heatmap (365 jours, grille 7×52), info-bulle par cellule, légende Moins→Plus,
+  compteur total de sessions.
+- Carte « Objectif Hebdomadaire » : barre de progression + texte de statut.
+- Carte « Rétention par matière » : liste par classeur (nom tronqué, % + tendance ▲/▼), état
+  vide texte (« Aucun classeur créé. »).
+- Appels API au montage (`onMounted`, en parallèle) : `focusStore.loadFocusData()`,
+  `decksStore.fetchDecks()`, puis `GET /stats/overview`, `GET /stats/heatmap`,
+  `GET /stats/sessions?from&to`.
+
+**Comportement attendu, état par état** (skill `migration-ecran` étape 2) :
+- **Chargement** : déjà présent (spinner + texte, remplace tout le contenu) — à couvrir par
+  un test.
+- **Vide** : déjà couvert section par section (file de révision → `BaseEmptyState` « Tout est
+  à jour ! » ; rétention → texte « Aucun classeur créé. »). Heatmap/prévision toutes-zéro
+  déjà gérées gracieusement par la logique de couleur/hauteur existante (pas de cas
+  particulier à ajouter). À couvrir par des tests, pas de nouveau code.
+- **Erreur** — **lacune réelle trouvée, à corriger** : `onMounted` avale actuellement toute
+  erreur réseau dans un `try/catch` unique (`console.error` seul), sans état d'erreur ni
+  retour utilisateur — l'écran affiche silencieusement des données par défaut/vides,
+  indistinguable d'un vrai « rien à réviser ». Aucune maquette Claude Design ne couvre ce cas
+  (confirmé : le canevas Direction A ne contient qu'une fiche par écran, pas de variante
+  erreur). Décision de conception (réutilise la primitive déjà présente sur cet écran, aucun
+  nouveau composant) : ajouter un ref `loadError`, et en cas d'échec remplacer tout le
+  contenu par `BaseEmptyState` (icône alerte, titre « Le chargement a échoué », description «
+  Vos données n'ont pas pu être récupérées. Vérifiez votre connexion et réessayez. », action «
+  Réessayer » qui relance le chargement) — masquer aussi le bouton d'action de l'en-tête
+  pendant l'erreur (dépend de données non fiables).
+- **Dense** : déjà couvert par la composition existante (troncature sur les noms de classeur,
+  défilement horizontal sur la heatmap `overflow-x-auto`). À couvrir par un test avec beaucoup
+  d'items/classeurs, pas de nouveau code.
+- **Hors ligne** : pas de traitement spécifique à cet écran — un échec réseau au montage tombe
+  dans l'état erreur ci-dessus ; l'indicateur hors ligne global (coquille, écran 1) reste
+  affiché indépendamment.
+
+**Réalisé** (étapes 3-6 du subagent `migrateur-ecran`) : suite de tests rouge d'abord
+(`web/tests/views/Home/Accueil.spec.ts`, 36 tests — un par élément/action/état recensé
+ci-dessus), confirmée en échec pour la bonne raison contre le fichier non modifié (5 échecs,
+tous et uniquement sur les tests d'état d'erreur qui n'existait pas encore ; 31/36 déjà verts
+car l'écran héritait déjà des primitives/tokens). Implémentation ensuite : ref `loadError`,
+capture dans le `catch` de `loadDashboard` (fonction extraite de `onMounted` pour être
+réutilisable par le bouton « Réessayer »), remplacement de tout le contenu par
+`BaseEmptyState` (icône `AlertCircle`, titre « Le chargement a échoué », description « Vos
+données n'ont pas pu être récupérées. Vérifiez votre connexion et réessayez. », action «
+Réessayer » → relance `loadDashboard`), bouton d'action de l'en-tête masqué pendant l'erreur
+(`<template v-if="!loadError" #actions>`). 36/36 tests verts, 234/234 tests web verts au
+global, `vue-tsc -b` sans erreur. Aucune primitive ni token modifié — réutilisation intégrale
+de `BaseEmptyState`/`BaseButton`/`AlertCircle` (icône déjà utilisée pour ce même usage
+ailleurs dans l'app, ex. `GroupDetail.vue`). Aucune fonctionnalité existante supprimée.
+
+Écart relevé sans agir dessus (hors périmètre de ce cycle, à signaler) : `Accueil.vue` appelle
+`api.get(...)` directement dans la vue (import de `services/api`) plutôt que de passer
+exclusivement par un store/service, ce qui contrevient à la règle `web/CLAUDE.md` (« Appels
+API uniquement dans stores/ et services/ »). C'est un écart préexistant (présent avant ce
+cycle, hérité du fichier source), pas introduit ici ; je ne l'ai pas corrigé pour rester dans
+le périmètre strict de la tâche (état d'erreur + tests), mais il mériterait sa propre
+migration (extraire un `useAccueilStats` composable/service) dans un cycle dédié.
