@@ -1,5 +1,6 @@
-// Suite TDD écran 2 (Accueil) — voir ETAT.md « Écran 2 — Accueil » pour l'inventaire
-// complet et le comportement attendu état par état (skill migration-ecran).
+// Suite TDD écran 2 (Accueil) — voir ETAT.md « Écran 2 — Accueil » et « Réouverture Écran 2 —
+// Accueil : recomposition selon la maquette réelle » pour l'inventaire complet et le
+// comportement attendu état par état (skill migration-ecran).
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia, type Pinia } from 'pinia'
@@ -11,7 +12,7 @@ const api = vi.hoisted(() => ({
 vi.mock('../../../src/services/api', () => ({ default: api }))
 
 import Accueil from '../../../src/views/Home/Accueil.vue'
-import { BaseButton, BaseEmptyState, ListRow, StatCard } from '../../../src/components/ui/base'
+import { BaseBadge, BaseButton, BaseEmptyState, ListRow, StatCard } from '../../../src/components/ui/base'
 import { useAuthStore, type User } from '../../../src/stores/auth'
 import type { FocusItem, ForecastItem, RetentionSubject } from '../../../src/services/focusService'
 import type { Deck } from '../../../src/stores/decks'
@@ -70,6 +71,12 @@ const DEFAULT_DECKS: Deck[] = [makeDeck(1), makeDeck(2)]
 const DEFAULT_OVERVIEW = { total_reviewed: 120, total_correct: 90, total_time_seconds: 5400, streak: 7 }
 const DEFAULT_HEATMAP: Array<{ date: string; duration: number; count: number }> = []
 const DEFAULT_SESSIONS: Array<{ duration_seconds: number }> = []
+const DEFAULT_DASHBOARD = {
+  kpi: { total_cards_studied: 0, mature_cards: 0, retention_rate: 0 },
+  heatmap: {},
+  maturity_distribution: { learning: 10, young: 30, mature: 60 },
+  forecast_7_days: {},
+}
 
 interface ApiOverrides {
   focusToday?: () => Promise<unknown>
@@ -79,6 +86,7 @@ interface ApiOverrides {
   overview?: () => Promise<unknown>
   heatmap?: () => Promise<unknown>
   sessions?: () => Promise<unknown>
+  dashboard?: () => Promise<unknown>
 }
 
 function makeApiGetMock(over: ApiOverrides = {}) {
@@ -103,6 +111,9 @@ function makeApiGetMock(over: ApiOverrides = {}) {
     }
     if (url === '/stats/sessions') {
       return (over.sessions ?? (() => Promise.resolve({ data: DEFAULT_SESSIONS })))()
+    }
+    if (url === '/stats/dashboard') {
+      return (over.dashboard ?? (() => Promise.resolve({ data: DEFAULT_DASHBOARD })))()
     }
     return Promise.reject(new Error(`URL non mockée dans le test: ${url}`))
   })
@@ -151,6 +162,24 @@ async function mountAccueil(opts: { user?: User | null; flush?: boolean } = {}) 
   return { wrapper, router }
 }
 
+// Reproduit exactement l'algorithme de découpage de semaine (lundi → dimanche) utilisé par
+// le composant (`getStartAndEndOfWeek`), pour construire les mêmes clés de date que le widget
+// "Cette semaine" sans dépendre de son implémentation interne.
+function currentWeekDates(): string[] {
+  const now = new Date()
+  const day = now.getDay()
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1)
+  const monday = new Date(now)
+  monday.setDate(diff)
+  monday.setHours(0, 0, 0, 0)
+  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return fmt(d)
+  })
+}
+
 describe('Accueil', () => {
   beforeEach(() => {
     api.get.mockImplementation(makeApiGetMock())
@@ -158,7 +187,7 @@ describe('Accueil', () => {
 
   // ── Appels API au montage ────────────────────────────────────────────
   describe('appels API au montage', () => {
-    it('déclenche les 6 appels attendus (focus, decks, overview, heatmap, sessions) en parallèle', async () => {
+    it('déclenche tous les appels attendus (focus, decks, overview, heatmap, sessions, dashboard) en parallèle', async () => {
       await mountAccueil()
       const urls = api.get.mock.calls.map((c) => c[0] as string)
       expect(urls.some((u) => u.startsWith('/focus/today'))).toBe(true)
@@ -168,23 +197,30 @@ describe('Accueil', () => {
       expect(urls).toContain('/stats/overview')
       expect(urls).toContain('/stats/heatmap')
       expect(urls).toContain('/stats/sessions')
+      expect(urls).toContain('/stats/dashboard')
     })
   })
 
   // ── En-tête ───────────────────────────────────────────────────────────
   describe('en-tête', () => {
-    it('affiche le titre "Accueil" et le sous-titre statique', async () => {
+    it('affiche le titre "Accueil" et le sous-titre dynamique "Bon retour, {username}."', async () => {
       const { wrapper } = await mountAccueil()
       expect(wrapper.get('h1').text()).toBe('Accueil')
-      expect(wrapper.text()).toContain('Vos priorités du jour, en un coup d\'œil.')
+      expect(wrapper.text()).toContain('Bon retour, alice.')
     })
 
-    it('affiche le bouton "Continuer à réviser (N)" activé quand des révisions sont dues', async () => {
+    it('le sous-titre reflète le nom du compte connecté (dynamique, pas figé)', async () => {
+      const { wrapper } = await mountAccueil({ user: { ...DEFAULT_USER, username: 'bob' } })
+      expect(wrapper.text()).toContain('Bon retour, bob.')
+      expect(wrapper.text()).not.toContain('Bon retour, alice.')
+    })
+
+    it('affiche le bouton "Continuer à réviser · N cartes" activé quand des révisions sont dues', async () => {
       const { wrapper } = await mountAccueil()
       const button = wrapper
         .findAllComponents(BaseButton)
         .find((b) => b.text().includes('Continuer à réviser'))!
-      expect(button.text()).toContain('Continuer à réviser (2)')
+      expect(button.text()).toContain('Continuer à réviser · 2 cartes')
       expect(button.attributes('disabled')).toBeUndefined()
     })
 
@@ -213,13 +249,8 @@ describe('Accueil', () => {
     })
   })
 
-  // ── Carte hero (salutation, résumé, série) ──────────────────────────
-  describe('carte hero', () => {
-    it('affiche la salutation avec le nom d\'utilisateur', async () => {
-      const { wrapper } = await mountAccueil()
-      expect(wrapper.text()).toContain('Prêt·e à apprendre, alice ?')
-    })
-
+  // ── Bandeau du jour (résumé + série) ─────────────────────────────────
+  describe('bandeau du jour', () => {
     it('affiche le résumé du jour avec le décompte en retard', async () => {
       const { wrapper } = await mountAccueil()
       expect(wrapper.text()).toContain('2 élément(s) à réviser aujourd\'hui (dont 1 en retard).')
@@ -235,9 +266,14 @@ describe('Accueil', () => {
       expect(wrapper.text()).toContain('Aucune révision en attente aujourd\'hui — beau travail !')
     })
 
-    it('affiche la série (streak) en jours', async () => {
+    it('affiche la série (streak) dans un badge en cercle pointillé', async () => {
       const { wrapper } = await mountAccueil()
-      expect(wrapper.text()).toContain('7 jour(s) de suite')
+      const badge = wrapper.find('.border-dashed')
+      expect(badge.exists()).toBe(true)
+      expect(badge.text()).toContain('7')
+      // Le texte accessible complet (streak = jours consécutifs) reste disponible pour les
+      // lecteurs d'écran même si l'affichage visuel du badge est compact.
+      expect(wrapper.text()).toContain('Série de 7 jour(s) de suite')
     })
   })
 
@@ -253,11 +289,16 @@ describe('Accueil', () => {
       expect(rows[1].props('subtitle')).toBe('Feuille blanche à restituer (Blurting)')
     })
 
-    it('affiche le badge "En retard" uniquement sur les items en retard', async () => {
+    it('affiche un badge d\'échéance sur chaque item : "En retard" si en retard, "Aujourd\'hui" sinon', async () => {
       const { wrapper } = await mountAccueil()
       const rows = wrapper.findAllComponents(ListRow)
-      expect(rows[0].text()).toContain('En retard')
-      expect(rows[1].text()).not.toContain('En retard')
+      const lateBadge = rows[0].findComponent(BaseBadge)
+      const onTimeBadge = rows[1].findComponent(BaseBadge)
+      expect(lateBadge.exists()).toBe(true)
+      expect(lateBadge.text()).toContain('En retard')
+      expect(onTimeBadge.exists()).toBe(true)
+      expect(onTimeBadge.text()).toContain('Aujourd\'hui')
+      expect(onTimeBadge.text()).not.toContain('En retard')
     })
 
     it('navigue vers /decks/:id/study au clic sur "Réviser" pour un deck', async () => {
@@ -301,6 +342,84 @@ describe('Accueil', () => {
       expect(empty.exists()).toBe(true)
       expect(empty.props('title')).toBe('Tout est à jour !')
       expect(empty.props('description')).toBe('Aucune révision en attente. Profitez-en pour explorer de nouveaux cours.')
+    })
+  })
+
+  // ── Widget "Cette semaine" ────────────────────────────────────────────
+  describe('widget "Cette semaine"', () => {
+    it('affiche 7 barres dérivées du dictionnaire de heatmap déjà chargé, sans nouvel appel réseau', async () => {
+      const dates = currentWeekDates()
+      const heatmap = dates.map((date, i) => ({ date, duration: 60 * (i + 1), count: i + 1 }))
+      api.get.mockImplementation(makeApiGetMock({ heatmap: () => Promise.resolve({ data: heatmap }) }))
+      // Le mock `api.get` est partagé (vi.hoisted) et son historique d'appels n'est pas
+      // réinitialisé entre les tests (seule son implémentation change) — on mesure donc le
+      // delta propre à ce montage plutôt que le compte absolu.
+      const callsBeforeMount = api.get.mock.calls.length
+      const { wrapper } = await mountAccueil()
+
+      const bars = wrapper.findAll('[data-testid="week-bar"]')
+      expect(bars).toHaveLength(7)
+
+      const heatmapCallsDuringThisMount = api.get.mock.calls
+        .slice(callsBeforeMount)
+        .filter((c) => c[0] === '/stats/heatmap')
+      expect(heatmapCallsDuringThisMount).toHaveLength(1)
+
+      // Somme des counts de la semaine (1+2+...+7 = 28).
+      expect(wrapper.text()).toContain('28 session(s) cette semaine')
+    })
+
+    it('affiche 0 session cette semaine quand la heatmap ne contient aucune activité récente', async () => {
+      const { wrapper } = await mountAccueil()
+      expect(wrapper.text()).toContain('0 session(s) cette semaine')
+    })
+  })
+
+  // ── Widget "Maturité des cartes" ──────────────────────────────────────
+  describe('widget "Maturité des cartes"', () => {
+    it('affiche la barre empilée et les pourcentages Nouvelles/En cours/Maîtrisées calculés depuis /stats/dashboard', async () => {
+      api.get.mockImplementation(
+        makeApiGetMock({
+          dashboard: () =>
+            Promise.resolve({
+              data: { ...DEFAULT_DASHBOARD, maturity_distribution: { learning: 10, young: 30, mature: 60 } },
+            }),
+        }),
+      )
+      const { wrapper } = await mountAccueil()
+      expect(wrapper.text()).toContain('Maturité des cartes')
+      expect(wrapper.text()).toContain('Nouvelles')
+      expect(wrapper.text()).toContain('10%')
+      expect(wrapper.text()).toContain('En cours')
+      expect(wrapper.text()).toContain('30%')
+      expect(wrapper.text()).toContain('Maîtrisées')
+      expect(wrapper.text()).toContain('60%')
+    })
+
+    it('affiche 0% pour chaque catégorie quand aucune carte n\'a jamais été étudiée', async () => {
+      api.get.mockImplementation(
+        makeApiGetMock({
+          dashboard: () =>
+            Promise.resolve({
+              data: { ...DEFAULT_DASHBOARD, maturity_distribution: { learning: 0, young: 0, mature: 0 } },
+            }),
+        }),
+      )
+      const { wrapper } = await mountAccueil()
+      const percents = wrapper.findAll('span.font-mono.text-ink-muted').map((s) => s.text())
+      expect(percents.filter((p) => p === '0%').length).toBeGreaterThanOrEqual(3)
+    })
+  })
+
+  // ── Widgets existants après la grille (inchangés) ─────────────────────
+  describe('widgets existants après la grille (inchangés)', () => {
+    it('conserve tous les widgets existants après la grille : Aujourd\'hui, Charge à venir, StatCard, heatmap, Objectif Hebdomadaire, Rétention', async () => {
+      const { wrapper } = await mountAccueil()
+      expect(wrapper.text()).toContain('Charge à venir (14j)')
+      expect(wrapper.findAllComponents(StatCard)).toHaveLength(4)
+      expect(wrapper.text()).toContain('Activité d\'étude (365 jours)')
+      expect(wrapper.text()).toContain('Objectif Hebdomadaire')
+      expect(wrapper.text()).toContain('Rétention par matière')
     })
   })
 

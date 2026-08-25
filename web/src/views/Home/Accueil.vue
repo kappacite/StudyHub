@@ -6,7 +6,7 @@
           <template #icon><Flame class="w-4 h-4 fill-white" /></template>
           {{
             focusStore.totalDue > 0
-              ? `Continuer à réviser (${focusStore.totalDue})`
+              ? `Continuer à réviser · ${focusStore.totalDue} carte${focusStore.totalDue > 1 ? 's' : ''}`
               : 'Tout est à jour'
           }}
         </BaseButton>
@@ -53,33 +53,32 @@
     </BaseEmptyState>
 
     <template v-else>
-      <!-- Hero : série + résumé du jour -->
-      <BaseCard
-        v-motion="fadeUp"
-        class="!bg-gradient-to-r from-primary/10 via-primary-soft/40 to-transparent border-primary/15"
-      >
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <!-- Bandeau du jour : résumé + série -->
+      <BaseCard v-motion="fadeUp" class="border-l-4 border-l-accent">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div class="min-w-0">
-            <h2 class="text-xl font-bold text-ink">
-              Prêt·e à apprendre, {{ authStore.user?.username }} ? 👋
-            </h2>
-            <p class="text-sm text-ink-muted mt-1">{{ todaySummary }}</p>
+            <p class="font-mono text-tiny font-bold uppercase tracking-widest text-ink-muted mb-2">
+              Aujourd'hui
+            </p>
+            <p class="text-base text-ink leading-relaxed">{{ todaySummary }}</p>
           </div>
           <div
-            class="flex items-center gap-2 px-4 py-2 bg-accent-soft border border-accent/20 rounded-2xl shrink-0"
+            class="shrink-0 w-24 h-24 rounded-full border-2 border-dashed border-accent flex flex-col items-center justify-center -rotate-6"
           >
-            <Flame class="w-5 h-5 text-accent fill-accent animate-pulse" />
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-wider text-accent">
-                Série d'étude
-              </p>
-              <p class="text-sm font-bold leading-none text-ink">{{ streak }} jour(s) de suite</p>
-            </div>
+            <span
+              aria-hidden="true"
+              class="font-mono text-2xl font-bold text-primary leading-none"
+              >{{ streak }}</span
+            >
+            <span aria-hidden="true" class="text-tiny uppercase tracking-wide text-ink-muted mt-1"
+              >jour(s)</span
+            >
+            <span class="sr-only">Série de {{ streak }} jour(s) de suite</span>
           </div>
         </div>
       </BaseCard>
 
-      <!-- À réviser maintenant (gauche) + Aujourd'hui (droite) -->
+      <!-- À réviser maintenant (gauche) + widgets de la semaine (droite) -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <!-- File de révision -->
         <BaseCard class="lg:col-span-2">
@@ -96,24 +95,32 @@
               :subtitle="getItemSummary(item)"
             >
               <template #leading>
-                <div
-                  class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                  :class="item.is_late ? 'bg-danger-soft' : 'bg-primary-soft'"
-                >
-                  <component
-                    :is="getItemIcon(item)"
-                    class="w-5 h-5"
-                    :class="item.is_late ? 'text-danger' : 'text-primary'"
-                  />
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-1 self-stretch rounded-full"
+                    :class="item.is_late ? 'bg-danger' : 'bg-accent'"
+                  ></div>
+                  <div
+                    class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    :class="item.is_late ? 'bg-danger-soft' : 'bg-primary-soft'"
+                  >
+                    <component
+                      :is="getItemIcon(item)"
+                      class="w-5 h-5"
+                      :class="item.is_late ? 'text-danger' : 'text-primary'"
+                    />
+                  </div>
                 </div>
               </template>
               <template #trailing>
                 <div class="flex items-center gap-3">
-                  <span
-                    v-if="item.is_late"
-                    class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-danger-soft text-danger"
-                    >En retard</span
+                  <BaseBadge
+                    :variant="item.is_late ? 'danger' : 'accent'"
+                    size="sm"
+                    class="uppercase tracking-wide"
                   >
+                    {{ item.is_late ? 'En retard' : "Aujourd'hui" }}
+                  </BaseBadge>
                   <BaseButton variant="secondary" size="sm" @click="studyItem(item)">
                     Réviser
                     <template #icon><ArrowRight class="w-3.5 h-3.5" /></template>
@@ -132,67 +139,124 @@
           </div>
         </BaseCard>
 
-        <!-- Aujourd'hui : compteurs + charge à venir -->
+        <!-- Cette semaine + Maturité des cartes -->
         <div class="space-y-6">
           <BaseCard>
-            <h3 class="font-bold text-ink flex items-center gap-2 mb-4">
-              <Sparkles class="w-5 h-5 text-primary" />
-              Aujourd'hui
-            </h3>
-            <div class="space-y-2">
+            <h4 class="text-xs font-bold uppercase tracking-wide text-ink-muted mb-4">
+              Cette semaine
+            </h4>
+            <div class="flex items-end gap-2 h-14">
               <div
-                v-for="c in todayCounters"
-                :key="c.label"
-                class="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-soft"
-              >
-                <span class="flex items-center gap-2 text-sm text-ink-muted">
-                  <component :is="c.icon" class="w-4 h-4" :class="c.color" />
-                  {{ c.label }}
-                </span>
-                <span class="text-sm font-bold text-ink">{{ c.value }}</span>
-              </div>
+                v-for="(day, i) in weekActivity"
+                :key="i"
+                data-testid="week-bar"
+                class="w-4 rounded-sm bg-primary transition-all duration-500"
+                :style="{ height: getWeekBarHeightPercent(day.count) + '%' }"
+              ></div>
             </div>
+            <div class="flex gap-2 mt-1.5 font-mono text-tiny text-ink-subtle">
+              <span v-for="(day, i) in weekActivity" :key="i" class="w-4 text-center">{{
+                day.label
+              }}</span>
+            </div>
+            <p class="text-xs text-ink-muted mt-3">
+              {{ weekSessionsCount }} session(s) cette semaine
+            </p>
           </BaseCard>
 
-          <!-- Charge à venir (14j) -->
           <BaseCard>
-            <h3 class="font-bold text-ink flex items-center gap-2 mb-4">
-              <Calendar class="w-5 h-5 text-primary" />
-              Charge à venir (14j)
-            </h3>
-            <div class="h-28 flex items-end justify-between gap-1 border-b border-line pb-1">
-              <div
-                v-for="item in focusStore.forecast"
-                :key="item.date"
-                class="flex-1 flex flex-col items-center group cursor-pointer relative"
-              >
-                <span
-                  class="opacity-0 group-hover:opacity-100 transition-opacity bg-ink text-app text-[8px] font-bold px-1.5 py-0.5 rounded -translate-y-5 z-10 whitespace-nowrap shadow absolute"
-                >
-                  {{ item.count }}
-                </span>
-                <div
-                  class="w-full rounded-t-md transition-all duration-500 group-hover:brightness-110"
-                  :class="getLoadBarClass(item.load_level)"
-                  :style="{ height: getForecastBarHeight(item.count) + 'px' }"
-                ></div>
-              </div>
+            <h4 class="text-xs font-bold uppercase tracking-wide text-ink-muted mb-4">
+              Maturité des cartes
+            </h4>
+            <div class="flex h-2.5 rounded-full overflow-hidden bg-surface-soft">
+              <div class="bg-line" :style="{ width: maturityLearningPercent + '%' }"></div>
+              <div class="bg-accent" :style="{ width: maturityYoungPercent + '%' }"></div>
+              <div class="bg-primary" :style="{ width: maturityMaturePercent + '%' }"></div>
             </div>
-            <div
-              class="flex items-center justify-between mt-4 text-[10px] font-bold uppercase tracking-wider text-ink-subtle"
-            >
-              <span class="flex items-center gap-1"
-                ><span class="w-2.5 h-2.5 rounded-sm bg-success/40"></span> Bas</span
-              >
-              <span class="flex items-center gap-1"
-                ><span class="w-2.5 h-2.5 rounded-sm bg-warning/50"></span> Moyen</span
-              >
-              <span class="flex items-center gap-1"
-                ><span class="w-2.5 h-2.5 rounded-sm bg-danger/50"></span> Fort</span
-              >
+            <div class="flex flex-col gap-1.5 mt-3.5 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="flex items-center gap-2 text-ink-muted"
+                  ><span class="w-2 h-2 rounded-sm bg-line"></span>Nouvelles</span
+                >
+                <span class="font-mono text-ink-muted">{{ maturityLearningPercent }}%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="flex items-center gap-2 text-ink-muted"
+                  ><span class="w-2 h-2 rounded-sm bg-accent"></span>En cours</span
+                >
+                <span class="font-mono text-ink-muted">{{ maturityYoungPercent }}%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="flex items-center gap-2 text-ink-muted"
+                  ><span class="w-2 h-2 rounded-sm bg-primary"></span>Maîtrisées</span
+                >
+                <span class="font-mono text-ink-muted">{{ maturityMaturePercent }}%</span>
+              </div>
             </div>
           </BaseCard>
         </div>
+      </div>
+
+      <!-- Aujourd'hui : compteurs + charge à venir -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <BaseCard>
+          <h3 class="font-bold text-ink flex items-center gap-2 mb-4">
+            <Sparkles class="w-5 h-5 text-primary" />
+            Aujourd'hui
+          </h3>
+          <div class="space-y-2">
+            <div
+              v-for="c in todayCounters"
+              :key="c.label"
+              class="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-soft"
+            >
+              <span class="flex items-center gap-2 text-sm text-ink-muted">
+                <component :is="c.icon" class="w-4 h-4" :class="c.color" />
+                {{ c.label }}
+              </span>
+              <span class="text-sm font-bold text-ink">{{ c.value }}</span>
+            </div>
+          </div>
+        </BaseCard>
+
+        <!-- Charge à venir (14j) -->
+        <BaseCard>
+          <h3 class="font-bold text-ink flex items-center gap-2 mb-4">
+            <Calendar class="w-5 h-5 text-primary" />
+            Charge à venir (14j)
+          </h3>
+          <div class="h-28 flex items-end justify-between gap-1 border-b border-line pb-1">
+            <div
+              v-for="item in focusStore.forecast"
+              :key="item.date"
+              class="flex-1 flex flex-col items-center group cursor-pointer relative"
+            >
+              <span
+                class="opacity-0 group-hover:opacity-100 transition-opacity bg-ink text-app text-[8px] font-bold px-1.5 py-0.5 rounded -translate-y-5 z-10 whitespace-nowrap shadow absolute"
+              >
+                {{ item.count }}
+              </span>
+              <div
+                class="w-full rounded-t-md transition-all duration-500 group-hover:brightness-110"
+                :class="getLoadBarClass(item.load_level)"
+                :style="{ height: getForecastBarHeight(item.count) + 'px' }"
+              ></div>
+            </div>
+          </div>
+          <div
+            class="flex items-center justify-between mt-4 text-[10px] font-bold uppercase tracking-wider text-ink-subtle"
+          >
+            <span class="flex items-center gap-1"
+              ><span class="w-2.5 h-2.5 rounded-sm bg-success/40"></span> Bas</span
+            >
+            <span class="flex items-center gap-1"
+              ><span class="w-2.5 h-2.5 rounded-sm bg-warning/50"></span> Moyen</span
+            >
+            <span class="flex items-center gap-1"
+              ><span class="w-2.5 h-2.5 rounded-sm bg-danger/50"></span> Fort</span
+            >
+          </div>
+        </BaseCard>
       </div>
 
       <!-- Progression -->
@@ -328,6 +392,7 @@ import type { FocusItem } from '../../services/focusService'
 import {
   PageContainer,
   PageHeader,
+  BaseBadge,
   BaseCard,
   BaseButton,
   BaseEmptyState,
@@ -364,7 +429,7 @@ const totalCorrect = ref(0)
 const totalTimeSeconds = ref(0)
 const streak = ref(0)
 
-const greeting = computed(() => "Vos priorités du jour, en un coup d'œil.")
+const greeting = computed(() => `Bon retour, ${authStore.user?.username}.`)
 
 const todaySummary = computed(() => {
   if (focusStore.totalDue === 0) return "Aucune révision en attente aujourd'hui — beau travail !"
@@ -418,6 +483,37 @@ const todayCounters = computed(() => [
   },
   { label: 'Devoirs', value: focusStore.assignmentCount, icon: GraduationCap, color: 'text-info' },
 ])
+
+// ─── Maturité des cartes (GET /stats/dashboard) ────────────────────────────
+interface MaturityDistribution {
+  learning: number
+  young: number
+  mature: number
+}
+
+const maturityDistribution = ref<MaturityDistribution>({ learning: 0, young: 0, mature: 0 })
+
+const maturityTotal = computed(
+  () =>
+    maturityDistribution.value.learning +
+    maturityDistribution.value.young +
+    maturityDistribution.value.mature,
+)
+const maturityLearningPercent = computed(() =>
+  maturityTotal.value === 0
+    ? 0
+    : Math.round((maturityDistribution.value.learning / maturityTotal.value) * 100),
+)
+const maturityYoungPercent = computed(() =>
+  maturityTotal.value === 0
+    ? 0
+    : Math.round((maturityDistribution.value.young / maturityTotal.value) * 100),
+)
+const maturityMaturePercent = computed(() =>
+  maturityTotal.value === 0
+    ? 0
+    : Math.round((maturityDistribution.value.mature / maturityTotal.value) * 100),
+)
 
 // ─── File de révision ──────────────────────────────────────────────────────
 function getItemIcon(item: FocusItem) {
@@ -538,6 +634,32 @@ function getTooltipText(row: number, col: number): string {
   return `${formattedDate} : ${count} session(s) (${Math.round(data.duration / 60)} min)`
 }
 
+// ─── Cette semaine (dérivé du heatmap déjà chargé, aucun appel réseau dédié) ─
+const weekDayLetters = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+
+const weekActivity = computed(() => {
+  const { from } = getStartAndEndOfWeek()
+  const monday = new Date(from)
+  return weekDayLetters.map((label, i) => {
+    const date = new Date(monday)
+    date.setDate(monday.getDate() + i)
+    const yyyy = date.getFullYear()
+    const mm = String(date.getMonth() + 1).padStart(2, '0')
+    const dd = String(date.getDate()).padStart(2, '0')
+    const key = `${yyyy}-${mm}-${dd}`
+    return { label, count: heatmapData.value[key]?.count ?? 0 }
+  })
+})
+
+const weekSessionsCount = computed(() =>
+  weekActivity.value.reduce((acc, day) => acc + day.count, 0),
+)
+
+function getWeekBarHeightPercent(count: number): number {
+  const max = Math.max(...weekActivity.value.map((day) => day.count), 1)
+  return Math.max(6, Math.round((count / max) * 100))
+}
+
 async function loadDashboard() {
   loading.value = true
   loadError.value = false
@@ -569,6 +691,9 @@ async function loadDashboard() {
             0,
           )
         }),
+      api.get<{ maturity_distribution: MaturityDistribution }>('/stats/dashboard').then((res) => {
+        maturityDistribution.value = res.data.maturity_distribution
+      }),
     ])
   } catch (err) {
     console.error("Erreur lors du chargement de l'accueil", err)

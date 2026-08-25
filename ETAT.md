@@ -406,11 +406,16 @@ suivre.
    1024-1279px ; titre mobile écrasé à 1px avec indicateur hors ligne, résolu en retirant
    Planning/Communauté du mini-en-tête mobile). 198/198 tests verts. Détail complet ci-dessus.
 
-2. **Accueil** (`Accueil.vue`) — aucune restructuration visuelle nécessaire (déjà 100 %
-   primitives + tokens, héritage automatique Direction A). Travail : suite de tests TDD créée
-   de zéro (36 tests, `web/tests/views/Home/Accueil.spec.ts`) + ajout de l'état d'erreur au
-   chargement (seule lacune réelle trouvée). 36/36 tests verts, 234/234 tests web verts,
-   `vue-tsc -b` sans erreur. Détail complet ci-dessous.
+2. **Accueil** (`Accueil.vue`) — **corrigé en deux temps** : premier passage limité à tort aux
+   tests + état d'erreur (conclusion « déjà 100 % tokens donc rien à restructurer » jamais
+   vérifiée contre la vraie maquette) ; réouvert après une question directe de l'utilisateur,
+   maquette (`Main.dc.html`) enfin lue, écarts réels trouvés et recomposés (bandeau narratif,
+   badge série en cercle pointillé, 2 nouveaux widgets réels — « Cette semaine » dérivé du
+   heatmap déjà chargé, « Maturité des cartes » via `GET /stats/dashboard`, endpoint déjà
+   fonctionnel côté backend mais jamais branché — tous les widgets préexistants conservés en
+   dessous, inchangés). 41/41 tests écran verts, 276/276 tests web verts, `vue-tsc -b` sans
+   erreur, vérification visuelle réelle clair/sombre × desktop/mobile faite par le contrôleur.
+   Détail complet ci-dessous.
 
 3. **Session de révision flashcards** (`StudyDeck.vue`) — vraie recomposition (aucune
    primitive/token utilisé auparavant, 6 couleurs Tailwind brutes + `dark:` redondants + 5
@@ -787,3 +792,97 @@ nouvel appel `GET /stats/dashboard` doit être couvert par les états déjà dé
 **Prochaine action** : dispatcher au subagent `migrateur-ecran` pour l'implémentation (tests
 d'abord pour la nouvelle structure et le nouvel appel réseau, puis composition, puis refactor à
 tests verts).
+
+**Réalisé** (étapes 3-6 du subagent `migrateur-ecran`, 2026-08-25) : suite de tests étendue
+d'abord (`web/tests/views/Home/Accueil.spec.ts`, 36 → 41 tests), rouge confirmé pour la bonne
+raison (10 échecs contre le fichier non modifié : sous-titre statique au lieu du sous-titre
+dynamique, copie CTA à l'ancien format `(N)`, absence du badge cercle pointillé, absence du
+badge d'échéance par défaut « Aujourd'hui » sur les items non en retard, absence des deux
+nouveaux widgets et de l'appel `/stats/dashboard` ; 31 tests déjà verts confirmant que le
+contenu inchangé — todaySummary, navigation, empty state, compteurs, forecast, StatCard,
+heatmap, objectif hebdo, rétention — n'était pas cassé par la réécriture des tests). Une
+correction de test après ce premier rouge (bug de test, pas de composant) : le mock `api.get`
+étant partagé (`vi.hoisted`) et son historique d'appels non réinitialisé entre tests (seule son
+implémentation change), l'assertion sur le nombre d'appels à `/stats/heatmap` comptait tous les
+tests précédents du fichier — corrigée pour mesurer le delta propre au montage testé plutôt que
+le compte absolu.
+
+Composition, uniquement depuis les primitives/tokens existants :
+- En-tête : sous-titre `greeting` devenu `` `Bon retour, ${authStore.user?.username}.` `` ; CTA
+  reformaté `` `Continuer à réviser · ${totalDue} cartes` `` (logique de désactivation
+  inchangée).
+- Bandeau du jour : `todaySummary` conservé verbatim ; conteneur restylé `border-l-4
+  border-l-accent` (accent = highlight maquette, mapping déjà établi à l'écran 3) ; le heading
+  « Prêt·e à apprendre, {username} ? 👋 » supprimé de cette carte — son rôle de salutation
+  personnalisée est repris par le nouveau sous-titre de l'en-tête, pas dupliqué. Badge série :
+  pastille flamme remplacée par un cercle `w-24 h-24 rounded-full border-2 border-dashed
+  border-accent` tourné `-rotate-6`, nombre en `font-mono text-primary`, libellé visuel
+  compacté à « jour(s) » (au lieu de « jour(s) de suite », qui ne tient pas dans un badge de
+  cette taille) — le texte complet accessible (« Série de N jour(s) de suite ») est conservé
+  via un `<span class="sr-only">` pour ne perdre aucune information aux lecteurs d'écran.
+  Aucun token manquant : `border-dashed`/`rounded-full`/`-rotate-6` sont des utilitaires
+  Tailwind natifs (pas des valeurs brutes), la couleur vient du token `accent` existant — rien
+  à remonter au `designer-ui` sur ce badge.
+- Grille 2/1 : à gauche, contenu de `focusStore.items` strictement inchangé (mêmes items, même
+  navigation `studyItem`, même distinction icône/couleur par `is_late`) ; habillage ajouté :
+  barre d'accent `w-1 self-stretch` (`bg-danger` si en retard, `bg-accent` sinon) dans le slot
+  `leading` de `ListRow`, et le badge texte brut (`text-[9px]`, valeur arbitraire préexistante)
+  remplacé par la primitive `BaseBadge` (`variant="danger"|"accent"`, `size="sm"`) — supprime
+  au passage une valeur Tailwind arbitraire au lieu d'en ajouter une. Badge toujours présent
+  (texte « En retard » ou « Aujourd'hui », capitalisation visuelle via classe `uppercase`
+  plutôt que texte figé en capitales, cohérent avec la convention déjà en place dans ce fichier
+  pour l'accessibilité — un lecteur d'écran épelle moins bien un texte tout capitales). Pas de
+  badge « DEMAIN » : absent des données `focusStore.items`, non inventé.
+  À droite : nouveau widget « Cette semaine » (7 barres `bg-primary` de hauteur en `%`, dérivées
+  de `heatmapData` déjà chargé via `getStartAndEndOfWeek()` réutilisé tel quel, aucun nouvel
+  appel réseau) et nouveau widget « Maturité des cartes » (barre empilée
+  `bg-line`/`bg-accent`/`bg-primary` + 3 pourcentages, nouvelle interface locale
+  `MaturityDistribution`, nouvel appel `api.get<{ maturity_distribution: MaturityDistribution }>
+  ('/stats/dashboard')` ajouté au `Promise.all` existant, même pattern d'appel direct que les
+  appels `/stats/*` déjà présents dans ce fichier — écart d'architecture préexistant non corrigé
+  sur consigne explicite).
+- Après la grille : les cartes « Aujourd'hui » (compteurs) et « Charge à venir (14j) » sortent
+  de l'ancienne grille 3 colonnes pour devenir une grille 2 colonnes séparée juste en dessous —
+  seul le conteneur change, le contenu de chaque carte (classes, structure, valeurs calculées)
+  est resté strictement identique caractère pour caractère. Les 4 `StatCard`, la heatmap 365j,
+  « Objectif Hebdomadaire » et « Rétention par matière » n'ont subi aucune modification (aucun
+  `Edit` appliqué à ces blocs).
+- « À faire » et « Activité récente » : non implémentés, conforme à la décision actée plus haut.
+
+Un écart mineur assumé sans instruction explicite : la légende « N session(s) cette semaine »
+du widget « Cette semaine » (au lieu de « N cartes révisées » dans la maquette littérale) — la
+heatmap ne fournit que des compteurs de *sessions* par jour, pas de cartes révisées par jour ;
+inventer une correspondance directe session→carte aurait été une donnée fabriquée. Choix : nom
+de métrique honnête plutôt que copie littérale de la maquette, cohérent avec le vocabulaire déjà
+utilisé par `getTooltipText` (« N session(s) ») dans ce même fichier.
+
+41/41 tests de l'écran verts, **276/276 tests web verts** au global (271 avant ce cycle + 5 nets
+: 10 tests nouveaux/réécrits sur des comportements changés, 5 tests obsolètes retirés — ancienne
+salutation dans la carte hero et ancien badge « En retard uniquement » fusionnés dans les
+nouvelles assertions), `vue-tsc -b` propre (aucune erreur). Aucun token ni primitive modifié.
+Aucune fonctionnalité existante supprimée : tous les widgets déjà présents avant ce cycle
+(compteurs, charge à venir, StatCard, heatmap, objectif hebdo, rétention, et le fond complet de
+« À réviser maintenant » avec decks/notes/devoirs) restent accessibles avec le même contenu.
+
+Captures d'écran (étape 7) **non prises** — hors périmètre de ce cycle sur consigne explicite du
+contrôleur (« pas de captures d'écran à ce stade, je m'en charge, contrôleur, à la fin »).
+
+**Vérification du contrôleur** : suite complète et `vue-tsc -b` relancés indépendamment
+(276/276, propre) ; diff de `Accueil.vue` relu ligne à ligne contre le plan — conforme, rien
+en dessous de la grille n'a bougé. **Correctif appliqué** : la copie du CTA (« Continuer à
+réviser · N cartes ») ne gérait pas le singulier (« 1 cartes ») — corrigé
+(`carte${totalDue > 1 ? 's' : ''}`), 41/41 toujours verts après coup.
+
+**Vérification visuelle réelle** (navigateur stable maintenant, renderer non gelé) : capture
+clair et sombre en desktop (~1500px) + clair et sombre en mobile (375px, technique iframe,
+`resize_window` de la fenêtre réelle toujours bloqué en plein écran dans cet environnement) —
+**les 4 combinaisons confirmées propres**. Vérifié avec un deck+carte réels créés via l'API
+pour le test (supprimés ensuite) : le badge d'échéance, la barre d'accent par ligne et le CTA
+d'en-tête (« Continuer à réviser · 1 carte ») s'affichent correctement avec de vraies données
+dues. Widget « Maturité des cartes » vérifié à 0 % avec ce jeu de données (le calcul et
+l'appel réseau sont corrects ; une nouvelle carte fraîchement créée n'apparaît pas
+immédiatement dans le pourcentage à cause du cache serveur 5 min déjà en place sur
+`GET /stats/dashboard` — comportement préexistant, identique sur `/stats/heatmap` et
+`/stats/overview`, pas une régression de ce cycle).
+
+**Écran 2 (réouverture) terminé** — étape 8 : cette section à jour, commit à suivre.
