@@ -266,6 +266,7 @@ détaillée : skill `migration-ecran`.
 1. Coquille applicative — navigation, en-tête, barre mobile, thème, états d'authentification
    (`web/src/components/layout/AppLayout.vue`) — **terminé**
 2. Accueil (dashboard fusionné : heatmap, streaks, métriques de rétention, file de révision)
+   (`web/src/views/Home/Accueil.vue`) — **terminé**
 3. Session de révision flashcards
 4. Éditeur de notes et mode Zen
 5. Blurting IA
@@ -490,3 +491,17 @@ API uniquement dans stores/ et services/ »). C'est un écart préexistant (pré
 cycle, hérité du fichier source), pas introduit ici ; je ne l'ai pas corrigé pour rester dans
 le périmètre strict de la tâche (état d'erreur + tests), mais il mériterait sa propre
 migration (extraire un `useAccueilStats` composable/service) dans un cycle dédié.
+
+**Vérification du contrôleur** : suite complète et `vue-tsc -b` relancés indépendamment
+(234/234, propre). Captures d'écran clair/sombre × desktop/mobile (étape 7) **non prises** —
+l'environnement navigateur de cette session est resté instable tout du long (fenêtre bloquée
+à pleine taille, renderer gelé à plusieurs reprises) ; à la place, vérification directe par
+DOM sur navigateur réel (réseau bloqué via un patch temporaire d'`XMLHttpRequest`/`fetch`
+côté page, retiré ensuite) : l'état erreur affiche bien « Le chargement a échoué » + la
+description + le bouton « Réessayer », et le bouton d'action de l'en-tête est bien absent du
+DOM pendant l'erreur. Rendu normal (chargé, sombre, desktop ~1485px) confirmé par capture
+avant l'injection de la panne. Pas de vérification visuelle mobile (375px) ni clair pour cet
+écran — écart à combler si l'environnement de capture se stabilise avant la fin de la phase.
+
+**Écran 2 terminé** — étape 8 : cette section à jour, déjà committé par le subagent
+(`c7a6093`).
