@@ -412,6 +412,13 @@ suivre.
    chargement (seule lacune réelle trouvée). 36/36 tests verts, 234/234 tests web verts,
    `vue-tsc -b` sans erreur. Détail complet ci-dessous.
 
+3. **Session de révision flashcards** (`StudyDeck.vue`) — vraie recomposition (aucune
+   primitive/token utilisé auparavant, 6 couleurs Tailwind brutes + `dark:` redondants + 5
+   classes arbitraires éliminés). 6 boutons de notation → 4 (mapping SM-2 0/3/4/5 tranché par
+   l'utilisateur), raccourcis clavier 1-4 ajoutés, distinction vide/complet introduite, 2
+   lacunes d'erreur corrigées (dont le premier câblage réel de `BaseToast`). 37 tests créés de
+   zéro, 271/271 tests web verts, `vue-tsc -b` sans erreur. Détail complet ci-dessous.
+
 ### Écran 2 — Accueil (`web/src/views/Home/Accueil.vue`) — terminé
 
 **Inventaire de l'existant** (lecture complète du fichier, 2026-08-25) : le fichier est déjà
@@ -506,9 +513,15 @@ avant l'injection de la panne. Pas de vérification visuelle mobile (375px) ni c
 **Écran 2 terminé** — étape 8 : cette section à jour, déjà committé par le subagent
 (`c7a6093`).
 
-3. **Session de révision flashcards** (`web/src/views/Decks/StudyDeck.vue`) — **en cours**.
+3. **Session de révision flashcards** (`web/src/views/Decks/StudyDeck.vue`) — **terminé**.
+   Vraie recomposition (aucune primitive/token utilisé auparavant) : 6 boutons de notation en
+   couleurs Tailwind brutes remplacés par 4 boutons tokens (Encore/Difficile/Bien/Facile,
+   mapping SM-2 0/3/4/5 tranché par l'utilisateur), raccourcis clavier 1-4 ajoutés, distinction
+   vide/complet introduite, 2 lacunes d'erreur corrigées (chargement → `BaseEmptyState`,
+   notation → premier câblage réel de `BaseToast`). 37 tests nouveaux, suite complète
+   271/271, `vue-tsc -b` propre.
 
-### Écran 3 — Session de révision flashcards (`web/src/views/Decks/StudyDeck.vue`) — en cours
+### Écran 3 — Session de révision flashcards (`web/src/views/Decks/StudyDeck.vue`) — terminé
 
 **Inventaire de l'existant** (lecture complète du fichier, 2026-08-25) : contrairement à
 l'écran 2, ce fichier **n'utilise aucune primitive** et **aucun token** pour ses éléments les
@@ -615,7 +628,72 @@ de `style.css`) :
 - **Hors ligne** : pas de traitement spécifique — un échec réseau tombe dans l'état erreur
   ci-dessus ; indicateur hors ligne global (coquille) indépendant.
 
-**Prochaine action** : dispatcher au subagent `migrateur-ecran` (étapes 3-6). Contraintes
-supplémentaires à lui transmettre : lire les deux fichiers maquette avant de commencer,
-préserver impérativement les 4 modes d'entrée et leurs 3 CTA de complétion distincts, ne pas
-inventer d'autre écart avec la maquette sans le signaler au contrôleur.
+**Réalisé** (étapes 3-6 du subagent `migrateur-ecran`) : suite de tests rouge d'abord
+(`web/tests/views/Decks/StudyDeck.spec.ts`, 37 tests créés de zéro — le fichier n'avait aucun
+test avant ce cycle), confirmée en échec pour la bonne raison contre le fichier non modifié (29
+échecs sur les libellés « Recto »/« Verso », les 4 boutons de notation et leur mapping, le
+raccourci clavier, la distinction vide/complet, les 2 états d'erreur et l'usage de `BaseButton`
+sur les CTA — tous absents du code d'origine ; 8 tests déjà verts car les 4 modes d'entrée et
+leurs 3 destinations de retour fonctionnaient déjà). Deux corrections de test apportées après
+ce premier rouge (bugs de test, pas de composant) : `flushPromises()` manquant après un clic
+déclenchant une navigation asynchrone, et une assertion erronée supposant que la face verso
+n'existe pas dans le DOM tant que la carte n'est pas retournée (l'effet 3D affiche les deux
+faces en permanence, seule une classe `rotate-y-180` bascule laquelle est visible — corrigée
+pour vérifier cette classe plutôt que l'absence du texte).
+
+Composition : recomposition complète depuis les primitives (`BaseCard`, `BaseButton`,
+`BaseEmptyState`, `BaseToast`) et les tokens du design system — élimination des 6 couleurs
+Tailwind brutes (`bg-rose-*`/`bg-amber-*`/`bg-indigo-*`/`bg-emerald-*` et leurs variantes
+`dark:`), des préfixes `dark:` redondants sur des classes déjà tokenisées, et de 5 classes
+Tailwind arbitraires (`min-h-[320px]` → `min-h-80`, `text-[10px]`/`text-[9px]` → `text-tiny`,
+tokens déjà présents dans `tailwind.config.js` sans qu'aucun n'ait eu besoin d'être ajouté).
+Les 4 boutons de notation sont composés directement avec les tokens (`border-danger`/
+`text-danger`, `border-accent`/`text-accent`, `bg-primary`/`text-primary-ink`,
+`border-success`/`text-success`, `rounded-btn-primary`, `min-h-11`) plutôt qu'avec `BaseButton` :
+la primitive ne propose pas de disposition icône-au-dessus-du-libellé avec repère clavier
+sous-jacent (layout horizontal uniquement) — jugé hors de son périmètre actuel plutôt qu'un
+manque à corriger dans ce cycle, signalé au contrôleur. Premier câblage réel de `BaseToast`
+(présentationnel, sans file d'attente globale, conforme à ce qui était prévu dans la skill
+`design-system`). Icônes `@lucide/vue` : `X`, `ArrowRight`, `Check`, `CheckCheck` (notation),
+`Inbox` (état « jamais eu de carte », nouvelle), `AlertCircle`/`Sparkles`/`ChevronLeft`
+(déjà utilisées ailleurs dans l'app pour les mêmes usages). Animation d'entrée locale
+(`@keyframes fadeIn` dupliquée) remplacée par le token d'animation existant `animate-fade-up`
+(déjà défini dans `tailwind.config.js`, non utilisé par cet écran auparavant) — suppression
+d'une redondance plutôt qu'ajout.
+
+Copie : « Recto »/« Verso » remplacent « Question / Terme »/« Réponse / Définition », indice
+recto aligné sur la maquette (« Cliquer sur la fiche pour retourner »). Nouveau texte de l'état
+« jamais eu de carte » : « Rien à réviser ici pour le moment. » + « Aucune carte n'est due pour
+le moment dans ce deck. » — distinct du texte de complétion existant (« Session terminée ! 🎉 »),
+inchangé. Les 3 CTA de fin de session (focus/advance/normal) conservés à l'identique, y compris
+l'aiguillage préexistant du mode dossier vers « Retour à la liste » plutôt que vers le classeur
+d'origine (comportement déjà présent avant ce cycle, non modifié — hors périmètre).
+
+37/37 tests de l'écran verts, **271/271 tests web verts** au global, `vue-tsc -b` sans erreur.
+Aucune primitive ni token modifié. Aucune fonctionnalité existante supprimée : les 4 modes
+d'entrée et leurs sources/destinations respectives sont couverts chacun par un test dédié.
+
+**Écarts relevés sans agir dessus (hors périmètre de ce cycle, signalés)** :
+- `StudyDeck.vue` appelle `api.get(...)` directement (mode dossier) plutôt que de passer par un
+  store/service dédié — écart préexistant (même famille que celui déjà signalé sur
+  `Accueil.vue`), non corrigé ici sur consigne explicite du contrôleur.
+- `eslint.config.js` ne déclare aucun environnement navigateur (`window`, `document`, `console`,
+  `KeyboardEvent`, `localStorage`, `navigator` sont rapportés `no-undef`) — gap de configuration
+  projet préexistant, confirmé identique sur `AppLayout.vue` déjà mergé (18 erreurs strictement
+  analogues à l'exécution directe d'ESLint), donc non introduit par ce cycle ; non corrigé, hors
+  périmètre d'une migration d'un seul écran.
+- Le hook `raw_value_guard` signale `perspective: 1000px` et `transform: translateY(20px)` dans
+  le `<style scoped>` (effet de retournement 3D et transition d'entrée) : valeurs déjà présentes
+  à l'identique dans le fichier d'origine, structurelles (dimensions de transformation CSS, pas
+  des couleurs/espacements de design), non modifiables via une classe Tailwind sans passer par
+  une syntaxe arbitraire tout aussi proscrite — laissées telles quelles.
+- Aucun token manquant : la palette de la maquette (`--danger`/`--highlight`/`--success`/
+  `--accent`/`--accent-ink`) correspond exactement aux tokens `danger`/`accent`/`success`/
+  `primary`/`primary-ink` déjà définis dans `web/src/style.css` (confirmé par lecture directe,
+  pas par supposition) — rien à remonter au `designer-ui` sur ce point.
+
+**Vérification du contrôleur** : suite complète et `vue-tsc -b` relancés indépendamment
+(271/271, propre). Captures d'écran clair/sombre × desktop/mobile (étape 7) **non prises** à ce
+stade — le contrôleur s'en charge en fin de cycle, comme annoncé.
+
+**Écran 3 terminé** — étape 8 : cette section à jour, commit à suivre.
