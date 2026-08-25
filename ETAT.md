@@ -267,7 +267,7 @@ détaillée : skill `migration-ecran`.
    (`web/src/components/layout/AppLayout.vue`) — **terminé**
 2. Accueil (dashboard fusionné : heatmap, streaks, métriques de rétention, file de révision)
    (`web/src/views/Home/Accueil.vue`) — **terminé**
-3. Session de révision flashcards
+3. Session de révision flashcards (`web/src/views/Decks/StudyDeck.vue`) — **terminé**
 4. Éditeur de notes et mode Zen
 5. Blurting IA
 6. Liseuse PDF et annotations
@@ -693,7 +693,20 @@ d'entrée et leurs sources/destinations respectives sont couverts chacun par un 
   pas par supposition) — rien à remonter au `designer-ui` sur ce point.
 
 **Vérification du contrôleur** : suite complète et `vue-tsc -b` relancés indépendamment
-(271/271, propre). Captures d'écran clair/sombre × desktop/mobile (étape 7) **non prises** à ce
-stade — le contrôleur s'en charge en fin de cycle, comme annoncé.
+(271/271, propre) ; diff de `StudyDeck.vue` relu ligne à ligne contre la spec écrite plus haut
+(mapping de score, classes de tokens, API réelle de `BaseToast` vérifiée dans son fichier
+source) — conforme. **Vérification bout-en-bout sur navigateur réel** (deck + carte créés via
+l'API pour ce test, supprimés ensuite) : capture confirmant les 4 boutons rendus exactement
+comme spécifié (Encore contour brique, Difficile contour ocre, Bien rempli indigo, Facile
+contour sauge, raccourcis 1-4 visibles) ; clic sur « Bien » → carte notée, session complétée
+(« Session terminée ! 🎉 », CTA « Retour à la liste ») ; **score vérifié jusqu'au bout de la
+chaîne réelle** via l'API backend après coup : `repetitions: 0→1`, `interval: 1`,
+`ease_factor` inchangé à 2.5 — exactement la sortie attendue de `calculate_sm2` pour un score 4
+sur une carte neuve, confirmant que le mapping Bien→4 arrive intact jusqu'à l'algorithme SM-2
+réel. Pas de vérification visuelle mobile (375px) ni du thème sombre pour cet écran —
+environnement de capture resté instable (mêmes limites que l'écran 2), écart cumulé à combler
+si l'environnement se stabilise avant la fin de la phase.
+
+**Écran 3 terminé** — étape 8 : cette section à jour, déjà committé (`0766c40`).
 
 **Écran 3 terminé** — étape 8 : cette section à jour, commit à suivre.
