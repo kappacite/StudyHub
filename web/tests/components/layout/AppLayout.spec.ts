@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../../src/services/api', () => ({ default: api }))
 
+import { BookOpen, Users } from '@lucide/vue'
 import AppLayout from '../../../src/components/layout/AppLayout.vue'
 import SearchModal from '../../../src/components/ui/SearchModal.vue'
 import PomodoroTimer from '../../../src/components/ui/PomodoroTimer.vue'
@@ -33,6 +34,7 @@ function createTestRouter(initialPath: string): Router {
       { path: '/classes', name: 'Classes', component: stub },
       { path: '/explore', name: 'Explore', component: stub },
       { path: '/notes/:id', name: 'NoteEdit', component: stub },
+      { path: '/decks/:id/study', name: 'StudyDeck', component: stub },
       { path: '/exam/:id', name: 'ExamSession', component: stub, meta: { immersive: true } },
     ],
   })
@@ -172,6 +174,30 @@ describe('AppLayout', () => {
     expect(communaute.classes()).toContain('lg:flex')
   })
 
+  // ── Icônes de nav conformes à la maquette AppShell.dc.html ─────────
+  it('utilise l\'icône livre ouvert (BookOpen) pour Bibliothèque, pas un dossier', async () => {
+    const { wrapper } = await mountLayout()
+    const nav = wrapper.get('[data-test="desktop-nav"]')
+    const link = nav.findAll('a').find((a) => a.text() === 'Bibliothèque')!
+    expect(link.findComponent(BookOpen).exists()).toBe(true)
+  })
+
+  it("utilise l'icône deux-personnes (Users) pour Classes, pas un chapeau de diplômé", async () => {
+    const { wrapper } = await mountLayout()
+    const nav = wrapper.get('[data-test="desktop-nav"]')
+    const link = nav.findAll('a').find((a) => a.text() === 'Classes')!
+    expect(link.findComponent(Users).exists()).toBe(true)
+  })
+
+  it('reprend les mêmes icônes BookOpen/Users dans la barre de navigation mobile', async () => {
+    const { wrapper } = await mountLayout()
+    const bar = wrapper.get('[data-test="mobile-bottom-nav"]')
+    const biblio = bar.findAll('a').find((a) => a.text() === 'Bibliothèque')!
+    const classes = bar.findAll('a').find((a) => a.text() === 'Classes')!
+    expect(biblio.findComponent(BookOpen).exists()).toBe(true)
+    expect(classes.findComponent(Users).exists()).toBe(true)
+  })
+
   // ── Titre de route courant (mobile) ─────────────────────────────────
   it('affiche le titre de la route courante', async () => {
     const { wrapper } = await mountLayout({ path: '/reviser' })
@@ -228,6 +254,11 @@ describe('AppLayout', () => {
     const { wrapper } = await mountLayout({ path: '/exam/1' })
     expect(wrapper.findComponent(PomodoroTimer).exists()).toBe(false)
     expect(wrapper.findComponent(SearchModal).exists()).toBe(true)
+  })
+
+  it('masque PomodoroTimer pendant une session de révision (chevauchement mesuré avec le bouton de notation « Facile » à 375px)', async () => {
+    const { wrapper } = await mountLayout({ path: '/decks/1/study' })
+    expect(wrapper.findComponent(PomodoroTimer).exists()).toBe(false)
   })
 
   // ── Mode immersif : coquille masquée ────────────────────────────────

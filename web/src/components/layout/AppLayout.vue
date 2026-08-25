@@ -418,8 +418,13 @@
     <!-- Universal Search Modal -->
     <SearchModal :is-open="isSearchOpen" @close="isSearchOpen = false" />
 
-    <!-- Pomodoro Timer Floating Widget -->
-    <PomodoroTimer v-if="!$route.meta.immersive" />
+    <!-- Pomodoro Timer Floating Widget : masqué pendant une session de
+         révision de flashcards — sa position fixe (bottom-28 right-6, cf.
+         PomodoroTimer.vue) chevauche et intercepte les clics du 4e bouton de
+         notation (« Facile ») sur mobile, mesuré à 375px avec une seule
+         carte affichée (hauteur de contenu quasi constante quelle que soit
+         la taille du deck, donc collision systématique, pas un cas limite). -->
+    <PomodoroTimer v-if="!$route.meta.immersive && route.name !== 'StudyDeck'" />
   </div>
 </template>
 
@@ -435,7 +440,7 @@ import BaseButton from '../ui/base/BaseButton.vue'
 import BaseBadge from '../ui/base/BaseBadge.vue'
 import {
   Home,
-  FolderClosed,
+  BookOpen,
   LogOut,
   LogIn,
   Sun,
@@ -445,7 +450,7 @@ import {
   Brain,
   Search,
   Compass,
-  GraduationCap,
+  Users,
   WifiOff,
 } from '@lucide/vue'
 
@@ -479,7 +484,7 @@ const navItems = [
   {
     name: 'Bibliothèque',
     path: '/bibliotheque',
-    icon: FolderClosed,
+    icon: BookOpen,
     match: ['/bibliotheque', '/notes', '/pdfs', '/diagrams'],
   },
   {
@@ -489,7 +494,7 @@ const navItems = [
     match: ['/reviser', '/decks', '/revision', '/exam'],
   },
   { name: 'Planning', path: '/planning', icon: Calendar, match: ['/planning'] },
-  { name: 'Classes', path: '/classes', icon: GraduationCap, match: ['/classes', '/groups'] },
+  { name: 'Classes', path: '/classes', icon: Users, match: ['/classes', '/groups'] },
   { name: 'Communauté', path: '/explore', icon: Compass, match: ['/explore', '/package'] },
 ]
 

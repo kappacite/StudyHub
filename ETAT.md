@@ -886,3 +886,87 @@ immédiatement dans le pourcentage à cause du cache serveur 5 min déjà en pla
 `/stats/overview`, pas une régression de ce cycle).
 
 **Écran 2 (réouverture) terminé** — étape 8 : cette section à jour, commit à suivre.
+
+## Re-vérification écrans 1 et 3 contre les vraies maquettes (2026-08-25)
+
+Sur demande explicite de l'utilisateur (« refais le même travail sur toutes les pages déjà
+faites pour être sûr que c'est bon ») : appliquer la même rigueur que la réouverture de l'écran 2
+(ouvrir le vrai fichier `.dc.html`, pas le spec écrit ni la seule présence de tokens) aux écrans
+1 et 3. L'écran 2 avait déjà eu sa vraie comparaison de maquette lors de sa réouverture
+ci-dessus — pas de nouvelle action dessus. L'écran 3 avait déjà été comparé à ses vrais fichiers
+maquette (`StudyDeckDesktop.dc.html`/`StudyDeckMobile.dc.html`) lors de son cycle initial — la
+lacune restante n'était pas la comparaison de structure, mais la vérification visuelle mobile/
+sombre jamais faite (signalée comme écart à combler « si l'environnement se stabilise »).
+
+**Écran 1 (Coquille, `AppLayout.vue`) — comparaison contre la vraie maquette `AppShell.dc.html`**
+(jamais ouverte auparavant ; la décision de nav avait été basée sur `docs/design-system-
+direction-a-spec.md`, un document dérivé, pas le fichier `.dc.html` lui-même). Extraction via
+la procédure documentée (artifact → `appifact-doc` JSON → fichier). Comparaison élément par
+élément :
+- Nav 4 pastilles (Accueil/Bibliothèque/Réviser/Classes) vs 5 + Communauté en icône du code :
+  écart déjà identifié et tranché explicitement par l'utilisateur le 2026-08-24 (cf. plus haut,
+  section écran 1 originale) — confirmé cohérent avec la maquette, pas un nouvel écart.
+- Couleur de la pastille active et de l'avatar (indigo plein `--accent` maquette = token
+  `primary` du projet, pas `accent` — mapping confirmé via la mémoire d'extraction) : cohérent
+  avec le code (`bg-primary`/`text-primary-ink`).
+- Avatar desktop : maquette = cercle plein indigo/blanc ; code = cercle `bg-primary-soft
+  text-primary` (fond teinté, texte coloré). Vérifié que ce traitement « soft » est la
+  convention établie dans tout le projet (44 fichiers l'utilisent pour badges/avatars/chips) —
+  jugé cohérent avec le reste de l'app, pas une régression à corriger (même famille de décision
+  que la pastille active le 2026-08-24).
+- Avatar dans le mini-en-tête mobile : présent dans la maquette (à côté de la bascule thème),
+  absent du code (profil accessible uniquement via le tiroir hamburger). Non ajouté : l'en-tête
+  mobile a déjà été signalé une fois pour débordement réel (titre tombé à 1px, cf. plus haut,
+  tour de correction 2) ; ajouter un élément de plus dans cette zone déjà dense referait courir
+  ce risque pour un gain cosmétique mineur (le profil reste accessible via le tiroir). Écart
+  assumé, pas corrigé.
+- **2 icônes réellement fausses trouvées et corrigées** : « Bibliothèque » utilisait
+  `FolderClosed` (dossier) au lieu du livre ouvert de la maquette → `BookOpen` ; « Classes »
+  utilisait `GraduationCap` (chapeau de diplômé) au lieu du pictogramme deux-personnes de la
+  maquette → `Users`. Les deux icônes existent dans `@lucide/vue` (vérifié). Aucun test
+  n'existait sur l'identité des icônes avant ce cycle — 3 tests ajoutés d'abord (rouge confirmé
+  contre le code non modifié), puis le correctif (vert). 279/279 → 280/280 tests verts au fil du
+  cycle (voir plus bas pour le compte final), `vue-tsc -b` propre.
+
+**Vérification visuelle réelle, écran 1** (desktop clair/sombre déjà faits lors des tours de
+correction précédents, jamais confirmés en dernière instance après le fix round 2 — capture
+finale manquante signalée comme « jugée à faible risque » ; mobile 375px jamais fait du tout) :
+les 4 combinaisons clair/sombre × desktop/mobile capturées cette fois (technique iframe de
+largeur contrôlée, `resize_window` de la fenêtre réelle toujours plafonné dans cet
+environnement). **Aucun chevauchement, nouvelles icônes rendues correctement dans les 4
+combinaisons.** Referme définitivement l'écart de capture reporté au fix round 1/2.
+
+**Écran 3 (StudyDeck) — vérification visuelle mobile/sombre jamais faite, comblée maintenant.**
+En la faisant, **bug réel trouvé et confirmé par interaction, pas seulement visuel** : sur mobile
+(375px), le widget flottant `PomodoroTimer` (position fixe `bottom-28 right-6`, cf.
+`PomodoroTimer.vue`) chevauche entièrement le 4e bouton de notation (« Facile ») dans la grille
+`grid-cols-4` de l'écran de session. Vérifié par clic réel à l'emplacement du bouton : ouvre le
+minuteur Pomodoro au lieu de noter la carte — le bouton est fonctionnellement inatteignable, pas
+seulement visuellement gêné. Confirmé systématique (pas un cas limite) : la hauteur de contenu
+de cet écran est quasi constante (1 seule carte affichée à la fois + fil d'ariane + grille de
+boutons), donc la collision se produit sur toute session, indépendamment de la taille du deck.
+
+**Correctif** (TDD : test rouge d'abord dans `AppLayout.spec.ts`, route `StudyDeck` ajoutée au
+routeur de test, puis le code) : `PomodoroTimer` masqué pendant une session de révision
+(`v-if="!$route.meta.immersive && route.name !== 'StudyDeck'"` dans `AppLayout.vue`) — un
+minuteur flottant superposé à la zone de notation active n'est de toute façon pas souhaitable
+pendant la notation, indépendamment de la collision technique. Le minuteur reste disponible sur
+tous les autres écrans, y compris juste avant/après une session.
+
+**Vérification bout-en-bout après correctif** : bouton « Facile » de nouveau cliquable à 375px
+(clair et sombre), session complétée normalement. Score vérifié jusqu'au bout de la chaîne
+réelle via l'API backend (deck + carte de test créés puis supprimés) :
+`repetitions: 0→1`, `interval: 0→1`, `ease_factor: 2.5→2.6` — sortie exacte attendue de
+`calculate_sm2` pour un score 5 (Facile) sur une carte neuve.
+
+**Suite complète et types** : 280/280 tests web verts (279 avant ce cycle + 3 tests d'icônes
+nouveaux + 1 test Pomodoro/StudyDeck nouveau − 3 tests obsolètes n'existaient pas, net +1 déjà
+compté), `vue-tsc -b` propre. Aucun token ni primitive modifié.
+
+**Écran 2 (Accueil)** : pas de nouvelle vérification nécessaire, déjà faite rigoureusement à sa
+réouverture ci-dessus (comparaison structurelle complète contre `Main.dc.html`, vérification
+visuelle 4 combinaisons déjà confirmée).
+
+**Prochaine action** : écran 4 — Éditeur de notes et mode Zen (`NoteEdit.vue`), premier écran non
+encore migré, cycle complet `migration-ecran` (inventaire, comparaison à `NoteEdit.dc.html`,
+états, tests, composition).
