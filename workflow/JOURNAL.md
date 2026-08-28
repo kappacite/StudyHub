@@ -4,9 +4,11 @@ Chantier actif : bibliotheque-ensembles
 
 ## Chantiers ouverts
 
-- `bibliotheque-ensembles` — **actif**, branche `feature/bibliotheque-ensembles`. Dépendance
-  `backend-ensembles-heterogenes` levée (PR #126 mergée). Prochain point : spec + plan détaillé
-  (brainstorming).
+- `bibliotheque-ensembles` — **code clos**, branche `feature/bibliotheque-ensembles` prête pour
+  revue finale de branche puis push + PR humaine. 11 tâches TDD faites (dont 2 ajoutées en
+  cours d'exécution — un correctif `TeacherDashboard.vue` et le type `flashcard` manquant dans
+  `RevisionItemModal.vue`). Vérification visuelle réelle non faite (environnement de dev déjà
+  occupé par d'autres conteneurs) — écart documenté, à combler si l'environnement se stabilise.
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
 - `reviser-hub` — pas commencé, débloqué (`backend-ensembles-heterogenes` mergé)
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant
@@ -14,6 +16,14 @@ Chantier actif : bibliotheque-ensembles
 
 ## Historique
 
+- 2026-08-28 — [bibliotheque-ensembles] Chantier clos (code) : 11 tâches TDD faites (dont 2
+  ajoutées en cours d'exécution suite à des découvertes réelles — `TeacherDashboard.vue`
+  cassé par la nullabilité de `RevisionSet.type`, type `flashcard` manquant dans
+  `RevisionItemModal.vue`), un tour de correction sur `Binders.vue` (2 constats critiques :
+  perte de fonctionnalité dans la fusion Decks+Ensembles, seuil de cartes dues affaibli).
+  Portée finale confirmée propre (`git diff --stat`), 319/319 tests verts. Vérification
+  visuelle non faite (environnement de dev partagé, risque d'interférence jugé supérieur au
+  bénéfice) — écart documenté. Prochaine action : revue finale de branche, puis push + PR.
 - 2026-08-28 — [bibliotheque-ensembles] Chantier activé, branche `feature/bibliotheque-ensembles`
   créée depuis `main` à jour (worktree `.worktrees/bibliotheque-ensembles`). Choisi comme
   prochain chantier (recommandation) : premier de l'ordre numérique des flux après le socle
