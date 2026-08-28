@@ -273,6 +273,28 @@
           </div>
         </template>
 
+        <!-- FLASHCARD -->
+        <template v-else-if="itemType === 'flashcard'">
+          <div>
+            <label :class="labelCls">Recto</label
+            ><textarea
+              v-model="flashFront"
+              rows="2"
+              :class="inputCls"
+              placeholder="Ex: Capitale de l'Italie ?"
+            ></textarea>
+          </div>
+          <div>
+            <label :class="labelCls">Verso</label
+            ><textarea
+              v-model="flashBack"
+              rows="2"
+              :class="inputCls"
+              placeholder="Ex: Rome"
+            ></textarea>
+          </div>
+        </template>
+
         <p v-if="error" class="text-xs text-danger">{{ error }}</p>
 
         <div class="flex items-center justify-end gap-3 pt-2">
@@ -303,10 +325,12 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useDecksStore } from '../../stores/decks'
 import type { Deck } from '../../stores/decks'
 import { useRevisionStore } from '../../stores/revision'
-import type { RevisionType, RevisionItemPayload, RevisionItem } from '../../stores/revision'
+import type { RevisionItemType, RevisionItemPayload, RevisionItem } from '../../stores/revision'
 
-// 'basic' = flashcard recto/verso (Deck) ; les autres = ensembles de révision.
-type ItemType = 'basic' | RevisionType
+// 'basic' = flashcard recto/verso (Deck, systeme classique) ; les autres = ensembles de
+// revision (RevisionItemType inclut desormais 'flashcard', un item de type flashcard au
+// sein d'un RevisionSet -- distinct du Deck classique).
+type ItemType = 'basic' | RevisionItemType
 
 const props = defineProps<{
   binderId: string | null
@@ -316,7 +340,7 @@ const props = defineProps<{
   // Mode édition : item existant à modifier (toujours un ensemble de révision typé).
   editItem?: RevisionItem
   lockedSetId?: number
-  lockedType?: RevisionType
+  lockedType?: RevisionItemType
 }>()
 const emit = defineEmits<{ (e: 'close'): void; (e: 'created'): void; (e: 'updated'): void }>()
 
@@ -329,17 +353,25 @@ const labelCls = 'block text-[10px] font-bold text-slate-400 uppercase tracking-
 const inputCls =
   'w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
 
-const TYPES: { value: ItemType; label: string }[] = [
+const ALL_TYPES: { value: ItemType; label: string }[] = [
   { value: 'basic', label: 'Carte' },
   { value: 'qcm', label: 'QCM' },
   { value: 'vf', label: 'Vrai / Faux' },
   { value: 'definition', label: 'Définition' },
   { value: 'ordre', label: 'Ordre' },
   { value: 'association', label: 'Association' },
+  { value: 'flashcard', label: 'Flashcards' },
 ]
+// Un Deck (basic) ne peut jamais vivre dans un RevisionSet : exclu du selecteur des qu'on
+// ajoute a un ensemble existant (lockedSetId).
+const TYPES = computed(() =>
+  props.lockedSetId !== undefined ? ALL_TYPES.filter((t) => t.value !== 'basic') : ALL_TYPES,
+)
 
 const NEW_TARGET = '__new__' as const
-const itemType = ref<ItemType>(props.lockedType || props.initialType || 'basic')
+const itemType = ref<ItemType>(
+  props.lockedType || props.initialType || (props.lockedSetId !== undefined ? 'qcm' : 'basic'),
+)
 const targetChoice = ref<number | typeof NEW_TARGET>(NEW_TARGET)
 const newTargetName = ref('')
 const saving = ref(false)
@@ -402,6 +434,9 @@ const assocPairs = ref<{ left: string; right: string }[]>([
   { left: '', right: '' },
   { left: '', right: '' },
 ])
+// FLASHCARD (item de revision, distinct du Deck classique)
+const flashFront = ref('')
+const flashBack = ref('')
 
 const canSubmit = computed(() => {
   if (targetChoice.value === NEW_TARGET && !newTargetName.value.trim()) return false
@@ -419,6 +454,7 @@ const canSubmit = computed(() => {
       !!assocTitle.value.trim() &&
       assocPairs.value.filter((p) => p.left.trim() && p.right.trim()).length >= 2
     )
+  if (itemType.value === 'flashcard') return !!flashFront.value.trim() && !!flashBack.value.trim()
   return false
 })
 
@@ -450,6 +486,9 @@ function buildPayload(): RevisionItemPayload {
       title: ordreTitle.value.trim(),
       steps: ordreSteps.value.map((s) => s.value.trim()).filter(Boolean),
     }
+  }
+  if (itemType.value === 'flashcard') {
+    return { front: flashFront.value.trim(), back: flashBack.value.trim() }
   }
   // association
   return {
@@ -497,6 +536,9 @@ function prefillFromItem() {
             { left: '', right: '' },
             { left: '', right: '' },
           ]
+  } else if (itemType.value === 'flashcard') {
+    flashFront.value = p.front || ''
+    flashBack.value = p.back || ''
   }
 }
 
@@ -524,7 +566,7 @@ async function submit() {
       if (targetChoice.value === NEW_TARGET) {
         const set = await revisionStore.createSet(
           newTargetName.value.trim(),
-          itemType.value,
+          itemType.value === 'flashcard' ? null : itemType.value,
           null,
           props.binderId,
         )
