@@ -287,6 +287,72 @@ tactiles ≥44px, `safe-area-inset` iOS, `prefers-reduced-motion` : non négocia
 phase 3 (contraste sur badges `*-soft`, cibles tactiles `BaseButton`/`Tabs`) sur les écrans
 qui les utilisent réellement, avec cette fois une vérification visuelle réelle.
 
+### Plan global par flux — extension révision hétérogène + assistant IA (2026-08-27)
+
+**Migré vers `workflow/` le 2026-08-28** : les 8 flux ci-dessous sont désormais suivis comme 6
+chantiers dans `workflow/{backend-ensembles-heterogenes,editeur-notes-notation-ia,
+bibliotheque-ensembles,reviser-hub,ecrans-peripheriques-visuels,classes-examens-planning}/`
+(`CONTEXT.md`/`PLAN.md`/`JOURNAL.md` chacun). **C'est désormais là qu'il faut cocher
+l'avancement et journaliser** — la section ci-dessous reste la référence historique des
+décisions (pourquoi l'architecture hétérogène a été retenue, correction de correspondance
+Notes.dc.html/Binders.vue, etc.), non mise à jour au fil de l'exécution des flux.
+
+Périmètre ajouté en cours de phase 4, en plus des 9 écrans ci-dessus : le canevas Direction A
+a été étendu (session Claude Design, artefact `366dcc95-8da4-41dd-8bbd-1e625a68e2c5`, 37
+artboards) pour couvrir la hiérarchie Classeur → Ensembles de révision → Éléments (6 types :
+Flashcards, QCM, Vrai/Faux, Association, Définition, Ordre) et l'Assistant IA de l'éditeur de
+note (Évaluation mixte, Méthode de la feuille blanche, Méthode Feynman, + bouton Notation
+distinct). **Décision utilisateur (2026-08-27) : on garde le canevas tel quel** — ensembles
+hétérogènes (un ensemble peut mélanger plusieurs types d'éléments, y compris les flashcards),
+quitte à ce que ça diverge de l'architecture `RevisionSet`/`RevisionItem` actuelle (homogène,
+flashcards à part dans `Deck`) et impose une vraie migration de schéma plutôt qu'un ajout.
+
+**Règle pour ce périmètre, à ne pas perdre en route** : chaque flux ci-dessous reçoit son
+propre plan détaillé (spec + tâches TDD pas-à-pas, format `docs/superpowers/plans/YYYY-MM-DD-
+<flux>.md`, sur le modèle du plan écran 4 `2026-08-25-noteedit-migration-plan.md`) **avant
+d'être exécuté** — jamais d'implémentation à partir de ce résumé seul. Cette liste est mise à
+jour à chaque cycle (statut + lien vers le plan écrit + lien vers le plan/spec exécuté), comme
+la liste « Écrans migrés » ci-dessous pour les 9 écrans historiques.
+
+**Correction de correspondance** (à ne pas refaire) : l'artboard du canevas nommé
+`Notes.dc.html` correspond en réalité à l'écran `web/src/views/Binders/Binders.vue` (détail
+d'un classeur : notes/decks/ensembles), **pas** à `web/src/views/Notes/Notes.vue` (liste plate
+de toutes les notes, filtrable par classeur).
+
+**Ordre des flux (dépendances) :**
+
+1. **Backend — migration ensembles hétérogènes** — bloquant pour les flux 3 et 4. Déplace
+   `type` de `RevisionSet` vers `RevisionItem`, décide du sort des flashcards existantes
+   (`Deck`/`Flashcard`) vis-à-vis de `RevisionItem`, migration Alembic, réécrit
+   `validate_item_payload`/`check_answer` (`backend/app/services/revision_service.py`) pour
+   dispatcher sur le type de l'item et non plus de l'ensemble. — **pas commencé, plan pas
+   encore écrit**
+2. **Backend — « Notation de la note »** — nouvelle méthode `ai_service` (note la qualité de la
+   fiche sur 100, distincte de l'« Évaluation mixte » qui note la performance de l'élève sur
+   des exercices générés), route dédiée, pas de dépendance au flux 1. — **pas commencé, plan
+   pas encore écrit**
+3. **Frontend — Bibliothèque/classeur** (`Binders.vue`) : bascule Notes/Révision, liste
+   d'ensembles hétérogènes. Dépend du flux 1. — **pas commencé, plan pas encore écrit**
+4. **Frontend — Ensemble détail + modales** (nouveaux `RevisionSetDetail.vue`,
+   `RevisionSetModal.vue`, `RevisionItemModal.vue` à 6 types). Dépend des flux 1 et 3. — **pas
+   commencé, plan pas encore écrit**
+5. **Frontend — Éditeur de notes** : suite du plan écran 4 existant
+   (`docs/superpowers/plans/2026-08-25-noteedit-migration-plan.md`), déjà amendé pour inclure
+   la Tâche 4 (Assistant IA à 3 méthodes à jour) et la Tâche 5 (nouvelle, `NoteFeynman.vue`) —
+   le bouton Notation (Tâche 4) reste désactivé tant que le flux 2 n'a pas livré sa cible. —
+   **plan écrit, exécution pas commencée** (prochaine action de la phase 4, cf. section
+   Écrans migrés ci-dessous)
+6. **Frontend — Réviser (hub global)** : `RevisionSetManage.vue`, `RevisionSetStats.vue`,
+   `RevisionBinderStats.vue`, `Reviews.vue` à mettre à jour pour les types déjà migrés au flux
+   1. Dépend du flux 1. — **pas commencé, plan pas encore écrit**
+7. **Écrans 5-9 restants** (Blurting — retonation visuelle seulement, le contenu ne change pas
+   au-delà de la Tâche 5 du flux 5 ; PDF ; Diagrammes coquille ; Marketplace ; Auth/Réglages) —
+   indépendants des flux 1-6, pure migration visuelle `migration-ecran`, peuvent avancer en
+   parallèle. — **pas commencés**
+8. **Classes/Groupes/Devoirs, Examens, Planning** — indépendants des flux 1-6, pure migration
+   visuelle, à ajouter formellement à l'ordre des écrans ci-dessus quand on y arrive. — **pas
+   commencés**
+
 ### Écran 1 — Coquille applicative (`AppLayout.vue`) — terminé
 
 **Inventaire de l'existant** (lecture complète du fichier, 2026-08-24) :
