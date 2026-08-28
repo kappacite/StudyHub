@@ -33,17 +33,26 @@ l'execute lui-meme.
 2. `git status` (copie propre attendue), `git checkout main`,
    `git fetch origin main`, `git pull --ff-only origin main`.
 3. `git checkout -b feature/<slug>`.
-4. Creer `workflow/<slug>/CONTEXT.md` avec l'en-tete :
+4. Chantier brand nouveau : creer `workflow/<slug>/CONTEXT.md` avec
+   l'en-tete :
    ```
    Statut : ouvert
    Branche : feature/<slug>
    PR : (aucune)
    ```
-   puis le reste en prose (Pourquoi / Comment / Dependances).
+   puis le reste en prose (Pourquoi / Comment / Dependances). Chantier
+   deja planifie (`workflow/<slug>/CONTEXT.md` existe avec `Statut :
+   planifie`) : passer sa ligne `Statut` a `ouvert` et completer/verifier
+   `Branche` (renseigner `feature/<slug>` si absent). Dans les deux cas
+   c'est fait avant l'etape 6 (declaration de `Chantier actif :`) —
+   l'ordre ne change rien au resultat, le hook `workflow_guard.py` exclut
+   desormais le chantier qu'on est en train d'ouvrir de sa verification.
 5. Brainstormer si la tache le justifie (skill
    `superpowers:brainstorming`), puis ecrire le vrai `workflow/<slug>/
    PLAN.md` (checklist `- [ ]`, une case = une tache atomique) et
    `workflow/<slug>/JOURNAL.md` (vide, premiere entree a l'etape suivante).
+   Chantier deja planifie : ces deux fichiers existent generalement deja —
+   les relire et les completer/ajuster plutot que les recreer de zero.
 6. Declarer `Chantier actif : <slug>` dans `workflow/JOURNAL.md` (le hook
    `workflow_guard.py` verifie a ce moment les conditions d'ouverture).
 7. Commit.

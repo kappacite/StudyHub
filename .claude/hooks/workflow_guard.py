@@ -103,7 +103,7 @@ def verifier_ouverture(nouveau_slug: str) -> str | None:
     """Message de refus, ou None si l'ouverture est autorisee."""
     if WORKFLOW.exists():
         for dossier in WORKFLOW.iterdir():
-            if not dossier.is_dir():
+            if not dossier.is_dir() or dossier.name == nouveau_slug:
                 continue
             statut = lire_statut(dossier.name)
             if statut in ("ouvert", "pr-ouverte"):

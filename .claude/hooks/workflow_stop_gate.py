@@ -3,12 +3,15 @@
 de stop_gate.py : ne le modifie pas, s'execute en plus).
 
 Actif seulement si workflow/JOURNAL.md declare un chantier actif. Regle
-unique bloquante : si des fichiers hors workflow/ sont en attente
-(git status --porcelain) sans que workflow/<slug>/JOURNAL.md ne fasse
-partie de ce meme diff ni du dernier commit, refuse de s'arreter — force
-a journaliser le travail reel avant de committer/s'arreter. Tant que rien
-de reel n'est en attente, aucune verification n'est necessaire (un
-chantier au tree propre respecte deja "committer regulierement").
+unique bloquante : si des fichiers "reels" (hors workflow/, .claude/,
+docs/, ETAT.md, PASSATION.md — meme liste que ALLOW_PREFIXES/ALLOW_FILES
+dans workflow_guard.py) sont en attente (git status --porcelain
+--untracked-files=all, pour ne pas rater un dossier workflow/<slug>/
+encore entierement untracked) sans que workflow/<slug>/JOURNAL.md ne
+fasse partie de ce meme diff ni du dernier commit, refuse de s'arreter —
+force a journaliser le travail reel avant de committer/s'arreter. Tant
+que rien de reel n'est en attente, aucune verification n'est necessaire
+(un chantier au tree propre respecte deja "committer regulierement").
 """
 import json
 import os
@@ -20,6 +23,12 @@ import sys
 RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()
 JOURNAL_GLOBAL = RACINE / "workflow" / "JOURNAL.md"
 ACTIF_RE = re.compile(r"^Chantier actif\s*:\s*(.+?)\s*$", re.M)
+
+# Doit rester identique a ALLOW_PREFIXES/ALLOW_FILES dans workflow_guard.py :
+# ce que le guard considere comme routine/exempt de plan ne doit pas non
+# plus etre considere comme "travail reel" exigeant une entree de journal.
+ALLOW_PREFIXES = ("workflow/", ".claude/", "docs/")
+ALLOW_FILES = ("ETAT.md", "PASSATION.md")
 
 
 def lire_chantier_actif() -> str | None:
@@ -44,7 +53,7 @@ def git(*args: str) -> str:
 
 
 def fichiers_en_attente() -> list[str]:
-    porcelain = git("status", "--porcelain")
+    porcelain = git("status", "--porcelain", "--untracked-files=all")
     out = []
     for line in porcelain.splitlines():
         if len(line) < 4:
@@ -75,7 +84,10 @@ def main() -> None:
         sys.exit(0)
 
     fichiers = fichiers_en_attente()
-    hors_workflow = [f for f in fichiers if not f.startswith("workflow/")]
+    hors_workflow = [
+        f for f in fichiers
+        if f not in ALLOW_FILES and not any(f.startswith(p) for p in ALLOW_PREFIXES)
+    ]
     if not hors_workflow:
         sys.exit(0)
 
@@ -89,7 +101,7 @@ def main() -> None:
 
     apercu = ", ".join(hors_workflow[:3]) + ("…" if len(hors_workflow) > 3 else "")
     bloque(
-        f"⛔ Stop refuse (workflow_stop_gate) : des fichiers hors workflow/ "
+        f"⛔ Stop refuse (workflow_stop_gate) : des fichiers de travail reel "
         f"sont en attente ({apercu}) sans que {journal_chantier} ne soit "
         f"dans le meme diff ni dans le dernier commit. Journalise avant de "
         f"committer/t'arreter."
