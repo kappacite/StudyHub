@@ -1971,7 +1971,130 @@ git commit -m "feat(binders): bascule Notes/Revision/Autres, fusion visuelle Dec
 
 ---
 
-### Task 9: Final verification, visual check, and chantier closure
+### Task 9: `TeacherDashboard.vue` — defensive fix for nullable `RevisionSet.type` (added mid-execution)
+
+> Added during execution, not part of the original plan self-review: Task 2's `vue-tsc`
+> run surfaced a type error here that Task 2's own reviewer confirmed is a real runtime
+> crash risk, in a file no other task owns. `revisionStore.sets[i].type` is now
+> `RevisionType | null` (Task 2) — this file calls `.toUpperCase()` on it unguarded.
+> Once a heterogeneous set exists (this chantier's entire point), opening this dashboard's
+> "create assignment" set-picker throws `Cannot read properties of null (reading
+> 'toUpperCase')` and breaks the whole dashboard. Ruling: fix here as its own small task
+> rather than folding it into Task 8 (`Binders.vue`, unrelated screen) or skipping it —
+> the cost of a crash in a teacher-facing screen outweighs the cost of one extra task.
+
+**Files:**
+- Modify: `web/src/views/Classes/TeacherDashboard.vue`
+- Create: `web/tests/views/Classes/TeacherDashboard.spec.ts` (new — no test file exists
+  for this 1064-line view today; scope this test file to exactly the behavior below, do
+  not attempt to inventory the whole view)
+
+**Interfaces:**
+- Consumes: `RevisionSet.type: RevisionType | null` (Task 2).
+- Produces: no new exports — a one-line defensive fix plus its covering test.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `web/tests/views/Classes/TeacherDashboard.spec.ts`:
+
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+
+const api = vi.hoisted(() => ({ get: vi.fn() }))
+vi.mock('../../../src/services/api', () => ({ default: api }))
+
+const classService = vi.hoisted(() => ({
+  getMyClasses: vi.fn(),
+  listAssignments: vi.fn(),
+}))
+vi.mock('../../../src/services/classService', () => ({ default: classService }))
+
+import TeacherDashboard from '../../../src/views/Classes/TeacherDashboard.vue'
+import { useRevisionStore } from '../../../src/stores/revision'
+
+const HETEROGENEOUS_SET = { id: 7, name: 'Mixte', description: null, type: null, binder_id: null, tuning_default: 1, is_public: false, item_count: 2 }
+const TYPED_SET = { id: 8, name: 'QCM Histoire', description: null, type: 'qcm', binder_id: null, tuning_default: 1, is_public: false, item_count: 4 }
+
+async function mountDashboard() {
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  api.get.mockImplementation((url: string) => {
+    if (/^\/revision\/sets\?/.test(url)) return Promise.resolve({ data: { data: [HETEROGENEOUS_SET, TYPED_SET] } })
+    return Promise.resolve({ data: { data: [] } })
+  })
+  classService.getMyClasses.mockResolvedValue([{ id: 1, name: 'Ma classe', description: null, invite_code: 'ABC', type: 'class', is_class: true, is_public: false, created_by: 1, members_count: 3, created_at: '', my_role: 'owner' }])
+  classService.listAssignments.mockResolvedValue([])
+
+  const wrapper = mount(TeacherDashboard, { global: { plugins: [pinia] } })
+  await flushPromises()
+  return wrapper
+}
+
+describe('TeacherDashboard — selecteur d\'ensemble dans le createur de devoir', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('ne plante pas sur un ensemble heterogene et affiche un libelle de repli', async () => {
+    const wrapper = await mountDashboard()
+    const revisionStore = useRevisionStore()
+    expect(revisionStore.sets).toHaveLength(2) // confirme que le seed a bien pris
+
+    await wrapper.find('[data-test="open-create-assignment"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Mixte (MIXTE)')
+    expect(wrapper.text()).toContain('QCM Histoire (QCM)')
+  })
+})
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd web && npx vitest run tests/views/Classes/TeacherDashboard.spec.ts -v`
+Expected: FAIL — `[data-test="open-create-assignment"]` doesn't exist yet (Step 3 adds it),
+and/or (once that's added) `s.type.toUpperCase()` throws `TypeError: Cannot read
+properties of null (reading 'toUpperCase')` for the heterogeneous set.
+
+- [ ] **Step 3: Add the data-test hook and the defensive fix**
+
+In `web/src/views/Classes/TeacherDashboard.vue:488-492`, the "create assignment" button
+(`@click="openCreateAssignment(cls.id)"`) needs a `data-test` hook to be selectable in
+the test — add it alongside the existing `@click`:
+
+```vue
+                @click="openCreateAssignment(cls.id)"
+                data-test="open-create-assignment"
+```
+
+Then fix line 46, `setOptions`:
+
+```typescript
+const setOptions = computed(() => revisionStore.sets.map(s => ({ id: s.id, name: `${s.name} (${s.type ? s.type.toUpperCase() : 'MIXTE'})` })))
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `cd web && npx vitest run tests/views/Classes/TeacherDashboard.spec.ts -v`
+Expected: PASS.
+
+- [ ] **Step 5: Run the full web suite and typecheck**
+
+Run: `cd web && npx vitest run && npx vue-tsc -b`
+Expected: all pass. Confirm the `TeacherDashboard.vue` type error flagged during Task 2
+is gone; `Binders.vue`/`RevisionStudy.vue` errors are still expected at this point (Tasks
+7/8 resolve them) — do not touch either file.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add web/src/views/Classes/TeacherDashboard.vue web/tests/views/Classes/TeacherDashboard.spec.ts
+git commit -m "fix(classes): TeacherDashboard n'affiche plus un crash sur un ensemble heterogene"
+```
+
+---
+
+### Task 10: Final verification, visual check, and chantier closure
 
 **Files:**
 - Modify: `workflow/bibliotheque-ensembles/PLAN.md`
