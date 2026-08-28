@@ -257,9 +257,11 @@ class RevisionService:
         self, user_id: int, set_id: int, data: RevisionItemCreate
     ) -> RevisionItemResponse:
         rset = self._get_set_or_404(set_id, user_id, write_required=True)
-        payload = validate_item_payload(rset.type, data.payload)
+        item_type = data.type if data.type is not None else rset.type
+        payload = validate_item_payload(item_type, data.payload)
         item = RevisionItem(
             set_id=set_id,
+            type=item_type,
             payload=payload,
             tuning=data.tuning,
             position=data.position,
@@ -275,10 +277,10 @@ class RevisionService:
     def update_item(
         self, user_id: int, set_id: int, item_id: int, data: RevisionItemUpdate
     ) -> RevisionItemResponse:
-        rset = self._get_set_or_404(set_id, user_id, write_required=True)
+        self._get_set_or_404(set_id, user_id, write_required=True)
         item = self._get_item_or_404(item_id, set_id, user_id, write_required=True)
         if "payload" in data.model_fields_set and data.payload is not None:
-            item.payload = validate_item_payload(rset.type, data.payload)
+            item.payload = validate_item_payload(item.type, data.payload)
         if data.tuning is not None:
             item.tuning = data.tuning
         if data.position is not None:
@@ -337,7 +339,7 @@ class RevisionService:
             cards_reviewed=1,
             cards_correct=1 if score >= 3 else 0,
             item_id=item.id,
-            item_type=rset.type,
+            item_type=item.type,
             grade=score,
         )
         self._item_dao.db.add(study_session)
@@ -425,11 +427,11 @@ class RevisionService:
         """Corrige une réponse à un item auto-corrigeable (vf/association/ordre) et
         met à jour SM-2 (réussi → 5, raté → 2). La définition reste en self-eval."""
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
-        if rset.type not in GRADABLE_TYPES:
-            raise ValidationError("Ce type d'ensemble n'est pas corrigé automatiquement.")
         item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
+        if item.type not in GRADABLE_TYPES:
+            raise ValidationError("Ce type d'item n'est pas corrigé automatiquement.")
 
-        is_correct = check_answer(rset.type, item.payload or {}, answer or {})
+        is_correct = check_answer(item.type, item.payload or {}, answer or {})
         grade = 5 if is_correct else 2
 
         # L'état SM-2 par item n'est planifié que pour le propriétaire de l'ensemble.
@@ -459,7 +461,7 @@ class RevisionService:
                 cards_reviewed=1,
                 cards_correct=1 if is_correct else 0,
                 item_id=item.id,
-                item_type=rset.type,
+                item_type=item.type,
                 grade=grade,
             )
         )

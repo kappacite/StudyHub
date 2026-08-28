@@ -311,3 +311,91 @@ def test_validate_flashcard_payload_rejects_missing_back():
 def test_check_answer_flashcard_never_auto_corrects():
     # Comme "definition" : toujours False, jamais auto-corrige.
     assert check_answer("flashcard", {"front": "Chat", "back": "Cat"}, {}) is False
+
+
+# --- Cablage du type d'item dans RevisionService (Task 3) --------------------
+
+
+def test_create_item_without_type_inherits_set_type(client, auth_headers):
+    """Retro-compatibilite : le frontend actuel n'envoie jamais `type`."""
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "Le ciel est bleu.", "correct": True}},
+        headers=auth_headers,
+    )
+    assert item.status_code == 201
+    assert item.json["type"] == "vf"
+
+
+def test_create_item_with_explicit_type_overrides_set_type(client, auth_headers):
+    """Un futur ensemble heterogene pourra fournir un type d'item explicite."""
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "Mixte (encore homogene cote set)", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"type": "flashcard", "payload": {"front": "Chat", "back": "Cat"}},
+        headers=auth_headers,
+    )
+    assert item.status_code == 201
+    assert item.json["type"] == "flashcard"
+
+
+def test_grade_item_rejects_flashcard_item_even_in_gradable_set(client, auth_headers):
+    """item.type doit primer sur rset.type pour le gate GRADABLE_TYPES --
+    sinon un item flashcard divergent dans un ensemble vf serait note via
+    la logique vf (bug silencieux : `payload.get("correct")` vaut None,
+    `bool(None)` vaut False, la reponse serait jugee fausse mais avec un
+    code 200 au lieu du 400 attendu pour un type non corrigeable)."""
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"type": "flashcard", "payload": {"front": "Chat", "back": "Cat"}},
+        headers=auth_headers,
+    ).json
+
+    graded = client.post(
+        f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
+        json={"answer": {"value": True}},
+        headers=auth_headers,
+    )
+    assert graded.status_code == 400
+
+
+def test_answer_item_records_item_type_not_set_type(client, auth_headers, app):
+    """answer_item doit journaliser item.type (pas rset.type) dans
+    StudySession -- verifie via un item de type explicite divergent du
+    type de son ensemble (seul cas ou l'ancien code produirait une valeur
+    differente)."""
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"type": "flashcard", "payload": {"front": "Chat", "back": "Cat"}},
+        headers=auth_headers,
+    ).json
+
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/answer/{item['id']}",
+        json={"score": 4},
+        headers=auth_headers,
+    )
+    with app.app_context():
+        from app.models.study_session import StudySession
+
+        sess = StudySession.query.filter_by(item_id=item["id"]).first()
+        assert sess.item_type == "flashcard"
