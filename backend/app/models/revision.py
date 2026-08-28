@@ -1,9 +1,18 @@
 from sqlalchemy import (
-    Column, Integer, String, Text, Float, DateTime, ForeignKey, Index, JSON, Boolean
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
 )
-from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from typing import Optional
+from sqlalchemy.sql import func
+
 from app.extensions import db
 
 # Types d'ensembles de révision *génériques* (hors flashcard, qui reste un Deck).
@@ -24,10 +33,17 @@ class RevisionSet(db.Model):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
-    # Type homogène de l'ensemble (cf. REVISION_SET_TYPES).
-    type = Column(String(20), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    binder_id = Column(Integer, ForeignKey("binders.id", ondelete="SET NULL"), nullable=True, index=True)
+    # Type homogène de l'ensemble (cf. REVISION_SET_TYPES). Devenu optionnel
+    # (D8) : NULL = ensemble heterogene (le type vit desormais au niveau de
+    # RevisionItem). Tous les ensembles reels actuels restent homogenes et
+    # renseignes -- ce champ n'est pas encore mis a NULL par un code reel.
+    type = Column(String(20), nullable=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    binder_id = Column(
+        Integer, ForeignKey("binders.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     # Multiplicateur SM-2 par défaut appliqué aux items de l'ensemble (D4).
     tuning_default = Column(Float, default=1.0, server_default="1.0", nullable=False)
     is_public = Column(Boolean, default=False, server_default="0", nullable=False)
@@ -42,7 +58,7 @@ class RevisionSet(db.Model):
     )
 
     @property
-    def binder_uuid(self) -> Optional[str]:
+    def binder_uuid(self) -> str | None:
         return self.binder.id if self.binder else None
 
 
@@ -65,6 +81,12 @@ class RevisionItem(db.Model):
 
     id = Column(Integer, primary_key=True)
     set_id = Column(Integer, ForeignKey("revision_sets.id", ondelete="CASCADE"), nullable=False)
+    # Type de l'item (D8) : qcm/vf/association/definition/ordre/flashcard.
+    # Deplace depuis RevisionSet.type -- permet des ensembles heterogenes.
+    # Nullable au niveau DB par prudence (retro-compatibilite du schema) ;
+    # toujours renseigne en pratique par le service (backfill migration +
+    # RevisionService.create_item).
+    type = Column(String(20), nullable=True)
     payload = Column(JSON, nullable=False)
     # Position d'affichage (ex. ordre des items dans l'éditeur).
     position = Column(Integer, default=0, server_default="0", nullable=False)
