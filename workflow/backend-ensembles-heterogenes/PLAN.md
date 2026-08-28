@@ -13,8 +13,10 @@
   cette session — le volume Docker local (`backend-ensembles-heterogenes_pgdata`) est resté dans
   un état incohérent (stampé `4e6e094d2711` mais sans aucune table applicative, séquelle de
   l'instabilité Docker de la session précédente) et sa remise à zéro (`docker compose down -v`)
-  est bloquée par le hook de garde. Signalé au contrôleur — à confirmer par un humain (ou une
-  session avec l'autorisation explicite) avant la clôture définitive du chantier.
+  est bloquée par le hook de garde. **Décision utilisateur (2026-08-28)** : passer cette
+  vérification manuelle, la couverture SQLite (`create_all()`, ci-dessous) est jugée suffisante
+  pour clore ce chantier ; la migration sera de toute façon rejouée par l'auto-migration au
+  démarrage en environnement réel (CI/déploiement), qui la validera à ce moment-là.
 - [x] Décision du sort des `Deck`/`Flashcard` existants : **explicitement différé**. Découverte en
   brainstormant : une vraie fusion toucherait 47 fichiers backend (tous les sous-systèmes
   majeurs) — bien plus large que ce chantier. Aucune ligne `Deck`/`Flashcard` n'est migrée ici ;

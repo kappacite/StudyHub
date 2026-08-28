@@ -136,7 +136,15 @@ confirmer que la couverture SQLite (`create_all()`, ci-dessus) suffit et
 clore sans cette vérification manuelle. Containers arrêtés proprement
 (`docker compose stop`, sans `-v`) en attendant cette décision.
 
-**Task 4 (clôture) — en cours** : cases de `PLAN.md` cochées à jour, cette
-entrée de journal ajoutée, mise à jour de `workflow/JOURNAL.md` à suivre.
-Suite (PR) non ouverte tant que la vérification Postgres ci-dessus n'est pas
-tranchée.
+**Task 4 (clôture) — décision utilisateur reçue (2026-08-28)** : passer la
+vérification Postgres manuelle bloquée ci-dessus, la couverture SQLite
+(85 %, tous les tests `test_revision*.py` verts) est jugée suffisante pour
+clore ce chantier maintenant. Toutes les cases de `PLAN.md` sont cochées
+sauf la mise à jour de `docs/api_reference.md` (non applicable, aucun
+contrat d'endpoint cassé — seul un champ optionnel ajouté).
+
+**Chantier clos (code)** : 3 tâches d'implémentation (Task 1 : migration +
+modèles ; Task 2 : `validate_item_payload`/`check_answer` + schémas,
+flashcard ; Task 3 : câblage service par `item.type`) + Task 4 (clôture),
+commits `1146955`, `44cdd10`, `9c29185`, `0e54608`. Prêt pour la procédure
+de clôture de la skill `gestion-chantier` (push → PR humaine).

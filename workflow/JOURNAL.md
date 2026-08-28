@@ -1,14 +1,13 @@
 # Journal global — workflow
 
-Chantier actif : backend-ensembles-heterogenes
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
-- `backend-ensembles-heterogenes` — **actif**, branche `feature/backend-ensembles-heterogenes`,
-  bloquant pour `bibliotheque-ensembles` et `reviser-hub`. Tasks 1-3 du plan détaillé faites
-  (migration + modèles, schémas/fonctions pures, câblage service) ; Task 4 (clôture) en cours —
-  bloquée sur une vérification Postgres manuelle (volume Docker local incohérent, suppression
-  nécessitant `docker compose down -v`, hors de portée du hook de garde). Détail :
+- `backend-ensembles-heterogenes` — **code clos**, branche `feature/backend-ensembles-heterogenes`
+  prête pour push + PR humaine (procédure `gestion-chantier`). Les 4 tâches du plan détaillé sont
+  faites (migration + modèles, schémas/fonctions pures, câblage service, clôture) ; toujours
+  bloquant pour `bibliotheque-ensembles` et `reviser-hub` jusqu'au merge. Détail :
   `workflow/backend-ensembles-heterogenes/JOURNAL.md`.
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
 - `bibliotheque-ensembles` — pas commencé, dépend de `backend-ensembles-heterogenes`
@@ -18,6 +17,11 @@ Chantier actif : backend-ensembles-heterogenes
 
 ## Historique
 
+- 2026-08-28 — [backend-ensembles-heterogenes] Chantier clos (code) : Task 4 terminée sur
+  décision utilisateur explicite de passer la vérification Postgres manuelle (couverture SQLite
+  85% jugée suffisante). Toutes les tâches du plan détaillé faites, commit `0e54608`. Prochaine
+  action : demander à l'utilisateur de pousser `feature/backend-ensembles-heterogenes` puis ouvrir
+  la PR (procédure `gestion-chantier`).
 - 2026-08-28 — [backend-ensembles-heterogenes] Reprise après redémarrage : Tasks 1 et 2
   s'avèrent déjà faites (committées avant l'arrêt, journal pas mis à jour). Task 3 exécutée en
   TDD (câblage `item.type` dans `create_item`/`update_item`/`grade_item`/`answer_item`, bug de
