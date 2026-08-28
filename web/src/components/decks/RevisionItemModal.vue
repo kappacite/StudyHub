@@ -2,9 +2,19 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
     <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" @click="$emit('close')"></div>
 
-    <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl w-full max-w-lg p-6 relative z-10 shadow-2xl max-h-[88vh] overflow-y-auto">
-      <h3 class="text-lg font-bold mb-1 text-ink dark:text-white">{{ isEdit ? 'Modifier l\'élément' : 'Ajouter un élément de révision' }}</h3>
-      <p class="text-xs text-ink-subtle mb-4">{{ isEdit ? 'Modifiez le contenu de cet élément de révision.' : 'Choisissez un type, il sera révisé en répétition espacée (SM-2).' }}</p>
+    <div
+      class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl w-full max-w-lg p-6 relative z-10 shadow-2xl max-h-[88vh] overflow-y-auto"
+    >
+      <h3 class="text-lg font-bold mb-1 text-ink dark:text-white">
+        {{ isEdit ? "Modifier l'élément" : 'Ajouter un élément de révision' }}
+      </h3>
+      <p class="text-xs text-ink-subtle mb-4">
+        {{
+          isEdit
+            ? 'Modifiez le contenu de cet élément de révision.'
+            : 'Choisissez un type, il sera révisé en répétition espacée (SM-2).'
+        }}
+      </p>
 
       <!-- Type selector (masqué en édition et quand le type est verrouillé) -->
       <div v-if="!isEdit && !lockedType" class="flex flex-wrap gap-2 mb-5">
@@ -12,21 +22,25 @@
           v-for="t in TYPES"
           :key="t.value"
           type="button"
-          @click="itemType = t.value"
           class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all"
-          :class="itemType === t.value
-            ? 'bg-primary text-white border-transparent'
-            : 'bg-surface-soft dark:bg-surface-soft text-ink-muted dark:text-ink-subtle border-line dark:border-line'"
+          :class="
+            itemType === t.value
+              ? 'bg-primary text-white border-transparent'
+              : 'bg-surface-soft dark:bg-surface-soft text-ink-muted dark:text-ink-subtle border-line dark:border-line'
+          "
+          @click="itemType = t.value"
         >
           {{ t.label }}
         </button>
       </div>
 
-      <form @submit.prevent="submit" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="submit">
         <!-- Target : deck (basic) OR revision set (typed) — masqué en édition
              et quand on ajoute à un ensemble déjà déterminé (lockedSetId). -->
         <div v-if="!isEdit && props.lockedSetId === undefined">
-          <label :class="labelCls">{{ itemType === 'basic' ? 'Jeu de révision (flashcards)' : 'Ensemble de révision' }}</label>
+          <label :class="labelCls">{{
+            itemType === 'basic' ? 'Jeu de révision (flashcards)' : 'Ensemble de révision'
+          }}</label>
           <select v-model="targetChoice" :class="inputCls">
             <option :value="NEW_TARGET">➕ Nouvel ensemble…</option>
             <option v-for="t in targets" :key="t.id" :value="t.id">{{ t.name }}</option>
@@ -42,22 +56,67 @@
 
         <!-- BASIC -->
         <template v-if="itemType === 'basic'">
-          <div><label :class="labelCls">Recto (question)</label><textarea v-model="basicFront" rows="2" :class="inputCls" placeholder="Ex: Capitale de l'Italie ?"></textarea></div>
-          <div><label :class="labelCls">Verso (réponse)</label><textarea v-model="basicBack" rows="2" :class="inputCls" placeholder="Ex: Rome"></textarea></div>
+          <div>
+            <label :class="labelCls">Recto (question)</label
+            ><textarea
+              v-model="basicFront"
+              rows="2"
+              :class="inputCls"
+              placeholder="Ex: Capitale de l'Italie ?"
+            ></textarea>
+          </div>
+          <div>
+            <label :class="labelCls">Verso (réponse)</label
+            ><textarea
+              v-model="basicBack"
+              rows="2"
+              :class="inputCls"
+              placeholder="Ex: Rome"
+            ></textarea>
+          </div>
         </template>
 
         <!-- QCM -->
         <template v-else-if="itemType === 'qcm'">
-          <div><label :class="labelCls">Question</label><textarea v-model="qcmQuestion" rows="2" :class="inputCls" placeholder="Ex: Quelle est la capitale de la France ?"></textarea></div>
+          <div>
+            <label :class="labelCls">Question</label
+            ><textarea
+              v-model="qcmQuestion"
+              rows="2"
+              :class="inputCls"
+              placeholder="Ex: Quelle est la capitale de la France ?"
+            ></textarea>
+          </div>
           <div>
             <label :class="labelCls">Options (cochez la/les bonne(s))</label>
             <div v-for="(opt, i) in qcmOptions" :key="i" class="flex items-center gap-2 mb-2">
-              <input type="checkbox" v-model="opt.correct" class="accent-success shrink-0" />
-              <input v-model="opt.text" type="text" :class="inputCls" :placeholder="`Option ${i + 1}`" />
-              <button type="button" @click="qcmOptions.splice(i, 1)" :disabled="qcmOptions.length <= 2" class="text-ink-subtle hover:text-danger disabled:opacity-30 shrink-0 px-1">✕</button>
+              <input v-model="opt.correct" type="checkbox" class="accent-success shrink-0" />
+              <input
+                v-model="opt.text"
+                type="text"
+                :class="inputCls"
+                :placeholder="`Option ${i + 1}`"
+              />
+              <button
+                type="button"
+                :disabled="qcmOptions.length <= 2"
+                class="text-ink-subtle hover:text-danger disabled:opacity-30 shrink-0 px-1"
+                @click="qcmOptions.splice(i, 1)"
+              >
+                ✕
+              </button>
             </div>
-            <button type="button" @click="qcmOptions.push({ text: '', correct: false })" class="text-xs font-bold text-primary hover:text-primary">+ Ajouter une option</button>
-            <p class="text-[10px] text-ink-subtle mt-1">Cochez plusieurs cases pour une question à réponses multiples (correction tout-ou-rien).</p>
+            <button
+              type="button"
+              class="text-xs font-bold text-primary hover:text-primary"
+              @click="qcmOptions.push({ text: '', correct: false })"
+            >
+              + Ajouter une option
+            </button>
+            <p class="text-[10px] text-ink-subtle mt-1">
+              Cochez plusieurs cases pour une question à réponses multiples (correction
+              tout-ou-rien).
+            </p>
           </div>
           <div>
             <label :class="labelCls">Barème (points)</label>
@@ -67,58 +126,171 @@
 
         <!-- VF -->
         <template v-else-if="itemType === 'vf'">
-          <div><label :class="labelCls">Affirmation</label><textarea v-model="vfAssertion" rows="2" :class="inputCls" placeholder="Ex: La Terre est plate."></textarea></div>
+          <div>
+            <label :class="labelCls">Affirmation</label
+            ><textarea
+              v-model="vfAssertion"
+              rows="2"
+              :class="inputCls"
+              placeholder="Ex: La Terre est plate."
+            ></textarea>
+          </div>
           <div>
             <label :class="labelCls">Verdict</label>
             <div class="flex gap-2">
-              <button type="button" @click="vfCorrect = true" class="flex-1 py-2 rounded-xl text-xs font-bold border" :class="vfCorrect ? 'bg-success text-white border-transparent' : 'bg-surface-soft dark:bg-surface-soft text-ink-muted border-line dark:border-line'">Vrai</button>
-              <button type="button" @click="vfCorrect = false" class="flex-1 py-2 rounded-xl text-xs font-bold border" :class="!vfCorrect ? 'bg-danger text-white border-transparent' : 'bg-surface-soft dark:bg-surface-soft text-ink-muted border-line dark:border-line'">Faux</button>
+              <button
+                type="button"
+                class="flex-1 py-2 rounded-xl text-xs font-bold border"
+                :class="
+                  vfCorrect
+                    ? 'bg-success text-white border-transparent'
+                    : 'bg-surface-soft dark:bg-surface-soft text-ink-muted border-line dark:border-line'
+                "
+                @click="vfCorrect = true"
+              >
+                Vrai
+              </button>
+              <button
+                type="button"
+                class="flex-1 py-2 rounded-xl text-xs font-bold border"
+                :class="
+                  !vfCorrect
+                    ? 'bg-danger text-white border-transparent'
+                    : 'bg-surface-soft dark:bg-surface-soft text-ink-muted border-line dark:border-line'
+                "
+                @click="vfCorrect = false"
+              >
+                Faux
+              </button>
             </div>
           </div>
-          <div><label :class="labelCls">Justification (optionnel)</label><textarea v-model="vfJustification" rows="2" :class="inputCls" placeholder="Ex: Elle a la forme d'un géoïde."></textarea></div>
+          <div>
+            <label :class="labelCls">Justification (optionnel)</label
+            ><textarea
+              v-model="vfJustification"
+              rows="2"
+              :class="inputCls"
+              placeholder="Ex: Elle a la forme d'un géoïde."
+            ></textarea>
+          </div>
         </template>
 
         <!-- DEFINITION -->
         <template v-else-if="itemType === 'definition'">
-          <div><label :class="labelCls">Terme</label><input v-model="defTerm" type="text" :class="inputCls" placeholder="Ex: Photosynthèse" /></div>
-          <div><label :class="labelCls">Définition</label><textarea v-model="defDefinition" rows="3" :class="inputCls" placeholder="Ex: Conversion de la lumière en énergie chimique."></textarea></div>
+          <div>
+            <label :class="labelCls">Terme</label
+            ><input
+              v-model="defTerm"
+              type="text"
+              :class="inputCls"
+              placeholder="Ex: Photosynthèse"
+            />
+          </div>
+          <div>
+            <label :class="labelCls">Définition</label
+            ><textarea
+              v-model="defDefinition"
+              rows="3"
+              :class="inputCls"
+              placeholder="Ex: Conversion de la lumière en énergie chimique."
+            ></textarea>
+          </div>
         </template>
 
         <!-- ORDRE -->
         <template v-else-if="itemType === 'ordre'">
-          <div><label :class="labelCls">Titre / consigne</label><input v-model="ordreTitle" type="text" :class="inputCls" placeholder="Ex: Cycle de l'eau" /></div>
+          <div>
+            <label :class="labelCls">Titre / consigne</label
+            ><input
+              v-model="ordreTitle"
+              type="text"
+              :class="inputCls"
+              placeholder="Ex: Cycle de l'eau"
+            />
+          </div>
           <div>
             <label :class="labelCls">Étapes (dans le bon ordre)</label>
             <div v-for="(step, i) in ordreSteps" :key="i" class="flex items-center gap-2 mb-2">
               <span class="text-xs font-bold text-ink-subtle w-4 shrink-0">{{ i + 1 }}</span>
-              <input v-model="step.value" type="text" :class="inputCls" :placeholder="`Étape ${i + 1}`" />
-              <button type="button" @click="ordreSteps.splice(i, 1)" :disabled="ordreSteps.length <= 2" class="text-ink-subtle hover:text-danger disabled:opacity-30 shrink-0 px-1">✕</button>
+              <input
+                v-model="step.value"
+                type="text"
+                :class="inputCls"
+                :placeholder="`Étape ${i + 1}`"
+              />
+              <button
+                type="button"
+                :disabled="ordreSteps.length <= 2"
+                class="text-ink-subtle hover:text-danger disabled:opacity-30 shrink-0 px-1"
+                @click="ordreSteps.splice(i, 1)"
+              >
+                ✕
+              </button>
             </div>
-            <button type="button" @click="ordreSteps.push({ value: '' })" class="text-xs font-bold text-primary hover:text-primary">+ Ajouter une étape</button>
+            <button
+              type="button"
+              class="text-xs font-bold text-primary hover:text-primary"
+              @click="ordreSteps.push({ value: '' })"
+            >
+              + Ajouter une étape
+            </button>
           </div>
         </template>
 
         <!-- ASSOCIATION -->
         <template v-else-if="itemType === 'association'">
-          <div><label :class="labelCls">Titre / consigne</label><input v-model="assocTitle" type="text" :class="inputCls" placeholder="Ex: Pays et capitales" /></div>
+          <div>
+            <label :class="labelCls">Titre / consigne</label
+            ><input
+              v-model="assocTitle"
+              type="text"
+              :class="inputCls"
+              placeholder="Ex: Pays et capitales"
+            />
+          </div>
           <div>
             <label :class="labelCls">Associations</label>
             <div v-for="(p, i) in assocPairs" :key="i" class="flex items-center gap-2 mb-2">
               <input v-model="p.left" type="text" :class="inputCls" placeholder="Élément" />
               <span class="text-ink-subtle shrink-0">→</span>
               <input v-model="p.right" type="text" :class="inputCls" placeholder="Correspondance" />
-              <button type="button" @click="assocPairs.splice(i, 1)" :disabled="assocPairs.length <= 2" class="text-ink-subtle hover:text-danger disabled:opacity-30 shrink-0 px-1">✕</button>
+              <button
+                type="button"
+                :disabled="assocPairs.length <= 2"
+                class="text-ink-subtle hover:text-danger disabled:opacity-30 shrink-0 px-1"
+                @click="assocPairs.splice(i, 1)"
+              >
+                ✕
+              </button>
             </div>
-            <button type="button" @click="assocPairs.push({ left: '', right: '' })" class="text-xs font-bold text-primary hover:text-primary">+ Ajouter une paire</button>
+            <button
+              type="button"
+              class="text-xs font-bold text-primary hover:text-primary"
+              @click="assocPairs.push({ left: '', right: '' })"
+            >
+              + Ajouter une paire
+            </button>
           </div>
         </template>
 
         <p v-if="error" class="text-xs text-danger">{{ error }}</p>
 
         <div class="flex items-center justify-end gap-3 pt-2">
-          <button type="button" @click="$emit('close')" class="px-4 py-2 text-sm font-semibold rounded-xl text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft">Annuler</button>
-          <button type="submit" :disabled="!canSubmit || saving" class="px-4 py-2 text-sm font-bold rounded-xl text-white bg-primary hover:bg-primary-strong disabled:opacity-50 disabled:cursor-not-allowed">
-            {{ saving ? (isEdit ? 'Enregistrement…' : 'Ajout…') : (isEdit ? 'Enregistrer' : 'Ajouter') }}
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-semibold rounded-xl text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft"
+            @click="$emit('close')"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            :disabled="!canSubmit || saving"
+            class="px-4 py-2 text-sm font-bold rounded-xl text-white bg-primary hover:bg-primary-strong disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{
+              saving ? (isEdit ? 'Enregistrement…' : 'Ajout…') : isEdit ? 'Enregistrer' : 'Ajouter'
+            }}
           </button>
         </div>
       </form>
@@ -154,7 +326,8 @@ const decksStore = useDecksStore()
 const revisionStore = useRevisionStore()
 
 const labelCls = 'block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1'
-const inputCls = 'w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+const inputCls =
+  'w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
 
 const TYPES: { value: ItemType; label: string }[] = [
   { value: 'basic', label: 'Carte' },
@@ -174,10 +347,10 @@ const error = ref('')
 
 // Cibles disponibles selon le type : decks (basic) ou ensembles du même type.
 const targets = computed(() => {
-  if (itemType.value === 'basic') return props.decks.map(d => ({ id: d.id, name: d.name }))
+  if (itemType.value === 'basic') return props.decks.map((d) => ({ id: d.id, name: d.name }))
   return revisionStore.sets
-    .filter(s => s.type === itemType.value)
-    .map(s => ({ id: s.id, name: s.name }))
+    .filter((s) => s.type === itemType.value)
+    .map((s) => ({ id: s.id, name: s.name }))
 })
 
 function resetTargetChoice() {
@@ -239,8 +412,13 @@ const canSubmit = computed(() => {
   }
   if (itemType.value === 'vf') return !!vfAssertion.value.trim()
   if (itemType.value === 'definition') return !!defTerm.value.trim() && !!defDefinition.value.trim()
-  if (itemType.value === 'ordre') return !!ordreTitle.value.trim() && ordreSteps.value.filter((s) => s.value.trim()).length >= 2
-  if (itemType.value === 'association') return !!assocTitle.value.trim() && assocPairs.value.filter((p) => p.left.trim() && p.right.trim()).length >= 2
+  if (itemType.value === 'ordre')
+    return !!ordreTitle.value.trim() && ordreSteps.value.filter((s) => s.value.trim()).length >= 2
+  if (itemType.value === 'association')
+    return (
+      !!assocTitle.value.trim() &&
+      assocPairs.value.filter((p) => p.left.trim() && p.right.trim()).length >= 2
+    )
   return false
 })
 
@@ -251,7 +429,11 @@ function buildPayload(): RevisionItemPayload {
     const options = qcmOptions.value
       .filter((o) => o.text.trim())
       .map((o, i) => ({ id: OPTION_IDS[i] || String(i), text: o.text.trim(), correct: o.correct }))
-    return { question: qcmQuestion.value.trim(), options, points: Math.max(1, qcmPoints.value || 1) }
+    return {
+      question: qcmQuestion.value.trim(),
+      options,
+      points: Math.max(1, qcmPoints.value || 1),
+    }
   }
   if (itemType.value === 'vf') {
     return {
@@ -264,7 +446,10 @@ function buildPayload(): RevisionItemPayload {
     return { term: defTerm.value.trim(), definition: defDefinition.value.trim() }
   }
   if (itemType.value === 'ordre') {
-    return { title: ordreTitle.value.trim(), steps: ordreSteps.value.map((s) => s.value.trim()).filter(Boolean) }
+    return {
+      title: ordreTitle.value.trim(),
+      steps: ordreSteps.value.map((s) => s.value.trim()).filter(Boolean),
+    }
   }
   // association
   return {
@@ -283,9 +468,13 @@ function prefillFromItem() {
   if (itemType.value === 'qcm') {
     qcmQuestion.value = p.question || ''
     qcmPoints.value = p.points || 1
-    qcmOptions.value = (p.options && p.options.length)
-      ? p.options.map(o => ({ text: o.text, correct: o.correct }))
-      : [{ text: '', correct: false }, { text: '', correct: false }]
+    qcmOptions.value =
+      p.options && p.options.length
+        ? p.options.map((o) => ({ text: o.text, correct: o.correct }))
+        : [
+            { text: '', correct: false },
+            { text: '', correct: false },
+          ]
   } else if (itemType.value === 'vf') {
     vfAssertion.value = p.assertion || ''
     vfCorrect.value = p.correct ?? true
@@ -295,14 +484,19 @@ function prefillFromItem() {
     defDefinition.value = p.definition || ''
   } else if (itemType.value === 'ordre') {
     ordreTitle.value = p.title || ''
-    ordreSteps.value = (p.steps && p.steps.length)
-      ? p.steps.map(s => ({ value: s }))
-      : [{ value: '' }, { value: '' }]
+    ordreSteps.value =
+      p.steps && p.steps.length
+        ? p.steps.map((s) => ({ value: s }))
+        : [{ value: '' }, { value: '' }]
   } else if (itemType.value === 'association') {
     assocTitle.value = p.title || ''
-    assocPairs.value = (p.pairs && p.pairs.length)
-      ? p.pairs.map(pair => ({ left: pair.left, right: pair.right }))
-      : [{ left: '', right: '' }, { left: '', right: '' }]
+    assocPairs.value =
+      p.pairs && p.pairs.length
+        ? p.pairs.map((pair) => ({ left: pair.left, right: pair.right }))
+        : [
+            { left: '', right: '' },
+            { left: '', right: '' },
+          ]
   }
 }
 
@@ -328,12 +522,17 @@ async function submit() {
     } else {
       let setId: number
       if (targetChoice.value === NEW_TARGET) {
-        const set = await revisionStore.createSet(newTargetName.value.trim(), itemType.value, props.binderId)
+        const set = await revisionStore.createSet(
+          newTargetName.value.trim(),
+          itemType.value,
+          null,
+          props.binderId,
+        )
         setId = set.id
       } else {
         setId = targetChoice.value
       }
-      await revisionStore.createItem(setId, buildPayload())
+      await revisionStore.createItem(setId, buildPayload(), itemType.value)
     }
     emit('created')
   } catch (e) {
