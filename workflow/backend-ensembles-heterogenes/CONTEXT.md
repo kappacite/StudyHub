@@ -1,7 +1,7 @@
 # Backend — migration ensembles de révision hétérogènes
 
-Statut : planifié
-Branche : (aucune)
+Statut : ouvert
+Branche : feature/backend-ensembles-heterogenes
 PR : (aucune)
 
 ## Pourquoi
