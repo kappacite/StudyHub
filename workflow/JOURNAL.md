@@ -1,17 +1,26 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : bibliotheque-ensembles
 
 ## Chantiers ouverts
 
+- `bibliotheque-ensembles` — **actif**, branche `feature/bibliotheque-ensembles`. Dépendance
+  `backend-ensembles-heterogenes` levée (PR #126 mergée). Prochain point : spec + plan détaillé
+  (brainstorming).
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
-- `bibliotheque-ensembles` — pas commencé, débloqué (`backend-ensembles-heterogenes` mergé)
 - `reviser-hub` — pas commencé, débloqué (`backend-ensembles-heterogenes` mergé)
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
 
+- 2026-08-28 — [bibliotheque-ensembles] Chantier activé, branche `feature/bibliotheque-ensembles`
+  créée depuis `main` à jour (worktree `.worktrees/bibliotheque-ensembles`). Choisi comme
+  prochain chantier (recommandation) : premier de l'ordre numérique des flux après le socle
+  backend (flux 3, juste après flux 1), fraîchement débloqué, sans ambiguïté à réconcilier
+  (contrairement à `editeur-notes-notation-ia`, dont le volet frontend est déjà partiellement
+  implémenté sur une branche non mergée — laissé de côté pour l'instant). Prochain point : spec +
+  plan détaillé via brainstorming.
 - 2026-08-28 — [backend-ensembles-heterogenes] **PR #126 mergée dans `main`** (squash,
   `d2b6305`), CI verte (6/6 checks, dont « Backend · migrations (PostgreSQL) » qui valide la
   migration à froid — confirme a posteriori que la vérification manuelle passée localement

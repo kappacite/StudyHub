@@ -1,6 +1,7 @@
 # Plan — bibliotheque-ensembles
 
-- [ ] Attendre que `backend-ensembles-heterogenes` soit livré
+- [x] Attendre que `backend-ensembles-heterogenes` soit livré — mergé (PR #126, `d2b6305`),
+  CI verte (dont la garde migrations PostgreSQL)
 - [ ] Écrire la spec + plan détaillé (inventaire `Binders.vue`, maquette `Notes.dc.html`, états,
   contrat des 3 nouveaux composants) via `superpowers:brainstorming` puis
   `superpowers:writing-plans` — format
