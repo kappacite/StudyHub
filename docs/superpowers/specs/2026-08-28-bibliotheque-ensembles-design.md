@@ -262,6 +262,16 @@ suite complète + `vue-tsc -b` à chaque étape (pattern des écrans 1-4) :
   côté client depuis la liste d'items déjà exposée — à confirmer au moment
   du plan que ça reste performant pour la taille réelle des ensembles.
 
+## Correction faite en écrivant le plan détaillé
+
+`RevisionSetCreate.type` (backend) était encore obligatoire (`RevisionType`, pas
+`Optional`) — créer un ensemble avec `type: null` (décision « toujours hétérogène »)
+aurait été rejeté (422). Correctif d'une ligne (`type: RevisionType | None = None`),
+aucune migration ni changement de service nécessaires (`create_set` passe déjà
+`data.type` tel quel, la colonne DB est déjà nullable depuis le chantier backend).
+Ajouté comme Task 1 du plan plutôt qu'un chantier séparé — décision utilisateur,
+la taille du correctif ne justifie pas une séparation stricte frontend/backend ici.
+
 ## Risque accepté
 
 Suppression en masse par type (`RevisionSetDetail.vue`) : boucle
