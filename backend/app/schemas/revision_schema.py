@@ -15,7 +15,9 @@ RevisionItemType = Literal["qcm", "vf", "association", "definition", "ordre", "f
 
 class RevisionSetCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    type: RevisionType
+    # Optionnel (D8, bibliotheque-ensembles) : absent/None = ensemble
+    # heterogene (le type vit au niveau de l'item, cf. RevisionItemCreate.type).
+    type: RevisionType | None = None
     description: str | None = None
     binder_id: str | None = None
     tuning_default: float = Field(1.0, gt=0)

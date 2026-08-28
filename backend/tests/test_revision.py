@@ -203,6 +203,21 @@ def test_set_isolation_between_users(client, auth_headers, app):
     assert resp.status_code in (403, 404)
 
 
+# --- Ensembles hétérogènes (D8, bibliotheque-ensembles) ----------------------
+
+
+def test_create_set_without_type_is_heterogeneous(client, auth_headers):
+    """RevisionSetModal cree toujours un ensemble heterogene (type: null)."""
+    response = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "Mecanismes SN1 / SN2", "description": "Flashcards, QCM, VF."},
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+    assert response.json["type"] is None
+    assert response.json["description"] == "Flashcards, QCM, VF."
+
+
 # --- Migration de réconciliation PR #48 (D3c) --------------------------------
 
 
