@@ -26,6 +26,7 @@ describe('revision store — ensembles typés (D3c)', () => {
     expect(api.post).toHaveBeenCalledWith('/revision/sets', {
       name: 'QCM',
       type: 'qcm',
+      description: null,
       binder_id: null,
       tuning_default: 1.0,
     })
@@ -139,5 +140,45 @@ describe('revision store — ensembles typés (D3c)', () => {
 
     await store.fetchBinderStats('abc', false)
     expect(api.get).toHaveBeenCalledWith('/stats/binders/abc?descendants=false')
+  })
+
+  it('createSet accepte type: null et transmet description (ensemble heterogene)', async () => {
+    api.post.mockResolvedValue({ data: { id: 7, name: 'Mixte', description: 'desc', type: null, binder_id: null, tuning_default: 1, is_public: false, item_count: 0 } })
+    const store = useRevisionStore()
+
+    await store.createSet('Mixte', null, 'desc')
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets', {
+      name: 'Mixte',
+      type: null,
+      description: 'desc',
+      binder_id: null,
+      tuning_default: 1.0,
+    })
+    expect(store.sets[0].type).toBeNull()
+  })
+
+  it('createItem transmet le type explicite quand fourni (ensemble heterogene)', async () => {
+    api.post
+      .mockResolvedValueOnce({ data: { id: 7, name: 'Mixte', description: null, type: null, binder_id: null, tuning_default: 1, is_public: false, item_count: 0 } })
+      .mockResolvedValueOnce({ data: { id: 20, set_id: 7, type: 'flashcard', payload: { front: 'Chat', back: 'Cat' }, tuning: 1, position: 0, interval: 0, ease_factor: 2.5, repetitions: 0, next_review: '', created_at: '2026-08-28T00:00:00Z', updated_at: '2026-08-28T00:00:00Z' } })
+    const store = useRevisionStore()
+    const set = await store.createSet('Mixte', null)
+
+    await store.createItem(set.id, { front: 'Chat', back: 'Cat' }, 'flashcard')
+
+    expect(api.post).toHaveBeenLastCalledWith('/revision/sets/7/items', { payload: { front: 'Chat', back: 'Cat' }, type: 'flashcard', tuning: 1.0 })
+  })
+
+  it('createItem omet type quand absent (retrocompatibilite existante)', async () => {
+    api.post
+      .mockResolvedValueOnce({ data: { id: 8, name: 'QCM', description: null, type: 'qcm', binder_id: null, tuning_default: 1, is_public: false, item_count: 0 } })
+      .mockResolvedValueOnce({ data: { id: 21, set_id: 8, type: 'qcm', payload: {}, tuning: 1, position: 0, interval: 0, ease_factor: 2.5, repetitions: 0, next_review: '', created_at: '', updated_at: '' } })
+    const store = useRevisionStore()
+    const set = await store.createSet('QCM', 'qcm')
+
+    await store.createItem(set.id, { question: 'q', options: [] })
+
+    expect(api.post).toHaveBeenLastCalledWith('/revision/sets/8/items', { payload: { question: 'q', options: [] }, tuning: 1.0 })
   })
 })
