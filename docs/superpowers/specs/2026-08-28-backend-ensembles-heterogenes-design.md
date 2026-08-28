@@ -74,13 +74,25 @@ immédiatement. La conception ci-dessous le garde donc en place.
   - `"flashcard"` : payload `{front: str, back: str}` (les deux non vides).
     Jamais auto-corrigé — même famille que `"definition"` (auto-évaluation
     à l'étude, pas de `check_answer` dédié).
-- **`run_qcm` et `GRADABLE_TYPES` restent inchangés** dans leur
-  comportement pour les ensembles homogènes actuels (`rset.type`
-  toujours renseigné pour tout set réel aujourd'hui) — aucun set mixte
-  n'existe encore, donc aucun cas réel où cette logique serait
-  incorrecte. Une future itération (chantier `reviser-hub`) adaptera ces
-  méthodes pour opérer par item plutôt que par ensemble une fois des sets
-  mixtes réellement créables.
+- **Correction faite en écrivant le plan détaillé** : `GRADABLE_TYPES`
+  doit en fait être vérifié contre **`item.type`**, pas `rset.type`, dans
+  `grade_item`. Raison trouvée en traçant le nouveau chemin `type`
+  explicite (`RevisionItemCreate.type`) : rien n'empêche de créer un item
+  `"flashcard"` dans un ensemble `"vf"` **dès ce chantier** (c'est
+  justement ce que ce chantier rend possible) ; avec l'ancien gate sur
+  `rset.type`, un tel item passerait la vérification (`"vf"` est
+  corrigeable) puis `check_answer` recevrait un payload flashcard
+  interprété comme un payload `vf` — notation silencieusement fausse, pas
+  un cas hypothétique différé. `answer_item` (chemin non auto-corrigé)
+  utilise de même `item.type` pour `StudySession.item_type` — coût nul
+  (valeur identique à `rset.type` pour toute donnée réelle actuelle),
+  correction par construction.
+- **`run_qcm` reste inchangé** (gate toujours sur `rset.type == "qcm"` au
+  niveau de l'ensemble) — même classe de risque théorique qu'un item
+  divergent y soit mal traité, mais accepté explicitement (cf. « Risque
+  accepté ») plutôt que de redessiner le mode passage scoré dans ce
+  chantier ; `reviser-hub` s'en chargera avec la vraie UI d'ensembles
+  mixtes.
 
 ## Flux de données (exemple : création d'un item)
 
@@ -129,3 +141,11 @@ actuel ne le permet (le seul créateur d'ensemble encore actif passe
 toujours par le flux homogène ci-dessus) ; les chantiers frontend futurs
 devront explicitement gérer la cohérence quand les ensembles mixtes
 deviendront réellement créables.
+
+`run_qcm` ne filtre pas par type d'item (contrairement à `grade_item`,
+corrigé ci-dessus) : un item de type divergent (ex. `"flashcard"`) créé
+dans un ensemble `"qcm"` et inclus dans un passage scoré serait traité
+comme un QCM vide plutôt que de lever une erreur explicite. Accepté
+explicitement — ce mode de passage scoré nécessite une vraie réflexion
+sur son comportement face à un ensemble mixte, hors périmètre de ce
+chantier ; `reviser-hub` s'en chargera avec la UI réelle.

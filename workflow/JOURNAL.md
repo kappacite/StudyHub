@@ -13,6 +13,10 @@ Chantier actif : backend-ensembles-heterogenes
 
 ## Historique
 
+- 2026-08-28 — [backend-ensembles-heterogenes] Spec + plan écrits (4 tâches TDD). Découverte
+  majeure : la fusion Deck/Flashcard toucherait 47 fichiers backend, reportée à des chantiers
+  futurs distincts — ce chantier se limite au socle schéma (`type` au niveau de l'item, ajout
+  du type `flashcard`). Prochain point : Task 1 (migration Alembic + modèles).
 - 2026-08-28 — [backend-ensembles-heterogenes] Chantier activé (premier de l'ordre fixé,
   flux 1, bloquant). Branche `feature/backend-ensembles-heterogenes` créée depuis `main`
   à jour. Prochain point : écrire la spec détaillée du modèle de données cible.
