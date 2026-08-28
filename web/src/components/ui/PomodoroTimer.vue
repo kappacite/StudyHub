@@ -1,11 +1,18 @@
 <template>
-  <div class="fixed bottom-6 right-6 z-[90] no-print">
+  <div class="fixed bottom-28 lg:bottom-6 right-6 z-[90] no-print">
+    <!-- Fix round 1 (item 3, migration coquille applicative) : la nouvelle barre de
+         navigation mobile de AppLayout.vue occupe aussi le coin bas-droit du viewport
+         sur mobile (< lg). bottom-28 décale le FAB au-dessus d'elle ; lg:bottom-6
+         restaure la position d'origine là où cette barre n'existe pas.
+         (Commentaire volontairement placé APRÈS l'ouverture du <div> racine : un
+         commentaire avant le seul élément racine transforme le template en Fragment
+         multi-racine, ce qui casse wrapper.classes() dans @vue/test-utils.) -->
     <!-- Minimized FAB -->
-    <button 
+    <button
       v-if="!isExpanded"
-      @click="isExpanded = true"
       class="group relative flex items-center justify-center w-16 h-16 rounded-full bg-surface shadow-elev-3 border border-line hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
       :title="`Pomodoro (${phase}): ${formattedTime}`"
+      @click="isExpanded = true"
     >
       <!-- Circular Progress Ring (Around FAB) -->
       <svg class="absolute inset-0 w-16 h-16 transform -rotate-90">
@@ -21,7 +28,7 @@
         <circle
           :class="[
             'transition-all duration-300 ease-out',
-            phase === 'work' ? 'text-primary' : 'text-success'
+            phase === 'work' ? 'text-primary' : 'text-success',
           ]"
           stroke-width="3"
           :stroke-dasharray="2 * Math.PI * 28"
@@ -37,10 +44,16 @@
 
       <!-- FAB Content -->
       <div class="flex flex-col items-center justify-center z-10">
-        <Clock v-if="phase === 'idle'" class="w-6 h-6 text-ink-subtle group-hover:text-primary transition-colors" />
+        <Clock
+          v-if="phase === 'idle'"
+          class="w-6 h-6 text-ink-subtle group-hover:text-primary transition-colors"
+        />
         <template v-else>
           <span class="text-[11px] font-bold tracking-tight text-ink">{{ formattedTime }}</span>
-          <span class="text-[8px] font-bold uppercase" :class="phase === 'work' ? 'text-primary' : 'text-success'">
+          <span
+            class="text-[8px] font-bold uppercase"
+            :class="phase === 'work' ? 'text-primary' : 'text-success'"
+          >
             {{ phase === 'work' ? 'Work' : 'Break' }}
           </span>
         </template>
@@ -48,14 +61,20 @@
 
       <!-- Pulse Dot if running -->
       <span v-if="isRunning" class="absolute top-1 right-1 flex h-3 w-3">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="phase === 'work' ? 'bg-primary/70' : 'bg-success/70'"></span>
-        <span class="relative inline-flex rounded-full h-3 w-3" :class="phase === 'work' ? 'bg-primary' : 'bg-success'"></span>
+        <span
+          class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+          :class="phase === 'work' ? 'bg-primary/70' : 'bg-success/70'"
+        ></span>
+        <span
+          class="relative inline-flex rounded-full h-3 w-3"
+          :class="phase === 'work' ? 'bg-primary' : 'bg-success'"
+        ></span>
       </span>
     </button>
 
     <!-- Expanded Dashboard Card -->
     <Transition name="slide-fade">
-      <div 
+      <div
         v-if="isExpanded"
         class="w-80 bg-surface/95 backdrop-blur-md rounded-2xl shadow-elev-3 border border-line p-5 flex flex-col space-y-4"
       >
@@ -66,16 +85,16 @@
             <span class="font-bold text-sm text-ink">Minuteur Pomodoro</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <button 
-              @click="showSettings = !showSettings"
+            <button
               class="p-1 rounded-lg text-ink-subtle hover:text-ink hover:bg-surface-soft transition-colors"
               title="Paramètres"
+              @click="showSettings = !showSettings"
             >
               <Settings class="w-4.5 h-4.5" />
             </button>
-            <button 
-              @click="isExpanded = false"
+            <button
               class="p-1 rounded-lg text-ink-subtle hover:text-ink hover:bg-surface-soft transition-colors"
+              @click="isExpanded = false"
             >
               <X class="w-4.5 h-4.5" />
             </button>
@@ -99,7 +118,7 @@
               <circle
                 :class="[
                   'transition-all duration-300 ease-out',
-                  phase === 'work' ? 'text-primary' : 'text-success'
+                  phase === 'work' ? 'text-primary' : 'text-success',
                 ]"
                 stroke-width="5"
                 :stroke-dasharray="2 * Math.PI * 64"
@@ -118,8 +137,16 @@
               <span class="text-3xl font-extrabold text-ink tracking-tight select-none">
                 {{ formattedTime }}
               </span>
-              <span class="text-[10px] font-bold uppercase tracking-wider mt-1 px-2.5 py-0.5 rounded-full bg-surface-soft"
-                    :class="phase === 'work' ? 'text-primary' : phase === 'break' ? 'text-success' : 'text-ink-subtle'">
+              <span
+                class="text-[10px] font-bold uppercase tracking-wider mt-1 px-2.5 py-0.5 rounded-full bg-surface-soft"
+                :class="
+                  phase === 'work'
+                    ? 'text-primary'
+                    : phase === 'break'
+                      ? 'text-success'
+                      : 'text-ink-subtle'
+                "
+              >
                 {{ phase === 'work' ? 'Focus Work' : phase === 'break' ? 'Break' : 'Prêt' }}
               </span>
             </div>
@@ -128,7 +155,9 @@
           <!-- Session Indicator Badge -->
           <div class="flex items-center gap-1 text-xs font-semibold text-ink-muted">
             <span>Sessions complétées :</span>
-            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-primary-soft text-primary font-bold text-[10px]">
+            <span
+              class="flex items-center justify-center w-5 h-5 rounded-full bg-primary-soft text-primary font-bold text-[10px]"
+            >
               {{ sessionCount }}
             </span>
           </div>
@@ -136,29 +165,29 @@
           <!-- Control Buttons -->
           <div class="flex items-center justify-center gap-3 w-full pt-2">
             <!-- Reset Button -->
-            <button 
-              @click="reset" 
+            <button
               class="p-2.5 rounded-xl border border-line hover:bg-surface-soft transition-colors text-ink-muted active:scale-95"
               title="Réinitialiser"
+              @click="reset"
             >
               <RotateCcw class="w-4 h-4" />
             </button>
 
             <!-- Play / Pause Button -->
-            <button 
-              @click="isRunning ? pause() : start()"
+            <button
               class="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-white font-bold text-sm shadow-elev-primary active:scale-98 transition-all duration-200"
               :class="isRunning ? 'bg-ink hover:opacity-90' : 'bg-primary hover:bg-primary-strong'"
+              @click="isRunning ? pause() : start()"
             >
               <component :is="isRunning ? Pause : Play" class="w-4 h-4 fill-current" />
               <span>{{ isRunning ? 'Pause' : 'Démarrer' }}</span>
             </button>
 
             <!-- Skip Button -->
-            <button 
-              @click="skip" 
+            <button
               class="p-2.5 rounded-xl border border-line hover:bg-surface-soft transition-colors text-ink-muted active:scale-95"
               title="Passer"
+              @click="skip"
             >
               <SkipForward class="w-4 h-4" />
             </button>
@@ -168,10 +197,12 @@
         <!-- Settings State Display -->
         <div v-else class="flex flex-col space-y-3 py-1">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-ink-muted uppercase tracking-wider">Configuration</span>
+            <span class="text-xs font-bold text-ink-muted uppercase tracking-wider"
+              >Configuration</span
+            >
             <button
-              @click="showSettings = false"
               class="text-xs font-semibold text-primary hover:text-primary-strong"
+              @click="showSettings = false"
             >
               Retour
             </button>
@@ -182,10 +213,10 @@
             <!-- Work minutes input -->
             <div class="flex items-center justify-between">
               <span class="text-ink-muted">Travail (min)</span>
-              <input 
-                v-model.number="localWorkMins" 
-                type="number" 
-                min="1" 
+              <input
+                v-model.number="localWorkMins"
+                type="number"
+                min="1"
                 max="120"
                 class="w-16 px-2 py-1 border border-line rounded bg-transparent text-ink text-center font-bold"
               />
@@ -193,10 +224,10 @@
             <!-- Break minutes input -->
             <div class="flex items-center justify-between">
               <span class="text-ink-muted">Pause (min)</span>
-              <input 
-                v-model.number="localBreakMins" 
-                type="number" 
-                min="1" 
+              <input
+                v-model.number="localBreakMins"
+                type="number"
+                min="1"
                 max="60"
                 class="w-16 px-2 py-1 border border-line rounded bg-transparent text-ink text-center font-bold"
               />
@@ -204,10 +235,10 @@
             <!-- Long Break minutes input -->
             <div class="flex items-center justify-between">
               <span class="text-ink-muted">Longue Pause (min)</span>
-              <input 
-                v-model.number="localLongBreakMins" 
-                type="number" 
-                min="1" 
+              <input
+                v-model.number="localLongBreakMins"
+                type="number"
+                min="1"
                 max="60"
                 class="w-16 px-2 py-1 border border-line rounded bg-transparent text-ink text-center font-bold"
               />
@@ -220,12 +251,10 @@
             <label class="flex items-center justify-between cursor-pointer text-xs">
               <span class="text-ink-muted">Effets sonores</span>
               <div class="relative inline-flex items-center">
-                <input 
-                  type="checkbox" 
-                  v-model="localSound" 
-                  class="sr-only peer"
-                />
-                <div class="w-9 h-5 bg-line rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-line after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                <input v-model="localSound" type="checkbox" class="sr-only peer" />
+                <div
+                  class="w-9 h-5 bg-line rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-line after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"
+                ></div>
               </div>
             </label>
 
@@ -233,20 +262,18 @@
             <label class="flex items-center justify-between cursor-pointer text-xs">
               <span class="text-ink-muted">Notifications</span>
               <div class="relative inline-flex items-center">
-                <input 
-                  type="checkbox" 
-                  v-model="localNotifs" 
-                  class="sr-only peer"
-                />
-                <div class="w-9 h-5 bg-line rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-line after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                <input v-model="localNotifs" type="checkbox" class="sr-only peer" />
+                <div
+                  class="w-9 h-5 bg-line rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-line after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"
+                ></div>
               </div>
             </label>
           </div>
 
           <!-- Save Button -->
-          <button 
-            @click="applySettings"
+          <button
             class="w-full mt-2 py-2 bg-primary hover:bg-primary-strong text-white font-bold rounded-full text-xs"
+            @click="applySettings"
           >
             Enregistrer les modifications
           </button>
@@ -258,15 +285,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { 
-  Clock, 
-  X, 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  SkipForward, 
-  Settings 
-} from '@lucide/vue'
+import { Clock, X, Play, Pause, RotateCcw, SkipForward, Settings } from '@lucide/vue'
 import { usePomodoro } from '../../composables/usePomodoro'
 
 const isExpanded = ref(false)
@@ -287,7 +306,7 @@ const {
   pause,
   reset,
   skip,
-  saveSettings
+  saveSettings,
 } = usePomodoro()
 
 // Local configurations bound to form
@@ -312,7 +331,7 @@ function applySettings() {
     localBreakMins.value,
     localLongBreakMins.value,
     localSound.value,
-    localNotifs.value
+    localNotifs.value,
   )
   showSettings.value = false
 }

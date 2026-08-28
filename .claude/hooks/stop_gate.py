@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hook Stop unifie — porte de sortie + mecanique de passation de contexte.
+"""Hook Stop unifie — porte de sortie.
 
 Un seul hook Stop (remplace l'ancien commit_reminder.py, dont le
 comportement de rappel non bloquant est repris ici en dernier recours).
@@ -11,11 +11,16 @@ Enchaine, dans l'ordre :
      de blocage : demarrer Docker au Stop serait plus surprenant qu'utile).
   3. Avertissements non bloquants : ETAT.md pas touche alors que du travail
      l'a ete, TODO/FIXME ajoute, zone documentee touchee sans doc a jour.
-  4. Mesure du remplissage de contexte -> force la passation a 90 %.
-  5. A defaut, rappel de commit non bloquant (comportement d'origine).
+  4. A defaut, rappel de commit non bloquant (comportement d'origine).
 
 stop_hook_active : si vrai, on a deja bloque une fois ce cycle -> on ne
 rebloque pas (evite la boucle infinie), on se contente d'avertir.
+
+Note : la mecanique de passation forcee sur le remplissage de contexte
+(seuil 90 %, ecriture de PASSATION.md) a ete retiree sur demande explicite
+de l'utilisateur (2026-08-24) — elle interrompait trop souvent l'execution
+continue d'un plan pilote par sous-agents. _context_lib.py reste utilise
+par contexte_precompact.py, ne pas le supprimer.
 """
 import json
 import os
@@ -23,9 +28,6 @@ import pathlib
 import re
 import subprocess
 import sys
-
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-import _context_lib as ctx  # noqa: E402
 
 RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()
 ETAT = RACINE / "ETAT.md"
@@ -223,31 +225,6 @@ def main() -> None:
             msg = check(fichiers)
             if msg:
                 avertissements.append(msg)
-
-    # --- Mecanique de passation de contexte (voir _context_lib) ---
-    if not stop_hook_active:
-        taux = ctx.remplissage(payload.get("transcript_path"))
-        if taux < ctx.SEUIL:
-            ctx.SENTINELLE.unlink(missing_ok=True)
-        elif ctx.SENTINELLE.exists() and ctx.fraiche():
-            ctx.SENTINELLE.unlink(missing_ok=True)
-            print(json.dumps({
-                "systemMessage": (
-                    f"Contexte a {taux:.0%}. Passation ecrite. Tape /clear — "
-                    "la reprise est automatique."
-                )
-            }))
-            sys.exit(0)
-        else:
-            ctx.SENTINELLE.parent.mkdir(parents=True, exist_ok=True)
-            ctx.SENTINELLE.touch()
-            bloque(
-                f"Contexte a {taux:.0%}, au-dessus du seuil de {ctx.SEUIL:.0%}. "
-                "Termine le cycle TDD en cours s'il y en a un (vert + commit), "
-                "puis ecris PASSATION.md (40 lignes max, format impose), "
-                "archive-la dans docs/passations/, mets ETAT.md a jour, "
-                "et arrete-toi. N'entame aucune nouvelle tache."
-            )
 
     # --- Rappel de commit (comportement d'origine, non bloquant) ---
     porcelain = git("status", "--porcelain")
