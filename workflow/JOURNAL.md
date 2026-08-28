@@ -13,6 +13,11 @@ Chantier actif : backend-ensembles-heterogenes
 
 ## Historique
 
+- 2026-08-28 — [backend-ensembles-heterogenes] Arrêt avant redémarrage PC (Docker Desktop
+  instable). Aucun code touché, rien à perdre. Worktree `.worktrees/backend-ensembles-heterogenes`
+  prête, venv local de secours documenté si Docker reste capricieux après redémarrage.
+  Prochaine action : reprendre `subagent-driven-development` à la Task 1. Détail complet :
+  `workflow/backend-ensembles-heterogenes/JOURNAL.md`.
 - 2026-08-28 — [backend-ensembles-heterogenes] Spec + plan écrits (4 tâches TDD). Découverte
   majeure : la fusion Deck/Flashcard toucherait 47 fichiers backend, reportée à des chantiers
   futurs distincts — ce chantier se limite au socle schéma (`type` au niveau de l'item, ajout
