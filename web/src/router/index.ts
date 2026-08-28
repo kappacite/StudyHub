@@ -120,6 +120,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'revision/sets/:id/items/:type',
+        name: 'RevisionSetTypeItems',
+        component: () => import('../views/Reviews/RevisionSetTypeItems.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'revision/sets/:id/run',
         name: 'QcmRun',
         component: () => import('../views/Reviews/QcmRun.vue'),
