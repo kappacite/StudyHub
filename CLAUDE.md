@@ -15,7 +15,7 @@
 | `desktop/`, Electron, packaging bureau | `desktop-build` | `docs/desktop.md` |
 | Docker, CI/CD, migrations, multi-arch | `deployment` | `docs/migrations.md`, `docs/ENVIRONNEMENT.md` |
 
-Journal : `docs/development_journal.md` · Roadmap : `docs/FEATURES.md` · Phase courante : `ETAT.md`.
+Journal : `docs/development_journal.md` · Roadmap : `docs/FEATURES.md` · Phase courante : `ETAT.md`. Chantier ponctuel (hors refonte UI) : `workflow/`, skill `gestion-chantier`.
 
 ## Stack (détail : AGENTS.md §2)
 
