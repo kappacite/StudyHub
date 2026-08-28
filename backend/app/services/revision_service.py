@@ -1,30 +1,37 @@
-from typing import List, Optional, Tuple
-from app.dao.revision_dao import RevisionSetDAO, RevisionItemDAO
 from app.dao.binder_dao import BinderDAO
-from app.models.revision import RevisionSet, RevisionItem
+from app.dao.revision_dao import RevisionItemDAO, RevisionSetDAO
+from app.models.revision import RevisionItem, RevisionSet
 from app.models.study_session import StudySession
 from app.schemas.revision_schema import (
-    RevisionSetCreate, RevisionSetUpdate, RevisionSetResponse,
-    RevisionItemCreate, RevisionItemUpdate, RevisionItemResponse,
-    RevisionRunRequest, RevisionRunResult, RevisionRunQuestionResult,
     RevisionGradeResult,
+    RevisionItemCreate,
+    RevisionItemResponse,
+    RevisionItemUpdate,
+    RevisionRunQuestionResult,
+    RevisionRunRequest,
+    RevisionRunResult,
+    RevisionSetCreate,
+    RevisionSetResponse,
+    RevisionSetUpdate,
 )
 
 # Types corrigés automatiquement à l'étude (la définition reste en auto-évaluation).
 GRADABLE_TYPES = ("vf", "association", "ordre")
-from app.services.spaced_repetition import calculate_sm2
 from app.middlewares.error_handler import (
-    ResourceNotFoundError, ForbiddenError, ValidationError,
+    ForbiddenError,
+    ResourceNotFoundError,
+    ValidationError,
 )
+from app.services.spaced_repetition import calculate_sm2
 
 
-def validate_item_payload(set_type: str, payload: dict) -> dict:
-    """Valide (et normalise légèrement) le payload d'un item selon le type de
-    l'ensemble. Lève ValidationError (400) si le contenu est incohérent."""
+def validate_item_payload(item_type: str, payload: dict) -> dict:
+    """Valide (et normalise légèrement) le payload d'un item selon son
+    propre type. Lève ValidationError (400) si le contenu est incohérent."""
     if not isinstance(payload, dict):
         raise ValidationError("Le contenu de l'item est invalide.")
 
-    if set_type == "qcm":
+    if item_type == "qcm":
         question = (payload.get("question") or "").strip()
         options = payload.get("options")
         if not question:
@@ -38,50 +45,64 @@ def validate_item_payload(set_type: str, payload: dict) -> dict:
         if not isinstance(points, int) or points < 1:
             raise ValidationError("Le barème (points) doit être un entier positif.")
 
-    elif set_type == "vf":
+    elif item_type == "vf":
         if not (payload.get("assertion") or "").strip():
             raise ValidationError("L'affirmation est obligatoire.")
         if not isinstance(payload.get("correct"), bool):
             raise ValidationError("Le verdict (vrai/faux) est obligatoire.")
 
-    elif set_type == "association":
+    elif item_type == "association":
         pairs = payload.get("pairs")
         if not isinstance(pairs, list) or len(pairs) < 2:
             raise ValidationError("Une association doit comporter au moins deux paires.")
         for p in pairs:
-            if not isinstance(p, dict) or not (p.get("left") or "").strip() or not (p.get("right") or "").strip():
+            if (
+                not isinstance(p, dict)
+                or not (p.get("left") or "").strip()
+                or not (p.get("right") or "").strip()
+            ):
                 raise ValidationError("Chaque paire doit avoir un terme et sa correspondance.")
 
-    elif set_type == "definition":
+    elif item_type == "definition":
         if not (payload.get("term") or "").strip():
             raise ValidationError("Le terme est obligatoire.")
         if not (payload.get("definition") or "").strip():
             raise ValidationError("La définition est obligatoire.")
 
-    elif set_type == "ordre":
+    elif item_type == "ordre":
         steps = payload.get("steps")
         if not isinstance(steps, list) or len([s for s in steps if (s or "").strip()]) < 2:
             raise ValidationError("Un exercice d'ordre doit comporter au moins deux étapes.")
 
+    elif item_type == "flashcard":
+        if not (payload.get("front") or "").strip():
+            raise ValidationError("Le recto de la flashcard est obligatoire.")
+        if not (payload.get("back") or "").strip():
+            raise ValidationError("Le verso de la flashcard est obligatoire.")
+
     else:
-        raise ValidationError(f"Type d'ensemble de révision inconnu : {set_type}.")
+        raise ValidationError(f"Type d'item de révision inconnu : {item_type}.")
 
     return payload
 
 
-def check_answer(set_type: str, payload: dict, answer: dict) -> bool:
-    """Correction d'une réponse à l'étude pour les types auto-corrigeables."""
-    if set_type == "vf":
-        return isinstance(answer.get("value"), bool) and answer["value"] is bool(payload.get("correct"))
+def check_answer(item_type: str, payload: dict, answer: dict) -> bool:
+    """Correction d'une réponse à l'étude pour les types auto-corrigeables.
+    "flashcard" (comme "definition") n'est jamais auto-corrige -- retombe
+    sur le defaut False ci-dessous (auto-evaluation cote client)."""
+    if item_type == "vf":
+        return isinstance(answer.get("value"), bool) and answer["value"] is bool(
+            payload.get("correct")
+        )
 
-    if set_type == "association":
+    if item_type == "association":
         expected = {p["left"]: p["right"] for p in payload.get("pairs", [])}
         submitted = answer.get("matches")
         # Appariement complet et exact (ordre indifférent) ; un appariement
         # partiel ou erroné est considéré faux.
         return isinstance(submitted, dict) and submitted == expected
 
-    if set_type == "ordre":
+    if item_type == "ordre":
         expected = [s for s in payload.get("steps", []) if str(s).strip()]
         return answer.get("order") == expected
 
@@ -103,7 +124,10 @@ class RevisionService:
 
     def _resolve_binder(self, binder_id, user_id: int, write_required: bool = True) -> int:
         from app.utils.security import check_binder_access
-        binder = check_binder_access(self._set_dao.db, binder_id, user_id, write_required=write_required)
+
+        binder = check_binder_access(
+            self._set_dao.db, binder_id, user_id, write_required=write_required
+        )
         return binder._id
 
     def _to_set_response(self, rset: RevisionSet, item_count: int) -> RevisionSetResponse:
@@ -111,22 +135,30 @@ class RevisionService:
         resp.item_count = item_count
         return resp
 
-    def _get_set_or_404(self, set_id: int, user_id: int, write_required: bool = False) -> RevisionSet:
+    def _get_set_or_404(
+        self, set_id: int, user_id: int, write_required: bool = False
+    ) -> RevisionSet:
         rset = self._set_dao.get_by_id(set_id)
         if not rset:
             raise ResourceNotFoundError("Ensemble de révision introuvable.")
         if rset.user_id != user_id:
             if rset.binder_id:
                 from app.utils.security import check_binder_access
-                check_binder_access(self._set_dao.db, rset.binder_id, user_id, write_required=write_required)
+
+                check_binder_access(
+                    self._set_dao.db, rset.binder_id, user_id, write_required=write_required
+                )
             else:
                 raise ForbiddenError("Accès interdit à cet ensemble.")
         elif write_required and rset.binder_id:
             from app.utils.security import check_binder_access
+
             check_binder_access(self._set_dao.db, rset.binder_id, user_id, write_required=True)
         return rset
 
-    def _get_item_or_404(self, item_id: int, set_id: int, user_id: int, write_required: bool = False) -> RevisionItem:
+    def _get_item_or_404(
+        self, item_id: int, set_id: int, user_id: int, write_required: bool = False
+    ) -> RevisionItem:
         self._get_set_or_404(set_id, user_id, write_required=write_required)
         item = self._item_dao.get_by_id(item_id)
         if not item or item.set_id != set_id:
@@ -154,18 +186,20 @@ class RevisionService:
     def get_sets(
         self,
         user_id: int,
-        set_type: Optional[str] = None,
-        binder_id: Optional[str] = None,
-        search: Optional[str] = None,
+        set_type: str | None = None,
+        binder_id: str | None = None,
+        search: str | None = None,
         page: int = 1,
         per_page: int = 20,
-    ) -> Tuple[List[RevisionSetResponse], int]:
+    ) -> tuple[list[RevisionSetResponse], int]:
         binder_internal = None
         if binder_id is not None:
             binder_internal = self._resolve_binder(binder_id, user_id, write_required=False)
 
         offset = (page - 1) * per_page
-        sets = self._set_dao.search_sets(user_id, set_type, binder_internal, search, limit=per_page, offset=offset)
+        sets = self._set_dao.search_sets(
+            user_id, set_type, binder_internal, search, limit=per_page, offset=offset
+        )
         total = self._set_dao.count_sets(user_id, set_type, binder_internal, search)
         counts = self._set_dao.count_items_by_sets([s.id for s in sets])
         responses = [self._to_set_response(s, counts.get(s.id, 0)) for s in sets]
@@ -219,7 +253,9 @@ class RevisionService:
 
     # --- Items ---------------------------------------------------------------
 
-    def create_item(self, user_id: int, set_id: int, data: RevisionItemCreate) -> RevisionItemResponse:
+    def create_item(
+        self, user_id: int, set_id: int, data: RevisionItemCreate
+    ) -> RevisionItemResponse:
         rset = self._get_set_or_404(set_id, user_id, write_required=True)
         payload = validate_item_payload(rset.type, data.payload)
         item = RevisionItem(
@@ -231,12 +267,14 @@ class RevisionService:
         created = self._item_dao.create(item)
         return RevisionItemResponse.model_validate(created)
 
-    def get_items(self, user_id: int, set_id: int) -> List[RevisionItemResponse]:
+    def get_items(self, user_id: int, set_id: int) -> list[RevisionItemResponse]:
         self._get_set_or_404(set_id, user_id, write_required=False)
         items = self._item_dao.get_by_set(set_id)
         return [RevisionItemResponse.model_validate(i) for i in items]
 
-    def update_item(self, user_id: int, set_id: int, item_id: int, data: RevisionItemUpdate) -> RevisionItemResponse:
+    def update_item(
+        self, user_id: int, set_id: int, item_id: int, data: RevisionItemUpdate
+    ) -> RevisionItemResponse:
         rset = self._get_set_or_404(set_id, user_id, write_required=True)
         item = self._get_item_or_404(item_id, set_id, user_id, write_required=True)
         if "payload" in data.model_fields_set and data.payload is not None:
@@ -254,7 +292,7 @@ class RevisionService:
 
     # --- Étude (SM-2) --------------------------------------------------------
 
-    def get_study_items(self, user_id: int, set_id: int) -> List[RevisionItemResponse]:
+    def get_study_items(self, user_id: int, set_id: int) -> list[RevisionItemResponse]:
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
         if rset.user_id == user_id:
             items = self._item_dao.get_items_to_study(set_id)
@@ -265,7 +303,9 @@ class RevisionService:
             items = self._item_dao.get_by_set(set_id)
         return [RevisionItemResponse.model_validate(i) for i in items]
 
-    def answer_item(self, user_id: int, set_id: int, item_id: int, score: int) -> RevisionItemResponse:
+    def answer_item(
+        self, user_id: int, set_id: int, item_id: int, score: int
+    ) -> RevisionItemResponse:
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
         item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
 
@@ -313,7 +353,7 @@ class RevisionService:
             raise ValidationError("Le passage scoré n'est disponible que pour les QCM.")
 
         items = {i.id: i for i in self._item_dao.get_by_set(set_id)}
-        tuning = (rset.tuning_default or 1.0)
+        tuning = rset.tuning_default or 1.0
         score = 0
         max_score = 0
         results = []
@@ -333,14 +373,16 @@ class RevisionService:
 
             score += earned
             max_score += points
-            results.append(RevisionRunQuestionResult(
-                item_id=item.id,
-                correct=is_correct,
-                earned=earned,
-                points=points,
-                correct_option_ids=correct_ids,
-                selected_option_ids=selected_ids,
-            ))
+            results.append(
+                RevisionRunQuestionResult(
+                    item_id=item.id,
+                    correct=is_correct,
+                    earned=earned,
+                    points=points,
+                    correct_option_ids=correct_ids,
+                    selected_option_ids=selected_ids,
+                )
+            )
 
             # Mise à jour SM-2 par question (réussi → 5, raté → 1) — uniquement pour
             # le propriétaire ; un élève sur un QCM partagé ne touche pas l'échéancier.
@@ -357,23 +399,29 @@ class RevisionService:
                 item.interval = interval
                 item.repetitions = repetitions
                 item.next_review = next_review
-            self._item_dao.db.add(StudySession(
-                user_id=user_id,
-                module=rset.type,
-                duration_seconds=0,
-                cards_reviewed=1,
-                cards_correct=1 if is_correct else 0,
-                item_id=item.id,
-                item_type=rset.type,
-                grade=grade,
-            ))
+            self._item_dao.db.add(
+                StudySession(
+                    user_id=user_id,
+                    module=rset.type,
+                    duration_seconds=0,
+                    cards_reviewed=1,
+                    cards_correct=1 if is_correct else 0,
+                    item_id=item.id,
+                    item_type=rset.type,
+                    grade=grade,
+                )
+            )
 
         self._item_dao.db.commit()
 
         percentage = round(score / max_score * 100, 1) if max_score else 0.0
-        return RevisionRunResult(score=score, max_score=max_score, percentage=percentage, results=results)
+        return RevisionRunResult(
+            score=score, max_score=max_score, percentage=percentage, results=results
+        )
 
-    def grade_item(self, user_id: int, set_id: int, item_id: int, answer: dict) -> RevisionGradeResult:
+    def grade_item(
+        self, user_id: int, set_id: int, item_id: int, answer: dict
+    ) -> RevisionGradeResult:
         """Corrige une réponse à un item auto-corrigeable (vf/association/ordre) et
         met à jour SM-2 (réussi → 5, raté → 2). La définition reste en self-eval."""
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
@@ -403,16 +451,20 @@ class RevisionService:
         else:
             updated = item
 
-        self._item_dao.db.add(StudySession(
-            user_id=user_id,
-            module=rset.type,
-            duration_seconds=0,
-            cards_reviewed=1,
-            cards_correct=1 if is_correct else 0,
-            item_id=item.id,
-            item_type=rset.type,
-            grade=grade,
-        ))
+        self._item_dao.db.add(
+            StudySession(
+                user_id=user_id,
+                module=rset.type,
+                duration_seconds=0,
+                cards_reviewed=1,
+                cards_correct=1 if is_correct else 0,
+                item_id=item.id,
+                item_type=rset.type,
+                grade=grade,
+            )
+        )
         self._item_dao.db.commit()
 
-        return RevisionGradeResult(correct=is_correct, item=RevisionItemResponse.model_validate(updated))
+        return RevisionGradeResult(
+            correct=is_correct, item=RevisionItemResponse.model_validate(updated)
+        )

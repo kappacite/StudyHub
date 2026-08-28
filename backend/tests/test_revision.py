@@ -1,5 +1,9 @@
 """Tests du socle de révision (D3c) : ensembles homogènes typés + items SM-2/tuning."""
 
+import pytest
+
+from app.middlewares.error_handler import ValidationError
+from app.services.revision_service import check_answer, validate_item_payload
 from app.services.spaced_repetition import calculate_sm2
 
 # --- SM-2 tuning (D4) --------------------------------------------------------
@@ -287,3 +291,23 @@ def test_revision_set_type_is_nullable_at_model_level(app):
 
         col = RevisionSet.__table__.columns["type"]
         assert col.nullable is True
+
+
+def test_validate_flashcard_payload_accepts_front_back():
+    payload = validate_item_payload("flashcard", {"front": "Chat", "back": "Cat"})
+    assert payload == {"front": "Chat", "back": "Cat"}
+
+
+def test_validate_flashcard_payload_rejects_missing_front():
+    with pytest.raises(ValidationError):
+        validate_item_payload("flashcard", {"back": "Cat"})
+
+
+def test_validate_flashcard_payload_rejects_missing_back():
+    with pytest.raises(ValidationError):
+        validate_item_payload("flashcard", {"front": "Chat"})
+
+
+def test_check_answer_flashcard_never_auto_corrects():
+    # Comme "definition" : toujours False, jamais auto-corrige.
+    assert check_answer("flashcard", {"front": "Chat", "back": "Cat"}, {}) is False
