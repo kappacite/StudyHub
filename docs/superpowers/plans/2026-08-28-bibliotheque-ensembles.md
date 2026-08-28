@@ -487,7 +487,7 @@ git commit -m "feat(revision): RevisionItemModal transmet le type d'item choisi 
   `updateSet(setId, patch)` (Task 2), `RevisionSet`.
 - Produces: `RevisionSetModal` — props `{ mode: 'create' | 'edit', binderId: string |
   null, set?: RevisionSet }`, emits `created: [RevisionSet]`, `updated: []`, `close: []`.
-  Consumed by Task 5 (edit an existing set) and Task 8 (`Binders.vue`, create a new one).
+  Consumed by Task 5 (edit an existing set) and Task 9 (`Binders.vue`, create a new one).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -675,7 +675,7 @@ git commit -m "feat(revision): ajoute RevisionSetModal (creer/editer le nom et l
   `deleteSet(setId)` (existing store methods), `RevisionSetModal` (Task 4),
   `RevisionItemModal` (Task 3, unlocked type). Route param `id`.
 - Produces: route name `RevisionSetDetail`, path `/revision/sets/:id`. Consumed by
-  Task 8 (`Binders.vue` links here) and by users navigating from `RevisionSetTypeItems.vue`
+  Task 9 (`Binders.vue` links here) and by users navigating from `RevisionSetTypeItems.vue`
   (Task 6, "back" link).
 
 - [ ] **Step 1: Write the failing tests**
@@ -1307,7 +1307,337 @@ git commit -m "feat(revision): ajoute RevisionSetTypeItems (CRUD des items d'un 
 
 ---
 
-### Task 7: `RevisionStudy.vue` — per-item type dispatch, flashcard branch, type filter
+### Task 7: `RevisionItemModal.vue` — add the missing `flashcard` type (added mid-execution)
+
+> Added during execution, not part of the original plan. Task 6's implementer discovered
+> that `RevisionItemModal.vue` has zero handling for the `'flashcard'` item type: its
+> `TYPES` list only has `basic` (the old `Deck`/`Flashcard` system) plus the 5 original
+> `RevisionType` values — the new `RevisionItemType` value `'flashcard'` (item-level, part
+> of a `RevisionSet`) was never wired in by Task 3, even though it's one of the 6 types
+> this whole chantier exists to support. Investigated further while writing this task:
+> there is a second, related latent bug this surfaces. `basic` targets the *old* `Deck`
+> system (`decksStore.createDeck`/`createCard`) — completely unrelated to `RevisionSet`.
+> Every existing caller of this modal with `lockedSetId` set also sets `lockedType`
+> (hiding the type selector entirely), so `basic` being selectable together with a locked
+> set was never reachable before. Task 5 is the first caller to pass `lockedSetId` without
+> `lockedType` (free type choice) — which means today, picking "Carte" while adding an
+> item to an existing heterogeneous set would silently create an unrelated `Deck` instead
+> of adding anything to that set. Ruling: exclude `basic` from the type selector whenever
+> `lockedSetId` is set (a `Deck` can never live inside a `RevisionSet`), and add
+> `flashcard` as the real replacement for "a flashcard inside this set".
+
+**Files:**
+- Modify: `web/src/components/decks/RevisionItemModal.vue`
+- Modify: `web/tests/components/decks/RevisionItemModal.spec.ts` (extends Task 3's suite)
+
+**Interfaces:**
+- Consumes: `RevisionItemType` (Task 2).
+- Produces: no new props/emits — behavior change only. `TYPES` becomes locked-set-aware;
+  `flashcard` becomes a fully working type (form, validation, payload, prefill, submit).
+
+- [ ] **Step 1: Write the failing tests**
+
+The existing first test in `web/tests/components/decks/RevisionItemModal.spec.ts` asserts
+exactly 6 buttons including `'Carte'` when `lockedSetId` is set — that assertion is now
+wrong (per the ruling above) and must be updated, not left red as a "future" test. Replace
+it, and add two new tests, so the file's `describe` block reads:
+
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+
+const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn() }))
+vi.mock('../../../src/services/api', () => ({ default: api }))
+
+import RevisionItemModal from '../../../src/components/decks/RevisionItemModal.vue'
+
+describe('RevisionItemModal — ajout a un ensemble heterogene existant', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    api.get.mockResolvedValue({ data: { data: [] } })
+  })
+
+  it('affiche 6 types avec lockedSetId, "Carte" (Deck) exclu, "Flashcards" inclus', async () => {
+    const wrapper = mount(RevisionItemModal, {
+      props: { binderId: null, decks: [], lockedSetId: 7 },
+    })
+    await flushPromises()
+
+    const labels = wrapper.findAll('button').map((b) => b.text()).filter((t) =>
+      ['Carte', 'QCM', 'Vrai / Faux', 'Définition', 'Ordre', 'Association', 'Flashcards'].includes(t),
+    )
+    expect(labels).toEqual(['QCM', 'Vrai / Faux', 'Définition', 'Ordre', 'Association', 'Flashcards'])
+  })
+
+  it("poste le type choisi et l'id de l'ensemble verrouille (pas de selecteur de cible)", async () => {
+    api.post.mockResolvedValue({
+      data: { id: 30, set_id: 7, type: 'vf', payload: { assertion: 'x', correct: true }, tuning: 1, position: 0, interval: 0, ease_factor: 2.5, repetitions: 0, next_review: '', created_at: '', updated_at: '' },
+    })
+    const wrapper = mount(RevisionItemModal, {
+      props: { binderId: null, decks: [], lockedSetId: 7 },
+    })
+    await flushPromises()
+
+    await wrapper.findAll('button').find((b) => b.text() === 'Vrai / Faux')!.trigger('click')
+    await wrapper.find('textarea').setValue('Le ciel est bleu.')
+    await wrapper.findAll('button').find((b) => b.text() === 'Vrai')!.trigger('click')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/items', {
+      payload: { assertion: 'Le ciel est bleu.', correct: true },
+      type: 'vf',
+      tuning: 1.0,
+    })
+    expect(wrapper.emitted('created')).toBeTruthy()
+  })
+
+  it("poste un item flashcard (front/back) a l'ensemble verrouille", async () => {
+    api.post.mockResolvedValue({
+      data: { id: 31, set_id: 7, type: 'flashcard', payload: { front: 'Chat', back: 'Cat' }, tuning: 1, position: 0, interval: 0, ease_factor: 2.5, repetitions: 0, next_review: '', created_at: '', updated_at: '' },
+    })
+    const wrapper = mount(RevisionItemModal, {
+      props: { binderId: null, decks: [], lockedSetId: 7 },
+    })
+    await flushPromises()
+
+    await wrapper.findAll('button').find((b) => b.text() === 'Flashcards')!.trigger('click')
+    const textareas = wrapper.findAll('textarea')
+    await textareas[0].setValue('Chat')
+    await textareas[1].setValue('Cat')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/items', {
+      payload: { front: 'Chat', back: 'Cat' },
+      type: 'flashcard',
+      tuning: 1.0,
+    })
+    expect(wrapper.emitted('created')).toBeTruthy()
+  })
+
+  it('respecte toujours lockedType quand fourni (retrocompat RevisionSetManage)', async () => {
+    const wrapper = mount(RevisionItemModal, {
+      props: { binderId: null, decks: [], lockedSetId: 7, lockedType: 'qcm' },
+    })
+    await flushPromises()
+
+    const typeButtons = wrapper.findAll('button').filter((b) => b.text() === 'QCM')
+    expect(typeButtons).toHaveLength(0) // pas de selecteur : le seul champ visible est le formulaire QCM
+    expect(wrapper.text()).toContain('Question')
+  })
+
+  it('sans lockedSetId (creation depuis Reviews.vue) : "Carte" (Deck) reste disponible, non-regression', async () => {
+    const wrapper = mount(RevisionItemModal, {
+      props: { binderId: null, decks: [{ id: 1, binder_id: null, name: 'Mon deck', description: '', reversed: false, tuning_default: 1, card_count: 0, created_at: '', tags: [] }] },
+    })
+    await flushPromises()
+
+    const labels = wrapper.findAll('button').map((b) => b.text()).filter((t) =>
+      ['Carte', 'QCM', 'Vrai / Faux', 'Définition', 'Ordre', 'Association', 'Flashcards'].includes(t),
+    )
+    expect(labels).toEqual(['Carte', 'QCM', 'Vrai / Faux', 'Définition', 'Ordre', 'Association', 'Flashcards'])
+  })
+
+  it('nouvel ensemble a la volee avec type flashcard : le SET nait heterogene (type: null), pas type: flashcard', async () => {
+    api.get.mockResolvedValue({ data: { data: [] } }) // fetchSets() au mount, aucun ensemble existant
+    api.post
+      .mockResolvedValueOnce({ data: { id: 40, name: 'Nouveau', description: null, type: null, binder_id: null, tuning_default: 1, is_public: false, item_count: 0 } })
+      .mockResolvedValueOnce({ data: { id: 41, set_id: 40, type: 'flashcard', payload: { front: 'Chat', back: 'Cat' }, tuning: 1, position: 0, interval: 0, ease_factor: 2.5, repetitions: 0, next_review: '', created_at: '', updated_at: '' } })
+    const wrapper = mount(RevisionItemModal, { props: { binderId: null, decks: [] } })
+    await flushPromises()
+
+    await wrapper.findAll('button').find((b) => b.text() === 'Flashcards')!.trigger('click')
+    await flushPromises()
+    await wrapper.find('input[placeholder="Nom de l\'ensemble"]').setValue('Nouveau')
+    const textareas = wrapper.findAll('textarea')
+    await textareas[0].setValue('Chat')
+    await textareas[1].setValue('Cat')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenNthCalledWith(1, '/revision/sets', {
+      name: 'Nouveau', type: null, description: null, binder_id: null, tuning_default: 1.0,
+    })
+    expect(api.post).toHaveBeenNthCalledWith(2, '/revision/sets/40/items', {
+      payload: { front: 'Chat', back: 'Cat' },
+      type: 'flashcard',
+      tuning: 1.0,
+    })
+  })
+})
+```
+
+- [ ] **Step 2: Run tests to verify they fail for the right reason**
+
+Run: `cd web && npx vitest run tests/components/decks/RevisionItemModal.spec.ts -v`
+Expected: the updated 1st test fails (`'Carte'` still present, `'Flashcards'` absent — no
+filtering by `lockedSetId` exists yet); the new flashcard-submit test fails (no `Flashcards`
+button exists at all, `wrapper.findAll('button').find(...)` returns `undefined`, `.trigger`
+throws); the new non-regression test (no `lockedSetId`) currently passes by accident only
+for `'Carte'`/5 original types — but fails because `'Flashcards'` isn't there yet; the new
+"nouvel ensemble a la volee" test fails the same way (no `Flashcards` button).
+
+- [ ] **Step 3: Filter `TYPES` by `lockedSetId`, add the `flashcard` type end-to-end**
+
+In `web/src/components/decks/RevisionItemModal.vue`, script section:
+
+Update the type alias and import:
+
+```typescript
+import type { RevisionItemType, RevisionItemPayload, RevisionItem } from '../../stores/revision'
+
+// 'basic' = flashcard recto/verso (Deck, systeme classique) ; les autres = ensembles de
+// revision (RevisionItemType inclut desormais 'flashcard', un item de type flashcard au
+// sein d'un RevisionSet -- distinct du Deck classique).
+type ItemType = 'basic' | RevisionItemType
+```
+
+Replace the static `TYPES` array with a computed that excludes `'basic'` whenever adding to
+an existing set (a `Deck` can never live inside a `RevisionSet`):
+
+```typescript
+const ALL_TYPES: { value: ItemType; label: string }[] = [
+  { value: 'basic', label: 'Carte' },
+  { value: 'qcm', label: 'QCM' },
+  { value: 'vf', label: 'Vrai / Faux' },
+  { value: 'definition', label: 'Définition' },
+  { value: 'ordre', label: 'Ordre' },
+  { value: 'association', label: 'Association' },
+  { value: 'flashcard', label: 'Flashcards' },
+]
+const TYPES = computed(() =>
+  props.lockedSetId !== undefined ? ALL_TYPES.filter((t) => t.value !== 'basic') : ALL_TYPES,
+)
+```
+
+Fix the initial `itemType` default — `'basic'` is no longer a valid default when
+`lockedSetId` is set (it would select a hidden, unreachable form):
+
+```typescript
+const itemType = ref<ItemType>(
+  props.lockedType || props.initialType || (props.lockedSetId !== undefined ? 'qcm' : 'basic'),
+)
+```
+
+Add the `flashcard` refs, alongside the existing per-type refs (after the `// ASSOCIATION`
+block):
+
+```typescript
+// FLASHCARD (item de revision, distinct du Deck classique)
+const flashFront = ref('')
+const flashBack = ref('')
+```
+
+Add the `flashcard` case to `canSubmit`:
+
+```typescript
+  if (itemType.value === 'flashcard') return !!flashFront.value.trim() && !!flashBack.value.trim()
+```
+
+(insert alongside the other `if (itemType.value === '...')` branches, order doesn't matter)
+
+Add the `flashcard` case to `buildPayload()`:
+
+```typescript
+  if (itemType.value === 'flashcard') {
+    return { front: flashFront.value.trim(), back: flashBack.value.trim() }
+  }
+```
+
+(insert before the final `// association` fallback return)
+
+Add the `flashcard` case to `prefillFromItem()`:
+
+```typescript
+  } else if (itemType.value === 'flashcard') {
+    flashFront.value = p.front || ''
+    flashBack.value = p.back || ''
+  }
+```
+
+(insert as another `else if` branch, before the closing brace of the if/else chain)
+
+Fix the "nouvel ensemble à la volée" branch of `submit()` — a brand-new set must always be
+created heterogeneous (`type: null`) when the first item's type is `'flashcard'` (a
+`RevisionSet.type` of `'flashcard'` is not a valid `RevisionType` and the backend would
+reject it); for every other type, keep passing `itemType.value` as before (unchanged
+behavior for `Reviews.vue`'s existing homogeneous-set creation flow):
+
+```typescript
+    } else {
+      let setId: number
+      if (targetChoice.value === NEW_TARGET) {
+        const set = await revisionStore.createSet(
+          newTargetName.value.trim(),
+          itemType.value === 'flashcard' ? null : itemType.value,
+          null,
+          props.binderId,
+        )
+        setId = set.id
+      } else {
+        setId = targetChoice.value
+      }
+      await revisionStore.createItem(setId, buildPayload(), itemType.value)
+    }
+```
+
+Template section — add the flashcard form branch, right after the `<!-- ASSOCIATION -->`
+template block and before the `<p v-if="error" ...>` line:
+
+```vue
+        <!-- FLASHCARD -->
+        <template v-else-if="itemType === 'flashcard'">
+          <div>
+            <label :class="labelCls">Recto</label
+            ><textarea
+              v-model="flashFront"
+              rows="2"
+              :class="inputCls"
+              placeholder="Ex: Capitale de l'Italie ?"
+            ></textarea>
+          </div>
+          <div>
+            <label :class="labelCls">Verso</label
+            ><textarea
+              v-model="flashBack"
+              rows="2"
+              :class="inputCls"
+              placeholder="Ex: Rome"
+            ></textarea>
+          </div>
+        </template>
+```
+
+Update the `v-for="t in TYPES"` reference in the type-selector template block — `TYPES` is
+now a computed, so the template's existing `v-for="t in TYPES"` (no `.value` needed, Vue
+unwraps computeds in templates automatically) requires no template change at all — only
+the script-side declaration changed from a plain array to a computed.
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `cd web && npx vitest run tests/components/decks/RevisionItemModal.spec.ts -v`
+Expected: 6 passed.
+
+- [ ] **Step 5: Run the full web suite and typecheck**
+
+Run: `cd web && npx vitest run && npx vue-tsc -b`
+Expected: all pass. Confirm the `RevisionSetTypeItems.vue`/`RevisionSetDetail.vue` type
+errors (if any were reported around `RevisionItemModal`'s prop types in earlier tasks) are
+now gone.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add web/src/components/decks/RevisionItemModal.vue web/tests/components/decks/RevisionItemModal.spec.ts
+git commit -m "fix(revision): RevisionItemModal gere le type flashcard, exclut Carte (Deck) d'un ensemble verrouille"
+```
+
+---
+
+### Task 8: `RevisionStudy.vue` — per-item type dispatch, flashcard branch, type filter
 
 **Files:**
 - Modify: `web/src/views/Reviews/RevisionStudy.vue`
@@ -1316,7 +1646,7 @@ git commit -m "feat(revision): ajoute RevisionSetTypeItems (CRUD des items d'un 
 **Interfaces:**
 - Consumes: `RevisionItemType`, `RevisionItem.type` (Task 2).
 - Produces: unchanged route (`/revision/sets/:id/study`), now also reads
-  `route.query.type` (optional) to filter the session. Consumed by Task 5 and Task 8
+  `route.query.type` (optional) to filter the session. Consumed by Task 5 and Task 9
   ("Réviser l'ensemble"/"Réviser" links).
 
 - [ ] **Step 1: Write the failing tests**
@@ -1549,7 +1879,7 @@ git commit -m "feat(revision): RevisionStudy dispatch par item.type, ajoute la b
 
 ---
 
-### Task 8: `Binders.vue` — Notes/Révision/Autres tabs, heterogeneous merged list
+### Task 9: `Binders.vue` — Notes/Révision/Autres tabs, heterogeneous merged list
 
 **Files:**
 - Modify: `web/src/views/Binders/Binders.vue`
@@ -1971,7 +2301,7 @@ git commit -m "feat(binders): bascule Notes/Revision/Autres, fusion visuelle Dec
 
 ---
 
-### Task 9: `TeacherDashboard.vue` — defensive fix for nullable `RevisionSet.type` (added mid-execution)
+### Task 10: `TeacherDashboard.vue` — defensive fix for nullable `RevisionSet.type` (added mid-execution)
 
 > Added during execution, not part of the original plan self-review: Task 2's `vue-tsc`
 > run surfaced a type error here that Task 2's own reviewer confirmed is a real runtime
@@ -1980,7 +2310,7 @@ git commit -m "feat(binders): bascule Notes/Revision/Autres, fusion visuelle Dec
 > Once a heterogeneous set exists (this chantier's entire point), opening this dashboard's
 > "create assignment" set-picker throws `Cannot read properties of null (reading
 > 'toUpperCase')` and breaks the whole dashboard. Ruling: fix here as its own small task
-> rather than folding it into Task 8 (`Binders.vue`, unrelated screen) or skipping it —
+> rather than folding it into Task 9 (`Binders.vue`, unrelated screen) or skipping it —
 > the cost of a crash in a teacher-facing screen outweighs the cost of one extra task.
 
 **Files:**
@@ -2094,7 +2424,7 @@ git commit -m "fix(classes): TeacherDashboard n'affiche plus un crash sur un ens
 
 ---
 
-### Task 10: Final verification, visual check, and chantier closure
+### Task 11: Final verification, visual check, and chantier closure
 
 **Files:**
 - Modify: `workflow/bibliotheque-ensembles/PLAN.md`
