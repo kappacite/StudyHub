@@ -62,9 +62,16 @@ le fixture du test. Les deux corrigés et re-vérifiés en un tour, aucun résid
 **Portée finale confirmée propre** (`git diff --stat main..HEAD`) : uniquement les fichiers
 prévus — aucun de `Reviews.vue`/`RevisionSetManage.vue`/`RevisionSetStats.vue`/
 `RevisionBinderStats.vue` touché, aucune ligne `Deck`/`Flashcard` touchée. Suite complète
-319/319 tests verts, `vue-tsc -b` propre sur tous les fichiers du périmètre (3 erreurs
-résiduelles, toutes dans `Reviews.vue`/`RevisionSetManage.vue`, pré-existantes et hors
-périmètre — territoire `reviser-hub`).
+319/319 tests verts, `vue-tsc -b` propre sur tous les fichiers du périmètre.
+
+**Correction de ce constat (revue finale de branche).** Les 3 erreurs `vue-tsc` résiduelles
+dans `Reviews.vue`/`RevisionSetManage.vue` n'étaient **pas** pré-existantes sur `main` : le
+rapport de la tâche 2 avait prouvé (via `git stash`) que la ligne de base était à zéro erreur.
+Elles ont été **introduites par ce chantier**, par le passage de `RevisionSet.type` à
+`RevisionType | null` (tâche 2), et la branche ne compilait donc pas. Elles sont désormais
+corrigées par des gardes de nullité minimales (élargissement de la signature de `openSet`,
+`?? undefined` sur `:locked-type`, garde sur `typeLabel`), sans redessiner ni l'un ni l'autre
+de ces deux écrans — qui restent du territoire `reviser-hub`.
 
 **Vérification visuelle réelle — non faite.** Tentative sérieuse : conteneurs Docker
 disponibles (`docker ps`) appartiennent à un environnement de dev déjà en cours (frontend sur

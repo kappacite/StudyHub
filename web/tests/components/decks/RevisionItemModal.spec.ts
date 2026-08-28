@@ -96,6 +96,63 @@ describe('RevisionItemModal — ajout a un ensemble heterogene existant', () => 
     expect(labels).toEqual(['Carte', 'QCM', 'Vrai / Faux', 'Définition', 'Ordre', 'Association', 'Flashcards'])
   })
 
+  it("edition : le type de l'item l'emporte sur lockedType, le bouton est actif et la maj poste le bon payload", async () => {
+    api.put.mockResolvedValue({
+      data: { id: 55, set_id: 7, type: 'flashcard', payload: { front: 'Chat corrige', back: 'Cat' }, tuning: 1, position: 0, interval: 0, ease_factor: 2.5, repetitions: 0, next_review: '', created_at: '', updated_at: '' },
+    })
+    const editItem = { id: 55, set_id: 7, type: 'flashcard' as const, payload: { front: 'Chat', back: 'Cat' }, tuning: 1, position: 0, interval: 0, ease_factor: 2.5, repetitions: 0, next_review: '', created_at: '', updated_at: '' }
+    const wrapper = mount(RevisionItemModal, {
+      // lockedType volontairement different du type de l'item : c'est le type de
+      // l'item edite qui doit gagner, sinon on afficherait/enverrait le mauvais formulaire.
+      props: { binderId: null, decks: [], lockedSetId: 7, lockedType: 'qcm' as const, editItem },
+    })
+    await flushPromises()
+
+    // (a) le formulaire flashcard est rendu, pas le formulaire QCM implique par lockedType
+    expect(wrapper.text()).toContain('Recto')
+    expect(wrapper.text()).toContain('Verso')
+    expect(wrapper.text()).not.toContain('Options (cochez')
+    const textareas = wrapper.findAll('textarea')
+    expect(textareas[0].element.value).toBe('Chat')
+    expect(textareas[1].element.value).toBe('Cat')
+
+    // (b) le bouton d'enregistrement n'est pas bloque a l'etat desactive
+    const submitButton = wrapper.find('button[type="submit"]')
+    expect(submitButton.attributes('disabled')).toBeUndefined()
+
+    // (c) l'enregistrement poste bien la mise a jour flashcard
+    await textareas[0].setValue('Chat corrige')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(api.put).toHaveBeenCalledWith('/revision/sets/7/items/55', {
+      payload: { front: 'Chat corrige', back: 'Cat' },
+    })
+    expect(wrapper.emitted('updated')).toBeTruthy()
+  })
+
+  it('un ensemble heterogene (type: null) est une cible valide quel que soit le type choisi', async () => {
+    const HETEROGENEOUS = { id: 40, name: 'Mixte', description: null, type: null, binder_id: null, tuning_default: 1, is_public: false, item_count: 3 }
+    const TYPED_VF = { id: 41, name: 'VF pur', description: null, type: 'vf', binder_id: null, tuning_default: 1, is_public: false, item_count: 2 }
+    api.get.mockResolvedValue({ data: { data: [HETEROGENEOUS, TYPED_VF] } })
+    const wrapper = mount(RevisionItemModal, { props: { binderId: null, decks: [] } })
+    await flushPromises()
+
+    // Type vf : l'ensemble typé vf ET l'ensemble hétérogène sont proposés
+    await wrapper.findAll('button').find((b) => b.text() === 'Vrai / Faux')!.trigger('click')
+    await flushPromises()
+    let options = wrapper.find('select').findAll('option').map((o) => o.text())
+    expect(options).toContain('Mixte')
+    expect(options).toContain('VF pur')
+
+    // Type ordre : plus aucun ensemble typé ne matche, mais l'hétérogène reste proposé
+    await wrapper.findAll('button').find((b) => b.text() === 'Ordre')!.trigger('click')
+    await flushPromises()
+    options = wrapper.find('select').findAll('option').map((o) => o.text())
+    expect(options).toContain('Mixte')
+    expect(options).not.toContain('VF pur')
+  })
+
   it('nouvel ensemble a la volee avec type flashcard : le SET nait heterogene (type: null), pas type: flashcard', async () => {
     api.get.mockResolvedValue({ data: { data: [] } }) // fetchSets() au mount, aucun ensemble existant
     api.post

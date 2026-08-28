@@ -23,6 +23,17 @@
       Chargement…
     </div>
 
+    <BaseEmptyState
+      v-else-if="loadError"
+      title="Le chargement a échoué"
+      description="Vos données n'ont pas pu être récupérées. Vérifiez votre connexion et réessayez."
+    >
+      <template #icon><AlertCircle class="w-6 h-6" /></template>
+      <template #actions>
+        <BaseButton data-test="retry-button" @click="load">Réessayer</BaseButton>
+      </template>
+    </BaseEmptyState>
+
     <template v-else>
       <div class="flex items-center justify-between mb-3">
         <h2 class="font-display text-lg font-bold text-ink">{{ typeLabel }}</h2>
@@ -72,7 +83,7 @@
       :decks="[]"
       :edit-item="editingItem || undefined"
       :locked-set-id="setId"
-      :locked-type="lockedTypeForModal"
+      :locked-type="itemType"
       @close="closeModal"
       @created="onSaved"
       @updated="onSaved"
@@ -84,15 +95,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useRevisionStore } from '../../stores/revision'
-import type {
-  RevisionItem,
-  RevisionItemType,
-  RevisionSet,
-  RevisionType,
-} from '../../stores/revision'
+import type { RevisionItem, RevisionItemType, RevisionSet } from '../../stores/revision'
 import RevisionItemModal from '../../components/decks/RevisionItemModal.vue'
-import { PageContainer, BaseCard, BaseButton } from '../../components/ui/base'
-import { ChevronLeft, Pencil, Trash2, Plus } from 'lucide-vue-next'
+import { PageContainer, BaseCard, BaseButton, BaseEmptyState } from '../../components/ui/base'
+import { ChevronLeft, Pencil, Trash2, Plus, AlertCircle } from 'lucide-vue-next'
 
 const route = useRoute()
 const revisionStore = useRevisionStore()
@@ -111,17 +117,12 @@ const TYPE_LABELS: Record<RevisionItemType, string> = {
 const typeLabel = computed(() => TYPE_LABELS[itemType])
 
 const loading = ref(true)
+const loadError = ref(false)
 const setMeta = ref<RevisionSet | null>(null)
 const allItems = ref<RevisionItem[]>([])
 const filteredItems = computed(() => allItems.value.filter((i) => i.type === itemType))
 const editingItem = ref<RevisionItem | null>(null)
 const showModal = ref(false)
-
-// RevisionItemModal ne gère pas encore le type "flashcard" (propre à la bibliothèque
-// hétérogène) : ni branche de formulaire, ni cas dans canSubmit/buildPayload/prefill.
-// Le cast satisfait le typage de lockedType (RevisionType) sans changer le comportement
-// réel de la modale — voir le rapport de tâche pour le suivi de cette lacune.
-const lockedTypeForModal = itemType as RevisionType
 
 function itemLabel(it: RevisionItem): string {
   const p = it.payload || {}
@@ -138,6 +139,7 @@ function itemLabel(it: RevisionItem): string {
 
 async function load() {
   loading.value = true
+  loadError.value = false
   try {
     ;[setMeta.value, allItems.value] = await Promise.all([
       revisionStore.fetchSet(setId),
@@ -145,6 +147,7 @@ async function load() {
     ])
   } catch (e) {
     console.error('Erreur de chargement', e)
+    loadError.value = true
   } finally {
     loading.value = false
   }

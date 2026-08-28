@@ -25,7 +25,13 @@
       v-else-if="items.length === 0"
       class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-10 text-center space-y-3"
     >
-      <p class="text-sm text-ink-muted dark:text-ink-subtle">Rien à réviser pour l'instant. 🎉</p>
+      <p class="text-sm text-ink-muted dark:text-ink-subtle">
+        {{
+          filterType === 'qcm'
+            ? "Les QCM ne se révisent pas encore individuellement — passez par le passage scoré depuis l'ensemble."
+            : "Rien à réviser pour l'instant. 🎉"
+        }}
+      </p>
       <button
         class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
         @click="goBack"
@@ -358,9 +364,15 @@ onMounted(async () => {
       return
     }
     setName.value = set.name
+    // Les QCM n'ont pas encore de passage individuel en dehors du mode scoré
+    // dedie (/run), qui ne fonctionne lui-meme que pour un ensemble homogene
+    // (risque deja accepte dans le spec backend) -- exclus de la revision par
+    // item plutot que de rendre une carte vide ou de rediriger vers un flux
+    // lui-meme casse pour un ensemble heterogene.
+    const nonQcmItems = studyItems.filter((i) => i.type !== 'qcm')
     items.value = filterType.value
-      ? studyItems.filter((i) => i.type === filterType.value)
-      : studyItems
+      ? nonQcmItems.filter((i) => i.type === filterType.value)
+      : nonQcmItems
     if (items.value.length) setupItem()
   } catch (e) {
     console.error('Erreur de chargement de la session', e)

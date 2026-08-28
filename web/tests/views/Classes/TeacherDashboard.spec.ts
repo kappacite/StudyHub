@@ -24,6 +24,7 @@ const groupService = vi.hoisted(() => ({
 vi.mock('../../../src/services/groupService', () => ({ default: groupService }))
 
 import TeacherDashboard from '../../../src/views/Classes/TeacherDashboard.vue'
+import AssignmentBuilder from '../../../src/components/classes/AssignmentBuilder.vue'
 import { useRevisionStore } from '../../../src/stores/revision'
 
 const HETEROGENEOUS_SET = { id: 7, name: 'Mixte', description: null, type: null, binder_id: null, tuning_default: 1, is_public: false, item_count: 2 }
@@ -62,7 +63,12 @@ async function mountDashboard() {
   router.push('/classes')
   await router.isReady()
 
-  const wrapper = mount(TeacherDashboard, { global: { plugins: [pinia, router] } })
+  // AssignmentBuilder (comme les modales du tableau de bord) rend son contenu dans un
+  // <Teleport to="body"> : sans ce stub, rien de ce qu'il affiche n'est visible depuis
+  // wrapper.text() et l'assertion sur le rendu reel serait vide de sens.
+  const wrapper = mount(TeacherDashboard, {
+    global: { plugins: [pinia, router], stubs: { teleport: true } },
+  })
   await flushPromises()
   return wrapper
 }
@@ -70,20 +76,24 @@ async function mountDashboard() {
 describe('TeacherDashboard — selecteur d\'ensemble dans le createur de devoir', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('ne plante pas sur un ensemble heterogene et affiche un libelle de repli', async () => {
+  it('ne plante pas sur un ensemble heterogene et rend un libelle de repli dans le selecteur', async () => {
     const wrapper = await mountDashboard()
     const revisionStore = useRevisionStore()
     expect(revisionStore.sets).toHaveLength(2) // confirme que le seed a bien pris
 
-    // Click to open the modal — vérifie que le computed setOptions ne plante pas
     await wrapper.find('[data-test="open-create-assignment"]').trigger('click')
     await flushPromises()
 
-    // Inspection du computed setOptions pour vérifier le formatage des noms
-    const vm = wrapper.vm as any
-    const options = vm.setOptions
-    expect(options).toHaveLength(2)
-    expect(options[0]).toEqual({ id: 7, name: 'Mixte (MIXTE)' })
-    expect(options[1]).toEqual({ id: 8, name: 'QCM Histoire (QCM)' })
+    // Le selecteur d'ensembles n'est peuple que si la tache cible un ensemble de
+    // revision : on bascule le type de la premiere tache sur « revision ».
+    const builder = wrapper.findComponent(AssignmentBuilder)
+    expect(builder.exists()).toBe(true)
+    await builder.findAll('select')[0].setValue('revision')
+    await flushPromises()
+
+    // Assertion sur le DOM reellement rendu (et non sur le computed) : c'est le rendu
+    // du selecteur qui plantait sur un ensemble heterogene (type: null).
+    expect(wrapper.text()).toContain('Mixte (MIXTE)')
+    expect(wrapper.text()).toContain('QCM Histoire (QCM)')
   })
 })

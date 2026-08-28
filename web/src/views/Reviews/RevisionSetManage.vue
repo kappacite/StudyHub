@@ -60,7 +60,7 @@
       :decks="[]"
       :edit-item="editingItem || undefined"
       :locked-set-id="setId"
-      :locked-type="setMeta?.type"
+      :locked-type="setMeta?.type ?? undefined"
       @close="closeModal"
       @created="onSaved"
       @updated="onSaved"
@@ -93,7 +93,11 @@ const TYPE_LABELS: Record<string, string> = {
   qcm: 'QCM', vf: 'Vrai / Faux', association: 'Association',
   definition: 'Définition', ordre: 'Ordre',
 }
-const typeLabel = computed(() => setMeta.value ? (TYPE_LABELS[setMeta.value.type] || setMeta.value.type) : '')
+const typeLabel = computed(() => {
+  if (!setMeta.value) return ''
+  const t = setMeta.value.type
+  return t ? (TYPE_LABELS[t] || t) : 'Mixte'
+})
 
 // Libellé lisible dérivé du payload (aligné sur le label backend des stats).
 function itemLabel(it: RevisionItem): string {

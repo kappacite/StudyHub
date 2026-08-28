@@ -69,6 +69,38 @@ describe('RevisionSetTypeItems', () => {
     vi.unstubAllGlobals()
   })
 
+  it('etat erreur : echec du chargement affiche un retry, distinct de l\'etat vide', async () => {
+    api.get.mockImplementation((url: string) => {
+      if (/\/revision\/sets\/\d+$/.test(url)) return Promise.resolve({ data: SET })
+      if (/\/revision\/sets\/\d+\/items$/.test(url)) return Promise.reject(new Error('network'))
+      return Promise.reject(new Error('non mocké'))
+    })
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const router = createTestRouter()
+    await router.push('/revision/sets/7/items/flashcard')
+    await router.isReady()
+    const wrapper = mount(RevisionSetTypeItems, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Le chargement a échoué')
+    expect(wrapper.text()).not.toContain('Aucun élément de ce type.')
+    const retry = wrapper.find('[data-test="retry-button"]')
+    expect(retry.exists()).toBe(true)
+
+    // Le retry relance reellement le chargement : cette fois il aboutit.
+    api.get.mockImplementation((url: string) => {
+      if (/\/revision\/sets\/\d+$/.test(url)) return Promise.resolve({ data: SET })
+      if (/\/revision\/sets\/\d+\/items$/.test(url)) return Promise.resolve({ data: { data: ITEMS } })
+      return Promise.reject(new Error('non mocké'))
+    })
+    await retry.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Le chargement a échoué')
+    expect(wrapper.text()).toContain('Chat')
+  })
+
   it('le fil d\'ariane retourne vers RevisionSetDetail', async () => {
     const { wrapper, router } = await mountView('flashcard')
     await wrapper.find('[data-test="back-to-set-link"]').trigger('click')

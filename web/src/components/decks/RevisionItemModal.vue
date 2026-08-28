@@ -369,19 +369,25 @@ const TYPES = computed(() =>
 )
 
 const NEW_TARGET = '__new__' as const
+// En edition, le type de l'item edite prime sur lockedType : dans un ensemble
+// heterogene, le type du SET (lockedType) ne decrit pas celui de l'item.
 const itemType = ref<ItemType>(
-  props.lockedType || props.initialType || (props.lockedSetId !== undefined ? 'qcm' : 'basic'),
+  props.editItem?.type ||
+    props.lockedType ||
+    props.initialType ||
+    (props.lockedSetId !== undefined ? 'qcm' : 'basic'),
 )
 const targetChoice = ref<number | typeof NEW_TARGET>(NEW_TARGET)
 const newTargetName = ref('')
 const saving = ref(false)
 const error = ref('')
 
-// Cibles disponibles selon le type : decks (basic) ou ensembles du même type.
+// Cibles disponibles selon le type : decks (basic), ensembles du même type, ou
+// ensembles hétérogènes (type: null) qui acceptent n'importe quel type d'item.
 const targets = computed(() => {
   if (itemType.value === 'basic') return props.decks.map((d) => ({ id: d.id, name: d.name }))
   return revisionStore.sets
-    .filter((s) => s.type === itemType.value)
+    .filter((s) => s.type === itemType.value || s.type === null)
     .map((s) => ({ id: s.id, name: s.name }))
 })
 
@@ -402,6 +408,9 @@ watch(itemType, resetTargetChoice)
 onMounted(async () => {
   if (isEdit.value) {
     prefillFromItem()
+    // Sans cet appel, targetChoice reste a NEW_TARGET et canSubmit renvoie
+    // toujours false : le bouton « Enregistrer » etait definitivement desactive.
+    resetTargetChoice()
     return
   }
   await revisionStore.fetchSets()

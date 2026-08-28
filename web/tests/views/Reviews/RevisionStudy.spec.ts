@@ -82,6 +82,39 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
     expect(wrapper.text()).toContain('Le ciel est bleu.')
   })
 
+  it('exclut les items qcm d\'une session mixte : aucune carte vide, les autres types restent normaux', async () => {
+    // Le qcm est place EN PREMIER : sans exclusion, l'ecran ouvrirait sur une carte
+    // vide (aucune branche du template ne matche 'qcm') et resterait bloque dessus.
+    const items = [
+      item(3, 'qcm', { question: 'Capitale de la France ?', options: [{ id: 'a', text: 'Paris', correct: true }] }),
+      item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true }),
+    ]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    // La question du qcm n'est jamais rendue...
+    expect(wrapper.text()).not.toContain('Capitale de la France ?')
+    // ...et la session ne compte que l'item vf, affiche immediatement avec ses boutons.
+    expect(wrapper.text()).toContain('1 / 1')
+    expect(wrapper.text()).toContain('Le ciel est bleu.')
+    const labels = wrapper.findAll('button').map((b) => b.text())
+    expect(labels).toContain('Vrai')
+    expect(labels).toContain('Faux')
+  })
+
+  it('?type=qcm : message dedie, distinct de l\'etat vide generique', async () => {
+    const items = [item(3, 'qcm', { question: 'Capitale de la France ?' })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study?type=qcm', HETEROGENEOUS_SET, items)
+
+    expect(wrapper.text()).toContain('ne se révisent pas encore individuellement')
+    expect(wrapper.text()).not.toContain("Rien à réviser pour l'instant")
+  })
+
+  it('etat vide reel (aucun item du tout) : conserve le message generique', async () => {
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, [])
+    expect(wrapper.text()).toContain("Rien à réviser pour l'instant")
+    expect(wrapper.text()).not.toContain('ne se révisent pas encore individuellement')
+  })
+
   it('non-regression : redirige toujours vers /run pour un ensemble QCM homogene sans filtre', async () => {
     const qcmSet = { ...HETEROGENEOUS_SET, type: 'qcm' }
     const { router } = await mountStudy('/revision/sets/7/study', qcmSet, [])
