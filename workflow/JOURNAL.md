@@ -4,7 +4,12 @@ Chantier actif : backend-ensembles-heterogenes
 
 ## Chantiers ouverts
 
-- `backend-ensembles-heterogenes` — **actif**, branche `feature/backend-ensembles-heterogenes`, bloquant pour `bibliotheque-ensembles` et `reviser-hub`
+- `backend-ensembles-heterogenes` — **actif**, branche `feature/backend-ensembles-heterogenes`,
+  bloquant pour `bibliotheque-ensembles` et `reviser-hub`. Tasks 1-3 du plan détaillé faites
+  (migration + modèles, schémas/fonctions pures, câblage service) ; Task 4 (clôture) en cours —
+  bloquée sur une vérification Postgres manuelle (volume Docker local incohérent, suppression
+  nécessitant `docker compose down -v`, hors de portée du hook de garde). Détail :
+  `workflow/backend-ensembles-heterogenes/JOURNAL.md`.
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
 - `bibliotheque-ensembles` — pas commencé, dépend de `backend-ensembles-heterogenes`
 - `reviser-hub` — pas commencé, dépend de `backend-ensembles-heterogenes`
@@ -13,6 +18,14 @@ Chantier actif : backend-ensembles-heterogenes
 
 ## Historique
 
+- 2026-08-28 — [backend-ensembles-heterogenes] Reprise après redémarrage : Tasks 1 et 2
+  s'avèrent déjà faites (committées avant l'arrêt, journal pas mis à jour). Task 3 exécutée en
+  TDD (câblage `item.type` dans `create_item`/`update_item`/`grade_item`/`answer_item`, bug de
+  plan corrigé au passage — mauvaises URLs de test), commit `9c29185`, 85 % coverage. Task 4
+  entamée : vérification Postgres réelle bloquée par un volume Docker local incohérent (séquelle
+  de l'instabilité de la session précédente) — sa remise à zéro est bloquée par le hook de garde,
+  reste à trancher par un humain. Détail complet :
+  `workflow/backend-ensembles-heterogenes/JOURNAL.md`.
 - 2026-08-28 — [backend-ensembles-heterogenes] Arrêt avant redémarrage PC (Docker Desktop
   instable). Aucun code touché, rien à perdre. Worktree `.worktrees/backend-ensembles-heterogenes`
   prête, venv local de secours documenté si Docker reste capricieux après redémarrage.

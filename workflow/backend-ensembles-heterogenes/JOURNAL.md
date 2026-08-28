@@ -75,3 +75,68 @@ reprendre l'exécution du plan (`superpowers:subagent-driven-development`)
 stable après redémarrage (correspond exactement à la CI), sinon retomber
 sur le venv local documenté ci-dessus pour les étapes SQLite (tout sauf
 Task 1 étapes 6-7).
+
+## 2026-08-28 (reprise après redémarrage — Task 1 et Task 2)
+
+Reprise en session propre (`/clear`). Constat en arrivant : Task 1 (migration +
+modèles, commit `1146955`) et Task 2 (`validate_item_payload`/`check_answer` +
+schémas, cas `flashcard`, commit `44cdd10`) avaient déjà été exécutées et
+committées avant l'arrêt pour redémarrage — le journal ci-dessus n'avait
+simplement pas été mis à jour après coup. Vérifié directement dans le code
+(pas supposé) avant de continuer : `create_item`/`update_item`/`grade_item`/
+`answer_item` dispatchaient encore sur `rset.type`, confirmant que seule la
+Task 3 restait à faire.
+
+## 2026-08-28 (Task 3 — câblage service)
+
+TDD : 4 tests écrits d'abord (rétrocompat type hérité, type explicite
+divergent, gate `GRADABLE_TYPES` sur `item.type`, `StudySession.item_type`
+reflète le type réel de l'item) — rouge confirmé pour la bonne raison contre
+le code non modifié. **Bug de plan trouvé et corrigé en cours de route** :
+les URLs utilisées par les tests du plan détaillé
+(`/sets/{id}/items/{id}/grade|answer`) n'existent pas — les vraies routes
+sont `/sets/{id}/study/grade/{id}` et `/sets/{id}/study/answer/{id}`
+(`backend/app/api/v1/revision.py:123,141`). Corrigé dans les tests, pas dans
+le plan (le plan reste tel quel comme trace historique).
+
+Implémentation : `create_item` retombe sur `rset.type` si `data.type` est
+absent (rétrocompat totale, le frontend actuel n'envoie jamais ce champ) ;
+`update_item`/`grade_item`/`answer_item` dispatchent désormais sur
+`item.type`. Corrige le bug D8 identifié dès l'écriture du plan (un item
+`flashcard` créé dans un ensemble `vf` aurait été noté silencieusement avec
+la logique `vf` si le gate était resté sur `rset.type`). 4/4 tests ciblés
+verts, commit `9c29185`.
+
+**Vérification de non-régression** : suite complète relancée via le venv
+Python local de secours (SQLite mémoire, cf. entrée « arrêt avant
+redémarrage » ci-dessus pour comment le recréer) — 85 % de couverture
+(≥ 80 % requis), tous les tests `test_revision*.py` verts. 5 échecs dans
+`test_import.py` (`PermissionError` sur un fichier temporaire Windows,
+`tempfile.mkstemp()`) confirmés pré-existants et sans rapport avec ce
+chantier (module import Anki, aucune dépendance à `revision_service`) —
+propres à ce venv Windows local, absents de la CI Docker/Linux.
+
+**Vérification Postgres réelle (Task 1, étapes 6-7 du plan détaillé) —
+tentée, bloquée** : Docker Desktop stable cette fois (`docker compose up -d
+db backend` réussi). Mais le volume `pgdata` de ce projet, créé lors d'une
+session antérieure interrompue par l'instabilité Docker, s'est révélé
+incohérent : `alembic_version` stampé à `4e6e094d2711` mais **aucune table
+applicative présente** (`\dt` ne renvoie que `alembic_version`) — le worker
+gunicorn crash en boucle au démarrage (`NoSuchTableError: revision_items`
+levée par la migration `c1d2e3f4a5b6` qui inspecte cette table avant de lui
+ajouter sa colonne). Ce n'est pas un défaut de la migration elle-même —
+confirmé par lecture directe de son code, la logique est correcte pour un
+Postgres réellement à jour. La remise à zéro du volume
+(`docker compose down -v`) est bloquée par le hook `guard_dangerous_commands`
+(protection légitime contre la destruction de volumes) — non contournée.
+**Reste à faire par un humain (ou une session explicitement autorisée)** :
+soit supprimer le volume `backend-ensembles-heterogenes_pgdata` et relancer
+`docker compose up -d db backend` pour vérifier la migration à froid, soit
+confirmer que la couverture SQLite (`create_all()`, ci-dessus) suffit et
+clore sans cette vérification manuelle. Containers arrêtés proprement
+(`docker compose stop`, sans `-v`) en attendant cette décision.
+
+**Task 4 (clôture) — en cours** : cases de `PLAN.md` cochées à jour, cette
+entrée de journal ajoutée, mise à jour de `workflow/JOURNAL.md` à suivre.
+Suite (PR) non ouverte tant que la vérification Postgres ci-dessus n'est pas
+tranchée.
