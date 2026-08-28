@@ -4,19 +4,19 @@ Chantier actif : aucun
 
 ## Chantiers ouverts
 
-- `backend-ensembles-heterogenes` — **code clos**, branche `feature/backend-ensembles-heterogenes`
-  prête pour push + PR humaine (procédure `gestion-chantier`). Les 4 tâches du plan détaillé sont
-  faites (migration + modèles, schémas/fonctions pures, câblage service, clôture) ; toujours
-  bloquant pour `bibliotheque-ensembles` et `reviser-hub` jusqu'au merge. Détail :
-  `workflow/backend-ensembles-heterogenes/JOURNAL.md`.
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
-- `bibliotheque-ensembles` — pas commencé, dépend de `backend-ensembles-heterogenes`
-- `reviser-hub` — pas commencé, dépend de `backend-ensembles-heterogenes`
+- `bibliotheque-ensembles` — pas commencé, débloqué (`backend-ensembles-heterogenes` mergé)
+- `reviser-hub` — pas commencé, débloqué (`backend-ensembles-heterogenes` mergé)
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
 
+- 2026-08-28 — [backend-ensembles-heterogenes] **PR #126 mergée dans `main`** (squash,
+  `d2b6305`), CI verte (6/6 checks, dont « Backend · migrations (PostgreSQL) » qui valide la
+  migration à froid — confirme a posteriori que la vérification manuelle passée localement
+  n'était pas nécessaire). Chantier `clos`. `bibliotheque-ensembles` et `reviser-hub` débloqués.
+  Prochaine action : choisir le prochain chantier à ouvrir.
 - 2026-08-28 — [backend-ensembles-heterogenes] Chantier clos (code) : Task 4 terminée sur
   décision utilisateur explicite de passer la vérification Postgres manuelle (couverture SQLite
   85% jugée suffisante). Toutes les tâches du plan détaillé faites, commit `0e54608`. Prochaine

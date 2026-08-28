@@ -1,8 +1,8 @@
 # Backend — migration ensembles de révision hétérogènes
 
-Statut : ouvert
-Branche : feature/backend-ensembles-heterogenes
-PR : (aucune)
+Statut : clos
+Branche : feature/backend-ensembles-heterogenes (mergée, à supprimer)
+PR : #126 (mergée)
 
 ## Pourquoi
 
