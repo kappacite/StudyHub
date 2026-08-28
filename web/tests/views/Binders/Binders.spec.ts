@@ -25,6 +25,7 @@ function createTestRouter(): Router {
     routes: [
       { path: '/bibliotheque/:id?', name: 'Bibliotheque', component: stub },
       { path: '/revision/sets/:id', name: 'RevisionSetDetail', component: stub },
+      { path: '/revision/sets/:id/stats', name: 'RevisionSetStats', component: stub },
       { path: '/decks/:id/study', name: 'StudyDeck', component: stub },
     ],
   })
@@ -39,9 +40,14 @@ function clickTab(wrapper: ReturnType<typeof mount>, label: string) {
 
 const NOW = new Date().toISOString()
 const OVERDUE = new Date(Date.now() - 86400000).toISOString()
+// Item "pas encore du" : programme dans un jour, pour eviter toute course
+// avec le seuil de comparaison (next_review <= Date.now()) evalue quelques
+// microsecondes/secondes plus tard -- une valeur "maintenant" serait fragile
+// (flaky) vis-a-vis de ce <=.
+const NOT_DUE = new Date(Date.now() + 86400000).toISOString()
 const SET_7_ITEMS = [
   { id: 101, set_id: 7, type: 'flashcard', payload: {}, tuning: 1, position: 0, interval: 1, ease_factor: 2.5, repetitions: 1, next_review: OVERDUE, created_at: NOW, updated_at: NOW },
-  { id: 102, set_id: 7, type: 'qcm', payload: {}, tuning: 1, position: 0, interval: 5, ease_factor: 2.5, repetitions: 1, next_review: NOW, created_at: NOW, updated_at: NOW },
+  { id: 102, set_id: 7, type: 'qcm', payload: {}, tuning: 1, position: 0, interval: 5, ease_factor: 2.5, repetitions: 1, next_review: NOT_DUE, created_at: NOW, updated_at: NOW },
 ]
 
 // Dispatcher regex par URL — meme idiome que StudyDeck.spec.ts. Ne pas seeder l'etat
@@ -164,6 +170,53 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('Diagrammes')
     expect(wrapper.text()).toContain('Documents PDF')
+  })
+
+  it("ligne deck : bouton Retirer du classeur appelle detachItems avec type deck", async () => {
+    api.post.mockResolvedValue({ data: { detached: 1 } })
+    const { wrapper } = await mountBinders()
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+
+    const deckRow = wrapper.findAll('button').find((b) => b.attributes('title') === 'Retirer du classeur')
+    expect(deckRow).toBeTruthy()
+    await deckRow!.trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/binders/b1/items/detach', {
+      items: [{ type: 'deck', id: 1 }],
+    })
+  })
+
+  it("ligne ensemble : bouton Retirer du classeur appelle detachItems avec type set", async () => {
+    api.post.mockResolvedValue({ data: { detached: 1 } })
+    const { wrapper } = await mountBinders()
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+
+    const setRow = wrapper.find('[data-test="revision-row-set-7"]')
+    const detachButton = setRow.findAll('button').find((b) => b.attributes('title') === 'Retirer du classeur')
+    expect(detachButton).toBeTruthy()
+    await detachButton!.trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/binders/b1/items/detach', {
+      items: [{ type: 'set', id: 7 }],
+    })
+  })
+
+  it("ligne ensemble : bouton Statistiques navigue vers /revision/sets/:id/stats", async () => {
+    const { wrapper, router } = await mountBinders()
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+
+    const setRow = wrapper.find('[data-test="revision-row-set-7"]')
+    const statsButton = setRow.findAll('button').find((b) => b.attributes('title') === 'Statistiques')
+    expect(statsButton).toBeTruthy()
+    await statsButton!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/stats')
   })
 
   it("non-regression : colonne Dossiers et filtre par tag restent visibles quel que soit l'onglet", async () => {

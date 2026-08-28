@@ -288,6 +288,14 @@
                     <Layers class="w-4.5 h-4.5" /></div
                 ></template>
                 <template #trailing>
+                  <button
+                    v-if="isOwner"
+                    class="p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all"
+                    title="Retirer du classeur"
+                    @click.stop="detachItem('deck', deck.id)"
+                  >
+                    <FolderMinus class="w-4 h-4" />
+                  </button>
                   <ChevronRight class="w-4 h-4 text-ink-subtle" />
                 </template>
               </ListRow>
@@ -333,6 +341,21 @@
                     size="sm"
                     >{{ setAggregate(set.id).dueCount }} dues</BaseBadge
                   >
+                  <button
+                    class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft"
+                    title="Statistiques"
+                    @click.stop="router.push(`/revision/sets/${set.id}/stats`)"
+                  >
+                    <BarChart3 class="w-4 h-4" />
+                  </button>
+                  <button
+                    v-if="isOwner"
+                    class="p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all"
+                    title="Retirer du classeur"
+                    @click.stop="detachItem('set', set.id)"
+                  >
+                    <FolderMinus class="w-4 h-4" />
+                  </button>
                   <button
                     class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft"
                     title="Éditer l'ensemble"
@@ -770,13 +793,9 @@ const setItemsById = ref<Record<number, RevisionItem[]>>({})
 function setAggregate(setId: number) {
   const items = setItemsById.value[setId] ?? []
   const typesPresent = Array.from(new Set(items.map((i) => i.type)))
-  // "due" = au moins un jour plein (86400000ms) ecoule depuis next_review, pas
-  // une simple comparaison a l'instant present : un item planifie "maintenant"
-  // (juste cree/reprogramme) n'est pas encore en retard, contrairement a un
-  // item planifie hier. Une comparaison stricte a Date.now() classerait a tort
-  // les deux comme dus des qu'un instant s'est ecoule depuis le chargement.
+  // "due" = programme pour maintenant ou dans le passe (next_review <= maintenant).
   const dueCount = items.filter(
-    (i) => i.next_review && Date.now() - new Date(i.next_review).getTime() >= 86400000,
+    (i) => i.next_review && new Date(i.next_review).getTime() <= Date.now(),
   ).length
   const dates = items
     .map((i) => i.updated_at)
