@@ -12,6 +12,9 @@ import sys
 RACINE = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()
 ETAT = RACINE / "ETAT.md"
 PHASE_RE = re.compile(r"^Phase:\s*(\d+)\s*$", re.M)
+WORKFLOW = RACINE / "workflow"
+JOURNAL_WORKFLOW = WORKFLOW / "JOURNAL.md"
+CHANTIER_RE = re.compile(r"^Chantier actif\s*:\s*(.+?)\s*$", re.M)
 
 
 def git(*args: str) -> str:
@@ -20,6 +23,35 @@ def git(*args: str) -> str:
         return r.stdout.strip() if r.returncode == 0 else ""
     except Exception:
         return ""
+
+
+def chantier_actif() -> str | None:
+    if not JOURNAL_WORKFLOW.exists():
+        return None
+    m = CHANTIER_RE.search(JOURNAL_WORKFLOW.read_text(encoding="utf-8"))
+    if not m:
+        return None
+    valeur = m.group(1).strip()
+    return None if valeur.lower() == "aucun" else valeur
+
+
+def contexte_chantier(slug: str) -> str:
+    dossier = WORKFLOW / slug
+    context_path = dossier / "CONTEXT.md"
+    plan_path = dossier / "PLAN.md"
+    journal_path = dossier / "JOURNAL.md"
+    context = context_path.read_text(encoding="utf-8") if context_path.exists() else "(absent)"
+    plan = plan_path.read_text(encoding="utf-8") if plan_path.exists() else "(absent)"
+    journal_tail = ""
+    if journal_path.exists():
+        lignes = journal_path.read_text(encoding="utf-8").splitlines()
+        journal_tail = "\n".join(lignes[-10:])
+    return (
+        f"\n\n--- Chantier actif : {slug} ---\n"
+        f"CONTEXT.md :\n{context}\n\n"
+        f"PLAN.md :\n{plan}\n\n"
+        f"JOURNAL.md (10 dernieres lignes) :\n{journal_tail}"
+    )
 
 
 def main() -> None:
@@ -45,6 +77,10 @@ def main() -> None:
             "\n\n(Phase 4 active : verifie la section 'Ecrans migrés' d'ETAT.md "
             "ci-dessus pour la liste des ecrans restants.)"
         )
+
+    slug = chantier_actif()
+    if slug:
+        contexte += contexte_chantier(slug)
 
     print(json.dumps({
         "hookSpecificOutput": {

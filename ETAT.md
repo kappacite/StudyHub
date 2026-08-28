@@ -297,6 +297,8 @@ l'avancement et journaliser** — la section ci-dessous reste la référence his
 décisions (pourquoi l'architecture hétérogène a été retenue, correction de correspondance
 Notes.dc.html/Binders.vue, etc.), non mise à jour au fil de l'exécution des flux.
 
+**Outillage (hooks guards + skill `gestion-chantier`) en place le 2026-08-28.**
+
 Périmètre ajouté en cours de phase 4, en plus des 9 écrans ci-dessus : le canevas Direction A
 a été étendu (session Claude Design, artefact `366dcc95-8da4-41dd-8bbd-1e625a68e2c5`, 37
 artboards) pour couvrir la hiérarchie Classeur → Ensembles de révision → Éléments (6 types :
