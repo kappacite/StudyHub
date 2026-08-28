@@ -1,5 +1,9 @@
 # Backend — migration ensembles de révision hétérogènes
 
+Statut : planifié
+Branche : (aucune)
+PR : (aucune)
+
 ## Pourquoi
 
 Le canevas Direction A (Claude Design, artefact `366dcc95-8da4-41dd-8bbd-1e625a68e2c5`, 37

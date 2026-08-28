@@ -1,5 +1,9 @@
 # Éditeur de notes, mode Zen, Assistant IA & Notation de la note
 
+Statut : planifié
+Branche : (aucune)
+PR : (aucune)
+
 ## Pourquoi
 
 Écran 4 de la refonte phase 4 (`web/src/views/Notes/NoteEdit.vue`), étendu le 2026-08-27 pour

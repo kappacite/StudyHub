@@ -1,5 +1,9 @@
 # Classes, Groupes, Devoirs, Examens, Planning — migration visuelle
 
+Statut : planifié
+Branche : (aucune)
+PR : (aucune)
+
 ## Pourquoi
 
 Écrans indépendants des flux 1-6, pure migration visuelle. `ETAT.md` signale lui-même que ces

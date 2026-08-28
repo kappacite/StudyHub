@@ -1,5 +1,9 @@
 # Réviser — hub global
 
+Statut : planifié
+Branche : (aucune)
+PR : (aucune)
+
 ## Pourquoi
 
 `RevisionSetManage.vue`, `RevisionSetStats.vue`, `RevisionBinderStats.vue` et `Reviews.vue`

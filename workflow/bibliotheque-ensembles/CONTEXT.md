@@ -1,5 +1,9 @@
 # Bibliothèque / classeur — ensembles hétérogènes
 
+Statut : planifié
+Branche : (aucune)
+PR : (aucune)
+
 ## Pourquoi
 
 `Binders.vue` (renommé Bibliothèque en phase 3) doit exposer la bascule Notes/Révision et la

@@ -1,5 +1,9 @@
 # Écrans périphériques — migration visuelle pure
 
+Statut : planifié
+Branche : (aucune)
+PR : (aucune)
+
 ## Pourquoi
 
 Écrans 5 à 9 de l'ordre historique de la phase 4, indépendants des flux 1-6 (aucun changement
