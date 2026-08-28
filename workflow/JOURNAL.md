@@ -1,10 +1,10 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : backend-ensembles-heterogenes
 
 ## Chantiers ouverts
 
-- `backend-ensembles-heterogenes` — pas commencé, bloquant pour `bibliotheque-ensembles` et `reviser-hub`
+- `backend-ensembles-heterogenes` — **actif**, branche `feature/backend-ensembles-heterogenes`, bloquant pour `bibliotheque-ensembles` et `reviser-hub`
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
 - `bibliotheque-ensembles` — pas commencé, dépend de `backend-ensembles-heterogenes`
 - `reviser-hub` — pas commencé, dépend de `backend-ensembles-heterogenes`
@@ -13,6 +13,9 @@ Chantier actif : aucun
 
 ## Historique
 
+- 2026-08-28 — [backend-ensembles-heterogenes] Chantier activé (premier de l'ordre fixé,
+  flux 1, bloquant). Branche `feature/backend-ensembles-heterogenes` créée depuis `main`
+  à jour. Prochain point : écrire la spec détaillée du modèle de données cible.
 - 2026-08-28 — 6 chantiers ouverts, migrés depuis `ETAT.md` § « Plan global par flux —
   extension révision hétérogène + assistant IA (2026-08-27) ». Aucun travail d'implémentation
   migré : tous les flux étaient déjà « pas commencé » ou « plan écrit, exécution pas
