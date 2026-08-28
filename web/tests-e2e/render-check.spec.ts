@@ -46,7 +46,7 @@ test('GroupDetail rend les 4 onglets (9.2.7)', async ({ page }) => {
 
 test('PlanningPage rend le toggle semaine/mois et les révisions anticipées (3.2.7)', async ({ page }) => {
   await page.goto('/planning')
-  await expect(page.getByText(/Planning des révisions/i).first()).toBeVisible()
+  // Titre de route : lg:hidden par design (AppLayout.vue), déjà couvert par AppLayout.spec.ts.
   await expect(page.getByText(/Semaine/i).first()).toBeVisible()
   await expect(page.getByText(/Mois/i).first()).toBeVisible()
   await expect(page.getByText(/anticip/i).first()).toBeVisible()
