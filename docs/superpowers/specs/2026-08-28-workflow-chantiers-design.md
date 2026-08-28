@@ -138,27 +138,25 @@ style que les autres `deny` du projet).
 
 ### 2. `workflow_stop_gate.py` (Stop)
 
+Une seule règle bloquante (mirroir de `check_tdd_diff` dans
+`stop_gate.py` : même mécanique `git status --porcelain` + `exit(2)`),
+plus `stop_hook_active` respecté pour éviter une boucle infinie.
+
 Si un chantier est actif et que le diff en attente (`git status
---porcelain`) contient des fichiers hors `workflow/` :
-- **Bloquant** (`exit(2)`, même mécanique que la garde TDD de
-  `stop_gate.py`) si `workflow/<slug>/JOURNAL.md` ne fait pas partie du
-  diff en attente ni du dernier commit — force la journalisation avant de
-  s'arrêter.
-- **Avertissement non bloquant** (`systemMessage`) si `workflow/JOURNAL.md`
-  (l'index global) n'a pas été modifié dans les dernières entrées récentes
-  du chantier — rappel, pas un blocage (la fréquence de mise à jour de
-  l'index global est plus laxiste que le journal par chantier).
+--porcelain`) contient des fichiers hors `workflow/` (du travail réel) :
+**bloquant** sauf si `workflow/<slug>/JOURNAL.md` fait partie de ce même
+diff en attente **ou** du dernier commit. Message : journaliser avant de
+committer/s'arrêter.
 
-`stop_hook_active` (déjà lu par `stop_gate.py`) respecté ici aussi pour
-éviter une boucle de blocage infinie.
-
-**Responsabilité supplémentaire — commit régulier forcé.** Si un chantier
-est actif et que `git status --porcelain` n'est pas vide (changements non
-committés, dans ou hors `workflow/`) : **bloquant**. Message : « des
-changements non committés existent alors qu'un chantier est actif — commit
-avant de t'arrêter (branche `<Branche :>` lue dans le `CONTEXT.md` du
-chantier). » Rend mécanique la règle « committer régulièrement » plutôt que
-de compter sur le rappel non bloquant déjà présent dans `stop_gate.py`.
+Cette règle unique couvre les deux intentions de l'utilisateur sans se
+contredire : tant que rien de réel n'est en attente, il n'y a rien à
+journaliser (le tree peut être propre — "committer régulièrement" est
+alors déjà respecté) ; dès qu'un changement réel traîne sans être
+committé, il doit être accompagné d'une mise à jour du journal, ce qui
+pousse mécaniquement vers des commits fréquents et documentés plutôt
+qu'un blocage sur *tout* changement en attente (qui aurait rendu la
+vérification "dernier commit journalisé" inatteignable — un chantier sans
+rien en attente n'a jamais besoin de journaliser avant de s'arrêter).
 
 ### 3. Extension de `session_start.py` et `session_start_resume.py`
 
