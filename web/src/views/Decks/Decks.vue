@@ -711,7 +711,6 @@ import type { Deck, Flashcard, CardHistoryEntry } from '../../stores/decks'
 import { useNotesStore } from '../../stores/notes'
 import { useBindersStore } from '../../stores/binders'
 import { useTagsStore, type Tag } from '../../stores/tags'
-import api from '../../services/api'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
 import LearningCurve from '../../components/decks/LearningCurve.vue'
@@ -1055,8 +1054,8 @@ async function executeFlashcardGeneration() {
       }
       // Génération IA longue : on dépasse le timeout global (10 s) et le
       // timeout backend Gemini (90 s) pour ne pas couper une requête qui aboutit.
-      const res = await api.post('/flashcards/generate', payload, { timeout: 120000 })
-      extracted = res.data.flashcards || []
+      const res = await decksStore.generateFlashcards(payload)
+      extracted = res.flashcards || []
     } catch (aiErr) {
       const status = (aiErr as { response?: { status?: number } })?.response?.status
       const backendMsg = (aiErr as { response?: { data?: { error?: { message?: string } } } })

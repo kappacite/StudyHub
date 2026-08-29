@@ -67,7 +67,7 @@ export const useDecksStore = defineStore('decks', () => {
   async function fetchDeckById(id: number) {
     try {
       const response = await api.get<Deck>(`/decks/${id}`)
-      const index = decks.value.findIndex(d => d.id === id)
+      const index = decks.value.findIndex((d) => d.id === id)
       if (index !== -1) {
         decks.value[index] = response.data
       } else {
@@ -77,7 +77,7 @@ export const useDecksStore = defineStore('decks', () => {
     } catch (error) {
       console.error(`Erreur lors du chargement du deck ${id}`, error)
       // Fallback local search
-      return decks.value.find(d => d.id === id)
+      return decks.value.find((d) => d.id === id)
     }
   }
 
@@ -117,7 +117,7 @@ export const useDecksStore = defineStore('decks', () => {
     try {
       const response = await api.put<Deck>(`/decks/${id}`, { name, description, ...opts })
       const updatedDeck = response.data
-      const index = decks.value.findIndex(d => d.id === id)
+      const index = decks.value.findIndex((d) => d.id === id)
       if (index !== -1) {
         decks.value[index] = updatedDeck
       }
@@ -131,8 +131,8 @@ export const useDecksStore = defineStore('decks', () => {
   async function deleteDeck(id: number) {
     try {
       await api.delete(`/decks/${id}`)
-      decks.value = decks.value.filter(d => d.id !== id)
-      cards.value = cards.value.filter(c => c.deck_id !== id)
+      decks.value = decks.value.filter((d) => d.id !== id)
+      cards.value = cards.value.filter((c) => c.deck_id !== id)
     } catch (error) {
       console.error('Erreur lors de la suppression du deck', error)
       throw error
@@ -144,7 +144,7 @@ export const useDecksStore = defineStore('decks', () => {
     try {
       const response = await api.get<CardsResponse>(`/decks/${deckId}/cards?per_page=1000`)
       // Remplacer les cartes de ce deck dans notre cache local
-      cards.value = cards.value.filter(c => c.deck_id !== deckId).concat(response.data.data)
+      cards.value = cards.value.filter((c) => c.deck_id !== deckId).concat(response.data.data)
       return response.data.data
     } catch (error) {
       console.error('Erreur de chargement des cartes', error)
@@ -162,11 +162,11 @@ export const useDecksStore = defineStore('decks', () => {
       })
       const newCard = response.data
       cards.value.push(newCard)
-      
+
       // Mettre à jour le nombre local de cartes dans le deck
-      const deck = decks.value.find(d => d.id === deckId)
+      const deck = decks.value.find((d) => d.id === deckId)
       if (deck) deck.card_count++
-      
+
       return newCard
     } catch (error) {
       console.error('Erreur de création de carte', error)
@@ -175,7 +175,7 @@ export const useDecksStore = defineStore('decks', () => {
   }
 
   async function updateCard(cardId: number, front: string, back: string, tuning?: number) {
-    const card = cards.value.find(c => c.id === cardId)
+    const card = cards.value.find((c) => c.id === cardId)
     if (!card) throw new Error('Carte introuvable localement pour mise à jour')
 
     try {
@@ -183,7 +183,7 @@ export const useDecksStore = defineStore('decks', () => {
       if (tuning !== undefined) body.tuning = tuning
       const response = await api.put<Flashcard>(`/decks/${card.deck_id}/cards/${cardId}`, body)
       const updatedCard = response.data
-      const index = cards.value.findIndex(c => c.id === cardId)
+      const index = cards.value.findIndex((c) => c.id === cardId)
       if (index !== -1) {
         cards.value[index] = updatedCard
       }
@@ -195,15 +195,15 @@ export const useDecksStore = defineStore('decks', () => {
   }
 
   async function deleteCard(cardId: number) {
-    const card = cards.value.find(c => c.id === cardId)
+    const card = cards.value.find((c) => c.id === cardId)
     if (!card) throw new Error('Carte introuvable localement pour suppression')
-    
+
     try {
       await api.delete(`/decks/${card.deck_id}/cards/${cardId}`)
-      const deck = decks.value.find(d => d.id === card.deck_id)
+      const deck = decks.value.find((d) => d.id === card.deck_id)
       if (deck) deck.card_count = Math.max(0, deck.card_count - 1)
-      
-      cards.value = cards.value.filter(c => c.id !== cardId)
+
+      cards.value = cards.value.filter((c) => c.id !== cardId)
     } catch (error) {
       console.error('Erreur de suppression de carte', error)
       throw error
@@ -215,7 +215,7 @@ export const useDecksStore = defineStore('decks', () => {
       const response = await api.get<Flashcard[]>(`/decks/${deckId}/study`)
       return response.data
     } catch (error) {
-      console.error('Erreur de chargement des cartes d\'étude', error)
+      console.error("Erreur de chargement des cartes d'étude", error)
       throw error
     }
   }
@@ -223,10 +223,10 @@ export const useDecksStore = defineStore('decks', () => {
   async function answerCard(deckId: number, cardId: number, quality: number) {
     try {
       const response = await api.post<Flashcard>(`/decks/${deckId}/study/answer/${cardId}`, {
-        score: quality
+        score: quality,
       })
       const updatedCard = response.data
-      const index = cards.value.findIndex(c => c.id === cardId)
+      const index = cards.value.findIndex((c) => c.id === cardId)
       if (index !== -1) {
         cards.value[index] = updatedCard
       }
@@ -238,8 +238,23 @@ export const useDecksStore = defineStore('decks', () => {
   }
 
   async function fetchCardHistory(deckId: number, cardId: number) {
-    const response = await api.get<{ data: CardHistoryEntry[] }>(`/decks/${deckId}/cards/${cardId}/history`)
+    const response = await api.get<{ data: CardHistoryEntry[] }>(
+      `/decks/${deckId}/cards/${cardId}/history`,
+    )
     return response.data.data
+  }
+
+  // Génération de flashcards par IA (Gemini) depuis une note ou un classeur.
+  // Le timeout dépasse le timeout global (10 s) et le timeout backend Gemini
+  // (90 s) pour ne pas couper une requête qui aboutit ; les erreurs (401/429/
+  // 400/502/réseau) sont laissées à l'appelant pour un traitement spécifique.
+  async function generateFlashcards(payload: Record<string, unknown>) {
+    const response = await api.post<{ flashcards: { front: string; back: string }[] }>(
+      '/flashcards/generate',
+      payload,
+      { timeout: 120000 },
+    )
+    return response.data
   }
 
   async function importAnki(file: File, binderId: string | null = null) {
@@ -250,7 +265,7 @@ export const useDecksStore = defineStore('decks', () => {
       if (binderId !== null) {
         formData.append('binder_id', binderId)
       }
-      
+
       const response = await api.post<{
         deck_id: number
         deck_name: string
@@ -259,14 +274,14 @@ export const useDecksStore = defineStore('decks', () => {
         warnings: string[]
       }>('/import/anki', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       })
-      
+
       await fetchDecks()
       return response.data
     } catch (error) {
-      console.error('Erreur lors de l\'importation Anki', error)
+      console.error("Erreur lors de l'importation Anki", error)
       throw error
     } finally {
       loading.value = false
@@ -289,6 +304,7 @@ export const useDecksStore = defineStore('decks', () => {
     fetchStudyCards,
     answerCard,
     fetchCardHistory,
-    importAnki
+    generateFlashcards,
+    importAnki,
   }
 })
