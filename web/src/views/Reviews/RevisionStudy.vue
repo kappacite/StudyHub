@@ -331,7 +331,17 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5)
 }
 
+// Duree de revision reelle (Task 9) : chrono redemarre a chaque setupItem()
+// (premier item comme suivants, cf. onMounted/next()) -- elapsedSeconds()
+// donne la duree ecoulee sur l'item courant au moment de la soumission.
+const itemStartedAt = ref(Date.now())
+
+function elapsedSeconds(): number {
+  return Math.max(0, Math.round((Date.now() - itemStartedAt.value) / 1000))
+}
+
 function setupItem() {
+  itemStartedAt.value = Date.now()
   phase.value = 'answer'
   lastCorrect.value = false
   const payload = current.value.payload || {}
@@ -382,22 +392,32 @@ onMounted(async () => {
 })
 
 async function submitVf(value: boolean) {
-  const res = await revisionStore.gradeItem(setId, current.value.id, { value })
+  const res = await revisionStore.gradeItem(setId, current.value.id, { value }, elapsedSeconds())
   applyResult(res.correct)
 }
 
 async function submitAssoc() {
-  const res = await revisionStore.gradeItem(setId, current.value.id, { matches: { ...matches } })
+  const res = await revisionStore.gradeItem(
+    setId,
+    current.value.id,
+    { matches: { ...matches } },
+    elapsedSeconds(),
+  )
   applyResult(res.correct)
 }
 
 async function submitOrdre() {
-  const res = await revisionStore.gradeItem(setId, current.value.id, { order: [...ordering.value] })
+  const res = await revisionStore.gradeItem(
+    setId,
+    current.value.id,
+    { order: [...ordering.value] },
+    elapsedSeconds(),
+  )
   applyResult(res.correct)
 }
 
 async function selfEval(score: number) {
-  await revisionStore.answerItem(setId, current.value.id, score)
+  await revisionStore.answerItem(setId, current.value.id, score, elapsedSeconds())
   applyResult(score >= 3)
 }
 

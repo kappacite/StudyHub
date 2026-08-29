@@ -1,33 +1,46 @@
 import math
-from datetime import datetime, timedelta
-from typing import List, Optional
 from dataclasses import dataclass, field
-from app.dao.revision_dao import RevisionSetDAO, RevisionItemDAO
-from app.dao.study_session_dao import StudySessionDAO
+from datetime import date, datetime, timedelta
+
 from app.dao.binder_dao import BinderDAO
-from app.models.revision import RevisionSet, RevisionItem
+from app.dao.revision_dao import RevisionItemDAO, RevisionSetDAO
+from app.dao.study_session_dao import StudySessionDAO
+from app.models.revision import RevisionItem, RevisionSet
 from app.models.study_session import StudySession
 from app.schemas.revision_schema import (
-    RevisionItemStats, RevisionSetStats, RevisionHistoryPoint, RevisionItemSummary,
-    RevisionSetSummary, RevisionTypeBreakdown, RevisionBinderStats,
+    GradeDistribution,
+    RevisionBinderStats,
+    RevisionHistoryPoint,
+    RevisionItemStats,
+    RevisionItemSummary,
+    RevisionSetStats,
+    RevisionSetSummary,
+    RevisionTypeBreakdown,
+    SessionHistoryDay,
+    WeeklyProgressionPoint,
 )
 
 
-def item_label(set_type: str, payload: dict) -> str:
+def item_label(payload: dict) -> str:
     """Libellé court d'un item selon son type (pour les listes de stats)."""
     payload = payload or {}
     raw = (
-        payload.get("question") or payload.get("assertion")
-        or payload.get("term") or payload.get("title") or ""
+        payload.get("question")
+        or payload.get("assertion")
+        or payload.get("term")
+        or payload.get("title")
+        or ""
     )
     raw = str(raw).strip() or "(sans titre)"
     return raw[:80]
-from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
+
+
+from app.middlewares.error_handler import ForbiddenError, ResourceNotFoundError
 
 # Seuils (cf. D5).
-MATURE_DAYS = 21          # un item est « mûr » quand son intervalle ≥ 21 jours (Anki)
-LEECH_LAPSES = 4          # sangsue : échoué au moins 4 fois
-TARGET_RETENTION = 85.0   # cible de rétention réelle (%)
+MATURE_DAYS = 21  # un item est « mûr » quand son intervalle ≥ 21 jours (Anki)
+LEECH_LAPSES = 4  # sangsue : échoué au moins 4 fois
+TARGET_RETENTION = 85.0  # cible de rétention réelle (%)
 
 
 def difficulty_from_ef(ease_factor: float) -> float:
@@ -37,7 +50,7 @@ def difficulty_from_ef(ease_factor: float) -> float:
     return round(d, 1)
 
 
-def retrievability(interval: int, last_reviewed: Optional[datetime], now: datetime) -> float:
+def retrievability(interval: int, last_reviewed: datetime | None, now: datetime) -> float:
     """Récupérabilité R ∈ [0,1] via la courbe d'oubli d'Ebbinghaus R = exp(-t/S)."""
     if not last_reviewed or interval <= 0:
         return 0.0
@@ -46,8 +59,9 @@ def retrievability(interval: int, last_reviewed: Optional[datetime], now: dateti
     return round(min(1.0, max(0.0, r)), 2)
 
 
-def project_mastery_date(interval: int, ease_factor: float, next_review: Optional[datetime],
-                         now: datetime) -> Optional[datetime]:
+def project_mastery_date(
+    interval: int, ease_factor: float, next_review: datetime | None, now: datetime
+) -> datetime | None:
     """Date de maîtrise estimée : projection SM-2 (réussites) jusqu'à interval ≥ MATURE_DAYS."""
     cur = max(1, interval)
     ef = max(1.3, ease_factor or 2.5)
@@ -60,9 +74,89 @@ def project_mastery_date(interval: int, ease_factor: float, next_review: Optiona
     return d
 
 
+WEEKLY_PROGRESSION_WEEKS = 6  # taille de la fenêtre glissante (D9/reviser-hub-redesign)
+
+
+def grade_distribution(sessions: list[StudySession]) -> GradeDistribution:
+    """Répartit des StudySession notées (grade 0-5, cf. invariants-sm2) en 4
+    paliers pédagogiques. Cf. docstring de `GradeDistribution` pour le détail
+    du bucketing et pourquoi il ne déplace pas le seuil SM-2 (score >= 3)."""
+    buckets = {"again": 0, "hard": 0, "good": 0, "easy": 0}
+    for s in sessions:
+        if s.grade is None:
+            continue
+        if s.grade <= 1:
+            buckets["again"] += 1
+        elif s.grade == 2:
+            buckets["hard"] += 1
+        elif s.grade <= 4:
+            buckets["good"] += 1
+        else:
+            buckets["easy"] += 1
+    return GradeDistribution(**buckets)
+
+
+def _week_start(d: datetime) -> date:
+    """Lundi de la semaine ISO contenant `d` (semaines lundi-dimanche)."""
+    return d.date() - timedelta(days=d.weekday())
+
+
+def weekly_progression(
+    sessions: list[StudySession], now: datetime, weeks: int = WEEKLY_PROGRESSION_WEEKS
+) -> list[WeeklyProgressionPoint]:
+    """Bucket les sessions notées par semaine ISO sur une fenêtre glissante de
+    `weeks` semaines : index 0 = plus ancienne, index `weeks - 1` = semaine
+    courante. Une session hors fenêtre est exclue (pas d'erreur)."""
+    reviews = [0] * weeks
+    successes = [0] * weeks
+    current_week_start = _week_start(now)
+    for s in sessions:
+        if s.grade is None:
+            continue
+        diff_weeks = (current_week_start - _week_start(s.created_at)).days // 7
+        if 0 <= diff_weeks < weeks:
+            idx = weeks - 1 - diff_weeks
+            reviews[idx] += 1
+            if s.grade >= 3:
+                successes[idx] += 1
+    return [
+        WeeklyProgressionPoint(
+            reviews=reviews[i],
+            success_rate=round(successes[i] / reviews[i] * 100, 1) if reviews[i] else 0.0,
+        )
+        for i in range(weeks)
+    ]
+
+
+def session_history(sessions: list[StudySession]) -> list[SessionHistoryDay]:
+    """Regroupe les sessions notées par jour calendaire (`created_at.date()`),
+    la plus récente en premier, avec le taux de réussite agrégé du jour et la
+    durée cumulée réelle du jour (Task 9, somme de `duration_seconds`)."""
+    by_day: dict = {}
+    for s in sessions:
+        if s.grade is None:
+            continue
+        day = s.created_at.date()
+        acc = by_day.setdefault(day, {"reviews": 0, "successes": 0, "duration": 0})
+        acc["reviews"] += 1
+        if s.grade >= 3:
+            acc["successes"] += 1
+        acc["duration"] += s.duration_seconds or 0
+    return [
+        SessionHistoryDay(
+            date=day,
+            reviews=by_day[day]["reviews"],
+            success_rate=round(by_day[day]["successes"] / by_day[day]["reviews"] * 100, 1),
+            duration_seconds=by_day[day]["duration"],
+        )
+        for day in sorted(by_day.keys(), reverse=True)
+    ]
+
+
 @dataclass
 class _SetAggregate:
     """Métriques d'un ensemble + accumulateurs bruts (recomposables au niveau classeur)."""
+
     set: RevisionSet
     items_count: int = 0
     reviewed_items: int = 0
@@ -71,9 +165,12 @@ class _SetAggregate:
     due_count: int = 0
     mature_reviews: int = 0
     mature_successes: int = 0
-    success_rates: list = field(default_factory=list)   # par item révisé
-    difficulties: list = field(default_factory=list)     # par item
+    success_rates: list = field(default_factory=list)  # par item révisé
+    difficulties: list = field(default_factory=list)  # par item
     item_summaries: list = field(default_factory=list)
+    graded_sessions: list = field(
+        default_factory=list
+    )  # toutes les StudySession notées, tous items confondus
 
     @property
     def mastery_rate(self) -> float:
@@ -81,20 +178,41 @@ class _SetAggregate:
 
     @property
     def avg_success_rate(self) -> float:
-        return round(sum(self.success_rates) / len(self.success_rates), 1) if self.success_rates else 0.0
+        return (
+            round(sum(self.success_rates) / len(self.success_rates), 1)
+            if self.success_rates
+            else 0.0
+        )
 
     @property
     def true_retention(self) -> float:
-        return round(self.mature_successes / self.mature_reviews * 100, 1) if self.mature_reviews else 0.0
+        return (
+            round(self.mature_successes / self.mature_reviews * 100, 1)
+            if self.mature_reviews
+            else 0.0
+        )
 
     @property
     def avg_difficulty(self) -> float:
-        return round(sum(self.difficulties) / len(self.difficulties), 1) if self.difficulties else 0.0
+        return (
+            round(sum(self.difficulties) / len(self.difficulties), 1) if self.difficulties else 0.0
+        )
+
+    @property
+    def total_duration_seconds(self) -> int:
+        """Temps cumulé réel (Task 9) : somme des `duration_seconds` des
+        sessions notées déjà chargées -- aucune requête supplémentaire."""
+        return sum(s.duration_seconds or 0 for s in self.graded_sessions)
 
 
 class RevisionStatsService:
-    def __init__(self, set_dao: RevisionSetDAO, item_dao: RevisionItemDAO,
-                 session_dao: StudySessionDAO, binder_dao: BinderDAO = None):
+    def __init__(
+        self,
+        set_dao: RevisionSetDAO,
+        item_dao: RevisionItemDAO,
+        session_dao: StudySessionDAO,
+        binder_dao: BinderDAO = None,
+    ):
         self._set_dao = set_dao
         self._item_dao = item_dao
         self._session_dao = session_dao
@@ -107,6 +225,7 @@ class RevisionStatsService:
         if rset.user_id != user_id:
             if rset.binder_id:
                 from app.utils.security import check_binder_access
+
                 check_binder_access(self._set_dao.db, rset.binder_id, user_id, write_required=False)
             else:
                 raise ForbiddenError("Accès interdit à cet ensemble.")
@@ -114,8 +233,9 @@ class RevisionStatsService:
 
     # --- Item -----------------------------------------------------------------
 
-    def _compute_item_stats(self, item: RevisionItem, item_type: str,
-                            sessions: List[StudySession], now: datetime) -> RevisionItemStats:
+    def _compute_item_stats(
+        self, item: RevisionItem, sessions: list[StudySession], now: datetime
+    ) -> RevisionItemStats:
         graded = [s for s in sessions if s.grade is not None]
         reviews = len(graded)
         successes = sum(1 for s in graded if s.grade >= 3)
@@ -140,7 +260,9 @@ class RevisionStatsService:
             is_mature=is_mature,
             is_leech=lapses >= LEECH_LAPSES,
             mastered=is_mature,
-            mastery_date=None if is_mature else project_mastery_date(item.interval, item.ease_factor, item.next_review, now),
+            mastery_date=None
+            if is_mature
+            else project_mastery_date(item.interval, item.ease_factor, item.next_review, now),
             history=[RevisionHistoryPoint(date=s.created_at, grade=s.grade) for s in graded],
         )
 
@@ -149,13 +271,14 @@ class RevisionStatsService:
         if not item:
             raise ResourceNotFoundError("Item de révision introuvable.")
         rset = self._get_set_or_404(item.set_id, user_id)
-        sessions = self._session_dao.get_for_item(item.id, rset.type)
-        return self._compute_item_stats(item, rset.type, sessions, datetime.utcnow())
+        sessions = self._session_dao.get_for_item(item.id, item.type, user_id=user_id)
+        return self._compute_item_stats(item, sessions, datetime.utcnow())
 
     # --- Ensemble -------------------------------------------------------------
 
-    def _aggregate_set(self, rset: RevisionSet, items: List[RevisionItem],
-                       by_item: dict, now: datetime) -> _SetAggregate:
+    def _aggregate_set(
+        self, rset: RevisionSet, items: list[RevisionItem], by_item: dict, now: datetime
+    ) -> _SetAggregate:
         """Calcule les métriques d'un ensemble à partir d'items + sessions déjà chargés
         (aucune requête ici : appelable en boucle sans N+1)."""
         agg = _SetAggregate(set=rset, items_count=len(items))
@@ -174,6 +297,7 @@ class RevisionStatsService:
             if reviews:
                 agg.reviewed_items += 1
                 agg.success_rates.append(item_success)
+            agg.graded_sessions.extend(graded)
             agg.difficulties.append(difficulty)
             if is_mature:
                 agg.mastered_count += 1
@@ -184,35 +308,45 @@ class RevisionStatsService:
             if is_due:
                 agg.due_count += 1
 
-            agg.item_summaries.append(RevisionItemSummary(
-                item_id=item.id,
-                label=item_label(rset.type, item.payload),
-                reviews=reviews,
-                success_rate=item_success,
-                difficulty=difficulty,
-                retrievability=retrievability(item.interval, last_reviewed, now),
-                is_leech=is_leech,
-                is_mature=is_mature,
-                due=is_due,
-            ))
+            agg.item_summaries.append(
+                RevisionItemSummary(
+                    item_id=item.id,
+                    type=item.type,
+                    label=item_label(item.payload),
+                    reviews=reviews,
+                    success_rate=item_success,
+                    difficulty=difficulty,
+                    retrievability=retrievability(item.interval, last_reviewed, now),
+                    is_leech=is_leech,
+                    is_mature=is_mature,
+                    due=is_due,
+                )
+            )
         return agg
 
     def get_set_stats(self, user_id: int, set_id: int) -> RevisionSetStats:
         rset = self._get_set_or_404(set_id, user_id)
         now = datetime.utcnow()
         items = self._item_dao.get_by_set(set_id)
-        item_ids = [i.id for i in items]
 
-        # Une seule requête pour toutes les sessions de l'ensemble (anti-N+1).
-        sessions = self._session_dao.get_for_items(item_ids, rset.type)
-        by_item = {}
-        for s in sessions:
-            by_item.setdefault(s.item_id, []).append(s)
+        # Sessions groupées par type d'ITEM réel (pas par type d'ensemble : un
+        # ensemble hétérogène a des items de types différents, cf. D8/reviser-hub).
+        ids_by_type: dict = {}
+        for it in items:
+            ids_by_type.setdefault(it.type, []).append(it.id)
+        by_item: dict = {}
+        for item_type, ids in ids_by_type.items():
+            for sess in self._session_dao.get_for_items(ids, item_type, user_id=user_id):
+                by_item.setdefault(sess.item_id, []).append(sess)
 
         agg = self._aggregate_set(rset, items, by_item, now)
         verdicts = self._build_verdicts(
-            agg.items_count, agg.reviewed_items, agg.leeches_count, agg.due_count,
-            agg.true_retention, agg.mature_reviews,
+            agg.items_count,
+            agg.reviewed_items,
+            agg.leeches_count,
+            agg.due_count,
+            agg.true_retention,
+            agg.mature_reviews,
         )
 
         return RevisionSetStats(
@@ -230,16 +364,24 @@ class RevisionStatsService:
             avg_difficulty=agg.avg_difficulty,
             verdicts=verdicts,
             items=agg.item_summaries,
+            grade_distribution=grade_distribution(agg.graded_sessions),
+            weekly_progression=weekly_progression(agg.graded_sessions, now),
+            session_history=session_history(agg.graded_sessions),
+            total_duration_seconds=agg.total_duration_seconds,
         )
 
-    def _build_verdicts(self, items_count, reviewed_items, leeches, due, true_retention, mature_reviews) -> List[str]:
+    def _build_verdicts(
+        self, items_count, reviewed_items, leeches, due, true_retention, mature_reviews
+    ) -> list[str]:
         verdicts = []
         if items_count == 0:
             return ["Ajoutez des éléments pour commencer à réviser."]
         if leeches:
             verdicts.append(f"{leeches} élément(s) « sangsue » à reformuler ou scinder.")
         if mature_reviews and true_retention < TARGET_RETENTION:
-            verdicts.append(f"Rétention réelle {true_retention} % < cible {int(TARGET_RETENTION)} % : espacement peut-être trop agressif.")
+            verdicts.append(
+                f"Rétention réelle {true_retention} % < cible {int(TARGET_RETENTION)} % : espacement peut-être trop agressif."
+            )
         if due:
             verdicts.append(f"{due} élément(s) à réviser aujourd'hui.")
         if reviewed_items == 0:
@@ -250,7 +392,9 @@ class RevisionStatsService:
 
     # --- Classeur (A8) --------------------------------------------------------
 
-    def get_binder_stats(self, user_id: int, binder_id, include_descendants: bool = True) -> RevisionBinderStats:
+    def get_binder_stats(
+        self, user_id: int, binder_id, include_descendants: bool = True
+    ) -> RevisionBinderStats:
         """Agrège les stats de tous les ensembles de révision d'un classeur (et,
         par défaut, de son sous-arbre). Les decks de flashcards ont leurs stats
         propres (`/stats/decks/:id`) et ne sont pas inclus ici."""
@@ -259,9 +403,16 @@ class RevisionStatsService:
         # Vérifie l'accès (propriétaire OU classe partagée) ; lève 404/403.
         binder = check_binder_access(self._set_dao.db, binder_id, user_id, write_required=False)
 
+        descendant_binders = []
         binder_internal_ids = [binder._id]
         if include_descendants:
-            binder_internal_ids += [b._id for b in self._binder_dao.get_descendants(binder._id)]
+            descendant_binders = self._binder_dao.get_descendants(binder._id)
+            binder_internal_ids += [b._id for b in descendant_binders]
+        # UUID publics du classeur + de son sous-arbre effectivement inclus (selon
+        # include_descendants) : exposé en réponse pour que le frontend puisse
+        # scoper d'autres ressources (ex. decks) sur le même périmètre sans
+        # dupliquer la marche de l'arbre (cf. revue de branche, finding #3).
+        binder_ids = [binder.id] + [b.id for b in descendant_binders]
 
         now = datetime.utcnow()
         sets = self._set_dao.get_by_binders(binder_internal_ids)
@@ -273,31 +424,40 @@ class RevisionStatsService:
         for it in items:
             items_by_set.setdefault(it.set_id, []).append(it)
 
-        # Sessions : une requête par type d'ensemble présent (≤ 5), pas par item.
+        # Sessions : une requête par type d'ITEM présent (≤ 6), pas par ensemble.
         ids_by_type: dict = {}
         for s in sets:
             for it in items_by_set.get(s.id, []):
-                ids_by_type.setdefault(s.type, []).append(it.id)
+                ids_by_type.setdefault(it.type, []).append(it.id)
         by_item: dict = {}
         for set_type, ids in ids_by_type.items():
-            for sess in self._session_dao.get_for_items(ids, set_type):
+            for sess in self._session_dao.get_for_items(ids, set_type, user_id=user_id):
                 by_item.setdefault(sess.item_id, []).append(sess)
 
         # Agrégation par ensemble (réutilise la logique de get_set_stats).
-        summaries: List[RevisionSetSummary] = []
-        by_type_acc: dict = {}   # type -> [sets, items, mastered]
-        tot = _SetAggregate(set=binder)   # accumulateur global
+        summaries: list[RevisionSetSummary] = []
+        # type d'item -> {sets: set[int] (ids d'ensembles distincts), items: int, mastered: int}
+        by_type_acc: dict = {}
+        tot = _SetAggregate(set=binder)  # accumulateur global
 
         for rset in sets:
             agg = self._aggregate_set(rset, items_by_set.get(rset.id, []), by_item, now)
-            summaries.append(RevisionSetSummary(
-                set_id=rset.id, type=rset.type, name=rset.name,
-                items_count=agg.items_count, reviewed_items=agg.reviewed_items,
-                mastered_count=agg.mastered_count, mastery_rate=agg.mastery_rate,
-                avg_success_rate=agg.avg_success_rate, true_retention=agg.true_retention,
-                leeches_count=agg.leeches_count, due_count=agg.due_count,
-                avg_difficulty=agg.avg_difficulty,
-            ))
+            summaries.append(
+                RevisionSetSummary(
+                    set_id=rset.id,
+                    type=rset.type,
+                    name=rset.name,
+                    items_count=agg.items_count,
+                    reviewed_items=agg.reviewed_items,
+                    mastered_count=agg.mastered_count,
+                    mastery_rate=agg.mastery_rate,
+                    avg_success_rate=agg.avg_success_rate,
+                    true_retention=agg.true_retention,
+                    leeches_count=agg.leeches_count,
+                    due_count=agg.due_count,
+                    avg_difficulty=agg.avg_difficulty,
+                )
+            )
             tot.items_count += agg.items_count
             tot.reviewed_items += agg.reviewed_items
             tot.mastered_count += agg.mastered_count
@@ -307,16 +467,28 @@ class RevisionStatsService:
             tot.mature_successes += agg.mature_successes
             tot.success_rates.extend(agg.success_rates)
             tot.difficulties.extend(agg.difficulties)
+            tot.graded_sessions.extend(agg.graded_sessions)
 
-            acc = by_type_acc.setdefault(rset.type, [0, 0, 0])
-            acc[0] += 1
-            acc[1] += agg.items_count
-            acc[2] += agg.mastered_count
+            # Répartition par type d'ITEM (pas d'ensemble) : un ensemble
+            # hétérogène compte dans chacun des types que ses items couvrent
+            # réellement (D8/reviser-hub) — pas de nouvelle requête, réutilise
+            # les item_summaries déjà calculés par _aggregate_set.
+            for item_summary in agg.item_summaries:
+                acc = by_type_acc.setdefault(
+                    item_summary.type, {"sets": set(), "items": 0, "mastered": 0}
+                )
+                acc["sets"].add(rset.id)
+                acc["items"] += 1
+                if item_summary.is_mature:
+                    acc["mastered"] += 1
 
         by_type = [
             RevisionTypeBreakdown(
-                type=t, sets_count=a[0], items_count=a[1], mastered_count=a[2],
-                mastery_rate=round(a[2] / a[1] * 100, 1) if a[1] else 0.0,
+                type=t,
+                sets_count=len(a["sets"]),
+                items_count=a["items"],
+                mastered_count=a["mastered"],
+                mastery_rate=round(a["mastered"] / a["items"] * 100, 1) if a["items"] else 0.0,
             )
             for t, a in sorted(by_type_acc.items())
         ]
@@ -328,12 +500,17 @@ class RevisionStatsService:
         )[:5]
 
         verdicts = self._build_verdicts(
-            tot.items_count, tot.reviewed_items, tot.leeches_count, tot.due_count,
-            tot.true_retention, tot.mature_reviews,
+            tot.items_count,
+            tot.reviewed_items,
+            tot.leeches_count,
+            tot.due_count,
+            tot.true_retention,
+            tot.mature_reviews,
         )
 
         return RevisionBinderStats(
             binder_id=binder.id,
+            binder_ids=binder_ids,
             name=binder.name,
             include_descendants=include_descendants,
             sets_count=len(sets),
@@ -350,4 +527,5 @@ class RevisionStatsService:
             sets=summaries,
             weakest_sets=weakest,
             verdicts=verdicts,
+            total_duration_seconds=tot.total_duration_seconds,
         )

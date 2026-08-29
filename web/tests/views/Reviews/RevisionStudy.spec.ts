@@ -64,7 +64,34 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
 
     await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
     await flushPromises()
-    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/answer/2', { score: 5 })
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/answer/2', {
+      score: 5,
+      duration_seconds: expect.any(Number),
+    })
+  })
+
+  it('inclut la duree reelle ecoulee (Date.now) dans le payload de soumission (Task 9)', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+    try {
+      api.post.mockResolvedValue({ data: { id: 2, set_id: 7 } })
+      const items = [item(2, 'flashcard', { front: 'Chat', back: 'Cat' })]
+      const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+      // Le chrono demarre au setupItem() de l'item courant -- on avance le
+      // temps de 7s avant de reveler puis de soumettre l'auto-evaluation.
+      vi.setSystemTime(new Date('2026-01-01T00:00:07.000Z'))
+      await wrapper.find('[data-test="reveal-flashcard-button"]').trigger('click')
+      await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+      await flushPromises()
+
+      expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/answer/2', {
+        score: 5,
+        duration_seconds: 7,
+      })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('filtre la session par type quand ?type= est present', async () => {

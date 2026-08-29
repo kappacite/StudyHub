@@ -94,8 +94,25 @@ describe('revision store — ensembles typés (D3c)', () => {
     const answers = [{ item_id: 9, selected_option_ids: ['b'] }]
     const res = await store.runQcm(5, answers)
 
-    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/run', { answers })
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/run', {
+      answers,
+      duration_seconds: 0,
+    })
     expect(res).toEqual(runResult)
+  })
+
+  it('runQcm inclut la duree postee quand elle est fournie (Task 9)', async () => {
+    const runResult = { score: 3, max_score: 4, percentage: 75, results: [] }
+    api.post.mockResolvedValue({ data: runResult })
+    const store = useRevisionStore()
+
+    const answers = [{ item_id: 9, selected_option_ids: ['b'] }]
+    await store.runQcm(5, answers, 42)
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/run', {
+      answers,
+      duration_seconds: 42,
+    })
   })
 
   it('gradeItem poste la réponse typée et renvoie la correction', async () => {
@@ -104,8 +121,42 @@ describe('revision store — ensembles typés (D3c)', () => {
 
     const res = await store.gradeItem(5, 9, { value: false })
 
-    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/study/grade/9', { answer: { value: false } })
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/study/grade/9', {
+      answer: { value: false },
+      duration_seconds: 0,
+    })
     expect(res.correct).toBe(true)
+  })
+
+  it('gradeItem inclut la duree postee quand elle est fournie (Task 9)', async () => {
+    api.post.mockResolvedValue({ data: { correct: true, item: { id: 9 } } })
+    const store = useRevisionStore()
+
+    await store.gradeItem(5, 9, { value: false }, 17)
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/study/grade/9', {
+      answer: { value: false },
+      duration_seconds: 17,
+    })
+  })
+
+  it('answerItem inclut la duree postee (0 par defaut, Task 9)', async () => {
+    api.post.mockResolvedValue({ data: { id: 9 } })
+    const store = useRevisionStore()
+
+    await store.answerItem(5, 9, 5)
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/study/answer/9', {
+      score: 5,
+      duration_seconds: 0,
+    })
+
+    await store.answerItem(5, 9, 5, 30)
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/study/answer/9', {
+      score: 5,
+      duration_seconds: 30,
+    })
   })
 
   it('fetchSetStats et fetchItemStats interrogent les endpoints stats', async () => {

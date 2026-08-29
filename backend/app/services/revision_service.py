@@ -306,7 +306,12 @@ class RevisionService:
         return [RevisionItemResponse.model_validate(i) for i in items]
 
     def answer_item(
-        self, user_id: int, set_id: int, item_id: int, score: int
+        self,
+        user_id: int,
+        set_id: int,
+        item_id: int,
+        score: int,
+        duration_seconds: int = 0,
     ) -> RevisionItemResponse:
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
         item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
@@ -338,7 +343,7 @@ class RevisionService:
         study_session = StudySession(
             user_id=user_id,
             module=rset.type or item.type,
-            duration_seconds=0,
+            duration_seconds=duration_seconds,
             cards_reviewed=1,
             cards_correct=1 if score >= 3 else 0,
             item_id=item.id,
@@ -363,7 +368,17 @@ class RevisionService:
         max_score = 0
         results = []
 
-        for answer in data.answers:
+        # Une seule duree totale est postee pour tout le passage (Task 9) --
+        # repartie egalement entre les questions via divmod pour que la somme
+        # des lignes StudySession retombe exactement sur le total poste, sans
+        # inventer de precision par question. Le reste de la division est
+        # distribue aux premieres questions du lot (ordre de data.answers).
+        batch_size = len(data.answers)
+        base_duration, remainder = (
+            divmod(data.duration_seconds, batch_size) if batch_size else (0, 0)
+        )
+
+        for index, answer in enumerate(data.answers):
             item = items.get(answer.item_id)
             if item is None:
                 raise ValidationError("Une réponse cible une question hors de cet ensemble.")
@@ -404,15 +419,16 @@ class RevisionService:
                 item.interval = interval
                 item.repetitions = repetitions
                 item.next_review = next_review
+            item_duration = base_duration + 1 if index < remainder else base_duration
             self._item_dao.db.add(
                 StudySession(
                     user_id=user_id,
                     module=rset.type,
-                    duration_seconds=0,
+                    duration_seconds=item_duration,
                     cards_reviewed=1,
                     cards_correct=1 if is_correct else 0,
                     item_id=item.id,
-                    item_type=rset.type,
+                    item_type=item.type,
                     grade=grade,
                 )
             )
@@ -425,7 +441,12 @@ class RevisionService:
         )
 
     def grade_item(
-        self, user_id: int, set_id: int, item_id: int, answer: dict
+        self,
+        user_id: int,
+        set_id: int,
+        item_id: int,
+        answer: dict,
+        duration_seconds: int = 0,
     ) -> RevisionGradeResult:
         """Corrige une réponse à un item auto-corrigeable (vf/association/ordre) et
         met à jour SM-2 (réussi → 5, raté → 2). La définition reste en self-eval."""
@@ -461,7 +482,7 @@ class RevisionService:
                 user_id=user_id,
                 # cf. answer_item : rset.type est None pour un ensemble hétérogène (D8).
                 module=rset.type or item.type,
-                duration_seconds=0,
+                duration_seconds=duration_seconds,
                 cards_reviewed=1,
                 cards_correct=1 if is_correct else 0,
                 item_id=item.id,

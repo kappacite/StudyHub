@@ -5,12 +5,54 @@ Chantier actif : aucun
 ## Chantiers ouverts
 
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
-- `reviser-hub` — pas commencé, débloqué (`backend-ensembles-heterogenes` mergé)
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
 
+- 2026-08-30 — [reviser-hub] **PR #130 ouverte** (`feature/reviser-hub` → `main`,
+  https://github.com/kappacite/StudyHub/pull/130). Chantier `pr-ouverte`. Prochaine action :
+  attendre la revue humaine / CI, puis merger.
+- 2026-08-30 — [reviser-hub] **Revue finale de branche + tour de correction, chantier prêt pour
+  la PR.** 1 Critical trouvé (un type élargi — `FocusItem.type` + `'revision_set'` — câblé dans un
+  seul consommateur sur 6, cassant le bouton « Réviser » sur `Accueil.vue`/`FocusPage.vue`/
+  `FocusWidget.vue` et la file unifiée sur `StudyDeck.vue`/`Blurting.vue` ; aucune revue de tâche
+  ne pouvait le voir, hors de toute liste de fichiers déclarée) + 4 Important (scoping `user_id`
+  manquant sur les nouvelles stats de durée ; classeurs/decks avec des périmètres
+  descendants incohérents ; état d'erreur perdu sur 2 écrans refondus ; appel API direct + `any`
+  dans un nouveau composant). 1 seul tour de correction (4 commits), re-revue ciblée propre.
+  Détail complet : `workflow/reviser-hub/JOURNAL.md`. Prochaine action : demander à l'utilisateur
+  de pousser `feature/reviser-hub`, puis ouvrir la PR.
+- 2026-08-29 — [reviser-hub] **Task 9 ajoutée post-clôture** (demande utilisateur en chat) : durée
+  de révision réelle dans les statistiques (« Temps cumulé », colonne « Durée », « Temps total
+  d'étude » classeur), jusque-là omise faute de suivi réel. Chronométrage réel côté frontend
+  (`RevisionStudy.vue`/`QcmRun.vue`), répartition `divmod` pour le passage QCM groupé, aucune
+  fabrication (omission = toujours `0`). 1 tour, revue immédiatement propre. 1 écart pré-existant
+  signalé hors scope : `StudySessionDAO` ne filtre pas par `user_id` (mélange de sessions
+  multi-élèves déjà possible sur un ensemble partagé, pas une régression de cette tâche). Vérifié
+  visuellement en direct (durée réelle postée via l'API, rendue correctement sur les 2 écrans).
+  Détail complet : `workflow/reviser-hub/JOURNAL.md`. Prochaine action : revue finale de branche,
+  puis demander à l'utilisateur de pousser `feature/reviser-hub` et ouvrir la PR.
+- 2026-08-29 — [reviser-hub] **Correction et reclôture** : la clôture précédente (ci-dessous)
+  n'avait jamais consulté les vraies maquettes Direction A — répétition de l'erreur documentée
+  dans la mémoire `migration-ecran-verify-mockup`. Correction complète via
+  `docs/superpowers/plans/2026-08-29-reviser-hub-redesign.md` (8 tâches TDD,
+  subagent-driven-development, 3 tours de correction tous conclus propres) : `Reviews.vue`
+  reconstruit en flux unifié « ce qui est dû » (2503→381 lignes), `RevisionSetStats.vue` et
+  `RevisionBinderStats.vue` reconstruits selon leurs maquettes respectives, Feynman et la
+  génération de flashcards IA relogés (`NoteFeynman.vue`, `Decks.vue`). Un vrai bug pré-existant
+  corrigé en passant (routage manquant pour un ensemble de révision dû dans la file unifiée).
+  Vérification visuelle réelle refaite dès cette clôture, cette fois côte à côte avec les vraies
+  maquettes, clair/sombre × desktop/mobile — aucun nouveau défaut. Détail complet :
+  `workflow/reviser-hub/JOURNAL.md`. Prochaine action : demander à l'utilisateur de pousser
+  `feature/reviser-hub`, puis ouvrir la PR.
+- 2026-08-29 — [reviser-hub] Chantier `code clos` : 11 tâches TDD (subagent-driven-development),
+  toutes approuvées sans tour de correction. Correctif backend réel trouvé et corrigé (stats
+  silencieusement vides pour tout ensemble hétérogène révisé — filtrage par type d'ensemble au
+  lieu de type d'item sur le discriminant polymorphe de `StudySession`). `RevisionSetManage.vue`
+  retiré (doublon de `RevisionSetDetail.vue`). Vérification visuelle réelle faite dès cette
+  clôture (pas différée). Détail complet : `workflow/reviser-hub/JOURNAL.md`. Prochaine action :
+  demander à l'utilisateur de pousser `feature/reviser-hub`, puis ouvrir la PR.
 - 2026-08-29 — [bibliotheque-ensembles] **PR #128 mergée dans `main`** (squash, `af20f00`),
   CI verte (6/6 checks). Chantier `clos`. Prochaine action : choisir le prochain chantier à
   ouvrir (`editeur-notes-notation-ia`, `reviser-hub`, `ecrans-peripheriques-visuels` ou

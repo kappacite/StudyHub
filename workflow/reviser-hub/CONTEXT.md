@@ -1,8 +1,8 @@
 # Réviser — hub global
 
-Statut : planifié
-Branche : (aucune)
-PR : (aucune)
+Statut : pr-ouverte
+Branche : feature/reviser-hub
+PR : #130
 
 ## Pourquoi
 

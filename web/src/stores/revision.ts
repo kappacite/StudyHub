@@ -111,6 +111,7 @@ export interface ItemStats {
 
 export interface ItemSummary {
   item_id: number
+  type: RevisionItemType
   label: string
   reviews: number
   success_rate: number
@@ -121,9 +122,28 @@ export interface ItemSummary {
   due: boolean
 }
 
+export interface GradeDistribution {
+  again: number
+  hard: number
+  good: number
+  easy: number
+}
+
+export interface WeeklyProgressionPoint {
+  reviews: number
+  success_rate: number
+}
+
+export interface SessionHistoryDay {
+  date: string
+  reviews: number
+  success_rate: number
+  duration_seconds: number
+}
+
 export interface SetStats {
   set_id: number
-  type: RevisionType
+  type: RevisionType | null
   name: string
   items_count: number
   reviewed_items: number
@@ -136,11 +156,15 @@ export interface SetStats {
   avg_difficulty: number
   verdicts: string[]
   items: ItemSummary[]
+  grade_distribution: GradeDistribution
+  weekly_progression: WeeklyProgressionPoint[]
+  session_history: SessionHistoryDay[]
+  total_duration_seconds: number
 }
 
 export interface SetSummary {
   set_id: number
-  type: RevisionType
+  type: RevisionType | null
   name: string
   items_count: number
   reviewed_items: number
@@ -154,7 +178,7 @@ export interface SetSummary {
 }
 
 export interface TypeBreakdown {
-  type: RevisionType
+  type: RevisionItemType
   sets_count: number
   items_count: number
   mastered_count: number
@@ -163,6 +187,10 @@ export interface TypeBreakdown {
 
 export interface BinderStats {
   binder_id: string
+  // UUID publics du classeur + de son sous-arbre effectivement inclus (selon
+  // include_descendants) -- permet de scoper d'autres ressources (ex. decks)
+  // sur le meme perimetre sans re-marcher l'arbre cote frontend.
+  binder_ids: string[]
   name: string
   include_descendants: boolean
   sets_count: number
@@ -179,6 +207,7 @@ export interface BinderStats {
   sets: SetSummary[]
   weakest_sets: SetSummary[]
   verdicts: string[]
+  total_duration_seconds: number
 }
 
 interface SetsResponse {
@@ -289,23 +318,31 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
-  async function answerItem(setId: number, itemId: number, score: number) {
+  async function answerItem(setId: number, itemId: number, score: number, durationSeconds = 0) {
     const response = await api.post<RevisionItem>(
       `/revision/sets/${setId}/study/answer/${itemId}`,
-      { score },
+      { score, duration_seconds: durationSeconds },
     )
     return response.data
   }
 
-  async function runQcm(setId: number, answers: RunAnswer[]) {
-    const response = await api.post<RunResult>(`/revision/sets/${setId}/run`, { answers })
+  async function runQcm(setId: number, answers: RunAnswer[], durationSeconds = 0) {
+    const response = await api.post<RunResult>(`/revision/sets/${setId}/run`, {
+      answers,
+      duration_seconds: durationSeconds,
+    })
     return response.data
   }
 
-  async function gradeItem(setId: number, itemId: number, answer: Record<string, unknown>) {
+  async function gradeItem(
+    setId: number,
+    itemId: number,
+    answer: Record<string, unknown>,
+    durationSeconds = 0,
+  ) {
     const response = await api.post<{ correct: boolean; item: RevisionItem }>(
       `/revision/sets/${setId}/study/grade/${itemId}`,
-      { answer },
+      { answer, duration_seconds: durationSeconds },
     )
     return response.data
   }

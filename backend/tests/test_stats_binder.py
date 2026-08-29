@@ -9,14 +9,28 @@ def _binder(client, headers, name, parent_id=None):
 
 
 def _qcm_set(client, headers, binder_id, name="QCM"):
-    set_id = client.post("/api/v1/revision/sets", json={
-        "name": name, "type": "qcm", "binder_id": binder_id,
-    }, headers=headers).json["id"]
-    item = client.post(f"/api/v1/revision/sets/{set_id}/items", json={"payload": {
-        "question": "2+2 ?",
-        "options": [{"id": "a", "text": "3", "correct": False},
-                    {"id": "b", "text": "4", "correct": True}],
-    }}, headers=headers).json
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={
+            "name": name,
+            "type": "qcm",
+            "binder_id": binder_id,
+        },
+        headers=headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={
+            "payload": {
+                "question": "2+2 ?",
+                "options": [
+                    {"id": "a", "text": "3", "correct": False},
+                    {"id": "b", "text": "4", "correct": True},
+                ],
+            }
+        },
+        headers=headers,
+    ).json
     return set_id, item
 
 
@@ -24,15 +38,26 @@ def test_binder_stats_aggregates_multiple_sets_and_types(client, auth_headers):
     binder_id = _binder(client, auth_headers, "Révisions")
     set_id, item = _qcm_set(client, auth_headers, binder_id, "QCM Maths")
     # Un passage réussi pour alimenter les stats.
-    client.post(f"/api/v1/revision/sets/{set_id}/run",
-                json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
-                headers=auth_headers)
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        headers=auth_headers,
+    )
     # Un second ensemble d'un autre type (sans révision).
-    vf_id = client.post("/api/v1/revision/sets", json={
-        "name": "VF Histoire", "type": "vf", "binder_id": binder_id,
-    }, headers=auth_headers).json["id"]
-    client.post(f"/api/v1/revision/sets/{vf_id}/items",
-                json={"payload": {"assertion": "Vrai ?", "correct": True}}, headers=auth_headers)
+    vf_id = client.post(
+        "/api/v1/revision/sets",
+        json={
+            "name": "VF Histoire",
+            "type": "vf",
+            "binder_id": binder_id,
+        },
+        headers=auth_headers,
+    ).json["id"]
+    client.post(
+        f"/api/v1/revision/sets/{vf_id}/items",
+        json={"payload": {"assertion": "Vrai ?", "correct": True}},
+        headers=auth_headers,
+    )
 
     resp = client.get(f"/api/v1/stats/binders/{binder_id}", headers=auth_headers)
     assert resp.status_code == 200
@@ -57,19 +82,42 @@ def test_binder_stats_includes_descendants_by_default(client, auth_headers):
     assert inc["sets_count"] == 1 and inc["items_count"] == 1
 
     # descendants=false : seulement le classeur direct (vide ici).
-    excl = client.get(f"/api/v1/stats/binders/{parent_id}?descendants=false", headers=auth_headers).json
+    excl = client.get(
+        f"/api/v1/stats/binders/{parent_id}?descendants=false", headers=auth_headers
+    ).json
     assert excl["sets_count"] == 0 and excl["items_count"] == 0
+
+
+def test_binder_stats_exposes_binder_ids_scoped_to_include_descendants(client, auth_headers):
+    """Finding #3 (revue de branche reviser-hub) : le frontend a besoin du meme
+    perimetre de classeurs (racine + sous-arbre selon include_descendants) que
+    celui deja calcule cote backend pour scoper les decks fusionnes dans la
+    liste -- expose ici plutot que de re-marcher l'arbre cote frontend."""
+    parent_id = _binder(client, auth_headers, "Parent")
+    child_id = _binder(client, auth_headers, "Enfant", parent_id=parent_id)
+
+    inc = client.get(f"/api/v1/stats/binders/{parent_id}", headers=auth_headers).json
+    assert set(inc["binder_ids"]) == {parent_id, child_id}
+
+    excl = client.get(
+        f"/api/v1/stats/binders/{parent_id}?descendants=false", headers=auth_headers
+    ).json
+    assert excl["binder_ids"] == [parent_id]
 
 
 def test_binder_stats_isolation_between_users(client, auth_headers):
     binder_id = _binder(client, auth_headers, "Privé")
     _qcm_set(client, auth_headers, binder_id)
-    client.post("/api/v1/auth/register",
-                json={"email": "ob@example.com", "username": "obuser", "password": "password123"})
-    other = client.post("/api/v1/auth/login",
-                        json={"email": "ob@example.com", "password": "password123"}).json["access_token"]
-    resp = client.get(f"/api/v1/stats/binders/{binder_id}",
-                      headers={"Authorization": f"Bearer {other}"})
+    client.post(
+        "/api/v1/auth/register",
+        json={"email": "ob@example.com", "username": "obuser", "password": "password123"},
+    )
+    other = client.post(
+        "/api/v1/auth/login", json={"email": "ob@example.com", "password": "password123"}
+    ).json["access_token"]
+    resp = client.get(
+        f"/api/v1/stats/binders/{binder_id}", headers={"Authorization": f"Bearer {other}"}
+    )
     assert resp.status_code in (403, 404)
 
 
@@ -77,27 +125,40 @@ def test_binder_stats_query_budget(client, auth_headers, app):
     """Pas de N+1 : budget borné quel que soit le nombre d'ensembles/items."""
     binder_id = _binder(client, auth_headers, "Gros classeur")
     for s in range(3):
-        sid = client.post("/api/v1/revision/sets", json={
-            "name": f"VF {s}", "type": "vf", "binder_id": binder_id,
-        }, headers=auth_headers).json["id"]
+        sid = client.post(
+            "/api/v1/revision/sets",
+            json={
+                "name": f"VF {s}",
+                "type": "vf",
+                "binder_id": binder_id,
+            },
+            headers=auth_headers,
+        ).json["id"]
         for i in range(4):
-            client.post(f"/api/v1/revision/sets/{sid}/items",
-                        json={"payload": {"assertion": f"A{s}-{i}", "correct": True}}, headers=auth_headers)
+            client.post(
+                f"/api/v1/revision/sets/{sid}/items",
+                json={"payload": {"assertion": f"A{s}-{i}", "correct": True}},
+                headers=auth_headers,
+            )
 
+    from app.dao.binder_dao import BinderDAO
+    from app.dao.revision_dao import RevisionItemDAO, RevisionSetDAO
+    from app.dao.study_session_dao import StudySessionDAO
     from app.extensions import db
     from app.services.revision_stats_service import RevisionStatsService
-    from app.dao.revision_dao import RevisionSetDAO, RevisionItemDAO
-    from app.dao.study_session_dao import StudySessionDAO
-    from app.dao.binder_dao import BinderDAO
 
     with app.app_context():
         from app.models.user import User
+
         uid = User.query.filter_by(email="test@example.com").first().id
         svc = RevisionStatsService(
-            RevisionSetDAO(db.session), RevisionItemDAO(db.session),
-            StudySessionDAO(db.session), BinderDAO(db.session),
+            RevisionSetDAO(db.session),
+            RevisionItemDAO(db.session),
+            StudySessionDAO(db.session),
+            BinderDAO(db.session),
         )
         from sqlalchemy import event
+
         engine = db.session.get_bind()
         count = {"n": 0}
 
@@ -114,3 +175,145 @@ def test_binder_stats_query_budget(client, auth_headers, app):
     # Indépendant du nombre d'items : accès binder + descendants + sets + items
     # + 1 requête de sessions par type présent (ici 1 type). Marge raisonnable.
     assert count["n"] <= 8
+
+
+def test_binder_stats_total_duration_scoped_to_requesting_user_on_shared_binder(
+    client, auth_headers
+):
+    """Finding #2 (revue de branche reviser-hub) : un classeur partage (« cours »)
+    donne acces en lecture aux stats du classeur a tous les membres du groupe --
+    mais `total_duration_seconds` (Task 9, somme non bornee) ne doit refleter QUE
+    le temps d'etude PERSONNEL du requetant, pas la somme de tout le monde
+    (sinon un enseignant ayant etudie 15 min verrait le cumul de toute sa classe
+    sous le libelle « Temps total d'etude », qui lit comme une affirmation
+    personnelle)."""
+    binder_id = _binder(client, auth_headers, "Cours partage")
+    set_id, item = _qcm_set(client, auth_headers, binder_id)
+
+    group_resp = client.post(
+        "/api/v1/groups", json={"name": "Groupe binder stats"}, headers=auth_headers
+    )
+    group_id = group_resp.json["id"]
+    invite_code = group_resp.json["invite_code"]
+    client.post(
+        f"/api/v1/groups/{group_id}/binders",
+        json={"binder_id": binder_id, "permission": "read"},
+        headers=auth_headers,
+    )
+
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "binder_student@example.com",
+            "username": "binder_student",
+            "password": "password123",
+        },
+    )
+    student_token = client.post(
+        "/api/v1/auth/login",
+        json={"email": "binder_student@example.com", "password": "password123"},
+    ).json["access_token"]
+    student_headers = {"Authorization": f"Bearer {student_token}"}
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student_headers)
+
+    # Le proprietaire etudie 15s ; l'eleve etudie 3600s sur le MEME item partage.
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={
+            "duration_seconds": 15,
+            "answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}],
+        },
+        headers=auth_headers,
+    )
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={
+            "duration_seconds": 3600,
+            "answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}],
+        },
+        headers=student_headers,
+    )
+
+    owner_view = client.get(f"/api/v1/stats/binders/{binder_id}", headers=auth_headers).json
+    student_view = client.get(f"/api/v1/stats/binders/{binder_id}", headers=student_headers).json
+
+    # Sans le correctif : owner_view verrait 3615 (les deux sessions blendees).
+    assert owner_view["total_duration_seconds"] == 15
+    assert student_view["total_duration_seconds"] == 3600
+
+
+def test_binder_stats_total_duration_seconds_sums_across_sets(client, auth_headers):
+    """Temps total d'etude du classeur (Task 9) = somme des sessions de tous
+    ses ensembles de revision -- aucune requete de plus, aucune fabrication."""
+    binder_id = _binder(client, auth_headers, "Révisions")
+    set_id, item = _qcm_set(client, auth_headers, binder_id, "QCM Maths")
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={
+            "duration_seconds": 30,
+            "answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}],
+        },
+        headers=auth_headers,
+    )
+    vf_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF Histoire", "type": "vf", "binder_id": binder_id},
+        headers=auth_headers,
+    ).json["id"]
+    vf_item = client.post(
+        f"/api/v1/revision/sets/{vf_id}/items",
+        json={"payload": {"assertion": "Vrai ?", "correct": True}},
+        headers=auth_headers,
+    ).json
+    client.post(
+        f"/api/v1/revision/sets/{vf_id}/study/answer/{vf_item['id']}",
+        json={"score": 5, "duration_seconds": 20},
+        headers=auth_headers,
+    )
+
+    resp = client.get(f"/api/v1/stats/binders/{binder_id}", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json["total_duration_seconds"] == 50
+
+
+def test_binder_stats_breaks_down_heterogeneous_set_by_item_type(client, auth_headers):
+    """Un ensemble heterogene doit apparaitre dans CHAQUE bucket de type que
+    ses items couvrent reellement (pas invisible, pas un bucket unique
+    'mixte') -- avant le correctif, le groupement par rset.type (None) faisait
+    disparaitre ses sessions du breakdown."""
+    binder_id = _binder(client, auth_headers, "Classeur")
+    mixed_id = client.post(
+        "/api/v1/revision/sets",
+        json={
+            "name": "Mixte",
+            "binder_id": binder_id,
+        },
+        headers=auth_headers,
+    ).json["id"]
+    client.post(
+        f"/api/v1/revision/sets/{mixed_id}/items",
+        json={
+            "type": "flashcard",
+            "payload": {"front": "Chat", "back": "Cat"},
+        },
+        headers=auth_headers,
+    )
+    client.post(
+        f"/api/v1/revision/sets/{mixed_id}/items",
+        json={
+            "type": "vf",
+            "payload": {"assertion": "Vrai ?", "correct": True},
+        },
+        headers=auth_headers,
+    )
+
+    resp = client.get(f"/api/v1/stats/binders/{binder_id}", headers=auth_headers)
+    assert resp.status_code == 200
+    body = resp.json
+    types = {b["type"]: b for b in body["by_type"]}
+    assert types["flashcard"]["sets_count"] == 1
+    assert types["vf"]["sets_count"] == 1
+    assert types["flashcard"]["items_count"] == 1
+    assert types["vf"]["items_count"] == 1
+    summary_types = {s["set_id"]: s["type"] for s in body["sets"]}
+    assert summary_types[mixed_id] is None

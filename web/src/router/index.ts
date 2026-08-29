@@ -138,10 +138,10 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true },
       },
       {
+        // RevisionSetDetail couvre déjà ce cas (regroupement par type, un
+        // seul groupe pour un ensemble homogène) — écran retiré, reviser-hub.
         path: 'revision/sets/:id/manage',
-        name: 'RevisionSetManage',
-        component: () => import('../views/Reviews/RevisionSetManage.vue'),
-        meta: { requiresAuth: true },
+        redirect: (to) => ({ name: 'RevisionSetDetail', params: to.params, query: to.query }),
       },
       {
         path: 'revision/sets/:id/stats',
@@ -189,6 +189,12 @@ const routes: Array<RouteRecordRaw> = [
         path: 'notes/:id/evaluation',
         name: 'NoteEvaluation',
         component: () => import('../views/Notes/NoteEvaluation.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'notes/:id/feynman',
+        name: 'NoteFeynman',
+        component: () => import('../views/Notes/NoteFeynman.vue'),
         meta: { requiresAuth: true },
       },
       {

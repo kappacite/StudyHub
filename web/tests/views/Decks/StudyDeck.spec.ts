@@ -18,6 +18,7 @@ import { useDecksStore } from '../../../src/stores/decks'
 import type { Deck, Flashcard } from '../../../src/stores/decks'
 import { useFocusStore } from '../../../src/stores/focus'
 import { usePlanningStore } from '../../../src/stores/planning'
+import { useRevisionStore } from '../../../src/stores/revision'
 
 // ─── Fixtures par défaut ─────────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ interface ApiOverrides {
   studyCards?: () => Promise<unknown>
   binderStudy?: () => Promise<unknown>
   answer?: () => Promise<unknown>
+  revisionSets?: () => Promise<unknown>
 }
 
 function makeGetImpl(over: ApiOverrides = {}) {
@@ -72,6 +74,9 @@ function makeGetImpl(over: ApiOverrides = {}) {
     }
     if (/^\/binders\/.+\/study$/.test(url)) {
       return (over.binderStudy ?? (() => Promise.resolve({ data: [CARD_A, CARD_B] })))()
+    }
+    if (/^\/revision\/sets\?/.test(url)) {
+      return (over.revisionSets ?? (() => Promise.resolve({ data: { data: [] } })))()
     }
     return Promise.reject(new Error(`URL GET non mockée dans le test: ${url}`))
   }
@@ -117,6 +122,8 @@ function createTestRouter(): Router {
       { path: '/bibliotheque/:id/reviser', name: 'StudyBinder', component: stub },
       { path: '/planning', name: 'Planning', component: stub },
       { path: '/focus', name: 'Focus', component: stub },
+      { path: '/revision/sets/:id/study', name: 'RevisionStudy', component: stub },
+      { path: '/revision/sets/:id/run', name: 'QcmRun', component: stub },
     ],
   })
 }
@@ -129,6 +136,7 @@ async function mountStudyDeck(
       decksStore: ReturnType<typeof useDecksStore>
       focusStore: ReturnType<typeof useFocusStore>
       planningStore: ReturnType<typeof usePlanningStore>
+      revisionStore: ReturnType<typeof useRevisionStore>
     }) => void
   } = {},
 ) {
@@ -139,7 +147,8 @@ async function mountStudyDeck(
   const decksStore = useDecksStore()
   const focusStore = useFocusStore()
   const planningStore = usePlanningStore()
-  setup?.({ decksStore, focusStore, planningStore })
+  const revisionStore = useRevisionStore()
+  setup?.({ decksStore, focusStore, planningStore, revisionStore })
 
   const router = createTestRouter()
   await router.push(to)
@@ -151,7 +160,7 @@ async function mountStudyDeck(
 
   if (flush) await flushPromises()
 
-  return { wrapper, router, decksStore, focusStore, planningStore }
+  return { wrapper, router, decksStore, focusStore, planningStore, revisionStore }
 }
 
 describe('StudyDeck', () => {
@@ -492,6 +501,64 @@ describe('StudyDeck', () => {
       await cta.trigger('click')
       await flushPromises()
       expect(router.currentRoute.value.fullPath).toBe('/decks/5/study?focus=true')
+    })
+
+    it('mode focus, prochain item = ensemble QCM homogene : avance vers /revision/sets/:id/run', async () => {
+      api.get.mockImplementation(
+        makeGetImpl({
+          studyCards: () => Promise.resolve({ data: [] }),
+          revisionSets: () =>
+            Promise.resolve({
+              data: {
+                data: [
+                  {
+                    id: 7,
+                    name: 'Série QCM',
+                    description: null,
+                    type: 'qcm',
+                    binder_id: null,
+                    tuning_default: 1,
+                    is_public: false,
+                    item_count: 10,
+                    read_only: false,
+                  },
+                ],
+              },
+            }),
+        }),
+      )
+      const { wrapper, router } = await mountStudyDeck({
+        to: '/decks/1/study?focus=true',
+        setup: ({ focusStore }) => {
+          focusStore.reviewQueue = [
+            { type: 'revision_set', id: 7, title: 'Série QCM', count: 10, is_late: false, last_session_ago_days: null },
+          ]
+        },
+      })
+      const cta = wrapper
+        .findAllComponents(BaseButton)
+        .find((b) => b.text().includes('Continuer les révisions'))!
+      await cta.trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/run')
+    })
+
+    it('mode focus, prochain item = ensemble heterogene/inconnu : avance vers /revision/sets/:id/study', async () => {
+      api.get.mockImplementation(makeGetImpl({ studyCards: () => Promise.resolve({ data: [] }) }))
+      const { wrapper, router } = await mountStudyDeck({
+        to: '/decks/1/study?focus=true',
+        setup: ({ focusStore }) => {
+          focusStore.reviewQueue = [
+            { type: 'revision_set', id: 8, title: 'Série inconnue', count: 4, is_late: false, last_session_ago_days: null },
+          ]
+        },
+      })
+      const cta = wrapper
+        .findAllComponents(BaseButton)
+        .find((b) => b.text().includes('Continuer les révisions'))!
+      await cta.trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.fullPath).toBe('/revision/sets/8/study')
     })
 
     it('mode focus, file vide : "Retour au Focus"', async () => {

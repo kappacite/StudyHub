@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -74,6 +74,10 @@ class RevisionItemUpdate(BaseModel):
 
 class RevisionItemAnswer(BaseModel):
     score: int = Field(..., ge=0, le=5, description="Score d'évaluation SM-2 de 0 à 5")
+    # Duree reelle ecoulee sur cet item (Task 9) -- optionnelle pour retro-
+    # compatibilite avec un client qui ne l'envoie pas encore : defaut 0,
+    # jamais estime/invente.
+    duration_seconds: int = Field(0, ge=0)
 
 
 class RevisionItemResponse(BaseModel):
@@ -106,6 +110,9 @@ class RevisionRunAnswer(BaseModel):
 
 class RevisionRunRequest(BaseModel):
     answers: list[RevisionRunAnswer]
+    # Duree totale du passage (Task 9), repartie par question via divmod
+    # dans le service -- optionnelle, defaut 0, jamais estimee/inventee.
+    duration_seconds: int = Field(0, ge=0)
 
 
 class RevisionRunQuestionResult(BaseModel):
@@ -133,6 +140,8 @@ class RevisionGradeRequest(BaseModel):
     #   association -> {"matches": {left: right}}
     #   ordre       -> {"order": [str, ...]}
     answer: dict[str, Any]
+    # Duree reelle ecoulee sur cet item (Task 9) -- optionnelle, defaut 0.
+    duration_seconds: int = Field(0, ge=0)
 
 
 class RevisionGradeResult(BaseModel):
@@ -171,6 +180,7 @@ class RevisionItemStats(BaseModel):
 
 class RevisionItemSummary(BaseModel):
     item_id: int
+    type: str
     label: str
     reviews: int
     success_rate: float
@@ -181,9 +191,41 @@ class RevisionItemSummary(BaseModel):
     due: bool
 
 
+class GradeDistribution(BaseModel):
+    """Répartition des notes SM-2 (0-5) en 4 paliers pédagogiques : 0-1 -> Encore
+    (échec net), 2 -> Difficile (échec limité), 3-4 -> Bien (réussite avec effort),
+    5 -> Facile (réussite parfaite). Le seuil réussite/échec de SM-2 lui-même
+    (score >= 3, cf. invariants-sm2) tombe pile entre « hard » et « good » -- ce
+    bucketing ajoute une graduation de chaque côté de cette frontière, il ne la
+    déplace pas."""
+
+    again: int = 0
+    hard: int = 0
+    good: int = 0
+    easy: int = 0
+
+
+class WeeklyProgressionPoint(BaseModel):
+    """Un point de la fenêtre des 6 dernières semaines (index 0 = plus ancienne,
+    index 5 = semaine courante), semaines ISO lundi-dimanche."""
+
+    reviews: int = 0
+    success_rate: float = 0.0
+
+
+class SessionHistoryDay(BaseModel):
+    """Une ligne d'historique = un jour calendaire (created_at.date()) agrégeant
+    toutes les sessions notées de l'ensemble ce jour-là."""
+
+    date: date
+    reviews: int
+    success_rate: float
+    duration_seconds: int = 0
+
+
 class RevisionSetStats(BaseModel):
     set_id: int
-    type: str
+    type: str | None = None
     name: str
     items_count: int
     reviewed_items: int
@@ -196,6 +238,13 @@ class RevisionSetStats(BaseModel):
     avg_difficulty: float
     verdicts: list[str] = []  # messages actionnables
     items: list[RevisionItemSummary] = []
+    # Stats de la page RevisionSetStats (D9/reviser-hub-redesign) : calculées à
+    # partir des sessions déjà chargées par get_set_stats, aucune requête de plus.
+    grade_distribution: GradeDistribution = GradeDistribution()
+    weekly_progression: list[WeeklyProgressionPoint] = []
+    session_history: list[SessionHistoryDay] = []
+    # Temps cumule reel (Task 9), somme des StudySession deja chargees.
+    total_duration_seconds: int = 0
 
 
 # --- Stats par classeur (A8) -------------------------------------------------
@@ -205,7 +254,7 @@ class RevisionSetSummary(BaseModel):
     """Résumé d'un ensemble dans la vue agrégée d'un classeur (sans les items)."""
 
     set_id: int
-    type: str
+    type: str | None = None
     name: str
     items_count: int
     reviewed_items: int
@@ -230,6 +279,11 @@ class RevisionTypeBreakdown(BaseModel):
 
 class RevisionBinderStats(BaseModel):
     binder_id: str  # UUID public du classeur
+    # UUID publics du classeur + de son sous-arbre effectivement inclus (selon
+    # include_descendants) -- permet au frontend de scoper d'autres ressources
+    # (ex. decks) sur le même périmètre sans re-marcher l'arbre des classeurs
+    # (cf. revue de branche reviser-hub, finding #3).
+    binder_ids: list[str] = []
     name: str
     include_descendants: bool = True
     sets_count: int
@@ -246,3 +300,7 @@ class RevisionBinderStats(BaseModel):
     sets: list[RevisionSetSummary] = []
     weakest_sets: list[RevisionSetSummary] = []  # ensembles les plus à risque
     verdicts: list[str] = []
+    # Temps total d'etude reel (Task 9), somme des sessions de tous les
+    # ensembles de revision du classeur -- les decks de flashcards ne sont
+    # pas inclus (duree non trackee cote flashcard_service, hors perimetre).
+    total_duration_seconds: int = 0

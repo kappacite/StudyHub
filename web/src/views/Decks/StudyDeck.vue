@@ -197,6 +197,8 @@ import { ref, computed, onMounted, onUnmounted, watch, type Component } from 'vu
 import { useRouter, useRoute } from 'vue-router'
 import { useDecksStore } from '../../stores/decks'
 import type { Flashcard } from '../../stores/decks'
+import { useRevisionStore } from '../../stores/revision'
+import { getFocusItemTarget } from '../../utils/focusItemTarget'
 import { useFocusStore } from '../../stores/focus'
 import { usePlanningStore } from '../../stores/planning'
 import api from '../../services/api'
@@ -214,6 +216,7 @@ import {
 
 const decksStore = useDecksStore()
 const focusStore = useFocusStore()
+const revisionStore = useRevisionStore()
 const planningStore = usePlanningStore()
 const router = useRouter()
 const route = useRoute()
@@ -346,7 +349,19 @@ function handleKeyDown(e: KeyboardEvent) {
 
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown)
-  await loadSession()
+  const tasks: Promise<unknown>[] = [loadSession()]
+  if (isFocusMode.value) {
+    // Nécessaire uniquement pour la navigation "Continuer les révisions" de la
+    // file unifiée (handleNextFocusItem) si l'item suivant est un ensemble de
+    // révision : distingue le mode /run (QCM homogène) de /study. Son échec ne
+    // doit pas bloquer le chargement de la session de cartes en cours.
+    tasks.push(
+      revisionStore.fetchSets().catch((err) => {
+        console.error('Erreur de chargement des ensembles de révision', err)
+      }),
+    )
+  }
+  await Promise.all(tasks)
 })
 
 onUnmounted(() => {
@@ -380,11 +395,7 @@ function goBack() {
 function handleNextFocusItem() {
   const nextItem = focusStore.nextQueueItem()
   if (nextItem) {
-    if (nextItem.type === 'deck') {
-      router.push(`/decks/${nextItem.id}/study?focus=true`)
-    } else if (nextItem.type === 'note') {
-      router.push(`/notes/${nextItem.id}/blurting?focus=true&from=focus`)
-    }
+    router.push(getFocusItemTarget(nextItem, revisionStore.sets))
   } else {
     router.push('/focus')
   }

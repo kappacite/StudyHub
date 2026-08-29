@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test'
 import { authenticate } from './helpers'
 
-// Vérifie que le bouton « Générer depuis Notes / Classeurs » utilise l'endpoint
-// IA (/flashcards/generate) puis crée le deck et les cartes renvoyées.
+// Vérifie que le bouton « Générer depuis Notes / Classeurs » (Decks.vue, relogé
+// depuis Reviews.vue par le chantier reviser-hub) utilise l'endpoint IA
+// (/flashcards/generate) puis crée le deck et les cartes renvoyées.
 
 const NOTE = { id: 'n1', title: 'Bio', content: 'La cellule est l unité du vivant.', binder_id: null, tags: [] }
 
@@ -32,7 +33,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('Génération de flashcards par IA depuis une note', async ({ page }) => {
-  await page.goto('/reviser')
+  await page.goto('/decks')
 
   await page.getByRole('button', { name: /Générer depuis Notes/i }).click()
 
@@ -51,7 +52,7 @@ test('Génération de flashcards par IA depuis une note', async ({ page }) => {
 
 // Ouvre la modale et lance la génération (note + nouveau deck nommé).
 async function startGeneration(page: import('@playwright/test').Page) {
-  await page.goto('/reviser')
+  await page.goto('/decks')
   await page.getByRole('button', { name: /Générer depuis Notes/i }).click()
   await page.locator('select').first().selectOption('n1')
   await page.getByPlaceholder(/Nom du nouveau deck/i).fill('IA Bio')
