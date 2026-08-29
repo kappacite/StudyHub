@@ -1,8 +1,8 @@
 # Réviser — hub global
 
-Statut : ouvert
+Statut : pr-ouverte
 Branche : feature/reviser-hub
-PR : (aucune)
+PR : #130
 
 ## Pourquoi
 

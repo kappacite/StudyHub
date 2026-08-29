@@ -10,6 +10,9 @@ Chantier actif : aucun
 
 ## Historique
 
+- 2026-08-30 — [reviser-hub] **PR #130 ouverte** (`feature/reviser-hub` → `main`,
+  https://github.com/kappacite/StudyHub/pull/130). Chantier `pr-ouverte`. Prochaine action :
+  attendre la revue humaine / CI, puis merger.
 - 2026-08-30 — [reviser-hub] **Revue finale de branche + tour de correction, chantier prêt pour
   la PR.** 1 Critical trouvé (un type élargi — `FocusItem.type` + `'revision_set'` — câblé dans un
   seul consommateur sur 6, cassant le bouton « Réviser » sur `Accueil.vue`/`FocusPage.vue`/
