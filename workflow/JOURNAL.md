@@ -10,6 +10,11 @@ Chantier actif : aucun
 
 ## Historique
 
+- 2026-08-30 — [reviser-hub] **PR #130 mergée dans `main`** (squash, `358e5b0`), CI verte (6/6
+  checks — le job E2E Playwright avait cassé sur le 1ᵉʳ run sur un test jamais migré après le
+  déplacement de la génération IA vers `Decks.vue` par ce même chantier, corrigé le jour même).
+  Chantier `clos`. Prochaine action : choisir le prochain chantier à ouvrir
+  (`editeur-notes-notation-ia`, `ecrans-peripheriques-visuels` ou `classes-examens-planning`).
 - 2026-08-30 — [reviser-hub] **PR #130 ouverte** (`feature/reviser-hub` → `main`,
   https://github.com/kappacite/StudyHub/pull/130). Chantier `pr-ouverte`. Prochaine action :
   attendre la revue humaine / CI, puis merger.
