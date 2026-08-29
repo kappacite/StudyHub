@@ -7,7 +7,6 @@ const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), delet
 vi.mock('../../../src/services/api', () => ({ default: api }))
 
 import RevisionSetStats from '../../../src/views/Reviews/RevisionSetStats.vue'
-import RevisionItemModal from '../../../src/components/decks/RevisionItemModal.vue'
 
 const SET = {
   id: 7,
@@ -50,7 +49,6 @@ interface MountOverrides {
   grade_distribution?: { again: number; hard: number; good: number; easy: number }
   weekly_progression?: { reviews: number; success_rate: number }[]
   session_history?: { date: string; reviews: number; success_rate: number }[]
-  fetchedItems?: unknown[]
 }
 
 function defaultWeeklyProgression() {
@@ -86,8 +84,6 @@ async function mountStats(setType: string | null, overrides: MountOverrides = {}
       })
     }
     if (/\/revision\/sets\/\d+$/.test(url)) return Promise.resolve({ data: { ...SET, type: setType } })
-    if (/\/revision\/sets\/\d+\/items$/.test(url))
-      return Promise.resolve({ data: { data: overrides.fetchedItems ?? [] } })
     return Promise.reject(new Error(`URL non mockée: ${url}`))
   })
   const router = createTestRouter()
@@ -150,46 +146,43 @@ describe('RevisionSetStats', () => {
     expect(wrapper.text()).toContain('Aucune session enregistrée')
   })
 
-  it('affiche une icone de type par item dans la gestion des elements', async () => {
-    const wrapper = await mountStats(null, {
-      items: [itemSummary(1, 'flashcard'), itemSummary(2, 'vf'), itemSummary(3, 'qcm')],
-    })
-    expect(wrapper.findAll('[data-test="item-type-icon"]')).toHaveLength(3)
-  })
-
-  it('permet de modifier un element existant', async () => {
-    const fetchedItem = {
-      id: 1,
-      set_id: 7,
-      type: 'qcm',
-      payload: { question: 'Q', options: [], points: 1 },
-      tuning: 1,
-      position: 0,
-      interval: 1,
-      ease_factor: 2.5,
-      repetitions: 0,
-      next_review: '2026-08-29T00:00:00Z',
-      created_at: '2026-08-29T00:00:00Z',
-      updated_at: '2026-08-29T00:00:00Z',
-    }
+  it('affiche "Cartes vues" comme libelle de colonne (et non "Revisions")', async () => {
     const wrapper = await mountStats('qcm', {
       items: [itemSummary(1, 'qcm')],
-      fetchedItems: [fetchedItem],
+      session_history: [{ date: '2026-08-29', reviews: 2, success_rate: 50 }],
     })
+    expect(wrapper.text()).toContain('Cartes vues')
+  })
 
-    expect(wrapper.text()).not.toContain("Modifier l'élément")
-    await wrapper.get('[data-test="edit-item-1"]').trigger('click')
-    expect(wrapper.text()).toContain("Modifier l'élément")
+  it('colore le score de session avec le meme seuil (>=70 succes, sinon echec) que partout ailleurs', async () => {
+    const wrapper = await mountStats('qcm', {
+      items: [itemSummary(1, 'qcm')],
+      session_history: [
+        { date: '2026-08-29', reviews: 1, success_rate: 70 },
+        { date: '2026-08-28', reviews: 1, success_rate: 69 },
+      ],
+    })
+    const scores = wrapper.findAll('[data-test="session-score"]')
+    expect(scores[0].classes()).toContain('text-success')
+    expect(scores[1].classes()).toContain('text-danger')
+  })
 
-    const statsCallsBefore = api.get.mock.calls.filter((c) => /\/stats\/sets\/\d+$/.test(c[0])).length
-
-    // Simule la sauvegarde : la modale emet "updated", le parent doit rafraichir les stats.
-    const modalWrapper = wrapper.findComponent(RevisionItemModal)
-    expect(modalWrapper.exists()).toBe(true)
-    await modalWrapper.vm.$emit('updated')
-    await flushPromises()
-
-    const statsCallsAfter = api.get.mock.calls.filter((c) => /\/stats\/sets\/\d+$/.test(c[0])).length
-    expect(statsCallsAfter).toBeGreaterThan(statsCallsBefore)
+  it('colore les barres de progression hebdomadaire avec le meme seuil de reussite (>=70)', async () => {
+    const wrapper = await mountStats('qcm', {
+      items: [itemSummary(1, 'qcm')],
+      weekly_progression: [
+        { reviews: 0, success_rate: 0 },
+        { reviews: 1, success_rate: 69 },
+        { reviews: 1, success_rate: 70 },
+        { reviews: 0, success_rate: 0 },
+        { reviews: 0, success_rate: 0 },
+        { reviews: 0, success_rate: 0 },
+      ],
+    })
+    const bars = wrapper.findAll('[data-test="week-bar"]')
+    expect(bars).toHaveLength(6)
+    expect(bars[0].classes()).toContain('bg-line') // pas de revision cette semaine-la
+    expect(bars[1].classes()).toContain('bg-danger') // 69% < seuil
+    expect(bars[2].classes()).toContain('bg-success') // 70% >= seuil
   })
 })
