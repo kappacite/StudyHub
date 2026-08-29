@@ -469,27 +469,27 @@ git commit -m "feat(reviser-hub): Reviews.vue devient le flux du unifie selon la
 
 This supersedes the original plan's Task 11 for the 3 rebuilt screens (`Reviser`/`Reviews.vue`, `RevisionSetStats.vue`, `RevisionBinderStats.vue`) — this time the check is against the actual mockups, side by side, not just "no regression."
 
-- [ ] **Step 1: Set up the native environment**
+- [x] **Step 1: Set up the native environment**
 
 Same procedure as the original plan's Task 11 (venv + SQLite backend, Vite frontend, no Docker) — reuse that section verbatim if the environment from the earlier session was torn down, adjusting ports if anything else is running.
 
-- [ ] **Step 2: Create test data covering every row/section type the mockups show**
+- [x] **Step 2: Create test data covering every row/section type the mockups show**
 
 At least: one overdue Deck, one due-today Deck, one homogeneous QCM revision set (reviewed and unreviewed items), one heterogeneous revision set (reviewed items of ≥2 types), one due note for blurting (if easy to set up — otherwise note its absence in the report).
 
-- [ ] **Step 3: Compare each rebuilt screen against its mockup, side by side, light + dark, desktop + mobile**
+- [x] **Step 3: Compare each rebuilt screen against its mockup, side by side, light + dark, desktop + mobile**
 
 For each of `Reviser`/`Reviews.vue`, `RevisionSetStats.vue`, `RevisionBinderStats.vue`: open the `.dc.html` mockup file directly in a browser tab alongside the real running app at the equivalent screen, and check structurally — same sections present, same data shown in the same places, real numbers where the mockup shows illustrative ones. Screenshot both for the record if convenient, but the structural comparison is the actual check, not a pixel diff.
 
 Also verify: `NoteFeynman.vue` reachable and functional from a note, `Decks.vue`'s relocated generation modal reachable and functional, no dead links to the old Feynman-tab/generation-modal locations inside the now-rebuilt `Reviews.vue`.
 
-- [ ] **Step 4: Tear down the environment**
+- [x] **Step 4: Tear down the environment**
 
-- [ ] **Step 5: Update chantier tracking**
+- [x] **Step 5: Update chantier tracking**
 
 Update `workflow/reviser-hub/PLAN.md`/`JOURNAL.md` and `workflow/JOURNAL.md` to reflect this correction — don't silently overwrite the existing entries documenting the original mistake, append to them (the mistake and its correction are both part of the real history, consistent with this project's existing convention of recording corrections rather than erasing them — see `workflow/bibliotheque-ensembles/JOURNAL.md`'s own "Correction de ce constat" precedent).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add workflow/reviser-hub/PLAN.md workflow/reviser-hub/JOURNAL.md workflow/JOURNAL.md
@@ -497,3 +497,157 @@ git commit -m "docs(reviser-hub): verification visuelle contre les vraies maquet
 ```
 
 Then follow the `gestion-chantier` skill's closing procedure (ask the user to push, open the PR, wait for CI, merge) — same as any other chantier close-out.
+
+**Done (2026-08-29, commit `a206a17`).** Native env: venv+SQLite backend (port 5052, launched via
+direct `app.run()` rather than `flask run` — the Flask CLI auto-loads the repo-root `.env`,
+Postgres-configured for Docker, by walking up from the worktree), Vite frontend (port 5173,
+`VITE_API_BASE_URL` set inline). Test data: a binder with a heterogeneous set (flashcard+vf, both
+actually graded via `/study/answer`/`/study/grade`, 100% success) and a homogeneous QCM set (left
+unreviewed), plus 2 decks (one backdated overdue, one due today, one card pushed 2 days into the
+future for the `À venir` forecast section). All 3 screens confirmed structurally faithful to their
+mockups, light+dark, desktop (Playwright 1440×900)+mobile (Playwright 375×812 — browser-extension
+window resize non fonctionnel again, same workaround as `bibliotheque-ensembles`/original
+`reviser-hub` round). Routing verified by actually clicking through in a live browser: QCM set →
+`/revision/sets/:id/run`, deck → `/decks/:id/study`, "Mes decks" link → `href="/decks"` in the DOM,
+`/revision/sets/:id/manage` → `/revision/sets/:id` redirect still works. No new defect found. Only
+gap: the pre-existing `AppLayout.vue::currentRouteName` mobile-header French-label gap for these 2
+routes, already documented at the original round's closure — reconfirmed present, still out of
+scope.
+
+---
+
+### Task 9: Real revision-duration tracking (added post-closure, user request)
+
+**Context:** the mockups' "Temps cumulé" (RevisionSetStats), "Durée" column (RevisionSetStats
+session history), and "Temps total d'étude" (RevisionBinderStats) were all deliberately omitted in
+Tasks 5-6 because `StudySession.duration_seconds` is hardcoded `0` at every revision-item creation
+site (`RevisionService.answer_item`/`.grade_item`/`.run_qcm`) — never tracked, so showing it would
+be fabrication. The user has now asked to add real duration tracking end-to-end rather than
+continue omitting it. This is new tracking infrastructure, not a mockup-fidelity fix — the "Série
+en cours" (streak) gap remains genuinely unavailable (no streak concept exists anywhere in the
+codebase for a single revision set/binder) and stays omitted; this task is scoped to duration only.
+
+**Files:**
+- Modify: `backend/app/schemas/revision_schema.py` (`RevisionItemAnswer`, `RevisionGradeRequest`,
+  `RevisionRunRequest` gain an optional `duration_seconds: int = Field(0, ge=0)`; `RevisionSetStats`
+  gains `total_duration_seconds: int`; `SessionHistoryDay` gains `duration_seconds: int`;
+  `RevisionSetSummary`/binder-stats response gains a binder-level `total_duration_seconds: int`)
+- Modify: `backend/app/api/v1/revision.py` (`answer_item`/`grade_item` routes pass
+  `data.duration_seconds` through to the service — `run_qcm` already forwards the whole `data`
+  object, no route change needed there)
+- Modify: `backend/app/services/revision_service.py` (`answer_item`, `grade_item`, `run_qcm` accept
+  and use real `duration_seconds` instead of the hardcoded `0` when creating `StudySession` rows;
+  `run_qcm` receives ONE total duration for the whole batch — split it evenly across the batch's
+  items via `divmod` so per-item rows sum back to the real total exactly, no fabricated per-question
+  precision implied)
+- Modify: `backend/app/services/revision_stats_service.py` (`session_history` sums
+  `duration_seconds` per day; a new `total_duration_seconds` aggregate for `get_set_stats`, summed
+  from the same already-fetched `graded_sessions` — no new query; `get_binder_stats` sums the same
+  across the binder's revision-item sessions — decks are honestly not included, since
+  `flashcard_service.py`'s duration tracking is untouched by this task, out of scope)
+- Test: `backend/tests/test_revision.py` or wherever `answer_item`/`grade_item`/`run_qcm` are
+  already tested (grep first) — new assertions that a posted `duration_seconds` lands on the
+  created `StudySession` row(s), and that `run_qcm`'s total splits correctly (e.g. 100s over 3
+  questions → 34+33+33, sums back to 100)
+- Test: `backend/tests/test_revision_stats.py` — `total_duration_seconds` and
+  `SessionHistoryDay.duration_seconds` reflect real summed durations in a multi-session fixture
+- Modify: `web/src/stores/revision.ts` (`answerItem`/`gradeItem`/`runQcm` accept an optional
+  `durationSeconds` param, included in the POST body; `SetStats`/`BinderStats` types widened to
+  match the new backend fields)
+- Modify: `web/src/views/Reviews/RevisionStudy.vue` (record `Date.now()` when each item is set up
+  via `setupItem()`, compute elapsed seconds at each submit call — `submitVf`/`submitAssoc`/
+  `submitOrdre`/`selfEval` — pass it to the corresponding store call)
+- Modify: `web/src/views/Reviews/QcmRun.vue` (record `Date.now()` in `onMounted`, compute total
+  elapsed seconds at `submit()`, pass it to `runQcm`)
+- Modify: `web/src/views/Reviews/RevisionSetStats.vue` (hero trio becomes 3 columns — add "Temps
+  cumulé" formatted `Xh MM`/`M min` matching the mockup's exact format; session-history table gains
+  a 4th "Durée" column, same format)
+- Modify: `web/src/views/Reviews/RevisionBinderStats.vue` (add a 5th stat card "Temps total
+  d'étude" with the mockup's "Depuis la création" subtitle and `Xh MM` format — added alongside the
+  existing 4, not replacing any of them: `avg_success_rate`/`due_count` were real, reviewed,
+  approved content in Task 6 and this task has no reason to remove them just because the mockup's
+  own 4-slot layout had different priorities before real duration data existed)
+- Test: `web/tests/views/Reviews/RevisionStudy.spec.ts`, `QcmRun.spec.ts` (create if absent,
+  following sibling patterns) — assert a duration is included in the submitted payload
+- Test: `web/tests/views/Reviews/RevisionSetStats.spec.ts`, `RevisionBinderStats.spec.ts` — assert
+  the new duration stat/column renders the formatted value
+
+**Interfaces:**
+- Shared formatting helper: add `formatDuration(seconds: number): string` (e.g. to
+  `web/src/utils/successRate.ts`'s neighborhood, or a new small `duration.ts` util if that file
+  doesn't fit — implementer's call) → `"2h 15"` for ≥1h, `"N min"` (rounded) below. Used by both
+  `RevisionSetStats.vue` and `RevisionBinderStats.vue` — do not duplicate the formatting logic.
+- `run_qcm`'s duration split: verify the exact split logic against a real `divmod` in the failing
+  test before implementing, per this task's TDD requirement below.
+
+**Global constraints** (same as the rest of this plan): TDD strict — write the failing test first
+for both the backend split-logic and the frontend timer-to-payload wiring. `<script setup lang="ts">`
+only, no `any`, API calls only through stores (this branch has twice already had to fix a direct
+`api.*` call introduced in a component — don't repeat it here, `RevisionStudy.vue`/`QcmRun.vue`
+already go through `revisionStore`, just add the new param). Never fabricate: if `run_qcm` receives
+no `duration_seconds` (old client, or a test that doesn't send one), default to `0` exactly as
+before — do not estimate or invent a plausible-looking number. Conventional Commits, French body.
+Never `git push`.
+
+- [ ] **Step 1: Read the current call sites**
+
+Read `RevisionService.answer_item`/`.grade_item`/`.run_qcm` (backend/app/services/revision_service.py:308-425)
+and their 3 route handlers (backend/app/api/v1/revision.py:123-147) in full. Read
+`RevisionStudy.vue`'s `setupItem`/`submitVf`/`submitAssoc`/`submitOrdre`/`selfEval` and
+`QcmRun.vue`'s `onMounted`/`submit` in full — these line numbers may have shifted since this plan
+was written, read the actual current file.
+
+- [ ] **Step 2: Backend — write failing tests**
+
+Add tests asserting: (a) `POST .../study/answer/:id` and `.../study/grade/:id` with a
+`duration_seconds` in the body produce a `StudySession` row with that exact value (not `0`); (b)
+omitting `duration_seconds` still defaults to `0` (no regression, no fabrication); (c)
+`POST .../run` with `duration_seconds: 100` over 3 answered questions produces 3 `StudySession`
+rows whose `duration_seconds` values sum to exactly 100 (e.g. via `divmod`, so no fractional
+seconds lost or invented).
+
+- [ ] **Step 3: Run to verify RED, then implement, then verify GREEN**
+
+- [ ] **Step 4: Backend stats — write failing tests**
+
+`test_revision_stats.py`: a fixture with several sessions carrying real, distinct
+`duration_seconds` values (constructed the same way the existing weekly/day-grouping tests already
+do — direct DB insert with controlled `created_at`, per that file's established pattern) → assert
+`GET /stats/sets/:id` returns `total_duration_seconds` and each `session_history` day's
+`duration_seconds` summed correctly; assert `GET /revision/binders/:id/stats` returns a
+binder-level `total_duration_seconds` summed across its revision sets' sessions.
+
+- [ ] **Step 5: Run to verify RED, then implement, then verify GREEN, then full backend suite**
+
+- [ ] **Step 6: Frontend — widen types, add the timer instrumentation**
+
+Widen `SetStats`/`BinderStats` in `stores/revision.ts`. Add the `durationSeconds` param to
+`answerItem`/`gradeItem`/`runQcm`. Instrument `RevisionStudy.vue`/`QcmRun.vue` with the timers
+described above.
+
+- [ ] **Step 7: Frontend — write failing tests for the timer wiring and the new UI**
+
+Component tests: mocking `Date.now()` (or using fake timers) to assert a specific elapsed duration
+gets included in the API call payload for at least one `RevisionStudy.vue` submit path and for
+`QcmRun.vue`'s submit. Separately, `RevisionSetStats.spec.ts`/`RevisionBinderStats.spec.ts`:
+assert the new duration stat(s) render the `formatDuration` output for a fixture value (e.g. 8100s
+→ "2h 15", 480s → "8 min").
+
+- [ ] **Step 8: Run to verify RED, then implement the UI + `formatDuration`, then verify GREEN**
+
+- [ ] **Step 9: Full suite + type-check**
+
+Run `cd backend && .venv/Scripts/python.exe -m pytest -q` and
+`cd web && npx vitest run && npx vue-tsc -b`.
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add backend/app/schemas/revision_schema.py backend/app/api/v1/revision.py backend/app/services/revision_service.py backend/app/services/revision_stats_service.py backend/tests/ web/src/stores/revision.ts web/src/views/Reviews/RevisionStudy.vue web/src/views/Reviews/QcmRun.vue web/src/views/Reviews/RevisionSetStats.vue web/src/views/Reviews/RevisionBinderStats.vue web/src/utils/ web/tests/
+git commit -m "feat(reviser-hub): duree de revision reelle dans les statistiques (temps cumule, historique, classeur)"
+```
+
+Then real visual re-verification of the 2 touched stats screens (not the whole native-env
+procedure again — just confirm the new duration figures render and look sane against a quick
+manual study session), and the same chantier-tracking append pattern as Task 8 before considering
+the chantier closeable.
