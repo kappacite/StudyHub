@@ -10,36 +10,86 @@ import RevisionBinderStats from '../../../src/views/Reviews/RevisionBinderStats.
 
 function setSummary(id: number, type: string | null, overrides: Record<string, unknown> = {}) {
   return {
-    set_id: id, type, name: `Ensemble ${id}`, items_count: 1, reviewed_items: 1,
-    mastered_count: 0, mastery_rate: 0, avg_success_rate: 0, true_retention: 0,
-    leeches_count: 0, due_count: 0, avg_difficulty: 1, ...overrides,
+    set_id: id,
+    type,
+    name: `Ensemble ${id}`,
+    items_count: 1,
+    reviewed_items: 1,
+    mastered_count: 0,
+    mastery_rate: 0,
+    avg_success_rate: 0,
+    true_retention: 0,
+    leeches_count: 0,
+    due_count: 0,
+    avg_difficulty: 1,
+    ...overrides,
   }
+}
+
+function deckSummary(id: number, name: string, overrides: Record<string, unknown> = {}) {
+  return { id, binder_id: 'b1', name, description: '', reversed: false, tuning_default: 1, card_count: 10, created_at: '2026-01-01', tags: [], ...overrides }
+}
+
+function deckStats(id: number, retentionRate: number, overrides: Record<string, unknown> = {}) {
+  return { deck_id: id, retention_rate: retentionRate, next_review: null, cards_to_review: 3, total_cards: 10, ...overrides }
 }
 
 const stub = { template: '<div />' }
 function createTestRouter(): Router {
   return createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/revision/binders/:id/stats', name: 'RevisionBinderStats', component: stub }],
+    routes: [
+      { path: '/revision/binders/:id/stats', name: 'RevisionBinderStats', component: stub },
+      { path: '/revision/sets/:id/stats', name: 'RevisionSetStats', component: stub },
+      { path: '/decks/:id/study', name: 'StudyDeck', component: stub },
+      { path: '/bibliotheque/:id/reviser', name: 'BinderStudy', component: stub },
+    ],
   })
 }
 
-async function mountBinderStats(
-  sets: ReturnType<typeof setSummary>[],
-  byType: { type: string; sets_count: number; items_count: number; mastered_count: number; mastery_rate: number }[],
-) {
+async function mountBinderStats(opts: {
+  sets?: ReturnType<typeof setSummary>[]
+  byType?: { type: string; sets_count: number; items_count: number; mastered_count: number; mastery_rate: number }[]
+  decks?: ReturnType<typeof deckSummary>[]
+  deckStatsById?: Record<number, ReturnType<typeof deckStats>>
+}) {
+  const sets = opts.sets ?? []
+  const byType = opts.byType ?? []
+  const decks = opts.decks ?? []
+  const deckStatsById = opts.deckStatsById ?? {}
+
   const pinia = createPinia()
   setActivePinia(pinia)
   api.get.mockImplementation((url: string) => {
     if (/\/stats\/binders\//.test(url)) {
       return Promise.resolve({
         data: {
-          binder_id: 'b1', name: 'Classeur', include_descendants: true, sets_count: sets.length,
-          items_count: sets.reduce((n, s) => n + (s.items_count as number), 0), reviewed_items: 0,
-          mastered_count: 0, mastery_rate: 0, avg_success_rate: 0, true_retention: 0, leeches_count: 0,
-          due_count: 0, avg_difficulty: 1, by_type: byType, sets, weakest_sets: sets, verdicts: [],
+          binder_id: 'b1',
+          name: 'Classeur',
+          include_descendants: true,
+          sets_count: sets.length,
+          items_count: sets.reduce((n, s) => n + (s.items_count as number), 0),
+          reviewed_items: 0,
+          mastered_count: 0,
+          mastery_rate: 0,
+          avg_success_rate: 0,
+          true_retention: 0,
+          leeches_count: 0,
+          due_count: 0,
+          avg_difficulty: 1,
+          by_type: byType,
+          sets,
+          weakest_sets: sets,
+          verdicts: [],
         },
       })
+    }
+    if (/\/stats\/decks\//.test(url)) {
+      const id = Number(url.split('/').pop())
+      return Promise.resolve({ data: deckStatsById[id] ?? deckStats(id, 0) })
+    }
+    if (/^\/decks\?/.test(url)) {
+      return Promise.resolve({ data: { data: decks } })
     }
     return Promise.reject(new Error(`URL non mockée: ${url}`))
   })
@@ -48,25 +98,48 @@ async function mountBinderStats(
   await router.isReady()
   const wrapper = mount(RevisionBinderStats, { global: { plugins: [pinia, router] } })
   await flushPromises()
+  await flushPromises()
   return wrapper
 }
 
 describe('RevisionBinderStats', () => {
   beforeEach(() => vi.clearAllMocks())
 
+  it('affiche une ligne par deck classique et par ensemble de revision, triees par maitrise decroissante', async () => {
+    const decks = [deckSummary(1, 'Deck fort'), deckSummary(2, 'Deck faible')]
+    const deckStatsById = {
+      1: deckStats(1, 90),
+      2: deckStats(2, 40),
+    }
+    const sets = [
+      setSummary(10, 'qcm', { name: 'Set fort', mastery_rate: 80, reviewed_items: 5 }),
+      setSummary(20, 'vf', { name: 'Set faible', mastery_rate: 20, reviewed_items: 5 }),
+    ]
+    const wrapper = await mountBinderStats({ decks, deckStatsById, sets })
+
+    const rows = wrapper.findAll('[data-test="merged-row"]')
+    expect(rows).toHaveLength(4)
+    const names = rows.map((r) => r.text())
+    // Ordre attendu par maitrise decroissante : 90 (Deck fort), 80 (Set fort), 40 (Deck faible), 20 (Set faible)
+    expect(names[0]).toContain('Deck fort')
+    expect(names[1]).toContain('Set fort')
+    expect(names[2]).toContain('Deck faible')
+    expect(names[3]).toContain('Set faible')
+  })
+
   it("affiche Mixte pour un ensemble heterogene dans la liste des ensembles", async () => {
-    const wrapper = await mountBinderStats([setSummary(1, null)], [])
+    const wrapper = await mountBinderStats({ sets: [setSummary(1, null)] })
     expect(wrapper.text()).toContain('Mixte')
   })
 
   it('affiche le libelle Flashcards dans la repartition par type', async () => {
-    const wrapper = await mountBinderStats(
-      [setSummary(1, null, { items_count: 2 })],
-      [
+    const wrapper = await mountBinderStats({
+      sets: [setSummary(1, null, { items_count: 2 })],
+      byType: [
         { type: 'flashcard', sets_count: 1, items_count: 1, mastered_count: 0, mastery_rate: 0 },
         { type: 'vf', sets_count: 1, items_count: 1, mastered_count: 0, mastery_rate: 0 },
       ],
-    )
+    })
     expect(wrapper.text()).toContain('Flashcards')
     expect(wrapper.text()).toContain('Vrai / Faux')
   })

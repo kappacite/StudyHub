@@ -177,6 +177,7 @@ import BaseCard from '../../components/ui/base/BaseCard.vue'
 import BaseButton from '../../components/ui/base/BaseButton.vue'
 import { Play } from 'lucide-vue-next'
 import { REVISION_ITEM_TYPE_META } from '../../utils/revisionItemTypeMeta'
+import { successRateTextClass, successRateBgClass } from '../../utils/successRate'
 
 const router = useRouter()
 const route = useRoute()
@@ -238,21 +239,8 @@ function weekBarHeight(week: WeeklyProgressionPoint): number {
   return Math.max(8, Math.round(week.success_rate))
 }
 
-// Seuil unique de banding "taux de reussite" (0-100) applique partout ou
-// cette page colore une valeur de succes -- une seule echelle a 2 paliers
-// (succes/echec), reprise du seuil deja etabli ailleurs dans l'appli plutot
-// que d'en inventer un troisieme (cf. rapport de tache : la maquette ne
-// donne pas de seuils numeriques exploitables, seulement des exemples).
-const SUCCESS_RATE_THRESHOLD = 70
-
-function successRateTextClass(rate: number): string {
-  return rate >= SUCCESS_RATE_THRESHOLD ? 'text-success' : 'text-danger'
-}
-
-function successRateBgClass(rate: number): string {
-  return rate >= SUCCESS_RATE_THRESHOLD ? 'bg-success' : 'bg-danger'
-}
-
+// Banding taux de reussite/maitrise : seuil unique partage via utils/successRate.ts
+// (cf. sa doc -- evite qu'une nouvelle vue reinvente un troisieme seuil).
 function weekBarColorClass(week: WeeklyProgressionPoint): string {
   if (!week.reviews) return 'bg-line'
   return successRateBgClass(week.success_rate)

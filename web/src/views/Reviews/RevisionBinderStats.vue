@@ -1,20 +1,5 @@
 <template>
-  <div class="space-y-6 max-w-3xl mx-auto animate-fade-in">
-    <div class="flex items-center justify-between text-sm font-semibold">
-      <button
-        class="text-ink-muted hover:text-primary dark:text-ink-subtle flex items-center gap-1"
-        @click="goBack"
-      >
-        <ChevronLeft class="w-4 h-4" /> Retour
-      </button>
-      <span
-        v-if="stats"
-        class="text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider"
-      >
-        Stats classeur · {{ stats.name }}
-      </span>
-    </div>
-
+  <PageContainer>
     <div
       v-if="loading"
       class="py-20 text-center text-sm font-semibold text-ink-subtle uppercase tracking-widest"
@@ -23,42 +8,79 @@
     </div>
 
     <template v-else-if="stats">
-      <!-- Inclure le sous-arbre -->
-      <label
-        class="flex items-center gap-2 text-xs font-semibold text-ink-muted dark:text-ink-subtle cursor-pointer"
-      >
-        <input
-          v-model="includeDescendants"
-          type="checkbox"
-          class="rounded border-line text-primary focus:ring-primary"
-          @change="reload"
-        />
-        Inclure les sous-classeurs
-      </label>
-
-      <!-- KPIs -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div
-          v-for="kpi in kpis"
-          :key="kpi.label"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-4"
-        >
-          <p class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">
-            {{ kpi.label }}
+      <!-- En-tête -->
+      <div class="flex items-end justify-between gap-5 flex-wrap">
+        <div class="min-w-0">
+          <p class="font-mono text-tiny tracking-wide text-ink-subtle uppercase mb-1.5">
+            Bibliothèque · Classeur
           </p>
-          <p class="text-xl font-bold mt-1" :class="kpi.class || 'text-ink dark:text-white'">
-            {{ kpi.value }}
-          </p>
-          <p v-if="kpi.hint" class="text-[10px] text-ink-subtle mt-0.5">{{ kpi.hint }}</p>
+          <h1 class="font-display text-display-lg text-ink truncate">{{ stats.name }}</h1>
+          <p class="text-sm text-ink-muted mt-1.5">{{ subtitleText }}</p>
+        </div>
+        <div class="flex items-center gap-4 shrink-0">
+          <label
+            class="flex items-center gap-2 text-xs font-semibold text-ink-muted cursor-pointer"
+          >
+            <BaseToggle
+              data-test="include-descendants-toggle"
+              :model-value="includeDescendants"
+              @update:model-value="onToggleDescendants"
+            />
+            Inclure les sous-classeurs
+          </label>
+          <BaseButton data-test="revise-binder-button" @click="reviseBinder">
+            <template #icon><Play class="w-4 h-4" /></template>
+            Réviser le classeur
+          </BaseButton>
         </div>
       </div>
 
+      <!-- Vue d'ensemble : 4 blocs stat -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <BaseCard padding="lg">
+          <p class="text-xs font-bold uppercase tracking-wide text-ink-subtle mb-2.5">
+            Cartes totales
+          </p>
+          <p class="font-display font-mono text-3xl font-bold text-ink">{{ totalCardsCount }}</p>
+          <p class="text-xs text-ink-muted mt-2">
+            Réparties sur {{ mergedCount }} deck(s) et série(s)
+          </p>
+        </BaseCard>
+        <BaseCard padding="lg">
+          <p class="text-xs font-bold uppercase tracking-wide text-ink-subtle mb-2.5">
+            Cartes maîtrisées
+          </p>
+          <p class="font-display font-mono text-3xl font-bold text-primary">
+            {{ stats.mastered_count }}
+          </p>
+          <p class="text-xs text-ink-muted mt-2">
+            {{ stats.mastery_rate }}% des ensembles de révision
+          </p>
+        </BaseCard>
+        <BaseCard padding="lg">
+          <p class="text-xs font-bold uppercase tracking-wide text-ink-subtle mb-2.5">
+            Taux de réussite moyen
+          </p>
+          <p class="font-display font-mono text-3xl font-bold text-ink">
+            {{ stats.avg_success_rate }}%
+          </p>
+          <p class="text-xs text-ink-muted mt-2">Rétention réelle : {{ stats.true_retention }}%</p>
+        </BaseCard>
+        <BaseCard padding="lg">
+          <p class="text-xs font-bold uppercase tracking-wide text-ink-subtle mb-2.5">À réviser</p>
+          <p
+            class="font-display font-mono text-3xl font-bold"
+            :class="stats.due_count ? 'text-accent' : 'text-ink'"
+          >
+            {{ stats.due_count }}
+          </p>
+          <p class="text-xs text-ink-muted mt-2">{{ leechesHint }}</p>
+        </BaseCard>
+      </div>
+
       <!-- Verdicts actionnables -->
-      <div
-        v-if="stats.verdicts.length"
-        class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-5 space-y-2"
-      >
-        <p class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">À retenir</p>
+      <BaseCard v-if="stats.verdicts.length" padding="lg" class="space-y-2">
+        <p class="text-tiny font-bold text-ink-subtle uppercase tracking-widest">À retenir</p>
         <ul class="space-y-1.5">
           <li
             v-for="(v, i) in stats.verdicts"
@@ -68,14 +90,60 @@
             <span class="text-primary mt-0.5">›</span>{{ v }}
           </li>
         </ul>
-      </div>
+      </BaseCard>
 
-      <!-- Répartition par type -->
-      <div
-        v-if="stats.by_type.length"
-        class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-5"
-      >
-        <p class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-3">
+      <!-- Répartition par deck et série : fusion frontend des decks classiques
+           (SM2, /stats/decks/:id) et des ensembles de révision (/stats/binders/:id) --
+           pas de nouvel endpoint, cf. brief tache 6. -->
+      <BaseCard padding="lg">
+        <h3 class="font-display text-base font-bold text-ink mb-1">
+          Répartition par deck et série
+        </h3>
+        <p class="text-xs text-ink-subtle mb-4">
+          Maîtrise pour les ensembles de révision · rétention (cartes non dues) pour les decks
+          classiques.
+        </p>
+        <div class="flex flex-col">
+          <button
+            v-for="row in mergedRows"
+            :key="row.key"
+            data-test="merged-row"
+            class="w-full flex items-center gap-4 py-3.5 border-b border-dashed border-line last:border-0 text-left hover:bg-surface-soft transition-colors -mx-2 px-2 rounded-lg"
+            @click="openRow(row)"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-semibold text-ink truncate">{{ row.name }}</p>
+              <p class="font-mono text-tiny text-ink-subtle mt-0.5">
+                {{ row.typeLabel }} · {{ row.itemsLabel }} · {{ row.dueLabel }}
+              </p>
+            </div>
+            <div class="w-32 sm:w-56 shrink-0 h-2 rounded-full bg-line overflow-hidden">
+              <div
+                class="h-full rounded-full"
+                :class="row.hasMastery ? successRateBgClass(row.masteryRate) : 'bg-line'"
+                :style="{ width: `${row.hasMastery ? row.masteryRate : 0}%` }"
+              ></div>
+            </div>
+            <span
+              class="w-11 shrink-0 text-right font-mono text-xs font-bold"
+              :class="row.hasMastery ? successRateTextClass(row.masteryRate) : 'text-ink-subtle'"
+              >{{ row.hasMastery ? `${row.masteryRate}%` : '—' }}</span
+            >
+          </button>
+          <p
+            v-if="mergedRows.length === 0"
+            class="text-center py-6 text-xs text-ink-subtle uppercase tracking-wider"
+          >
+            Aucun deck ni ensemble de révision dans ce classeur.
+          </p>
+        </div>
+      </BaseCard>
+
+      <!-- Répartition par type : widget existant (deja corrige pour les ensembles
+           heterogenes), conserve tel quel en section secondaire additive -- pas un
+           remplacement de la liste ci-dessus (decision explicite du brief). -->
+      <BaseCard v-if="stats.by_type.length" padding="lg">
+        <p class="text-tiny font-bold text-ink-subtle uppercase tracking-widest mb-3">
           Répartition par type
         </p>
         <div class="space-y-2">
@@ -96,105 +164,9 @@
             >
           </div>
         </div>
-      </div>
-
-      <!-- Ensembles les plus à risque -->
-      <div
-        v-if="stats.weakest_sets.length"
-        class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-5"
-      >
-        <p class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-3">
-          À surveiller en priorité
-        </p>
-        <div class="space-y-2">
-          <button
-            v-for="s in stats.weakest_sets"
-            :key="s.set_id"
-            class="w-full flex items-center justify-between gap-3 p-3 text-left border border-line dark:border-line rounded-xl hover:border-primary dark:hover:border-primary transition-colors"
-            @click="openSet(s.set_id)"
-          >
-            <span class="min-w-0 flex-1">
-              <span class="text-sm font-semibold text-ink dark:text-ink-subtle truncate block">{{
-                s.name
-              }}</span>
-              <span class="flex flex-wrap gap-1.5 mt-1">
-                <span
-                  v-if="s.leeches_count"
-                  class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger"
-                  >{{ s.leeches_count }} sangsue(s)</span
-                >
-                <span
-                  v-if="s.due_count"
-                  class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-warning-soft text-warning dark:bg-warning-soft dark:text-warning"
-                  >{{ s.due_count }} à réviser</span
-                >
-                <span
-                  class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-surface-soft text-ink-muted dark:bg-surface-soft dark:text-ink-subtle"
-                  >{{ typeLabel(s.type) }}</span
-                >
-              </span>
-            </span>
-            <span class="shrink-0 text-right">
-              <span
-                class="text-xs font-bold"
-                :class="s.mastery_rate >= 70 ? 'text-success' : 'text-danger'"
-                >{{ s.mastery_rate }}%</span
-              >
-              <span class="block text-[10px] text-ink-subtle">maîtrise</span>
-            </span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Tous les ensembles -->
-      <div
-        class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-5"
-      >
-        <p class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-3">
-          Ensembles ({{ stats.sets.length }})
-        </p>
-        <div class="space-y-2">
-          <button
-            v-for="s in stats.sets"
-            :key="s.set_id"
-            class="w-full flex items-center justify-between gap-3 p-3 text-left border border-line dark:border-line rounded-xl hover:border-primary dark:hover:border-primary transition-colors"
-            @click="openSet(s.set_id)"
-          >
-            <span class="min-w-0 flex-1">
-              <span class="text-sm font-semibold text-ink dark:text-ink-subtle truncate block">{{
-                s.name
-              }}</span>
-              <span class="text-[10px] text-ink-subtle"
-                >{{ typeLabel(s.type) }} · {{ s.items_count }} élément(s)</span
-              >
-            </span>
-            <span class="shrink-0 text-right">
-              <span
-                class="text-xs font-bold"
-                :class="
-                  s.reviewed_items
-                    ? s.mastery_rate >= 70
-                      ? 'text-success'
-                      : 'text-danger'
-                    : 'text-ink-subtle'
-                "
-              >
-                {{ s.reviewed_items ? `${s.mastery_rate}%` : '—' }}
-              </span>
-              <span class="block text-[10px] text-ink-subtle">maîtrise</span>
-            </span>
-          </button>
-
-          <p
-            v-if="stats.sets.length === 0"
-            class="text-center py-6 text-xs text-ink-subtle uppercase tracking-wider"
-          >
-            Aucun ensemble de révision dans ce classeur.
-          </p>
-        </div>
-      </div>
+      </BaseCard>
     </template>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
@@ -202,26 +174,86 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useRevisionStore } from '../../stores/revision'
 import type { BinderStats, RevisionType, RevisionItemType } from '../../stores/revision'
+import { useDecksStore } from '../../stores/decks'
+import type { Deck } from '../../stores/decks'
+import api from '../../services/api'
 import { REVISION_ITEM_TYPE_META } from '../../utils/revisionItemTypeMeta'
-import { ChevronLeft } from 'lucide-vue-next'
+import { successRateTextClass, successRateBgClass } from '../../utils/successRate'
+import { PageContainer, BaseCard, BaseButton, BaseToggle } from '../../components/ui/base'
+import { Play } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
 const revisionStore = useRevisionStore()
+const decksStore = useDecksStore()
 
 const binderId = String(route.params.id)
 const loading = ref(true)
 const stats = ref<BinderStats | null>(null)
 const includeDescendants = ref(true)
 
+// Réponse de GET /stats/decks/:id (backend/app/schemas/stats_schema.py::DeckStatsResponse) --
+// pas de "mastered_count" cote deck classique : seul retention_rate (% de cartes
+// non dues) est disponible, cf. brief -- utilise comme proxy de "maitrise" pour
+// la ligne fusionnee d'un deck (pas invente : c'est le seul pourcentage exposé
+// par cet endpoint).
+interface DeckStatsResponse {
+  deck_id: number
+  retention_rate: number
+  next_review: string | null
+  cards_to_review: number
+  total_cards: number
+}
+
+interface DeckWithStats {
+  deck: Deck
+  deckStats: DeckStatsResponse
+}
+
+const binderDecksWithStats = ref<DeckWithStats[]>([])
+
 function typeLabel(t: RevisionType | RevisionItemType | null): string {
   return t ? REVISION_ITEM_TYPE_META[t].label : 'Mixte'
+}
+
+// Reprend le pattern de Binders.vue (decksStore.fetchDecks() puis filtre par
+// binder_id -- pas de nouvel endpoint "decks d'un classeur") et de la forme
+// d'appel /stats/decks/:id de Reviews.vue::fetchDecksStats.
+async function fetchDecksWithStats(): Promise<DeckWithStats[]> {
+  const decks = await decksStore.fetchDecks()
+  const scoped = decks.filter((d) => d.binder_id === binderId)
+  const withStats = await Promise.all(
+    scoped.map(async (deck): Promise<DeckWithStats> => {
+      try {
+        const response = await api.get<DeckStatsResponse>(`/stats/decks/${deck.id}`)
+        return { deck, deckStats: response.data }
+      } catch (e) {
+        console.error(`Erreur stats deck ${deck.id}`, e)
+        return {
+          deck,
+          deckStats: {
+            deck_id: deck.id,
+            retention_rate: 0,
+            next_review: null,
+            cards_to_review: 0,
+            total_cards: deck.card_count,
+          },
+        }
+      }
+    }),
+  )
+  return withStats
 }
 
 async function reload() {
   loading.value = true
   try {
-    stats.value = await revisionStore.fetchBinderStats(binderId, includeDescendants.value)
+    const [binderStats, decksWithStats] = await Promise.all([
+      revisionStore.fetchBinderStats(binderId, includeDescendants.value),
+      fetchDecksWithStats(),
+    ])
+    stats.value = binderStats
+    binderDecksWithStats.value = decksWithStats
   } catch (e) {
     console.error('Erreur de chargement des stats du classeur', e)
   } finally {
@@ -229,59 +261,89 @@ async function reload() {
   }
 }
 
+function onToggleDescendants(value: boolean) {
+  includeDescendants.value = value
+  reload()
+}
+
 onMounted(reload)
 
-const kpis = computed(() => {
+const mergedCount = computed(
+  () => binderDecksWithStats.value.length + (stats.value?.sets_count ?? 0),
+)
+
+const totalCardsCount = computed(() => {
   const s = stats.value
-  if (!s) return []
-  return [
-    {
-      label: 'Maîtrise',
-      value: `${s.mastery_rate}%`,
-      hint: `${s.mastered_count}/${s.items_count} mûrs`,
-    },
-    {
-      label: 'Rétention réelle',
-      value: `${s.true_retention}%`,
-      class: s.true_retention && s.true_retention < 85 ? 'text-rose-500' : 'text-emerald-600',
-      hint: 'cible 85%',
-    },
-    { label: 'Réussite moy.', value: `${s.avg_success_rate}%` },
-    { label: 'Ensembles', value: String(s.sets_count), hint: `${s.items_count} élément(s)` },
-    {
-      label: 'À réviser',
-      value: String(s.due_count),
-      class: s.due_count ? 'text-amber-600' : undefined,
-    },
-    {
-      label: 'Sangsues',
-      value: String(s.leeches_count),
-      class: s.leeches_count ? 'text-rose-500' : undefined,
-    },
-  ]
+  if (!s) return 0
+  const deckCards = binderDecksWithStats.value.reduce((sum, d) => sum + d.deckStats.total_cards, 0)
+  return deckCards + s.items_count
 })
 
-function openSet(setId: number) {
-  router.push(`/revision/sets/${setId}/stats`)
+const leechesHint = computed(() => {
+  const n = stats.value?.leeches_count ?? 0
+  return n > 0 ? `${n} sangsue(s) à traiter` : 'Aucune sangsue détectée'
+})
+
+const subtitleText = computed(
+  () =>
+    `${mergedCount.value} deck(s) et série(s) · statistiques agrégées sur l'ensemble du classeur`,
+)
+
+interface MergedRevisionRow {
+  key: string
+  kind: 'deck' | 'set'
+  id: number
+  name: string
+  typeLabel: string
+  itemsLabel: string
+  dueLabel: string
+  masteryRate: number
+  hasMastery: boolean
 }
 
-function goBack() {
-  router.back()
+// Fusion cote frontend, triee par maitrise decroissante (brique explicite du
+// brief -- pas de tri secondaire, les egalites gardent l'ordre deck-puis-set).
+const mergedRows = computed<MergedRevisionRow[]>(() => {
+  const s = stats.value
+  if (!s) return []
+
+  const deckRows: MergedRevisionRow[] = binderDecksWithStats.value.map(({ deck, deckStats }) => ({
+    key: `deck:${deck.id}`,
+    kind: 'deck',
+    id: deck.id,
+    name: deck.name,
+    typeLabel: 'Deck SM-2',
+    itemsLabel: `${deckStats.total_cards} carte(s)`,
+    dueLabel: `${deckStats.cards_to_review} à réviser`,
+    masteryRate: deckStats.retention_rate,
+    hasMastery: true,
+  }))
+
+  const setRows: MergedRevisionRow[] = s.sets.map((set) => ({
+    key: `set:${set.set_id}`,
+    kind: 'set',
+    id: set.set_id,
+    name: set.name,
+    typeLabel: typeLabel(set.type),
+    itemsLabel: `${set.items_count} élément(s)`,
+    dueLabel: `${set.due_count} à réviser`,
+    masteryRate: set.mastery_rate,
+    hasMastery: set.reviewed_items > 0,
+  }))
+
+  return [...deckRows, ...setRows].sort((a, b) => b.masteryRate - a.masteryRate)
+})
+
+function openRow(row: MergedRevisionRow) {
+  if (row.kind === 'set') {
+    router.push(`/revision/sets/${row.id}/stats`)
+  } else {
+    router.push(`/decks/${row.id}/study`)
+  }
+}
+
+function reviseBinder() {
+  const name = stats.value?.name || 'Classeur'
+  router.push(`/bibliotheque/${binderId}/reviser?name=${encodeURIComponent(name)}`)
 }
 </script>
-
-<style scoped>
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-</style>
