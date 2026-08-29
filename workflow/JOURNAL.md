@@ -1,14 +1,9 @@
 # Journal global — workflow
 
-Chantier actif : bibliotheque-ensembles
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
-- `bibliotheque-ensembles` — **plan 100% coché**, prêt pour push + PR humaine. Vérification
-  visuelle réelle faite (environnement natif, hors Docker) : a trouvé et corrigé un bug
-  bloquant (500 sur toute révision d'un ensemble vraiment hétérogène) plus un défaut mineur
-  (titres mobiles manquants). Suites complètes vertes (backend 21/21 sur `test_revision.py`,
-  frontend 325/325, `vue-tsc` propre).
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
 - `reviser-hub` — pas commencé, débloqué (`backend-ensembles-heterogenes` mergé)
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant
@@ -16,6 +11,10 @@ Chantier actif : bibliotheque-ensembles
 
 ## Historique
 
+- 2026-08-29 — [bibliotheque-ensembles] **PR #128 mergée dans `main`** (squash, `af20f00`),
+  CI verte (6/6 checks). Chantier `clos`. Prochaine action : choisir le prochain chantier à
+  ouvrir (`editeur-notes-notation-ia`, `reviser-hub`, `ecrans-peripheriques-visuels` ou
+  `classes-examens-planning`).
 - 2026-08-29 — [bibliotheque-ensembles] Vérification visuelle réelle faite (environnement natif
   hors Docker, à la demande explicite de l'utilisateur : venv Python local + SQLite pour le
   backend, Vite dev pour le frontend, extension Chrome pour desktop clair/sombre, Playwright

@@ -1,8 +1,8 @@
 # Bibliothèque / classeur — ensembles hétérogènes
 
-Statut : ouvert
+Statut : clos
 Branche : feature/bibliotheque-ensembles
-PR : (aucune)
+PR : #128 (mergée, squash `af20f00`)
 
 ## Pourquoi
 
