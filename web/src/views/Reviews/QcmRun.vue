@@ -183,7 +183,6 @@ const result = ref<RunResult | null>(null)
 const startedAt = ref(Date.now())
 
 onMounted(async () => {
-  startedAt.value = Date.now()
   try {
     const [set, items] = await Promise.all([
       revisionStore.fetchSet(setId),
@@ -194,6 +193,10 @@ onMounted(async () => {
     items.forEach((q) => {
       answers[q.id] = []
     })
+    // Le chrono ne doit mesurer que le temps de reponse reel, pas la latence
+    // reseau/chargement precedente (cf. revue de branche, finding #11) : on le
+    // demarre juste avant que les questions ne soient effectivement affichees.
+    startedAt.value = Date.now()
   } catch (e) {
     console.error('Erreur de chargement du QCM', e)
   } finally {

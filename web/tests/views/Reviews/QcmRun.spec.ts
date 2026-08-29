@@ -96,4 +96,56 @@ describe('QcmRun — duree de revision reelle (Task 9)', () => {
       vi.useRealTimers()
     }
   })
+
+  // Finding #11 (revue de branche reviser-hub) : le chrono demarrait avant l'appel
+  // reseau (fetchSet + fetchStudyItems), facturant la latence de chargement comme
+  // temps d'etude. Il doit demarrer juste avant que les questions ne soient
+  // effectivement affichees.
+  it('ne facture pas la latence reseau/chargement dans la duree mesuree', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+    try {
+      let resolveStudyItems!: (v: unknown) => void
+      const pendingStudyItems = new Promise((resolve) => {
+        resolveStudyItems = resolve
+      })
+      api.get.mockImplementation((url: string) => {
+        if (/\/revision\/sets\/\d+$/.test(url)) return Promise.resolve({ data: SET })
+        if (/\/revision\/sets\/\d+\/study$/.test(url)) return pendingStudyItems
+        return Promise.reject(new Error(`non mocké: ${url}`))
+      })
+      api.post.mockResolvedValue({
+        data: { score: 1, max_score: 1, percentage: 100, results: [] },
+      })
+
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const router = createTestRouter()
+      await router.push('/revision/sets/7/run')
+      await router.isReady()
+      const wrapper = mount(QcmRun, { global: { plugins: [pinia, router] } })
+      await flushPromises()
+
+      // 5s de latence reseau/chargement avant que les questions n'arrivent :
+      // ce temps ne doit pas etre compte dans la duree d'etude.
+      vi.setSystemTime(new Date('2026-01-01T00:00:05.000Z'))
+      resolveStudyItems({ data: [question(1)] })
+      await flushPromises()
+
+      // 12s de temps de reponse reel, une fois les questions affichees.
+      vi.setSystemTime(new Date('2026-01-01T00:00:17.000Z'))
+      const checkboxes = wrapper.findAll('input[type="checkbox"]')
+      await checkboxes[1].setValue(true)
+      const submitButton = wrapper.findAll('button').find((b) => b.text().includes('Valider'))
+      await submitButton?.trigger('click')
+      await flushPromises()
+
+      expect(api.post).toHaveBeenCalledWith('/revision/sets/7/run', {
+        answers: [{ item_id: 1, selected_option_ids: ['b'] }],
+        duration_seconds: 12,
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
