@@ -21,10 +21,13 @@
         </div>
       </div>
       <div class="flex items-center gap-2 shrink-0 flex-wrap">
-        <router-link
-          to="/exam/setup"
-          class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-lg bg-surface text-ink border border-line hover:bg-surface-soft transition-colors"
-        >
+        <!-- Accès secondaires : ce bandeau est le seul point d'entrée « nav » de
+             l'application vers /decks et /exam/setup (cf. task-7-report §4). -->
+        <router-link data-test="link-decks" to="/decks" :class="secondaryLinkClass">
+          <Layers class="w-4 h-4" />
+          Mes decks
+        </router-link>
+        <router-link data-test="link-exam" to="/exam/setup" :class="secondaryLinkClass">
           <ShieldAlert class="w-4 h-4" />
           Examen blanc
         </router-link>
@@ -150,7 +153,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Flame, Play, ShieldAlert } from 'lucide-vue-next'
+import { Flame, Layers, Play, ShieldAlert } from 'lucide-vue-next'
 import {
   PageContainer,
   PageHeader,
@@ -167,6 +170,10 @@ import type { FocusItem } from '../../services/focusService'
 const router = useRouter()
 const focusStore = useFocusStore()
 const revisionStore = useRevisionStore()
+
+/** Accès secondaires du bandeau : ne doivent pas concurrencer « Tout réviser ». */
+const secondaryLinkClass =
+  'inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-lg bg-surface text-ink border border-line hover:bg-surface-soft transition-colors'
 
 // ─── Navigation ─────────────────────────────────────────────────────────────
 

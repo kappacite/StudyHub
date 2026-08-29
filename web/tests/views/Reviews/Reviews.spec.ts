@@ -127,6 +127,7 @@ function createTestRouter(): Router {
       { path: '/revision/sets/:id/study', name: 'RevisionStudy', component: stub },
       { path: '/revision/sets/:id/run', name: 'QcmRun', component: stub },
       { path: '/bibliotheque/:id', name: 'BinderDetail', component: stub },
+      { path: '/decks', name: 'Decks', component: stub },
       { path: '/exam/setup', name: 'ExamSetup', component: stub },
     ],
   })
@@ -246,6 +247,20 @@ describe('Reviews — flux unifie des elements dus', () => {
     await wrapper.get('[data-test="review-all"]').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/decks/10/study')
+  })
+
+  // Ce bandeau est le seul point d'entree « nav » de l'application vers /decks
+  // (gestion des decks + generation IA) et /exam/setup : garde anti-orphelinage.
+  it('expose les acces secondaires vers Mes decks et Examen blanc', async () => {
+    const { wrapper } = await mountReviews()
+
+    const decks = wrapper.get('[data-test="link-decks"]')
+    expect(decks.attributes('href')).toBe('/decks')
+    expect(decks.text()).toContain('Mes decks')
+
+    const exam = wrapper.get('[data-test="link-exam"]')
+    expect(exam.attributes('href')).toBe('/exam/setup')
+    expect(exam.text()).toContain('Examen blanc')
   })
 
   it('la section « A venir » liste les jours a charge non nulle, sans bouton Reviser', async () => {
