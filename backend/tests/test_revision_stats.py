@@ -245,3 +245,43 @@ def test_item_stats_on_heterogeneous_set_item(client, auth_headers):
     body = stats.json
     assert body["reviews"] == 1
     assert len(body["history"]) == 1
+
+
+def test_set_stats_on_heterogeneous_set_counts_all_item_types(client, auth_headers):
+    """Ensemble heterogene avec 2 types d'items notes : get_set_stats doit
+    compter les deux. Avant le correctif, un seul appel de sessions groupe
+    par rset.type (None) ne matchait aucune session reelle -> reviewed_items
+    restait a 0 quel que soit le nombre de passages reels."""
+    set_id = client.post(
+        "/api/v1/revision/sets", json={"name": "Mixte"}, headers=auth_headers
+    ).json["id"]
+    flash = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"type": "flashcard", "payload": {"front": "Chat", "back": "Cat"}},
+        headers=auth_headers,
+    ).json
+    vf = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"type": "vf", "payload": {"assertion": "Le ciel est bleu.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/answer/{flash['id']}",
+        json={"score": 5},
+        headers=auth_headers,
+    )
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/grade/{vf['id']}",
+        json={"answer": {"value": True}},
+        headers=auth_headers,
+    )
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    body = stats.json
+    assert body["type"] is None
+    assert body["items_count"] == 2
+    assert body["reviewed_items"] == 2
+    types = {it["type"] for it in body["items"]}
+    assert types == {"flashcard", "vf"}

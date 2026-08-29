@@ -18,7 +18,7 @@ from app.schemas.revision_schema import (
 )
 
 
-def item_label(set_type: str, payload: dict) -> str:
+def item_label(payload: dict) -> str:
     """Libellé court d'un item selon son type (pour les listes de stats)."""
     payload = payload or {}
     raw = (
@@ -219,8 +219,8 @@ class RevisionStatsService:
             agg.item_summaries.append(
                 RevisionItemSummary(
                     item_id=item.id,
-                    type=item.type or rset.type,
-                    label=item_label(rset.type, item.payload),
+                    type=item.type,
+                    label=item_label(item.payload),
                     reviews=reviews,
                     success_rate=item_success,
                     difficulty=difficulty,
@@ -236,13 +236,16 @@ class RevisionStatsService:
         rset = self._get_set_or_404(set_id, user_id)
         now = datetime.utcnow()
         items = self._item_dao.get_by_set(set_id)
-        item_ids = [i.id for i in items]
 
-        # Une seule requête pour toutes les sessions de l'ensemble (anti-N+1).
-        sessions = self._session_dao.get_for_items(item_ids, rset.type)
-        by_item = {}
-        for s in sessions:
-            by_item.setdefault(s.item_id, []).append(s)
+        # Sessions groupées par type d'ITEM réel (pas par type d'ensemble : un
+        # ensemble hétérogène a des items de types différents, cf. D8/reviser-hub).
+        ids_by_type: dict = {}
+        for it in items:
+            ids_by_type.setdefault(it.type, []).append(it.id)
+        by_item: dict = {}
+        for item_type, ids in ids_by_type.items():
+            for sess in self._session_dao.get_for_items(ids, item_type):
+                by_item.setdefault(sess.item_id, []).append(sess)
 
         agg = self._aggregate_set(rset, items, by_item, now)
         verdicts = self._build_verdicts(
