@@ -321,11 +321,11 @@ class RevisionStatsService:
         for it in items:
             items_by_set.setdefault(it.set_id, []).append(it)
 
-        # Sessions : une requête par type d'ensemble présent (≤ 5), pas par item.
+        # Sessions : une requête par type d'ITEM présent (≤ 6), pas par ensemble.
         ids_by_type: dict = {}
         for s in sets:
             for it in items_by_set.get(s.id, []):
-                ids_by_type.setdefault(s.type, []).append(it.id)
+                ids_by_type.setdefault(it.type, []).append(it.id)
         by_item: dict = {}
         for set_type, ids in ids_by_type.items():
             for sess in self._session_dao.get_for_items(ids, set_type):
@@ -333,7 +333,8 @@ class RevisionStatsService:
 
         # Agrégation par ensemble (réutilise la logique de get_set_stats).
         summaries: list[RevisionSetSummary] = []
-        by_type_acc: dict = {}  # type -> [sets, items, mastered]
+        # type d'item -> {sets: set[int] (ids d'ensembles distincts), items: int, mastered: int}
+        by_type_acc: dict = {}
         tot = _SetAggregate(set=binder)  # accumulateur global
 
         for rset in sets:
@@ -364,18 +365,26 @@ class RevisionStatsService:
             tot.success_rates.extend(agg.success_rates)
             tot.difficulties.extend(agg.difficulties)
 
-            acc = by_type_acc.setdefault(rset.type, [0, 0, 0])
-            acc[0] += 1
-            acc[1] += agg.items_count
-            acc[2] += agg.mastered_count
+            # Répartition par type d'ITEM (pas d'ensemble) : un ensemble
+            # hétérogène compte dans chacun des types que ses items couvrent
+            # réellement (D8/reviser-hub) — pas de nouvelle requête, réutilise
+            # les item_summaries déjà calculés par _aggregate_set.
+            for item_summary in agg.item_summaries:
+                acc = by_type_acc.setdefault(
+                    item_summary.type, {"sets": set(), "items": 0, "mastered": 0}
+                )
+                acc["sets"].add(rset.id)
+                acc["items"] += 1
+                if item_summary.is_mature:
+                    acc["mastered"] += 1
 
         by_type = [
             RevisionTypeBreakdown(
                 type=t,
-                sets_count=a[0],
-                items_count=a[1],
-                mastered_count=a[2],
-                mastery_rate=round(a[2] / a[1] * 100, 1) if a[1] else 0.0,
+                sets_count=len(a["sets"]),
+                items_count=a["items"],
+                mastered_count=a["mastered"],
+                mastery_rate=round(a["mastered"] / a["items"] * 100, 1) if a["items"] else 0.0,
             )
             for t, a in sorted(by_type_acc.items())
         ]
