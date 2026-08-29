@@ -1,17 +1,48 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : bibliotheque-ensembles
 
 ## Chantiers ouverts
 
+- `bibliotheque-ensembles` — **plan 100% coché**, prêt pour push + PR humaine. Vérification
+  visuelle réelle faite (environnement natif, hors Docker) : a trouvé et corrigé un bug
+  bloquant (500 sur toute révision d'un ensemble vraiment hétérogène) plus un défaut mineur
+  (titres mobiles manquants). Suites complètes vertes (backend 21/21 sur `test_revision.py`,
+  frontend 325/325, `vue-tsc` propre).
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
-- `bibliotheque-ensembles` — pas commencé, débloqué (`backend-ensembles-heterogenes` mergé)
 - `reviser-hub` — pas commencé, débloqué (`backend-ensembles-heterogenes` mergé)
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
 
+- 2026-08-29 — [bibliotheque-ensembles] Vérification visuelle réelle faite (environnement natif
+  hors Docker, à la demande explicite de l'utilisateur : venv Python local + SQLite pour le
+  backend, Vite dev pour le frontend, extension Chrome pour desktop clair/sombre, Playwright
+  375×812 pour mobile). A trouvé et corrigé un bug bloquant réel introduit par ce chantier
+  (`RevisionService.answer_item`/`.grade_item` posaient `module=rset.type`, `None` pour un
+  ensemble hétérogène → 500 sur toute tentative de révision réelle d'un tel ensemble ;
+  `NOT NULL` sur `study_sessions.module` jamais couvert par un test avant celui-ci) et un
+  défaut mineur (3 nouvelles routes absentes de la table de titres mobiles de `AppLayout.vue`).
+  Détail complet, dont le diagnostic CSP hors-périmètre du `.env` racine de l'utilisateur :
+  `workflow/bibliotheque-ensembles/JOURNAL.md`. Plan du chantier désormais 100% coché.
+  Prochaine action : demander à l'utilisateur de pousser `feature/bibliotheque-ensembles` puis
+  ouvrir la PR.
+- 2026-08-28 — [bibliotheque-ensembles] Chantier clos (code) : 11 tâches TDD faites (dont 2
+  ajoutées en cours d'exécution suite à des découvertes réelles — `TeacherDashboard.vue`
+  cassé par la nullabilité de `RevisionSet.type`, type `flashcard` manquant dans
+  `RevisionItemModal.vue`), un tour de correction sur `Binders.vue` (2 constats critiques :
+  perte de fonctionnalité dans la fusion Decks+Ensembles, seuil de cartes dues affaibli).
+  Portée finale confirmée propre (`git diff --stat`), 319/319 tests verts. Vérification
+  visuelle non faite (environnement de dev partagé, risque d'interférence jugé supérieur au
+  bénéfice) — écart documenté. Prochaine action : revue finale de branche, puis push + PR.
+- 2026-08-28 — [bibliotheque-ensembles] Chantier activé, branche `feature/bibliotheque-ensembles`
+  créée depuis `main` à jour (worktree `.worktrees/bibliotheque-ensembles`). Choisi comme
+  prochain chantier (recommandation) : premier de l'ordre numérique des flux après le socle
+  backend (flux 3, juste après flux 1), fraîchement débloqué, sans ambiguïté à réconcilier
+  (contrairement à `editeur-notes-notation-ia`, dont le volet frontend est déjà partiellement
+  implémenté sur une branche non mergée — laissé de côté pour l'instant). Prochain point : spec +
+  plan détaillé via brainstorming.
 - 2026-08-28 — [backend-ensembles-heterogenes] **PR #126 mergée dans `main`** (squash,
   `d2b6305`), CI verte (6/6 checks, dont « Backend · migrations (PostgreSQL) » qui valide la
   migration à froid — confirme a posteriori que la vérification manuelle passée localement

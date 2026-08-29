@@ -1,7 +1,7 @@
 # Bibliothèque / classeur — ensembles hétérogènes
 
-Statut : planifié
-Branche : (aucune)
+Statut : ouvert
+Branche : feature/bibliotheque-ensembles
 PR : (aucune)
 
 ## Pourquoi

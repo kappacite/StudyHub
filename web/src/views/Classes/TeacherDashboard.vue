@@ -43,7 +43,7 @@ const newClassIsPublic = ref(false)
 // Notes disponibles comme cibles de tâches (QCM, blurting, lecture)
 const noteOptions = computed(() => notesStore.notes.map(n => ({ id: n.id, title: n.title })))
 const binderOptions = computed(() => bindersStore.binders.map(b => ({ id: b.id, name: b.name })))
-const setOptions = computed(() => revisionStore.sets.map(s => ({ id: s.id, name: `${s.name} (${s.type.toUpperCase()})` })))
+const setOptions = computed(() => revisionStore.sets.map(s => ({ id: s.id, name: `${s.name} (${s.type ? s.type.toUpperCase() : 'MIXTE'})` })))
 
 // Associate binder state
 const showAssociateModal = ref(false)
@@ -487,6 +487,7 @@ function isPast(d: string | null): boolean {
               </button>
               <button
                 @click="openCreateAssignment(cls.id)"
+                data-test="open-create-assignment"
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-strong text-white text-xs font-medium transition"
               >
                 <Plus class="w-3.5 h-3.5" />

@@ -1077,7 +1077,7 @@ const typedSets = computed(() =>
   currentSetType.value ? revisionStore.sets.filter(s => s.type === currentSetType.value) : [],
 )
 
-function openSet(set: { id: number; type: RevisionType }) {
+function openSet(set: { id: number; type: RevisionType | null }) {
   router.push(`/revision/sets/${set.id}/${set.type === 'qcm' ? 'run' : 'study'}`)
 }
 

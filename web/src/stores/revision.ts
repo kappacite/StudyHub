@@ -2,9 +2,12 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '../services/api'
 
-// D3c : types d'ensembles de révision *génériques* (hors flashcard recto/verso,
-// qui reste un Deck). Un ensemble est homogène (un seul type).
+// D8 (bibliotheque-ensembles) : un ensemble peut desormais etre heterogene
+// (type: null) -- le type vit au niveau de l'item. RevisionType reste le type
+// *homogene* d'un ensemble (5 valeurs, historique) ; RevisionItemType est le
+// type d'un item individuel (6 valeurs, ajoute "flashcard").
 export type RevisionType = 'qcm' | 'vf' | 'association' | 'definition' | 'ordre'
+export type RevisionItemType = RevisionType | 'flashcard'
 
 export interface QcmOption {
   id: string
@@ -28,13 +31,16 @@ export interface RevisionItemPayload {
   // definition
   term?: string
   definition?: string
+  // flashcard
+  front?: string
+  back?: string
 }
 
 export interface RevisionSet {
   id: number
   name: string
   description: string | null
-  type: RevisionType
+  type: RevisionType | null
   binder_id: string | null
   tuning_default: number
   is_public: boolean
@@ -45,6 +51,7 @@ export interface RevisionSet {
 export interface RevisionItem {
   id: number
   set_id: number
+  type: RevisionItemType
   payload: RevisionItemPayload
   tuning: number
   position: number
@@ -52,6 +59,8 @@ export interface RevisionItem {
   ease_factor: number
   repetitions: number
   next_review: string
+  created_at: string
+  updated_at: string
 }
 
 export interface RunAnswer {
@@ -199,13 +208,15 @@ export const useRevisionStore = defineStore('revision', () => {
 
   async function createSet(
     name: string,
-    type: RevisionType,
+    type: RevisionType | null,
+    description: string | null = null,
     binderId: string | null = null,
     tuningDefault = 1.0,
   ) {
     const response = await api.post<RevisionSet>('/revision/sets', {
       name,
       type,
+      description,
       binder_id: binderId,
       tuning_default: tuningDefault,
     })
@@ -213,16 +224,19 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
-  async function updateSet(setId: number, patch: Partial<Pick<RevisionSet, 'name' | 'description' | 'tuning_default' | 'binder_id'>>) {
+  async function updateSet(
+    setId: number,
+    patch: Partial<Pick<RevisionSet, 'name' | 'description' | 'tuning_default' | 'binder_id'>>,
+  ) {
     const response = await api.put<RevisionSet>(`/revision/sets/${setId}`, patch)
-    const index = sets.value.findIndex(s => s.id === setId)
+    const index = sets.value.findIndex((s) => s.id === setId)
     if (index !== -1) sets.value[index] = response.data
     return response.data
   }
 
   async function deleteSet(setId: number) {
     await api.delete(`/revision/sets/${setId}`)
-    sets.value = sets.value.filter(s => s.id !== setId)
+    sets.value = sets.value.filter((s) => s.id !== setId)
   }
 
   async function fetchSet(setId: number) {
@@ -235,17 +249,29 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data.data
   }
 
-  async function createItem(setId: number, payload: RevisionItemPayload, tuning = 1.0) {
-    const response = await api.post<RevisionItem>(`/revision/sets/${setId}/items`, {
+  async function createItem(
+    setId: number,
+    payload: RevisionItemPayload,
+    type?: RevisionItemType,
+    tuning = 1.0,
+  ) {
+    const body: { payload: RevisionItemPayload; type?: RevisionItemType; tuning: number } = {
       payload,
       tuning,
-    })
-    const set = sets.value.find(s => s.id === setId)
+    }
+    if (type !== undefined) body.type = type
+    const response = await api.post<RevisionItem>(`/revision/sets/${setId}/items`, body)
+    const set = sets.value.find((s) => s.id === setId)
     if (set) set.item_count++
     return response.data
   }
 
-  async function updateItem(setId: number, itemId: number, payload: RevisionItemPayload, tuning?: number) {
+  async function updateItem(
+    setId: number,
+    itemId: number,
+    payload: RevisionItemPayload,
+    tuning?: number,
+  ) {
     const body: { payload: RevisionItemPayload; tuning?: number } = { payload }
     if (tuning !== undefined) body.tuning = tuning
     const response = await api.put<RevisionItem>(`/revision/sets/${setId}/items/${itemId}`, body)
@@ -254,7 +280,7 @@ export const useRevisionStore = defineStore('revision', () => {
 
   async function deleteItem(setId: number, itemId: number) {
     await api.delete(`/revision/sets/${setId}/items/${itemId}`)
-    const set = sets.value.find(s => s.id === setId)
+    const set = sets.value.find((s) => s.id === setId)
     if (set && set.item_count > 0) set.item_count--
   }
 
