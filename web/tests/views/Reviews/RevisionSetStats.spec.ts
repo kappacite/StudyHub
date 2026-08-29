@@ -48,7 +48,13 @@ interface MountOverrides {
   items?: ReturnType<typeof itemSummary>[]
   grade_distribution?: { again: number; hard: number; good: number; easy: number }
   weekly_progression?: { reviews: number; success_rate: number }[]
-  session_history?: { date: string; reviews: number; success_rate: number }[]
+  session_history?: {
+    date: string
+    reviews: number
+    success_rate: number
+    duration_seconds?: number
+  }[]
+  total_duration_seconds?: number
 }
 
 function defaultWeeklyProgression() {
@@ -80,6 +86,7 @@ async function mountStats(setType: string | null, overrides: MountOverrides = {}
           grade_distribution: overrides.grade_distribution ?? { again: 0, hard: 0, good: 0, easy: 0 },
           weekly_progression: overrides.weekly_progression ?? defaultWeeklyProgression(),
           session_history: overrides.session_history ?? [],
+          total_duration_seconds: overrides.total_duration_seconds ?? 0,
         },
       })
     }
@@ -165,6 +172,24 @@ describe('RevisionSetStats', () => {
     const scores = wrapper.findAll('[data-test="session-score"]')
     expect(scores[0].classes()).toContain('text-success')
     expect(scores[1].classes()).toContain('text-danger')
+  })
+
+  it('affiche le temps cumule reel dans le trio hero, formate en heures/minutes (Task 9)', async () => {
+    const wrapper = await mountStats('qcm', {
+      items: [itemSummary(1, 'qcm')],
+      total_duration_seconds: 8100,
+    })
+    expect(wrapper.text()).toContain('Temps cumulé')
+    expect(wrapper.text()).toContain('2h 15')
+  })
+
+  it('affiche la duree reelle par jour dans la colonne Duree de l historique (Task 9)', async () => {
+    const wrapper = await mountStats('qcm', {
+      items: [itemSummary(1, 'qcm')],
+      session_history: [{ date: '2026-08-29', reviews: 2, success_rate: 50, duration_seconds: 480 }],
+    })
+    const rows = wrapper.findAll('[data-test="session-history-row"]')
+    expect(rows[0].text()).toContain('8 min')
   })
 
   it('colore les barres de progression hebdomadaire avec le meme seuil de reussite (>=70)', async () => {

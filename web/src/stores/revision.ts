@@ -138,6 +138,7 @@ export interface SessionHistoryDay {
   date: string
   reviews: number
   success_rate: number
+  duration_seconds: number
 }
 
 export interface SetStats {
@@ -158,6 +159,7 @@ export interface SetStats {
   grade_distribution: GradeDistribution
   weekly_progression: WeeklyProgressionPoint[]
   session_history: SessionHistoryDay[]
+  total_duration_seconds: number
 }
 
 export interface SetSummary {
@@ -201,6 +203,7 @@ export interface BinderStats {
   sets: SetSummary[]
   weakest_sets: SetSummary[]
   verdicts: string[]
+  total_duration_seconds: number
 }
 
 interface SetsResponse {
@@ -311,23 +314,31 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
-  async function answerItem(setId: number, itemId: number, score: number) {
+  async function answerItem(setId: number, itemId: number, score: number, durationSeconds = 0) {
     const response = await api.post<RevisionItem>(
       `/revision/sets/${setId}/study/answer/${itemId}`,
-      { score },
+      { score, duration_seconds: durationSeconds },
     )
     return response.data
   }
 
-  async function runQcm(setId: number, answers: RunAnswer[]) {
-    const response = await api.post<RunResult>(`/revision/sets/${setId}/run`, { answers })
+  async function runQcm(setId: number, answers: RunAnswer[], durationSeconds = 0) {
+    const response = await api.post<RunResult>(`/revision/sets/${setId}/run`, {
+      answers,
+      duration_seconds: durationSeconds,
+    })
     return response.data
   }
 
-  async function gradeItem(setId: number, itemId: number, answer: Record<string, unknown>) {
+  async function gradeItem(
+    setId: number,
+    itemId: number,
+    answer: Record<string, unknown>,
+    durationSeconds = 0,
+  ) {
     const response = await api.post<{ correct: boolean; item: RevisionItem }>(
       `/revision/sets/${setId}/study/grade/${itemId}`,
-      { answer },
+      { answer, duration_seconds: durationSeconds },
     )
     return response.data
   }

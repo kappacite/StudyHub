@@ -95,7 +95,7 @@
             >
           </div>
 
-          <div class="border-t border-dashed border-line mt-5 pt-4 grid grid-cols-2 gap-4">
+          <div class="border-t border-dashed border-line mt-5 pt-4 grid grid-cols-3 gap-4">
             <div>
               <p class="font-mono text-xl font-bold text-primary">
                 {{ stats.mastered_count }}/{{ stats.items_count }}
@@ -105,6 +105,12 @@
             <div>
               <p class="font-mono text-xl font-bold text-primary">{{ totalReviews }}</p>
               <p class="text-xs text-ink-muted">Révisions totales</p>
+            </div>
+            <div data-test="total-duration-stat">
+              <p class="font-mono text-xl font-bold text-primary">
+                {{ formatDuration(stats.total_duration_seconds) }}
+              </p>
+              <p class="text-xs text-ink-muted">Temps cumulé</p>
             </div>
           </div>
         </BaseCard>
@@ -134,21 +140,25 @@
           Aucune session enregistrée.
         </p>
         <div v-else class="flex flex-col">
-          <div class="grid grid-cols-3 gap-3.5 pb-2.5 border-b border-line">
+          <div class="grid grid-cols-4 gap-3.5 pb-2.5 border-b border-line">
             <span class="font-mono text-[10px] uppercase tracking-wide text-ink-subtle">Date</span>
             <span class="font-mono text-[10px] uppercase tracking-wide text-ink-subtle"
               >Cartes vues</span
             >
+            <span class="font-mono text-[10px] uppercase tracking-wide text-ink-subtle">Durée</span>
             <span class="font-mono text-[10px] uppercase tracking-wide text-ink-subtle">Score</span>
           </div>
           <div
             v-for="day in stats.session_history"
             :key="day.date"
             data-test="session-history-row"
-            class="grid grid-cols-3 gap-3.5 items-center py-3 border-b border-dashed border-line last:border-0"
+            class="grid grid-cols-4 gap-3.5 items-center py-3 border-b border-dashed border-line last:border-0"
           >
             <span class="text-sm text-ink">{{ formatDay(day.date) }}</span>
             <span class="font-mono text-sm text-ink-muted">{{ day.reviews }}</span>
+            <span data-test="session-duration" class="font-mono text-sm text-ink-muted">{{
+              formatDuration(day.duration_seconds)
+            }}</span>
             <span
               data-test="session-score"
               class="font-mono text-sm font-bold"
@@ -178,6 +188,7 @@ import BaseButton from '../../components/ui/base/BaseButton.vue'
 import { Play } from 'lucide-vue-next'
 import { REVISION_ITEM_TYPE_META } from '../../utils/revisionItemTypeMeta'
 import { successRateTextClass, successRateBgClass } from '../../utils/successRate'
+import { formatDuration } from '../../utils/duration'
 
 const router = useRouter()
 const route = useRoute()

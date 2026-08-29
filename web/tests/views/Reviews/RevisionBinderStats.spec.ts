@@ -52,11 +52,13 @@ async function mountBinderStats(opts: {
   byType?: { type: string; sets_count: number; items_count: number; mastered_count: number; mastery_rate: number }[]
   decks?: ReturnType<typeof deckSummary>[]
   deckStatsById?: Record<number, ReturnType<typeof deckStats>>
+  totalDurationSeconds?: number
 }) {
   const sets = opts.sets ?? []
   const byType = opts.byType ?? []
   const decks = opts.decks ?? []
   const deckStatsById = opts.deckStatsById ?? {}
+  const totalDurationSeconds = opts.totalDurationSeconds ?? 0
 
   const pinia = createPinia()
   setActivePinia(pinia)
@@ -81,6 +83,7 @@ async function mountBinderStats(opts: {
           sets,
           weakest_sets: sets,
           verdicts: [],
+          total_duration_seconds: totalDurationSeconds,
         },
       })
     }
@@ -130,6 +133,20 @@ describe('RevisionBinderStats', () => {
   it("affiche Mixte pour un ensemble heterogene dans la liste des ensembles", async () => {
     const wrapper = await mountBinderStats({ sets: [setSummary(1, null)] })
     expect(wrapper.text()).toContain('Mixte')
+  })
+
+  it('affiche le temps total d etude reel comme 5e carte, sans remplacer les 4 existantes (Task 9)', async () => {
+    const wrapper = await mountBinderStats({
+      sets: [setSummary(1, 'qcm')],
+      totalDurationSeconds: 8100,
+    })
+    expect(wrapper.text()).toContain("Temps total d'étude")
+    expect(wrapper.text()).toContain('2h 15')
+    // Les 4 cartes existantes (Task 6, deja revues/approuvees) restent presentes.
+    expect(wrapper.text()).toContain('Cartes totales')
+    expect(wrapper.text()).toContain('Cartes maîtrisées')
+    expect(wrapper.text()).toContain('Taux de réussite moyen')
+    expect(wrapper.text()).toContain('À réviser')
   })
 
   it('affiche le libelle Flashcards dans la repartition par type', async () => {

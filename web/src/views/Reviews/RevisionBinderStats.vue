@@ -35,8 +35,10 @@
         </div>
       </div>
 
-      <!-- Vue d'ensemble : 4 blocs stat -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <!-- Vue d'ensemble : 5 blocs stat (Task 9 : ajout du temps total d'etude,
+           les 4 cartes existantes -- deja revues/approuvees en tache 6 -- sont
+           conservees telles quelles). -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         <BaseCard padding="lg">
           <p class="text-xs font-bold uppercase tracking-wide text-ink-subtle mb-2.5">
             Cartes totales
@@ -75,6 +77,15 @@
             {{ stats.due_count }}
           </p>
           <p class="text-xs text-ink-muted mt-2">{{ leechesHint }}</p>
+        </BaseCard>
+        <BaseCard padding="lg" data-test="total-duration-card">
+          <p class="text-xs font-bold uppercase tracking-wide text-ink-subtle mb-2.5">
+            Temps total d'étude
+          </p>
+          <p class="font-display font-mono text-3xl font-bold text-ink">
+            {{ formatDuration(stats.total_duration_seconds) }}
+          </p>
+          <p class="text-xs text-ink-muted mt-2">Depuis la création</p>
         </BaseCard>
       </div>
 
@@ -178,6 +189,7 @@ import { useDecksStore } from '../../stores/decks'
 import type { Deck, DeckStatsResponse } from '../../stores/decks'
 import { REVISION_ITEM_TYPE_META } from '../../utils/revisionItemTypeMeta'
 import { successRateTextClass, successRateBgClass } from '../../utils/successRate'
+import { formatDuration } from '../../utils/duration'
 import { PageContainer, BaseCard, BaseButton, BaseToggle } from '../../components/ui/base'
 import { Play } from 'lucide-vue-next'
 
