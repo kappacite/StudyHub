@@ -37,3 +37,41 @@
   dans le journal. `ETAT.md` §« Plan global par flux » précise ne plus être mis à jour au fil de
   l'exécution (suivi déplacé vers `workflow/`) — rien à y changer, cohérent avec
   `bibliotheque-ensembles`.
+
+## Correction — les vraies maquettes Direction A n'avaient pas été consultées
+
+Constat post-clôture (revue utilisateur) : la clôture ci-dessus n'avait jamais ouvert les vraies
+maquettes Direction A (`Reviser.dc.html`, `RevisionSetStats.dc.html`, `RevisionBinderStats.dc.html`,
+`RevisionSetManage.dc.html`, extraites de l'artefact Claude Design publié) — répétition de l'erreur
+documentée dans la mémoire `migration-ecran-verify-mockup`. Correctif détaillé :
+`docs/superpowers/specs/2026-08-29-reviser-hub-redesign.md` (corrige/étend le spec original) et
+`docs/superpowers/plans/2026-08-29-reviser-hub-redesign.md` (8 tâches TDD, subagent-driven-development).
+
+- [x] **Task 1-2 (backend + frontend)** : `focus_service.get_today_items` gagne un 4ᵉ bloc
+  (ensembles de révision dus, groupés par ensemble comme `deck_items`) ; `FocusItem.type` élargi
+  à `'revision_set'` côté frontend.
+- [x] **Task 3** : `NoteFeynman.vue` créé (route `notes/:id/feynman`), extrait de l'onglet Feynman
+  de `Reviews.vue` (absent de la maquette `Reviser.dc.html`, qui n'a aucun onglet IA).
+- [x] **Task 4** : génération de flashcards IA déplacée vers `Decks.vue`
+  (`decksStore.generateFlashcards()`).
+- [x] **Task 5** : `RevisionSetStats.vue` reconstruit selon `RevisionSetStats.dc.html` — nouvelle
+  agrégation backend (répartition par notation SM-2, progression 6 semaines, historique par jour),
+  retrait de la section « Éléments » (doublon de `RevisionSetDetail.vue`/`RevisionSetTypeItems.vue`,
+  absente de la maquette).
+- [x] **Task 6** : `RevisionBinderStats.vue` reconstruit selon `RevisionBinderStats.dc.html` —
+  liste fusionnée decks + ensembles triée par maîtrise, « Répartition par type » conservée en
+  complément.
+- [x] **Task 7** : `Reviews.vue` reconstruit en flux unifié « ce qui est dû » (2503→381 lignes) —
+  onglets/tabs, 5 onglets classiques, 4 outils IA et gestion de decks retirés (tous relogés
+  ailleurs, vérifié par grep sur tout `web/src`). Corrige au passage un vrai bug pré-existant :
+  `studyItem()` n'avait aucune branche pour `type: 'revision_set'`.
+- [x] **Task 8** : vérification visuelle réelle contre les vraies maquettes (pas seulement
+  non-régression) — voir journal pour le détail.
+
+Chaque tâche a eu sa revue dédiée (spec + qualité) ; 3 tâches ont nécessité un tour de correction
+(Task 4 et 6 : appel API direct introduit dans un composant, contraire à la règle « API uniquement
+dans stores/services » ; Task 5 : libellé de colonne non conforme à la maquette, 3 seuils de
+couleur différents pour un même concept unifiés en un seul, section « Éléments » retirée ; Task 7 :
+`/decks` avait perdu son seul point d'entrée de navigation après le retrait de la gestion de decks).
+Détail complet des rulings et des revues : ledger `.superpowers/sdd/2026-08-29-reviser-hub-redesign/progress.md`
+(supprimé après clôture, l'historique git fait foi).

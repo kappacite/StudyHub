@@ -10,6 +10,19 @@ Chantier actif : aucun
 
 ## Historique
 
+- 2026-08-29 — [reviser-hub] **Correction et reclôture** : la clôture précédente (ci-dessous)
+  n'avait jamais consulté les vraies maquettes Direction A — répétition de l'erreur documentée
+  dans la mémoire `migration-ecran-verify-mockup`. Correction complète via
+  `docs/superpowers/plans/2026-08-29-reviser-hub-redesign.md` (8 tâches TDD,
+  subagent-driven-development, 3 tours de correction tous conclus propres) : `Reviews.vue`
+  reconstruit en flux unifié « ce qui est dû » (2503→381 lignes), `RevisionSetStats.vue` et
+  `RevisionBinderStats.vue` reconstruits selon leurs maquettes respectives, Feynman et la
+  génération de flashcards IA relogés (`NoteFeynman.vue`, `Decks.vue`). Un vrai bug pré-existant
+  corrigé en passant (routage manquant pour un ensemble de révision dû dans la file unifiée).
+  Vérification visuelle réelle refaite dès cette clôture, cette fois côte à côte avec les vraies
+  maquettes, clair/sombre × desktop/mobile — aucun nouveau défaut. Détail complet :
+  `workflow/reviser-hub/JOURNAL.md`. Prochaine action : demander à l'utilisateur de pousser
+  `feature/reviser-hub`, puis ouvrir la PR.
 - 2026-08-29 — [reviser-hub] Chantier `code clos` : 11 tâches TDD (subagent-driven-development),
   toutes approuvées sans tour de correction. Correctif backend réel trouvé et corrigé (stats
   silencieusement vides pour tout ensemble hétérogène révisé — filtrage par type d'ensemble au

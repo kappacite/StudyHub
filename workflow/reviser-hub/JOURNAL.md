@@ -97,3 +97,82 @@ futur chantier touchant ces écrans.
 
 Suite complète backend/frontend verte tout au long (voir ledger), `vue-tsc -b` propre. Chantier
 prêt à clôturer.
+
+## 2026-08-29 (correction — vraies maquettes jamais consultées, refonte, clôture)
+
+Constat utilisateur en chat : la clôture ci-dessus n'avait jamais ouvert les vraies maquettes
+Direction A (répétition exacte de l'erreur documentée dans la mémoire
+`migration-ecran-verify-mockup` : « ne jamais conclure "pas de restructuration nécessaire" sans
+avoir ouvert la vraie maquette »). Les 4 fichiers `.dc.html` pertinents ont été extraits de
+l'artefact Claude Design publié et lus en entier. Correction actée dans
+`docs/superpowers/specs/2026-08-29-reviser-hub-redesign.md` et exécutée via le plan
+`docs/superpowers/plans/2026-08-29-reviser-hub-redesign.md` (8 tâches TDD,
+`subagent-driven-development`, chaque tâche avec sa propre revue spec+qualité).
+
+**Exécution (8 tâches, résumé — détail complet dans le plan ci-dessus et le ledger SDD)** :
+correctif `focus_service` (ensembles de révision dus, groupés par ensemble), `NoteFeynman.vue`
+créé, génération IA déplacée vers `Decks.vue`, `RevisionSetStats.vue` et `RevisionBinderStats.vue`
+reconstruits selon leurs maquettes respectives (nouvelle agrégation backend : répartition SM-2,
+progression 6 semaines, historique par jour), `Reviews.vue` reconstruit en flux unifié
+(2503→381 lignes, tabs/IA/gestion-decks retirés — tous relogés ailleurs, vérifié par grep sur tout
+`web/src`).
+
+**3 tours de correction, tous conclus propres** :
+- Task 4 (génération IA sur `Decks.vue`) et Task 6 (`RevisionBinderStats.vue`) : un appel API
+  direct (`api.post`/`api.get`) avait été introduit dans le composant — violation de la règle
+  projet « API uniquement dans stores/services ». Corrigé en ajoutant une méthode dédiée au store
+  concerné (`decksStore.generateFlashcards()`, `decksStore.fetchDeckStats()`).
+- Task 5 (`RevisionSetStats.vue`) : colonne « Révisions » renommée « Cartes vues » (fidélité
+  maquette), 3 seuils de couleur de taux de réussite différents dans le même fichier unifiés en un
+  seul (`>=70`, util partagé `successRate.ts`), section « Éléments » (édition d'item, absente de
+  la maquette) retirée — elle faisait doublon avec `RevisionSetDetail.vue`/`RevisionSetTypeItems.vue`,
+  qui gèrent déjà cette fonctionnalité nativement.
+- Task 7 (`Reviews.vue`) : après retrait de la section gestion-de-decks, `/decks` n'avait plus
+  aucun point d'entrée de navigation (le seul lien restant vivait dans une vue morte, jamais
+  routée). Corrigé en ajoutant un lien secondaire « Mes decks » dans le bandeau, symétrique au lien
+  « Examen blanc » déjà conservé pour la même raison.
+
+Un vrai bug pré-existant corrigé en passant (effet de bord de la Task 7, pas un objectif du plan) :
+`studyItem()` dans l'ancien `Reviews.vue` n'avait aucune branche pour `type: 'revision_set'` —
+cliquer sur un ensemble de révision dû dans la file unifiée ne faisait donc rien. La revue de la
+Task 7 (modèle le plus capable, vu l'ampleur de la suppression) a vérifié ce point en confirmant
+que le nouveau code reproduit exactement la logique de routage de l'ancien `openSet()`.
+
+**Vérification visuelle réelle contre les vraies maquettes (Task 8)** — environnement natif hors
+Docker (venv Python local + SQLite, port 5052 ; Vite dev, port 5173 ; extension Chrome pour le
+clair/sombre desktop ; script Playwright dédié pour 375×812, le redimensionnement de fenêtre du
+navigateur s'étant à nouveau avéré non fonctionnel sur cette machine — même contournement que
+`bibliotheque-ensembles`). Note technique : `flask run` charge automatiquement le `.env` racine du
+dépôt (Postgres, pour Docker) en remontant l'arborescence depuis le worktree — contourné en
+lançant `app.run()` directement (sans le CLI Flask) plutôt que `flask run`.
+
+Données de test créées via l'API : un classeur, un ensemble hétérogène (flashcard + vrai/faux,
+réellement noté via `/study/answer`/`/study/grade`, 100% de réussite), un ensemble QCM homogène
+non révisé, un classeur avec 2 decks (un en retard, un dû aujourd'hui, un troisième horodaté dans
+le futur pour peupler la section « À venir »).
+
+**Confirmé visuellement, côte à côte avec les maquettes, clair/sombre × desktop/mobile, sans
+trouver de nouveau défaut** :
+- `Reviser.dc.html` vs `Reviews.vue` : bandeau résumé, sections En retard/Aujourd'hui/À venir,
+  badges de type, liens secondaires « Mes decks »/« Examen blanc » — structure conforme.
+- Routage vérifié en cliquant réellement : ensemble QCM homogène → `/revision/sets/:id/run` ;
+  deck → `/decks/:id/study` ; lien « Mes decks » → `href="/decks"` confirmé dans le DOM.
+- `RevisionSetStats.dc.html` vs `RevisionSetStats.vue` : badge « Mixte », 100% de réussite réel
+  (preuve directe que le correctif backend d'origine tient toujours), barres SM-2 (1 item en
+  « Facile »), progression 6 semaines, historique « Cartes vues » — pas de section « Éléments ».
+- `RevisionBinderStats.dc.html` vs `RevisionBinderStats.vue` : 4 cartes stat, liste fusionnée
+  deck+ensemble triée par maîtrise (0% de maîtrise cohérent — un item noté une fois n'est pas
+  encore « mûr », distinct du taux de réussite à 100%), « Répartition par type » conservée en
+  complément.
+- Redirection `/revision/sets/:id/manage` → `/revision/sets/:id` toujours fonctionnelle (Task 9 de
+  l'ancien plan, non touchée par cette correction).
+
+**Écart pré-existant reconfirmé, toujours hors périmètre** : sur mobile, l'en-tête de
+`RevisionSetStats.vue` et `RevisionBinderStats.vue` affiche encore le nom de route JS brut au lieu
+d'un libellé français (même gap que documenté à la clôture initiale ci-dessus — `AppLayout.vue::
+currentRouteName` n'a jamais été mis à jour pour ces 2 routes, aucune des 8 tâches de cette
+correction n'y touchait).
+
+Suite complète verte tout au long (voir ledger `.superpowers/sdd/2026-08-29-reviser-hub-redesign/progress.md`
+pour le détail tâche par tâche), `vue-tsc -b` propre. Chantier prêt à clôturer — cette fois contre
+les vraies maquettes.
