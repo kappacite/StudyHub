@@ -1,38 +1,62 @@
 <template>
-  <div 
-    class="w-full flex flex-col"
-    :class="[isEditMode ? 'h-full overflow-hidden' : 'min-h-full']"
-  >
+  <div class="w-full flex flex-col" :class="[isEditMode ? 'h-full overflow-hidden' : 'min-h-full']">
     <!-- Loading State -->
-    <div v-if="loading" class="flex-1 flex flex-col items-center justify-center py-20 gap-3 no-print bg-surface-soft dark:bg-[#070913] h-full w-full">
-      <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    <div
+      v-if="loading"
+      class="flex-1 flex flex-col items-center justify-center py-20 gap-3 no-print bg-surface-soft dark:bg-[#070913] h-full w-full"
+    >
+      <svg
+        class="animate-spin h-8 w-8 text-primary"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
       </svg>
-      <span class="text-sm font-semibold text-ink-subtle uppercase tracking-widest text-ink-subtle">Ouverture de la note...</span>
+      <span class="text-sm font-semibold text-ink-subtle uppercase tracking-widest text-ink-subtle"
+        >Ouverture de la note...</span
+      >
     </div>
 
     <!-- Main Content -->
-    <div v-else class="flex-1 flex flex-col w-full animate-fade-in print:h-auto print:overflow-visible" :class="[isEditMode ? 'overflow-hidden' : '']">
-
+    <div
+      v-else
+      class="flex-1 flex flex-col w-full animate-fade-in print:h-auto print:overflow-visible"
+      :class="[isEditMode ? 'overflow-hidden' : '']"
+    >
       <!-- Bannière lecture seule : note partagée par un cours -->
-      <div v-if="isReadOnly" class="flex items-center justify-between gap-2 px-6 py-2 bg-warning-soft dark:bg-warning-soft border-b border-warning dark:border-warning text-warning dark:text-warning text-xs font-semibold no-print">
+      <div
+        v-if="isReadOnly"
+        class="flex items-center justify-between gap-2 px-6 py-2 bg-warning-soft dark:bg-warning-soft border-b border-warning dark:border-warning text-warning dark:text-warning text-xs font-semibold no-print"
+      >
         <span class="flex items-center gap-2">
           <Eye class="w-4 h-4" />
           Note partagée par un cours — lecture seule.
         </span>
         <span class="flex items-center gap-2">
           <button
-            @click="hideFromView"
             class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-warning dark:border-warning font-semibold hover:bg-warning-soft dark:hover:bg-warning-soft active:scale-95 transition-all"
+            @click="hideFromView"
           >
             <EyeOff class="w-3.5 h-3.5" />
             Cacher
           </button>
           <button
-            @click="copyForEditing"
             :disabled="isCopying"
             class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-warning text-white font-semibold hover:bg-warning active:scale-95 transition-all disabled:opacity-50"
+            @click="copyForEditing"
           >
             <Copy class="w-3.5 h-3.5" />
             {{ isCopying ? 'Copie…' : 'Copier pour modifier' }}
@@ -42,576 +66,672 @@
 
       <!-- Split-Screen Outer Container -->
       <div class="flex-1 flex w-full h-full overflow-hidden print:h-auto print:overflow-visible">
-        
         <!-- Left Pane: PDF Visualizer removed -->
-        
+
         <!-- Right Pane: Note Content -->
-        <div class="flex-1 flex flex-col overflow-hidden h-full print:h-auto print:overflow-visible bg-surface dark:bg-surface-soft">
-          
+        <div
+          class="flex-1 flex flex-col overflow-hidden h-full print:h-auto print:overflow-visible bg-surface dark:bg-surface-soft"
+        >
           <!-- 1. FULL VIEWPORT EDIT MODE -->
-          <div v-if="isEditMode" class="flex-1 flex flex-col bg-surface dark:bg-surface-soft overflow-hidden">
-        
-        <!-- Header Toolbar -->
-        <div class="flex flex-col border-b border-line dark:border-line bg-surface dark:bg-surface-soft z-10 no-print">
-          
-          <!-- Row 1: Global Actions & Title -->
-          <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-line-soft dark:border-line">
-            <div class="flex min-w-[18rem] flex-1 items-center gap-4">
-              <!-- Sidebar toggle -->
-              <button 
-                @click="toggleShortcutSidebar" 
-                class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-line text-ink-muted transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary dark:border-line dark:text-ink-subtle dark:hover:border-primary dark:hover:bg-primary-soft dark:hover:text-primary"
-                type="button"
-                title="Afficher la barre de raccourcis"
+          <div
+            v-if="isEditMode"
+            class="flex-1 flex flex-col bg-surface dark:bg-surface-soft overflow-hidden"
+          >
+            <!-- Header Toolbar -->
+            <div
+              class="flex flex-col border-b border-line dark:border-line bg-surface dark:bg-surface-soft z-10 no-print"
+            >
+              <!-- Row 1: Global Actions & Title -->
+              <div
+                class="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-line-soft dark:border-line"
               >
-                <Menu class="h-5 w-5" />
-              </button>
-              
-              <div class="h-5 w-[1px] bg-line dark:bg-surface-soft"></div>
+                <div class="flex min-w-[18rem] flex-1 items-center gap-4">
+                  <!-- Sidebar toggle -->
+                  <button
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-line text-ink-muted transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary dark:border-line dark:text-ink-subtle dark:hover:border-primary dark:hover:bg-primary-soft dark:hover:text-primary"
+                    type="button"
+                    title="Afficher la barre de raccourcis"
+                    @click="toggleShortcutSidebar"
+                  >
+                    <Menu class="h-5 w-5" />
+                  </button>
 
-              <!-- Title Input (Direct inline edit) -->
-              <input 
-                type="text" 
-                v-model="title" 
-                placeholder="Titre de la note..."
-                class="block flex-1 max-w-xl text-lg font-bold bg-transparent border-0 focus:ring-0 focus:outline-none placeholder-slate-300 dark:placeholder-slate-700 py-1"
-                @input="triggerAutoSave"
-              />
-            </div>
+                  <div class="h-5 w-[1px] bg-line dark:bg-surface-soft"></div>
 
-            <!-- Header Right Controls -->
-            <div class="flex max-w-full flex-wrap items-center justify-end gap-2">
-              <!-- Save Status -->
-              <span class="text-xs font-semibold text-ink-subtle flex items-center gap-1.5 mr-2">
-                <span class="w-2 h-2 rounded-full bg-success" :class="[isSaving ? 'animate-pulse' : '']"></span>
-                {{ saveStatus }}
-              </span>
+                  <!-- Title Input (Direct inline edit) -->
+                  <input
+                    v-model="title"
+                    type="text"
+                    placeholder="Titre de la note..."
+                    class="block flex-1 max-w-xl text-lg font-bold bg-transparent border-0 focus:ring-0 focus:outline-none placeholder-slate-300 dark:placeholder-slate-700 py-1"
+                    @input="triggerAutoSave"
+                  />
+                </div>
 
-              <!-- Binder select -->
-              <select 
-                v-model="binderId"
-                class="px-2.5 py-1.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold transition-all"
-                @change="triggerAutoSave"
-              >
-                <option :value="null">Général (Aucun)</option>
-                <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">{{ b.name }}</option>
-              </select>
+                <!-- Header Right Controls -->
+                <div class="flex max-w-full flex-wrap items-center justify-end gap-2">
+                  <!-- Save Status -->
+                  <span
+                    class="text-xs font-semibold text-ink-subtle flex items-center gap-1.5 mr-2"
+                  >
+                    <span
+                      class="w-2 h-2 rounded-full bg-success"
+                      :class="[isSaving ? 'animate-pulse' : '']"
+                    ></span>
+                    {{ saveStatus }}
+                  </span>
 
-              <div class="w-48 sm:w-56">
-                <TagSelector v-model="noteTags" compact @change="saveNoteTags" />
+                  <!-- Binder select -->
+                  <select
+                    v-model="binderId"
+                    class="px-2.5 py-1.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold transition-all"
+                    @change="triggerAutoSave"
+                  >
+                    <option :value="null">Général (Aucun)</option>
+                    <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">
+                      {{ b.name }}
+                    </option>
+                  </select>
+
+                  <div class="w-48 sm:w-56">
+                    <TagSelector v-model="noteTags" compact @change="saveNoteTags" />
+                  </div>
+
+                  <!-- Collapsible Settings Toggle (Context & Links) -->
+                  <button
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
+                    :class="[
+                      showSettings
+                        ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
+                        : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft',
+                    ]"
+                    @click="showSettings = !showSettings"
+                  >
+                    <Compass class="w-3.5 h-3.5" />
+                    Contexte / Liens
+                  </button>
+
+                  <!-- Live Preview Toggle -->
+                  <button
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
+                    :class="[
+                      isLivePreviewActive
+                        ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
+                        : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink-muted dark:text-ink-subtle',
+                    ]"
+                    type="button"
+                    title="Afficher l'aperçu en temps réel côte à côte"
+                    @click="isLivePreviewActive = !isLivePreviewActive"
+                  >
+                    <Columns class="w-3.5 h-3.5" />
+                    Aperçu
+                  </button>
+
+                  <!-- View Toggler -->
+                  <button
+                    class="inline-flex items-center gap-2 px-4 py-1.5 border border-line dark:border-line rounded-xl text-xs font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
+                    @click="toggleMode"
+                  >
+                    <Eye class="w-3.5 h-3.5 text-primary" />
+                    Visualiser
+                  </button>
+
+                  <!-- Bouton Partage -->
+                  <div class="relative">
+                    <button
+                      type="button"
+                      :title="
+                        isPublic
+                          ? 'Note publique — cliquer pour rendre privée'
+                          : 'Rendre cette note publique'
+                      "
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
+                      :class="[
+                        isPublic
+                          ? 'border-success bg-success-soft text-success dark:border-success dark:bg-success-soft dark:text-success'
+                          : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink-muted dark:text-ink-subtle',
+                      ]"
+                      @click="handleShareClick"
+                    >
+                      <Globe class="w-3.5 h-3.5" />
+                      {{ isPublic ? 'Public' : 'Privé' }}
+                    </button>
+
+                    <!-- Popup lien de partage -->
+                    <Transition name="popup">
+                      <div
+                        v-if="sharePopupVisible && isPublic"
+                        class="absolute right-0 top-full mt-2 w-80 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl shadow-xl p-4 z-50"
+                      >
+                        <div class="flex items-center justify-between mb-3">
+                          <span
+                            class="text-xs font-bold text-ink dark:text-ink-subtle flex items-center gap-1.5"
+                          >
+                            <Globe class="w-3.5 h-3.5 text-success" />
+                            Note publique
+                          </span>
+                          <button
+                            class="text-ink-subtle hover:text-ink-muted transition-colors"
+                            @click="sharePopupVisible = false"
+                          >
+                            <X class="w-4 h-4" />
+                          </button>
+                        </div>
+                        <p class="text-[11px] text-ink-muted dark:text-ink-subtle mb-3">
+                          Toute personne avec ce lien peut lire cette note.
+                        </p>
+                        <div
+                          class="flex items-center gap-2 bg-surface-soft dark:bg-surface-soft rounded-xl px-3 py-2"
+                        >
+                          <span
+                            class="text-[10px] font-mono text-ink-muted dark:text-ink-subtle flex-1 truncate"
+                            >{{ shareUrl }}</span
+                          >
+                          <button
+                            class="shrink-0 px-2.5 py-1 bg-primary hover:bg-primary-strong text-white text-xs font-bold rounded-lg transition-all active:scale-95"
+                            @click="copyShareLink"
+                          >
+                            {{ shareCopied ? 'Copié !' : 'Copier' }}
+                          </button>
+                        </div>
+                        <button
+                          class="mt-3 w-full text-xs text-danger hover:text-danger font-semibold transition-colors"
+                          @click="togglePublic"
+                        >
+                          Rendre privée
+                        </button>
+                      </div>
+                    </Transition>
+                  </div>
+
+                  <!-- Guide Button (Edit Mode) -->
+                  <button
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-line dark:border-line rounded-xl text-xs font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
+                    type="button"
+                    @click="showHelpModal = true"
+                  >
+                    <HelpCircle class="w-3.5 h-3.5 text-primary" />
+                    Guide
+                  </button>
+                </div>
               </div>
 
-              <!-- Collapsible Settings Toggle (Context & Links) -->
-              <button 
-                @click="showSettings = !showSettings"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
-                :class="[
-                  showSettings 
-                    ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' 
-                    : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft'
-                ]"
+              <!-- Row 2: Formatting Toolbar -->
+              <div
+                class="flex flex-wrap items-center gap-1.5 px-6 py-2 bg-surface-soft dark:bg-surface-soft"
               >
-                <Compass class="w-3.5 h-3.5" />
-                Contexte / Liens
-              </button>
-
-              <!-- Live Preview Toggle -->
-              <button 
-                @click="isLivePreviewActive = !isLivePreviewActive"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
-                :class="[
-                  isLivePreviewActive 
-                    ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary' 
-                    : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink-muted dark:text-ink-subtle'
-                ]"
-                type="button"
-                title="Afficher l'aperçu en temps réel côte à côte"
-              >
-                <Columns class="w-3.5 h-3.5" />
-                Aperçu
-              </button>
-
-              <!-- View Toggler -->
-              <button 
-                @click="toggleMode"
-                class="inline-flex items-center gap-2 px-4 py-1.5 border border-line dark:border-line rounded-xl text-xs font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
-              >
-                <Eye class="w-3.5 h-3.5 text-primary" />
-                Visualiser
-              </button>
-
-              <!-- Bouton Partage -->
-              <div class="relative">
-                <button
-                  @click="handleShareClick"
-                  type="button"
-                  :title="isPublic ? 'Note publique — cliquer pour rendre privée' : 'Rendre cette note publique'"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
-                  :class="[
-                    isPublic
-                      ? 'border-success bg-success-soft text-success dark:border-success dark:bg-success-soft dark:text-success'
-                      : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink-muted dark:text-ink-subtle'
-                  ]"
+                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2"
+                  >Format</span
                 >
-                  <Globe class="w-3.5 h-3.5" />
-                  {{ isPublic ? 'Public' : 'Privé' }}
+                <button
+                  v-for="btn in formatButtons"
+                  :key="btn.label"
+                  type="button"
+                  class="p-2 text-xs font-semibold text-ink-muted dark:text-ink-subtle hover:text-primary hover:bg-surface dark:hover:bg-surface-soft rounded-lg transition-all"
+                  :title="btn.label"
+                  @click="insertText(btn.prefix, btn.suffix)"
+                >
+                  {{ btn.label }}
                 </button>
 
-                <!-- Popup lien de partage -->
-                <Transition name="popup">
-                  <div
-                    v-if="sharePopupVisible && isPublic"
-                    class="absolute right-0 top-full mt-2 w-80 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl shadow-xl p-4 z-50"
+                <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
+
+                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2"
+                  >LaTeX</span
+                >
+                <button
+                  v-for="btn in latexButtons"
+                  :key="btn.label"
+                  type="button"
+                  class="p-2 text-xs font-mono font-bold text-ink-muted dark:text-ink-subtle hover:text-primary hover:bg-surface dark:hover:bg-surface-soft rounded-lg transition-all"
+                  :title="btn.label"
+                  @click="insertText(btn.prefix, btn.suffix)"
+                >
+                  {{ btn.label }}
+                </button>
+
+                <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
+
+                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2"
+                  >Code</span
+                >
+                <button
+                  v-for="btn in codeButtons"
+                  :key="btn.label"
+                  type="button"
+                  class="p-2 text-xs font-mono font-bold text-ink-muted dark:text-ink-subtle hover:text-primary hover:bg-surface dark:hover:bg-surface-soft rounded-lg transition-all"
+                  :title="btn.label"
+                  @click="insertText(btn.prefix, btn.suffix)"
+                >
+                  {{ btn.label }}
+                </button>
+
+                <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
+
+                <!-- Smart Space: Definition Tooltip insertion -->
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-success dark:text-success bg-success-soft dark:bg-success-soft border border-success dark:border-success rounded-xl hover:bg-success-soft dark:hover:bg-success-soft active:scale-95 transition-all"
+                  title="Associer une définition en info-bulle au texte sélectionné"
+                  @click="insertDefinitionTooltip"
+                >
+                  <BookOpen class="w-3.5 h-3.5" />
+                  Définition (Info-bulle)
+                </button>
+
+                <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
+
+                <!-- Insertion de diagramme -->
+                <div class="relative inline-block">
+                  <select
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft border border-primary dark:border-primary rounded-xl hover:bg-primary-soft dark:hover:bg-primary-soft transition-all focus:outline-none cursor-pointer"
+                    @change="insertDiagramTag($event)"
                   >
-                    <div class="flex items-center justify-between mb-3">
-                      <span class="text-xs font-bold text-ink dark:text-ink-subtle flex items-center gap-1.5">
-                        <Globe class="w-3.5 h-3.5 text-success" />
-                        Note publique
-                      </span>
-                      <button @click="sharePopupVisible = false" class="text-ink-subtle hover:text-ink-muted transition-colors">
-                        <X class="w-4 h-4" />
-                      </button>
-                    </div>
-                    <p class="text-[11px] text-ink-muted dark:text-ink-subtle mb-3">Toute personne avec ce lien peut lire cette note.</p>
-                    <div class="flex items-center gap-2 bg-surface-soft dark:bg-surface-soft rounded-xl px-3 py-2">
-                      <span class="text-[10px] font-mono text-ink-muted dark:text-ink-subtle flex-1 truncate">{{ shareUrl }}</span>
-                      <button
-                        @click="copyShareLink"
-                        class="shrink-0 px-2.5 py-1 bg-primary hover:bg-primary-strong text-white text-xs font-bold rounded-lg transition-all active:scale-95"
-                      >
-                        {{ shareCopied ? 'Copié !' : 'Copier' }}
-                      </button>
-                    </div>
-                    <button
-                      @click="togglePublic"
-                      class="mt-3 w-full text-xs text-danger hover:text-danger font-semibold transition-colors"
+                    <option value="" disabled selected>Insérer un diagramme...</option>
+                    <option v-for="diag in allUserDiagrams" :key="diag.id" :value="diag.id">
+                      {{ diag.title }}
+                    </option>
+                    <option v-if="allUserDiagrams.length === 0" disabled>Aucun diagramme</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Sliding/Collapsible Drawer for Context and Links -->
+              <div
+                v-if="showSettings"
+                class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface-soft dark:bg-surface-soft border-b border-line dark:border-line transition-all duration-300 animate-slide-down"
+              >
+                <!-- 1. Context Input Section -->
+                <div class="space-y-2">
+                  <h3
+                    class="text-xs font-bold text-warning dark:text-warning uppercase tracking-wider flex items-center gap-1.5"
+                  >
+                    <Compass class="w-4 h-4" />
+                    Contexte de la note
+                  </h3>
+                  <textarea
+                    v-model="noteContext"
+                    placeholder="Historique, cadre théorique ou d'apprentissage..."
+                    rows="3"
+                    class="w-full p-3 text-xs bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-ink dark:text-ink-subtle resize-y"
+                    @input="triggerAutoSave"
+                  ></textarea>
+                </div>
+
+                <!-- 2. Linked Notes Section -->
+                <div class="space-y-3">
+                  <h3
+                    class="text-xs font-bold text-primary dark:text-primary uppercase tracking-wider flex items-center gap-1.5"
+                  >
+                    <LinkIcon class="w-4 h-4" />
+                    Lier à d'autres notes
+                  </h3>
+
+                  <div class="flex gap-2">
+                    <select
+                      v-model="selectedLinkTarget"
+                      class="flex-1 px-3 py-2 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold"
                     >
-                      Rendre privée
+                      <option :value="null" disabled>Sélectionner une note...</option>
+                      <option v-for="item in linkableNotes" :key="item.id" :value="item.id">
+                        {{ item.title }}
+                      </option>
+                    </select>
+
+                    <button
+                      type="button"
+                      class="px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl active:scale-95 transition-all shadow-sm"
+                      @click="addNoteLink"
+                    >
+                      Lier
                     </button>
                   </div>
-                </Transition>
+
+                  <!-- Linked notes badges -->
+                  <div
+                    v-if="noteLinks.length > 0"
+                    class="flex flex-wrap gap-1.5 pt-1 max-h-[80px] overflow-y-auto"
+                  >
+                    <span
+                      v-for="linkedId in noteLinks"
+                      :key="linkedId"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface border border-line dark:bg-surface-soft dark:border-line text-ink dark:text-ink-subtle text-[11px] font-semibold rounded-lg shadow-sm"
+                    >
+                      {{ getNoteTitle(linkedId) }}
+                      <button
+                        type="button"
+                        class="text-ink-subtle hover:text-danger transition-colors"
+                        @click="removeNoteLink(linkedId)"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Split Workspace (Editor + optional Live Preview) -->
+            <div class="flex-1 flex w-full overflow-hidden bg-surface dark:bg-surface-soft">
+              <!-- Left Pane: Editor -->
+              <div
+                class="flex flex-col h-full overflow-hidden cursor-text"
+                :class="[
+                  isLivePreviewActive ? 'w-1/2 border-r border-line dark:border-line' : 'w-full',
+                ]"
+                @click="textareaRef?.focus()"
+              >
+                <textarea
+                  ref="textareaRef"
+                  v-model="noteBody"
+                  placeholder="Rédigez vos notes ici en Markdown..."
+                  class="w-full h-full p-8 md:p-12 outline-none border-0 focus:ring-0 text-base font-mono text-ink dark:text-ink-subtle resize-none overflow-y-auto leading-relaxed bg-transparent"
+                  @input="triggerAutoSave"
+                  @mouseup="handleTextareaSelect($event)"
+                  @keyup="handleTextareaSelect($event)"
+                  @keydown.tab.prevent="handleTabKey"
+                  @keydown.enter.shift.prevent="insertSoftBreak"
+                ></textarea>
               </div>
 
-              <!-- Guide Button (Edit Mode) -->
-              <button 
-                @click="showHelpModal = true"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-line dark:border-line rounded-xl text-xs font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
-                type="button"
+              <!-- Right Pane: Real-time Live Preview -->
+              <div
+                v-if="isLivePreviewActive"
+                class="w-1/2 h-full p-8 md:p-12 overflow-y-auto bg-surface-soft dark:bg-surface-soft border-l border-line-soft dark:border-line prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-ink-subtle markdown-body"
               >
-                <HelpCircle class="w-3.5 h-3.5 text-primary" />
-                Guide
-              </button>
-            </div>
-          </div>
-
-          <!-- Row 2: Formatting Toolbar -->
-          <div class="flex flex-wrap items-center gap-1.5 px-6 py-2 bg-surface-soft dark:bg-surface-soft">
-            <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2">Format</span>
-            <button 
-              v-for="btn in formatButtons" 
-              :key="btn.label" 
-              type="button" 
-              @click="insertText(btn.prefix, btn.suffix)"
-              class="p-2 text-xs font-semibold text-ink-muted dark:text-ink-subtle hover:text-primary hover:bg-surface dark:hover:bg-surface-soft rounded-lg transition-all"
-              :title="btn.label"
-            >
-              {{ btn.label }}
-            </button>
-            
-            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
-            
-            <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2">LaTeX</span>
-            <button 
-              v-for="btn in latexButtons" 
-              :key="btn.label" 
-              type="button" 
-              @click="insertText(btn.prefix, btn.suffix)"
-              class="p-2 text-xs font-mono font-bold text-ink-muted dark:text-ink-subtle hover:text-primary hover:bg-surface dark:hover:bg-surface-soft rounded-lg transition-all"
-              :title="btn.label"
-            >
-              {{ btn.label }}
-            </button>
-
-            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
-
-            <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2">Code</span>
-            <button 
-              v-for="btn in codeButtons" 
-              :key="btn.label" 
-              type="button" 
-              @click="insertText(btn.prefix, btn.suffix)"
-              class="p-2 text-xs font-mono font-bold text-ink-muted dark:text-ink-subtle hover:text-primary hover:bg-surface dark:hover:bg-surface-soft rounded-lg transition-all"
-              :title="btn.label"
-            >
-              {{ btn.label }}
-            </button>
-
-            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
-            
-            <!-- Smart Space: Definition Tooltip insertion -->
-            <button 
-              type="button" 
-              @click="insertDefinitionTooltip"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-success dark:text-success bg-success-soft dark:bg-success-soft border border-success dark:border-success rounded-xl hover:bg-success-soft dark:hover:bg-success-soft active:scale-95 transition-all"
-              title="Associer une définition en info-bulle au texte sélectionné"
-            >
-              <BookOpen class="w-3.5 h-3.5" />
-              Définition (Info-bulle)
-            </button>
-
-            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
-
-            <!-- Insertion de diagramme -->
-            <div class="relative inline-block">
-              <select 
-                @change="insertDiagramTag($event)"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft border border-primary dark:border-primary rounded-xl hover:bg-primary-soft dark:hover:bg-primary-soft transition-all focus:outline-none cursor-pointer"
-              >
-                <option value="" disabled selected>Insérer un diagramme...</option>
-                <option v-for="diag in allUserDiagrams" :key="diag.id" :value="diag.id">
-                  {{ diag.title }}
-                </option>
-                <option v-if="allUserDiagrams.length === 0" disabled>Aucun diagramme</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Sliding/Collapsible Drawer for Context and Links -->
-          <div 
-            v-if="showSettings" 
-            class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface-soft dark:bg-surface-soft border-b border-line dark:border-line transition-all duration-300 animate-slide-down"
-          >
-            <!-- 1. Context Input Section -->
-            <div class="space-y-2">
-              <h3 class="text-xs font-bold text-warning dark:text-warning uppercase tracking-wider flex items-center gap-1.5">
-                <Compass class="w-4 h-4" />
-                Contexte de la note
-              </h3>
-              <textarea 
-                v-model="noteContext"
-                placeholder="Historique, cadre théorique ou d'apprentissage..."
-                rows="3"
-                class="w-full p-3 text-xs bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-ink dark:text-ink-subtle resize-y"
-                @input="triggerAutoSave"
-              ></textarea>
-            </div>
-
-            <!-- 2. Linked Notes Section -->
-            <div class="space-y-3">
-              <h3 class="text-xs font-bold text-primary dark:text-primary uppercase tracking-wider flex items-center gap-1.5">
-                <LinkIcon class="w-4 h-4" />
-                Lier à d'autres notes
-              </h3>
-              
-              <div class="flex gap-2">
-                <select 
-                  v-model="selectedLinkTarget"
-                  class="flex-1 px-3 py-2 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold"
-                >
-                  <option :value="null" disabled>Sélectionner une note...</option>
-                  <option 
-                    v-for="item in linkableNotes" 
-                    :key="item.id" 
-                    :value="item.id"
+                <div class="border-b border-line dark:border-line pb-3 mb-6 no-print">
+                  <span
+                    class="text-[10px] font-extrabold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider"
+                    >Aperçu en temps réel</span
                   >
-                    {{ item.title }}
-                  </option>
-                </select>
-                
-                <button 
-                  @click="addNoteLink"
-                  type="button"
-                  class="px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl active:scale-95 transition-all shadow-sm"
+                </div>
+                <div v-dompurify-html="renderMarkup(noteBody)"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. CENTERED PREVIEW / READ MODE SHEET -->
+          <div
+            v-else
+            class="flex-1 bg-surface-soft dark:bg-[#070913] py-10 px-4 md:px-8 print:p-0 print:bg-surface w-full"
+          >
+            <!-- Top Bar Actions inside Preview page sheet (Centered wrapper) -->
+            <div class="max-w-4xl mx-auto flex items-center justify-between no-print mb-6">
+              <div class="flex items-center gap-4">
+                <button
+                  class="text-sm font-semibold text-ink-muted hover:text-primary dark:text-ink-subtle dark:hover:text-primary flex items-center gap-1"
+                  @click="goBack"
                 >
-                  Lier
+                  <ChevronLeft class="w-4 h-4" />
+                  Retour aux notes
+                </button>
+
+                <div class="h-4 w-[1px] bg-line dark:bg-surface-soft"></div>
+
+                <!-- Mode Switcher: Lecture / Révision Active -->
+                <div
+                  class="flex items-center bg-surface-soft dark:bg-surface-soft p-0.5 rounded-xl border border-line dark:border-line"
+                >
+                  <button
+                    class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
+                    :class="[
+                      !notesStore.isReviewModeActive
+                        ? 'bg-surface dark:bg-surface-soft text-primary shadow-sm'
+                        : 'text-ink-muted hover:text-ink dark:text-ink-subtle',
+                    ]"
+                    @click="notesStore.isReviewModeActive = false"
+                  >
+                    Lecture
+                  </button>
+                  <button
+                    class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1"
+                    :class="[
+                      notesStore.isReviewModeActive
+                        ? 'bg-surface dark:bg-surface-soft text-primary shadow-sm'
+                        : 'text-ink-muted hover:text-ink dark:text-ink-subtle',
+                    ]"
+                    @click="notesStore.isReviewModeActive = true"
+                  >
+                    <Brain class="w-3.5 h-3.5" />
+                    Révision Active
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <!-- Réviser avec l'IA (regroupe Page blanche / QCM / Évaluation) -->
+                <button
+                  class="inline-flex items-center gap-2 px-4 py-2 border border-primary dark:border-primary rounded-xl text-sm font-semibold text-primary dark:text-primary hover:bg-primary-soft dark:hover:bg-primary-soft active:scale-95 transition-all"
+                  @click="showAiModal = true"
+                >
+                  <Sparkles class="w-4 h-4 text-primary" />
+                  Réviser avec l'IA
+                </button>
+
+                <!-- View Mode Toggler -->
+                <button
+                  class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink dark:text-ink-subtle"
+                  @click="toggleMode"
+                >
+                  <Edit3 class="w-4 h-4 text-primary" />
+                  Modifier la fiche
+                </button>
+
+                <!-- Guide Button (View Mode) -->
+                <button
+                  class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
+                  type="button"
+                  @click="showHelpModal = true"
+                >
+                  <HelpCircle class="w-4 h-4 text-primary" />
+                  Guide
+                </button>
+
+                <!-- PDF / Print Trigger -->
+                <button
+                  class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-primary hover:bg-primary-strong active:scale-95 transition-all shadow-md shadow-elev-primary"
+                  @click="printNote"
+                >
+                  <FileDown class="w-4 h-4" />
+                  Exporter en PDF
                 </button>
               </div>
-
-              <!-- Linked notes badges -->
-              <div v-if="noteLinks.length > 0" class="flex flex-wrap gap-1.5 pt-1 max-h-[80px] overflow-y-auto">
-                <span 
-                  v-for="linkedId in noteLinks" 
-                  :key="linkedId"
-                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface border border-line dark:bg-surface-soft dark:border-line text-ink dark:text-ink-subtle text-[11px] font-semibold rounded-lg shadow-sm"
-                >
-                  {{ getNoteTitle(linkedId) }}
-                  <button 
-                    @click="removeNoteLink(linkedId)" 
-                    type="button" 
-                    class="text-ink-subtle hover:text-danger transition-colors"
-                  >
-                    ✕
-                  </button>
-                </span>
-              </div>
             </div>
-          </div>
 
-        </div>
-
-        <!-- Split Workspace (Editor + optional Live Preview) -->
-        <div class="flex-1 flex w-full overflow-hidden bg-surface dark:bg-surface-soft">
-          <!-- Left Pane: Editor -->
-          <div 
-            class="flex flex-col h-full overflow-hidden cursor-text"
-            :class="[isLivePreviewActive ? 'w-1/2 border-r border-line dark:border-line' : 'w-full']"
-            @click="textareaRef?.focus()"
-          >
-            <textarea 
-              ref="textareaRef"
-              v-model="noteBody"
-              placeholder="Rédigez vos notes ici en Markdown..."
-              class="w-full h-full p-8 md:p-12 outline-none border-0 focus:ring-0 text-base font-mono text-ink dark:text-ink-subtle resize-none overflow-y-auto leading-relaxed bg-transparent"
-              @input="triggerAutoSave"
-              @mouseup="handleTextareaSelect($event)"
-              @keyup="handleTextareaSelect($event)"
-              @keydown.tab.prevent="handleTabKey"
-              @keydown.enter.shift.prevent="insertSoftBreak"
-            ></textarea>
-          </div>
-
-          <!-- Right Pane: Real-time Live Preview -->
-          <div 
-            v-if="isLivePreviewActive"
-            class="w-1/2 h-full p-8 md:p-12 overflow-y-auto bg-surface-soft dark:bg-surface-soft border-l border-line-soft dark:border-line prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-ink-subtle markdown-body"
-          >
-            <div class="border-b border-line dark:border-line pb-3 mb-6 no-print">
-              <span class="text-[10px] font-extrabold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider">Aperçu en temps réel</span>
-            </div>
-            <div v-dompurify-html="renderMarkup(noteBody)"></div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- 2. CENTERED PREVIEW / READ MODE SHEET -->
-      <div v-else class="flex-1 bg-surface-soft dark:bg-[#070913] py-10 px-4 md:px-8 print:p-0 print:bg-surface w-full">
-        
-        <!-- Top Bar Actions inside Preview page sheet (Centered wrapper) -->
-        <div class="max-w-4xl mx-auto flex items-center justify-between no-print mb-6">
-          <div class="flex items-center gap-4">
-            <button 
-              @click="goBack" 
-              class="text-sm font-semibold text-ink-muted hover:text-primary dark:text-ink-subtle dark:hover:text-primary flex items-center gap-1"
+            <!-- Cohesive Paper Sheet -->
+            <div
+              class="max-w-4xl mx-auto bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 lg:p-12 shadow-xl shadow-soft-lg dark:shadow-soft-lg space-y-6 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black"
             >
-              <ChevronLeft class="w-4 h-4" />
-              Retour aux notes
-            </button>
-            
-            <div class="h-4 w-[1px] bg-line dark:bg-surface-soft"></div>
-
-            <!-- Mode Switcher: Lecture / Révision Active -->
-            <div class="flex items-center bg-surface-soft dark:bg-surface-soft p-0.5 rounded-xl border border-line dark:border-line">
-              <button 
-                @click="notesStore.isReviewModeActive = false"
-                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-                :class="[!notesStore.isReviewModeActive ? 'bg-surface dark:bg-surface-soft text-primary shadow-sm' : 'text-ink-muted hover:text-ink dark:text-ink-subtle']"
-              >
-                Lecture
-              </button>
-              <button 
-                @click="notesStore.isReviewModeActive = true"
-                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1"
-                :class="[notesStore.isReviewModeActive ? 'bg-surface dark:bg-surface-soft text-primary shadow-sm' : 'text-ink-muted hover:text-ink dark:text-ink-subtle']"
-              >
-                <Brain class="w-3.5 h-3.5" />
-                Révision Active
-              </button>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-3">
-            <!-- Réviser avec l'IA (regroupe Page blanche / QCM / Évaluation) -->
-            <button
-              @click="showAiModal = true"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-primary dark:border-primary rounded-xl text-sm font-semibold text-primary dark:text-primary hover:bg-primary-soft dark:hover:bg-primary-soft active:scale-95 transition-all"
-            >
-              <Sparkles class="w-4 h-4 text-primary" />
-              Réviser avec l'IA
-            </button>
-
-            <!-- View Mode Toggler -->
-            <button 
-              @click="toggleMode"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink dark:text-ink-subtle"
-            >
-              <Edit3 class="w-4 h-4 text-primary" />
-              Modifier la fiche
-            </button>
-
-            <!-- Guide Button (View Mode) -->
-            <button 
-              @click="showHelpModal = true"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
-              type="button"
-            >
-              <HelpCircle class="w-4 h-4 text-primary" />
-              Guide
-            </button>
-            
-            <!-- PDF / Print Trigger -->
-            <button 
-              @click="printNote"
-              class="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-xl text-sm font-semibold text-white bg-primary hover:bg-primary-strong active:scale-95 transition-all shadow-md shadow-elev-primary"
-            >
-              <FileDown class="w-4 h-4" />
-              Exporter en PDF
-            </button>
-          </div>
-        </div>
-
-        <!-- Cohesive Paper Sheet -->
-        <div class="max-w-4xl mx-auto bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 lg:p-12 shadow-xl shadow-soft-lg dark:shadow-soft-lg space-y-6 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black">
-          
-          <!-- PRINT-ONLY DEDICATED HEADER -->
-          <div v-if="pdfExportOptions.includeHeader" class="hidden print:block print-header-banner mb-6 pb-4 border-b-2 border-slate-900">
-            <div class="flex items-center justify-between mb-3 text-xs text-slate-500">
-              <div v-if="getBinderName(binderId)" class="font-bold text-slate-900 uppercase tracking-wider">
-                {{ getBinderName(binderId) }}
-              </div>
-              <div class="text-[11px] font-medium text-slate-500">
-                {{ currentExportDateFormatted }}
-              </div>
-            </div>
-
-            <h1 class="text-3xl font-extrabold text-slate-950 tracking-tight leading-tight mb-2">
-              {{ title || 'Note sans titre' }}
-            </h1>
-
-            <div v-if="noteTags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
-              <span v-for="tag in noteTags" :key="tag.id" class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
-                #{{ tag.name }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Screen Note Title (Hidden in print if print header banner is enabled) -->
-          <div :class="['border-b border-line dark:border-line pb-6 print:mb-4', pdfExportOptions.includeHeader ? 'print:hidden' : '']">
-            <h1 class="text-3xl font-extrabold text-ink dark:text-white print:text-black">
-              {{ title || 'Note sans titre' }}
-            </h1>
-            <div class="flex items-center gap-3 mt-3 no-print">
-              <span class="text-xs font-semibold text-ink-subtle uppercase tracking-wider">Classeur :</span>
-              <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary uppercase tracking-wider">
-                {{ getBinderName(binderId) }}
-              </span>
-              <TagBadge v-for="tag in noteTags" :key="tag.id" :tag="tag" />
-            </div>
-          </div>
-
-          <!-- PRINT-ONLY TABLE OF CONTENTS -->
-          <div
-            v-if="pdfExportOptions.includeToc && extractedHeadings.length > 0"
-            class="hidden print:block print-toc-block bg-slate-50 border border-slate-300 rounded-xl p-5 mb-6 break-inside-avoid"
-          >
-            <div class="text-xs font-black uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2 border-b border-slate-200 pb-2">
-              <span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span>
-              Sommaire de la note
-            </div>
-            <div class="space-y-1 text-xs">
+              <!-- PRINT-ONLY DEDICATED HEADER -->
               <div
-                v-for="(h, idx) in extractedHeadings"
-                :key="idx"
+                v-if="pdfExportOptions.includeHeader"
+                class="hidden print:block print-header-banner mb-6 pb-4 border-b-2 border-slate-900"
+              >
+                <div class="flex items-center justify-between mb-3 text-xs text-slate-500">
+                  <div
+                    v-if="getBinderName(binderId)"
+                    class="font-bold text-slate-900 uppercase tracking-wider"
+                  >
+                    {{ getBinderName(binderId) }}
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-500">
+                    {{ currentExportDateFormatted }}
+                  </div>
+                </div>
+
+                <h1
+                  class="text-3xl font-extrabold text-slate-950 tracking-tight leading-tight mb-2"
+                >
+                  {{ title || 'Note sans titre' }}
+                </h1>
+
+                <div v-if="noteTags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                  <span
+                    v-for="tag in noteTags"
+                    :key="tag.id"
+                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300"
+                  >
+                    #{{ tag.name }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Screen Note Title (Hidden in print if print header banner is enabled) -->
+              <div
                 :class="[
-                  'flex items-center justify-between',
-                  h.level === 1 ? 'font-bold text-slate-900 pt-1' : '',
-                  h.level === 2 ? 'font-semibold text-slate-800 pl-4' : '',
-                  h.level === 3 ? 'text-slate-600 pl-8 text-[11px]' : ''
+                  'border-b border-line dark:border-line pb-6 print:mb-4',
+                  pdfExportOptions.includeHeader ? 'print:hidden' : '',
                 ]"
               >
-                <span>• {{ h.text }}</span>
+                <h1 class="text-3xl font-extrabold text-ink dark:text-white print:text-black">
+                  {{ title || 'Note sans titre' }}
+                </h1>
+                <div class="flex items-center gap-3 mt-3 no-print">
+                  <span class="text-xs font-semibold text-ink-subtle uppercase tracking-wider"
+                    >Classeur :</span
+                  >
+                  <span
+                    class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary uppercase tracking-wider"
+                  >
+                    {{ getBinderName(binderId) }}
+                  </span>
+                  <TagBadge v-for="tag in noteTags" :key="tag.id" :tag="tag" />
+                </div>
               </div>
-            </div>
-          </div>
 
-          <!-- 1. Context Block -->
-          <div 
-            v-if="noteContext && pdfExportOptions.includeContext"
-            class="bg-warning-soft border-l-4 border-warning rounded-r-2xl p-5 dark:bg-warning-soft dark:border-warning print:bg-[#fffbeb] print:border-warning print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
-          >
-            <h3 class="text-xs font-bold text-warning dark:text-warning flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-amber-900">
-              <Compass class="w-4 h-4" />
-              Contexte de la note
-            </h3>
-            <div 
-              v-dompurify-html="renderMarkup(noteContext)"
-              class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
-            ></div>
-          </div>
-
-          <!-- Legacy Definitions Block -->
-          <div 
-            v-if="noteDefinition"
-            class="bg-success-soft border-l-4 border-success rounded-r-2xl p-5 dark:bg-success-soft dark:border-success print:bg-[#ecfdf5] print:border-success print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
-          >
-            <h3 class="text-xs font-bold text-success dark:text-success flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-emerald-900">
-              <BookOpen class="w-4 h-4" />
-              Définitions clés (Legacy)
-            </h3>
-            <div 
-              v-dompurify-html="renderMarkup(noteDefinition)"
-              class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
-            ></div>
-          </div>
-
-          <!-- 2. Main Note Content Block -->
-          <div 
-            class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-ink-subtle print:text-black markdown-body"
-            @click="handleMarkdownClick"
-          >
-            <div v-dompurify-html="renderMarkup(noteBody)"></div>
-          </div>
-
-          <!-- PRINT-ONLY DEFINITIONS GLOSSARY -->
-          <div
-            v-if="pdfExportOptions.includeGlossary && extractedDefinitions.length > 0"
-            class="hidden print:block print-glossary-block border-t-2 border-slate-900 pt-6 mt-8 break-inside-avoid"
-          >
-            <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-950 mb-3 flex items-center gap-2">
-              <BookOpen class="w-4.5 h-4.5 text-emerald-600 inline-block" />
-              Index des Définitions Clés
-            </h3>
-            <div class="grid grid-cols-2 gap-3 text-xs">
-              <div v-for="item in extractedDefinitions" :key="item.term" class="p-3 bg-slate-50 border border-slate-300 rounded-lg">
-                <div class="font-bold text-slate-950 border-b border-slate-200 pb-1 mb-1">{{ item.term }}</div>
-                <div class="text-slate-800 text-[11px] leading-relaxed">{{ item.def }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. Linked Notes Block -->
-          <div v-if="noteLinks.length > 0" class="border-t border-line dark:border-line pt-6 no-print">
-            <h3 class="text-xs font-bold text-ink-subtle uppercase tracking-wider flex items-center gap-1.5 mb-3">
-              <LinkIcon class="w-4.5 h-4.5 text-primary" />
-              Notes liées
-            </h3>
-            <div class="flex flex-wrap gap-2">
-              <button 
-                v-for="linkedId in noteLinks" 
-                :key="linkedId"
-                @click="navigateToNote(linkedId)"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl transition-all text-xs font-semibold"
+              <!-- PRINT-ONLY TABLE OF CONTENTS -->
+              <div
+                v-if="pdfExportOptions.includeToc && extractedHeadings.length > 0"
+                class="hidden print:block print-toc-block bg-slate-50 border border-slate-300 rounded-xl p-5 mb-6 break-inside-avoid"
               >
-                <span>{{ getNoteTitle(linkedId) }}</span>
-                <ChevronRight class="w-3.5 h-3.5 text-ink-subtle" />
-              </button>
+                <div
+                  class="text-xs font-black uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2 border-b border-slate-200 pb-2"
+                >
+                  <span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span>
+                  Sommaire de la note
+                </div>
+                <div class="space-y-1 text-xs">
+                  <div
+                    v-for="(h, idx) in extractedHeadings"
+                    :key="idx"
+                    :class="[
+                      'flex items-center justify-between',
+                      h.level === 1 ? 'font-bold text-slate-900 pt-1' : '',
+                      h.level === 2 ? 'font-semibold text-slate-800 pl-4' : '',
+                      h.level === 3 ? 'text-slate-600 pl-8 text-[11px]' : '',
+                    ]"
+                  >
+                    <span>• {{ h.text }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 1. Context Block -->
+              <div
+                v-if="noteContext && pdfExportOptions.includeContext"
+                class="bg-warning-soft border-l-4 border-warning rounded-r-2xl p-5 dark:bg-warning-soft dark:border-warning print:bg-[#fffbeb] print:border-warning print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
+              >
+                <h3
+                  class="text-xs font-bold text-warning dark:text-warning flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-amber-900"
+                >
+                  <Compass class="w-4 h-4" />
+                  Contexte de la note
+                </h3>
+                <div
+                  v-dompurify-html="renderMarkup(noteContext)"
+                  class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
+                ></div>
+              </div>
+
+              <!-- Legacy Definitions Block -->
+              <div
+                v-if="noteDefinition"
+                class="bg-success-soft border-l-4 border-success rounded-r-2xl p-5 dark:bg-success-soft dark:border-success print:bg-[#ecfdf5] print:border-success print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
+              >
+                <h3
+                  class="text-xs font-bold text-success dark:text-success flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-emerald-900"
+                >
+                  <BookOpen class="w-4 h-4" />
+                  Définitions clés (Legacy)
+                </h3>
+                <div
+                  v-dompurify-html="renderMarkup(noteDefinition)"
+                  class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
+                ></div>
+              </div>
+
+              <!-- 2. Main Note Content Block -->
+              <div
+                class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-ink-subtle print:text-black markdown-body"
+                @click="handleMarkdownClick"
+              >
+                <div v-dompurify-html="renderMarkup(noteBody)"></div>
+              </div>
+
+              <!-- PRINT-ONLY DEFINITIONS GLOSSARY -->
+              <div
+                v-if="pdfExportOptions.includeGlossary && extractedDefinitions.length > 0"
+                class="hidden print:block print-glossary-block border-t-2 border-slate-900 pt-6 mt-8 break-inside-avoid"
+              >
+                <h3
+                  class="text-sm font-extrabold uppercase tracking-wider text-slate-950 mb-3 flex items-center gap-2"
+                >
+                  <BookOpen class="w-4.5 h-4.5 text-emerald-600 inline-block" />
+                  Index des Définitions Clés
+                </h3>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                  <div
+                    v-for="item in extractedDefinitions"
+                    :key="item.term"
+                    class="p-3 bg-slate-50 border border-slate-300 rounded-lg"
+                  >
+                    <div class="font-bold text-slate-950 border-b border-slate-200 pb-1 mb-1">
+                      {{ item.term }}
+                    </div>
+                    <div class="text-slate-800 text-[11px] leading-relaxed">{{ item.def }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. Linked Notes Block -->
+              <div
+                v-if="noteLinks.length > 0"
+                class="border-t border-line dark:border-line pt-6 no-print"
+              >
+                <h3
+                  class="text-xs font-bold text-ink-subtle uppercase tracking-wider flex items-center gap-1.5 mb-3"
+                >
+                  <LinkIcon class="w-4.5 h-4.5 text-primary" />
+                  Notes liées
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="linkedId in noteLinks"
+                    :key="linkedId"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl transition-all text-xs font-semibold"
+                    @click="navigateToNote(linkedId)"
+                  >
+                    <span>{{ getNoteTitle(linkedId) }}</span>
+                    <ChevronRight class="w-3.5 h-3.5 text-ink-subtle" />
+                  </button>
+                </div>
+              </div>
+
+              <!-- PRINT-ONLY FOOTER -->
+              <div
+                v-if="pdfExportOptions.includeFooter"
+                class="hidden print:flex print-footer-banner pt-6 mt-8 border-t border-slate-300 text-[10px] text-slate-500 justify-between items-center"
+              >
+                <span>StudyHub • Document d'étude exporté en haute définition</span>
+                <span>Fiche d'apprentissage</span>
+              </div>
             </div>
           </div>
-
-          <!-- PRINT-ONLY FOOTER -->
-          <div v-if="pdfExportOptions.includeFooter" class="hidden print:flex print-footer-banner pt-6 mt-8 border-t border-slate-300 text-[10px] text-slate-500 justify-between items-center">
-            <span>StudyHub • Document d'étude exporté en haute définition</span>
-            <span>Fiche d'apprentissage</span>
-          </div>
-
-        </div>
-      </div>
-
         </div>
       </div>
 
       <!-- Help Modal (Guide for Placeholders & Split Screen) -->
-      <transition 
+      <transition
         enter-active-class="transition duration-200 ease-out"
         enter-from-class="opacity-0 scale-95"
         enter-to-class="opacity-100 scale-100"
@@ -619,100 +739,203 @@
         leave-from-class="opacity-100 scale-100"
         leave-to-class="opacity-0 scale-95"
       >
-        <div 
-          v-if="showHelpModal" 
+        <div
+          v-if="showHelpModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
         >
-          <div class="bg-surface dark:bg-[#111827] border border-line dark:border-line rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 shadow-2xl flex flex-col justify-between">
+          <div
+            class="bg-surface dark:bg-[#111827] border border-line dark:border-line rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 shadow-2xl flex flex-col justify-between"
+          >
             <div class="space-y-6">
               <!-- Header -->
-              <div class="flex items-center justify-between border-b border-line dark:border-line pb-3">
+              <div
+                class="flex items-center justify-between border-b border-line dark:border-line pb-3"
+              >
                 <div class="flex items-center gap-2">
                   <HelpCircle class="w-5 h-5 text-primary" />
-                  <h3 class="font-extrabold text-base text-ink dark:text-white">Guide d'utilisation StudyHub</h3>
+                  <h3 class="font-extrabold text-base text-ink dark:text-white">
+                    Guide d'utilisation StudyHub
+                  </h3>
                 </div>
-                <button 
-                  @click="showHelpModal = false"
+                <button
                   class="p-1.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded-xl text-ink-subtle dark:text-ink-muted transition-colors"
+                  @click="showHelpModal = false"
                 >
                   <X class="w-5 h-5" />
                 </button>
               </div>
 
               <!-- Content Sections -->
-              <div class="space-y-5 overflow-y-auto text-xs text-ink-muted dark:text-ink-subtle leading-relaxed pr-1 max-h-[60vh]">
+              <div
+                class="space-y-5 overflow-y-auto text-xs text-ink-muted dark:text-ink-subtle leading-relaxed pr-1 max-h-[60vh]"
+              >
                 <!-- Section 1: Placeholders -->
                 <div class="space-y-2">
-                  <h4 class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold">1. Syntaxes de Révision Intégrée (Active Reading)</h4>
-                  <p>Incorporez des questions interactives de révision directe dans vos notes Markdown. Révisez-les en place via le mode « Révision Active » ; elles alimentent aussi les évaluations IA générées depuis la note :</p>
+                  <h4
+                    class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold"
+                  >
+                    1. Syntaxes de Révision Intégrée (Active Reading)
+                  </h4>
+                  <p>
+                    Incorporez des questions interactives de révision directe dans vos notes
+                    Markdown. Révisez-les en place via le mode « Révision Active » ; elles
+                    alimentent aussi les évaluations IA générées depuis la note :
+                  </p>
                   <ul class="list-disc pl-5 space-y-2.5 mt-1">
                     <li>
-                      <strong class="text-primary dark:text-primary">Texte à trous (Cloze) :</strong> 
-                      Utilisez <code v-pre>{{trou::mot caché}}</code>.
-                      <p class="text-[10px] text-ink-muted mt-0.5">Exemple : La capitale de la France est <code v-pre>{{trou::Paris}}</code>.</p>
+                      <strong class="text-primary dark:text-primary"
+                        >Texte à trous (Cloze) :</strong
+                      >
+                      Utilisez <code v-pre>{{trou::mot caché}}</code
+                      >.
+                      <p class="text-[10px] text-ink-muted mt-0.5">
+                        Exemple : La capitale de la France est <code v-pre>{{ trou::Paris }}</code
+                        >.
+                      </p>
                     </li>
                     <li>
-                      <strong class="text-primary dark:text-primary">Question à choix multiples (QCM) :</strong> 
-                      Utilisez <code v-pre>{{qcm::Question ?::Option1|*Bonne Option*|Option3}}</code> (entourez la bonne option d'astérisques).
-                      <p class="text-[10px] text-ink-muted mt-0.5">Exemple : <code v-pre>{{qcm::Combien de continents ?::4|5|*6|7*|8}}</code>.</p>
+                      <strong class="text-primary dark:text-primary"
+                        >Question à choix multiples (QCM) :</strong
+                      >
+                      Utilisez
+                      <code v-pre>{{qcm::Question ?::Option1|*Bonne Option*|Option3}}</code>
+                      (entourez la bonne option d'astérisques).
+                      <p class="text-[10px] text-ink-muted mt-0.5">
+                        Exemple : <code v-pre>{{qcm::Combien de continents ?::4|5|*6|7*|8}}</code
+                        >.
+                      </p>
                     </li>
                     <li>
                       <strong class="text-primary dark:text-primary">Ordre / Séquence :</strong>
-                      Utilisez <code v-pre>{{ordre::Titre::Étape 1 > Étape 2 > Étape 3}}</code> (étapes séparées par <code>></code>).
-                      <p class="text-[10px] text-ink-muted mt-0.5">Exemple : <code v-pre>{{ordre::Cycle de l'eau::Évaporation > Condensation > Précipitations}}</code>.</p>
+                      Utilisez
+                      <code v-pre>{{ordre::Titre::Étape 1 > Étape 2 > Étape 3}}</code> (étapes
+                      séparées par <code>></code>).
+                      <p class="text-[10px] text-ink-muted mt-0.5">
+                        Exemple :
+                        <code
+                          v-pre
+                          >{{ordre::Cycle de l'eau::Évaporation > Condensation > Précipitations}}</code
+                        >.
+                      </p>
                     </li>
                     <li>
                       <strong class="text-primary dark:text-primary">Associations :</strong>
-                      Utilisez <code v-pre>{{assoc::Titre::Clé 1=Valeur 1 | Clé 2=Valeur 2}}</code> (paires <code>clé=valeur</code> séparées par <code>|</code>).
-                      <p class="text-[10px] text-ink-muted mt-0.5">Exemple : <code v-pre>{{assoc::Capitales::France=Paris | Italie=Rome}}</code>.</p>
+                      Utilisez
+                      <code v-pre>{{assoc::Titre::Clé 1=Valeur 1 | Clé 2=Valeur 2}}</code> (paires
+                      <code>clé=valeur</code> séparées par <code>|</code>).
+                      <p class="text-[10px] text-ink-muted mt-0.5">
+                        Exemple : <code v-pre>{{assoc::Capitales::France=Paris | Italie=Rome}}</code
+                        >.
+                      </p>
                     </li>
                     <li>
                       <strong class="text-primary dark:text-primary">Vrai / Faux :</strong>
-                      Utilisez <code v-pre>{{vf::Affirmation::Vrai/Faux::Justification}}</code> (séparateur <code>::</code>).
-                      <p class="text-[10px] text-ink-muted mt-0.5">Exemple : <code v-pre>{{vf::La Terre est plate::Faux::Elle a la forme d'un géoïde.}}</code>.</p>
+                      Utilisez
+                      <code v-pre>{{ vf::Affirmation::Vrai / Faux::Justification }}</code>
+                      (séparateur <code>::</code>).
+                      <p class="text-[10px] text-ink-muted mt-0.5">
+                        Exemple :
+                        <code
+                          v-pre
+                          >{{vf::La Terre est plate::Faux::Elle a la forme d'un géoïde.}}</code
+                        >.
+                      </p>
                     </li>
                   </ul>
                 </div>
 
                 <!-- Section 2: Split Screen -->
                 <div class="space-y-2 border-t border-line dark:border-line pt-4">
-                  <h4 class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold">2. Écran Partagé & Liaisons PDF</h4>
+                  <h4
+                    class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold"
+                  >
+                    2. Écran Partagé & Liaisons PDF
+                  </h4>
                   <p>Étudiez vos PDF de cours tout en rédigeant ou révisant vos notes :</p>
                   <ul class="list-disc pl-5 space-y-2.5 mt-1">
                     <li>
-                      <strong class="text-primary dark:text-primary">Démarrer l'écran partagé :</strong> 
-                      Sélectionnez un document PDF dans la liste déroulante <strong class="text-ink dark:text-white font-semibold">"Aperçu PDF"</strong> en haut à droite de l'éditeur de notes. Le PDF s'affichera à gauche.
+                      <strong class="text-primary dark:text-primary"
+                        >Démarrer l'écran partagé :</strong
+                      >
+                      Sélectionnez un document PDF dans la liste déroulante
+                      <strong class="text-ink dark:text-white font-semibold">"Aperçu PDF"</strong>
+                      en haut à droite de l'éditeur de notes. Le PDF s'affichera à gauche.
                     </li>
                     <li>
-                      <strong class="text-primary dark:text-primary">Créer une citation (Deep Link) :</strong> 
-                      Sélectionnez du texte dans le panneau PDF, puis cliquez sur le bouton <strong class="text-primary dark:text-primary">"Citer"</strong> qui apparaît au-dessus du texte. Cela insère un lien spécial de type <code v-pre>pdf://</code> dans votre note.
+                      <strong class="text-primary dark:text-primary"
+                        >Créer une citation (Deep Link) :</strong
+                      >
+                      Sélectionnez du texte dans le panneau PDF, puis cliquez sur le bouton
+                      <strong class="text-primary dark:text-primary">"Citer"</strong> qui apparaît
+                      au-dessus du texte. Cela insère un lien spécial de type
+                      <code v-pre>pdf://</code> dans votre note.
                     </li>
                     <li>
-                      <strong class="text-primary dark:text-primary">Naviguer à partir d'un lien :</strong> 
-                      Dans le mode visualisation de la note, cliquez sur un de vos liens de citation. Le PDF s'ouvrira automatiquement sur la bonne page et la zone correspondante sera surlignée.
+                      <strong class="text-primary dark:text-primary"
+                        >Naviguer à partir d'un lien :</strong
+                      >
+                      Dans le mode visualisation de la note, cliquez sur un de vos liens de
+                      citation. Le PDF s'ouvrira automatiquement sur la bonne page et la zone
+                      correspondante sera surlignée.
                     </li>
                   </ul>
                 </div>
 
                 <!-- Section 3: Image Occlusion -->
                 <div class="space-y-2 border-t border-line dark:border-line pt-4">
-                  <h4 class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold">3. Masques d'Image (Occlusion)</h4>
-                  <p>Dans le module <strong class="text-ink dark:text-white font-semibold">Diagrammes</strong>, importez un schéma (corps humain, géographie, formule), tracez des rectangles de masquage opaques sur les parties à deviner, puis nommez-les. En mode révision, cliquez sur les masques pour les révéler et évaluer votre mémorisation.</p>
+                  <h4
+                    class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold"
+                  >
+                    3. Masques d'Image (Occlusion)
+                  </h4>
+                  <p>
+                    Dans le module
+                    <strong class="text-ink dark:text-white font-semibold">Diagrammes</strong>,
+                    importez un schéma (corps humain, géographie, formule), tracez des rectangles de
+                    masquage opaques sur les parties à deviner, puis nommez-les. En mode révision,
+                    cliquez sur les masques pour les révéler et évaluer votre mémorisation.
+                  </p>
                 </div>
 
                 <!-- Section 4: Tableaux & sauts de ligne -->
                 <div class="space-y-2 border-t border-line dark:border-line pt-4">
-                  <h4 class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold">4. Tableaux & sauts de ligne</h4>
-                  <p>Dans un tableau Markdown, chaque ligne du texte correspond à une ligne du tableau : une simple touche <kbd class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono">Entrée</kbd> casserait donc la ligne. Pour aller à la ligne <strong class="text-ink dark:text-white font-semibold">à l'intérieur d'une cellule</strong>, utilisez <kbd class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono">Maj</kbd> + <kbd class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono">Entrée</kbd> (insère un retour à la ligne propre). Cela fonctionne aussi partout ailleurs pour un saut de ligne souple.</p>
+                  <h4
+                    class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold"
+                  >
+                    4. Tableaux & sauts de ligne
+                  </h4>
+                  <p>
+                    Dans un tableau Markdown, chaque ligne du texte correspond à une ligne du
+                    tableau : une simple touche
+                    <kbd
+                      class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono"
+                      >Entrée</kbd
+                    >
+                    casserait donc la ligne. Pour aller à la ligne
+                    <strong class="text-ink dark:text-white font-semibold"
+                      >à l'intérieur d'une cellule</strong
+                    >, utilisez
+                    <kbd
+                      class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono"
+                      >Maj</kbd
+                    >
+                    +
+                    <kbd
+                      class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono"
+                      >Entrée</kbd
+                    >
+                    (insère un retour à la ligne propre). Cela fonctionne aussi partout ailleurs
+                    pour un saut de ligne souple.
+                  </p>
                 </div>
               </div>
             </div>
 
             <!-- Footer -->
             <div class="border-t border-line dark:border-line pt-4 mt-4 flex justify-end">
-              <button 
-                @click="showHelpModal = false"
+              <button
                 class="px-5 py-2.5 bg-primary hover:bg-primary-strong text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md shadow-elev-primary"
+                @click="showHelpModal = false"
               >
                 Compris !
               </button>
@@ -735,33 +958,39 @@
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
           @click.self="showAiModal = false"
         >
-          <div class="bg-surface dark:bg-[#111827] border border-line dark:border-line rounded-3xl max-w-2xl w-full p-6 shadow-2xl">
+          <div
+            class="bg-surface dark:bg-[#111827] border border-line dark:border-line rounded-3xl max-w-2xl w-full p-6 shadow-2xl"
+          >
             <!-- Header -->
-            <div class="flex items-center justify-between border-b border-line dark:border-line pb-3 mb-5">
+            <div
+              class="flex items-center justify-between border-b border-line dark:border-line pb-3 mb-5"
+            >
               <div class="flex items-center gap-2">
                 <Sparkles class="w-5 h-5 text-primary" />
                 <h3 class="font-extrabold text-base text-ink dark:text-white">Réviser avec l'IA</h3>
               </div>
               <button
-                @click="showAiModal = false"
                 class="p-1.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded-xl text-ink-subtle dark:text-ink-muted transition-colors"
+                @click="showAiModal = false"
               >
                 <X class="w-5 h-5" />
               </button>
             </div>
 
             <!-- Activity cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 v-for="activity in aiActivities"
                 :key="activity.type"
-                @click="startAiActivity(activity.type)"
                 class="flex flex-col items-start text-left gap-2 p-4 border rounded-2xl transition-all active:scale-95"
                 :class="activity.cardClass"
+                @click="startAiActivity(activity.type)"
               >
                 <component :is="activity.icon" class="w-6 h-6" :class="activity.iconClass" />
                 <span class="font-bold text-sm text-ink dark:text-white">{{ activity.label }}</span>
-                <span class="text-xs text-ink-muted dark:text-ink-subtle leading-relaxed">{{ activity.description }}</span>
+                <span class="text-xs text-ink-muted dark:text-ink-subtle leading-relaxed">{{
+                  activity.description
+                }}</span>
               </button>
             </div>
           </div>
@@ -802,10 +1031,20 @@
                   <component :is="inputModal.icon" class="w-5 h-5" />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <h3 class="font-bold text-ink dark:text-white text-base input-modal-title">{{ inputModal.title }}</h3>
-                  <p v-if="inputModal.description" class="text-xs text-ink-muted dark:text-ink-subtle input-modal-desc">{{ inputModal.description }}</p>
+                  <h3 class="font-bold text-ink dark:text-white text-base input-modal-title">
+                    {{ inputModal.title }}
+                  </h3>
+                  <p
+                    v-if="inputModal.description"
+                    class="text-xs text-ink-muted dark:text-ink-subtle input-modal-desc"
+                  >
+                    {{ inputModal.description }}
+                  </p>
                 </div>
-                <button @click="inputModal.onCancel()" class="text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle transition-colors mt-0.5">
+                <button
+                  class="text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle transition-colors mt-0.5"
+                  @click="inputModal.onCancel()"
+                >
                   <X class="w-5 h-5" />
                 </button>
               </div>
@@ -813,14 +1052,17 @@
               <!-- Fields -->
               <div class="px-6 pb-2 space-y-3">
                 <div v-for="(field, i) in inputModal.fields" :key="i">
-                  <label class="block text-xs font-bold text-ink-muted dark:text-ink-subtle mb-1.5 uppercase tracking-wider">{{ field.label }}</label>
+                  <label
+                    class="block text-xs font-bold text-ink-muted dark:text-ink-subtle mb-1.5 uppercase tracking-wider"
+                    >{{ field.label }}</label
+                  >
 
                   <!-- Texte -->
                   <input
                     v-if="field.type === 'text' || field.type === 'textarea'"
+                    :ref="i === 0 ? 'modalFirstInput' : undefined"
                     v-model="field.value"
                     :placeholder="field.placeholder || ''"
-                    :ref="i === 0 ? 'modalFirstInput' : undefined"
                     class="w-full px-4 py-2.5 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     @keydown.enter.prevent="inputModal.onConfirm()"
                     @keydown.escape.prevent="inputModal.onCancel()"
@@ -829,16 +1071,24 @@
                   <!-- Booléen (Vrai / Faux) -->
                   <div v-else-if="field.type === 'bool'" class="flex gap-3">
                     <button
-                      @click="field.value = true"
                       class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
-                      :class="field.value === true ? 'border-success bg-success-soft dark:bg-success-soft text-success dark:text-success' : 'border-line dark:border-line text-ink-muted hover:border-success'"
+                      :class="
+                        field.value === true
+                          ? 'border-success bg-success-soft dark:bg-success-soft text-success dark:text-success'
+                          : 'border-line dark:border-line text-ink-muted hover:border-success'
+                      "
+                      @click="field.value = true"
                     >
                       ✓ Vrai
                     </button>
                     <button
-                      @click="field.value = false"
                       class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
-                      :class="field.value === false ? 'border-danger bg-danger-soft dark:bg-danger-soft text-danger dark:text-danger' : 'border-line dark:border-line text-ink-muted hover:border-danger'"
+                      :class="
+                        field.value === false
+                          ? 'border-danger bg-danger-soft dark:bg-danger-soft text-danger dark:text-danger'
+                          : 'border-line dark:border-line text-ink-muted hover:border-danger'
+                      "
+                      @click="field.value = false"
                     >
                       ✗ Faux
                     </button>
@@ -850,7 +1100,9 @@
                     v-model="field.value"
                     class="w-full px-4 py-2.5 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                   >
-                    <option v-for="opt in field.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                    <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
                   </select>
                 </div>
               </div>
@@ -858,15 +1110,17 @@
               <!-- Actions -->
               <div class="flex gap-3 px-6 py-5">
                 <button
-                  @click="inputModal.onCancel()"
                   class="flex-1 py-2.5 border border-line dark:border-line rounded-xl text-sm font-semibold text-ink-muted dark:text-ink-subtle hover:bg-surface-soft dark:hover:bg-surface-soft transition-all"
+                  @click="inputModal.onCancel()"
                 >
                   Annuler
                 </button>
                 <button
-                  @click="inputModal.onConfirm()"
                   class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95 shadow-md"
-                  :class="inputModal.confirmBg || 'bg-primary hover:bg-primary-strong shadow-elev-primary'"
+                  :class="
+                    inputModal.confirmBg || 'bg-primary hover:bg-primary-strong shadow-elev-primary'
+                  "
+                  @click="inputModal.onConfirm()"
                 >
                   {{ inputModal.confirmLabel || 'Confirmer' }}
                 </button>
@@ -901,11 +1155,17 @@
             >
               <!-- Icon/Header -->
               <div class="flex flex-col items-center mb-3">
-                <div class="w-10 h-10 bg-primary-soft dark:bg-primary-soft rounded-2xl flex items-center justify-center text-primary dark:text-primary mb-2 border border-primary dark:border-primary">
+                <div
+                  class="w-10 h-10 bg-primary-soft dark:bg-primary-soft rounded-2xl flex items-center justify-center text-primary dark:text-primary mb-2 border border-primary dark:border-primary"
+                >
                   <Sparkles class="w-5 h-5 animate-pulse" />
                 </div>
-                <h3 class="font-extrabold text-ink dark:text-white text-base sm2-modal-title">C'était facile ?</h3>
-                <p class="text-xs text-ink-muted dark:text-ink-subtle sm2-modal-desc">Évaluez votre niveau de rappel pour l'algorithme d'apprentissage.</p>
+                <h3 class="font-extrabold text-ink dark:text-white text-base sm2-modal-title">
+                  C'était facile ?
+                </h3>
+                <p class="text-xs text-ink-muted dark:text-ink-subtle sm2-modal-desc">
+                  Évaluez votre niveau de rappel pour l'algorithme d'apprentissage.
+                </p>
               </div>
 
               <!-- Buttons Grid -->
@@ -913,10 +1173,10 @@
                 <button
                   v-for="btn in evaluationButtons"
                   :key="btn.val"
-                  @click="submitSm2Evaluation(btn.val)"
                   :disabled="isEvaluating"
                   class="flex flex-col items-center border-2 rounded-2xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none sm2-modal-btn"
                   :class="btn.class"
+                  @click="submitSm2Evaluation(btn.val)"
                 >
                   <span class="text-2xl sm2-btn-emoji">{{ btn.emoji }}</span>
                   <span class="text-xs font-bold sm2-btn-label">{{ btn.label }}</span>
@@ -926,8 +1186,8 @@
 
               <!-- Actions -->
               <button
-                @click="evaluationModal.visible = false"
                 class="w-full py-2 border border-line dark:border-line rounded-xl text-xs font-bold text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft transition-all sm2-modal-cancel"
+                @click="evaluationModal.visible = false"
               >
                 Passer sans évaluer
               </button>
@@ -937,7 +1197,7 @@
       </Transition>
 
       <!-- Floating Selection Action Bar -->
-      <transition 
+      <transition
         enter-active-class="transition duration-200 ease-out"
         enter-from-class="opacity-0 scale-95"
         enter-to-class="opacity-100 scale-100"
@@ -945,11 +1205,13 @@
         leave-from-class="opacity-100 scale-100"
         leave-to-class="opacity-0 scale-95"
       >
-        <div 
-          v-if="showSelectionMenu && isEditMode" 
+        <div
+          v-if="showSelectionMenu && isEditMode"
           class="fixed z-50 bottom-6 left-1/2 -translate-x-1/2 bg-surface/95 dark:bg-surface-soft backdrop-blur-md border border-line dark:border-line rounded-2xl shadow-2xl px-4 py-2.5 flex items-center flex-wrap gap-2.5 max-w-[95vw] no-print pointer-events-auto"
         >
-          <div class="flex items-center gap-1.5 border-r border-line dark:border-line pr-3 max-w-[150px]">
+          <div
+            class="flex items-center gap-1.5 border-r border-line dark:border-line pr-3 max-w-[150px]"
+          >
             <Sparkles class="w-3.5 h-3.5 text-primary flex-shrink-0 animate-pulse" />
             <span class="text-[11px] font-bold text-ink-muted dark:text-ink-subtle truncate">
               "{{ selectionText }}"
@@ -958,90 +1220,90 @@
 
           <div class="flex items-center gap-1 flex-wrap max-w-lg md:max-w-none">
             <!-- Trou Button -->
-            <button 
-              @click="applySelectionTransform('trou')"
+            <button
               class="px-2 py-1 bg-primary-soft hover:bg-primary-soft dark:bg-primary-soft dark:hover:bg-primary-soft text-primary dark:text-primary rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Trou (Cloze)"
+              @click="applySelectionTransform('trou')"
             >
               <Brain class="w-2.5 h-2.5" />
               Trou
             </button>
 
             <!-- QCM Button -->
-            <button 
-              @click="applySelectionTransform('qcm')"
+            <button
               class="px-2 py-1 bg-accent-soft hover:bg-accent-soft dark:bg-accent-soft dark:hover:bg-accent-soft text-accent dark:text-accent rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="QCM (Choix multiples)"
+              @click="applySelectionTransform('qcm')"
             >
               <HelpCircle class="w-2.5 h-2.5" />
               QCM
             </button>
 
             <!-- Sequence / Ordre Button -->
-            <button 
-              @click="applySelectionTransform('ordre')"
+            <button
               class="px-2 py-1 bg-warning-soft hover:bg-warning-soft dark:bg-warning-soft dark:hover:bg-warning-soft text-warning dark:text-warning rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Séquence (Ordre)"
+              @click="applySelectionTransform('ordre')"
             >
               <ListOrdered class="w-2.5 h-2.5" />
               Ordre
             </button>
 
             <!-- Association Button -->
-            <button 
-              @click="applySelectionTransform('assoc')"
+            <button
               class="px-2 py-1 bg-pink-50 hover:bg-pink-100 dark:bg-pink-950/40 dark:hover:bg-pink-950/80 text-pink-600 dark:text-pink-400 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Association"
+              @click="applySelectionTransform('assoc')"
             >
               <LinkIcon class="w-2.5 h-2.5" />
               Assoc
             </button>
 
             <!-- Vrai/Faux Button -->
-            <button 
-              @click="applySelectionTransform('vf')"
+            <button
               class="px-2 py-1 bg-danger-soft hover:bg-danger-soft dark:bg-danger-soft dark:hover:bg-danger-soft text-danger dark:text-danger rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Vrai / Faux"
+              @click="applySelectionTransform('vf')"
             >
               <CheckCircle2 class="w-2.5 h-2.5" />
               V/F
             </button>
 
             <!-- Definition Tooltip Button -->
-            <button 
-              @click="applySelectionTransform('def')"
+            <button
               class="px-2 py-1 bg-success-soft hover:bg-success-soft dark:bg-success-soft dark:hover:bg-success-soft text-success dark:text-success rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Définition info-bulle"
+              @click="applySelectionTransform('def')"
             >
               <BookOpen class="w-2.5 h-2.5" />
               Définition
             </button>
 
             <!-- Math Bloc Button -->
-            <button 
-              @click="applySelectionTransform('math_bloc')"
+            <button
               class="px-2 py-1 bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-950/40 dark:hover:bg-cyan-950/80 text-cyan-600 dark:text-cyan-400 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Math Bloc (LaTeX)"
+              @click="applySelectionTransform('math_bloc')"
             >
               <Sigma class="w-2.5 h-2.5" />
               Math Bloc
             </button>
 
             <!-- Math Ligne Button -->
-            <button 
-              @click="applySelectionTransform('math_ligne')"
+            <button
               class="px-2 py-1 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:hover:bg-teal-950/80 text-teal-600 dark:text-teal-400 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Math Ligne (LaTeX)"
+              @click="applySelectionTransform('math_ligne')"
             >
               <Sigma class="w-2.5 h-2.5" />
               Math Ligne
             </button>
 
             <!-- Diagramme Button -->
-            <button 
-              @click="applySelectionTransform('diagramme')"
+            <button
               class="px-2 py-1 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-950/80 text-sky-600 dark:text-sky-400 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
               title="Insérer un diagramme / schéma"
+              @click="applySelectionTransform('diagramme')"
             >
               <Image class="w-2.5 h-2.5" />
               Schéma
@@ -1050,37 +1312,37 @@
             <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-1"></div>
 
             <!-- Bold Button -->
-            <button 
-              @click="applySelectionTransform('gras')"
+            <button
               class="px-1.5 py-1 hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle rounded-lg text-[9px] font-bold transition-all active:scale-95"
               title="Gras"
+              @click="applySelectionTransform('gras')"
             >
               <strong>G</strong>
             </button>
 
             <!-- Italic Button -->
-            <button 
-              @click="applySelectionTransform('italique')"
+            <button
               class="px-1.5 py-1 hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle rounded-lg text-[9px] font-bold transition-all active:scale-95 italic"
               title="Italique"
+              @click="applySelectionTransform('italique')"
             >
               I
             </button>
 
             <!-- Code Button (Inline) -->
-            <button 
-              @click="applySelectionTransform('code')"
+            <button
               class="px-1.5 py-1 hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle rounded-lg text-[9px] font-mono font-bold transition-all active:scale-95"
               title="Code en ligne"
+              @click="applySelectionTransform('code')"
             >
               &lt;/&gt;
             </button>
 
             <!-- Bloc Code Button -->
-            <button 
-              @click="applySelectionTransform('bloc_code')"
+            <button
               class="px-1.5 py-1 hover:bg-surface-soft dark:hover:bg-surface-soft text-ink dark:text-ink-subtle rounded-lg text-[9px] font-mono font-bold transition-all active:scale-95"
               title="Bloc de code"
+              @click="applySelectionTransform('bloc_code')"
             >
               { }
             </button>
@@ -1099,7 +1361,6 @@
         @close="showPdfModal = false"
         @export="handlePdfExport"
       />
-
     </div>
   </div>
 </template>
@@ -1113,8 +1374,10 @@ import { useBindersStore } from '../../stores/binders'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
-import NotePdfExportModal, { type PdfExportOptions } from '../../components/notes/NotePdfExportModal.vue'
-import { 
+import NotePdfExportModal, {
+  type PdfExportOptions,
+} from '../../components/notes/NotePdfExportModal.vue'
+import {
   ChevronLeft,
   Menu,
   Eye,
@@ -1135,7 +1398,8 @@ import {
   CheckCircle2,
   Sparkles,
   Sigma,
-  Image
+  Image,
+  Lightbulb,
 } from '@lucide/vue'
 import { marked } from 'marked'
 import katex from 'katex'
@@ -1154,8 +1418,8 @@ marked.use({
       const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext'
       const highlighted = hljs.highlight(text, { language }).value
       return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`
-    }
-  }
+    },
+  },
 })
 
 const notesStore = useNotesStore()
@@ -1181,7 +1445,7 @@ const isEditMode = computed({
   set: (val) => {
     if (isReadOnly.value) return
     router.replace({ query: { ...route.query, edit: val ? 'true' : undefined } })
-  }
+  },
 })
 const showSettings = ref(false)
 const showHelpModal = ref(false)
@@ -1195,20 +1459,21 @@ const pdfExportOptions = ref<PdfExportOptions>({
   includeToc: true,
   includeContext: true,
   includeGlossary: true,
-  includeFooter: true
+  includeFooter: true,
 })
 
 const extractedHeadings = computed(() => {
   if (!noteBody.value) return []
   const matches = Array.from(noteBody.value.matchAll(/^(#{1,3})\s+(.+)$/gm))
-  return matches.map(match => ({
+  return matches.map((match) => ({
     level: match[1].length,
-    text: match[2].trim().replace(/[*_~`]/g, '')
+    text: match[2].trim().replace(/[*_~`]/g, ''),
   }))
 })
 
 const extractedDefinitions = computed(() => {
-  const fullText = (noteContext.value || '') + '\n' + (noteDefinition.value || '') + '\n' + (noteBody.value || '')
+  const fullText =
+    (noteContext.value || '') + '\n' + (noteDefinition.value || '') + '\n' + (noteBody.value || '')
   const matches = Array.from(fullText.matchAll(/\[([^\]]+)\]\{def:([^\}]+)\}/g))
   const map = new Map<string, string>()
   for (const match of matches) {
@@ -1225,7 +1490,7 @@ const currentExportDateFormatted = computed(() => {
   return new Date().toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',
-    year: 'numeric'
+    year: 'numeric',
   })
 })
 
@@ -1234,10 +1499,11 @@ const aiActivities = [
   {
     type: 'blurting',
     label: 'Page blanche',
-    description: 'Restituez le cours de mémoire, puis laissez l\'IA évaluer votre restitution.',
+    description: "Restituez le cours de mémoire, puis laissez l'IA évaluer votre restitution.",
     icon: Brain,
     iconClass: 'text-emerald-500',
-    cardClass: 'border-emerald-250 dark:border-emerald-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/20',
+    cardClass:
+      'border-emerald-250 dark:border-emerald-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/20',
   },
   {
     type: 'quiz',
@@ -1245,15 +1511,25 @@ const aiActivities = [
     description: 'Générez un questionnaire à choix multiples à partir de cette fiche.',
     icon: HelpCircle,
     iconClass: 'text-indigo-500',
-    cardClass: 'border-indigo-250 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/20',
+    cardClass:
+      'border-indigo-250 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/20',
   },
   {
     type: 'evaluation',
     label: 'Évaluation',
-    description: 'Obtenez une feuille d\'exercices corrigée pour vous tester en profondeur.',
+    description: "Obtenez une feuille d'exercices corrigée pour vous tester en profondeur.",
     icon: Sparkles,
     iconClass: 'text-amber-500',
-    cardClass: 'border-amber-250 dark:border-amber-900 hover:bg-amber-50 dark:hover:bg-amber-950/20',
+    cardClass:
+      'border-amber-250 dark:border-amber-900 hover:bg-amber-50 dark:hover:bg-amber-950/20',
+  },
+  {
+    type: 'feynman',
+    label: 'Méthode Feynman',
+    description: "Expliquez le concept avec vos propres mots, l'IA repère jargon et lacunes.",
+    icon: Lightbulb,
+    iconClass: 'text-sky-500',
+    cardClass: 'border-sky-250 dark:border-sky-900 hover:bg-sky-50 dark:hover:bg-sky-950/20',
   },
 ] as const
 
@@ -1271,14 +1547,42 @@ function toggleShortcutSidebar() {
 const evaluationModal = ref({
   visible: false,
   cardId: null as number | null,
-  rawTag: ''
+  rawTag: '',
 })
 
 const evaluationButtons = [
-  { val: 1, label: 'À revoir', emoji: '🔁', desc: 'Pas retenu', class: 'border-rose-100 dark:border-rose-950/40 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:border-rose-350' },
-  { val: 2, label: 'Difficile', emoji: '😕', desc: 'Gros effort', class: 'border-amber-100 dark:border-amber-950/40 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 hover:border-amber-350' },
-  { val: 3, label: 'Correct', emoji: '🙂', desc: 'Rappel normal', class: 'border-emerald-100 dark:border-emerald-950/40 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 hover:border-emerald-350' },
-  { val: 5, label: 'Facile', emoji: '😎', desc: 'Aucun effort', class: 'border-blue-100 dark:border-blue-950/40 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:border-blue-350' }
+  {
+    val: 1,
+    label: 'À revoir',
+    emoji: '🔁',
+    desc: 'Pas retenu',
+    class:
+      'border-rose-100 dark:border-rose-950/40 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:border-rose-350',
+  },
+  {
+    val: 2,
+    label: 'Difficile',
+    emoji: '😕',
+    desc: 'Gros effort',
+    class:
+      'border-amber-100 dark:border-amber-950/40 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 hover:border-amber-350',
+  },
+  {
+    val: 3,
+    label: 'Correct',
+    emoji: '🙂',
+    desc: 'Rappel normal',
+    class:
+      'border-emerald-100 dark:border-emerald-950/40 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 hover:border-emerald-350',
+  },
+  {
+    val: 5,
+    label: 'Facile',
+    emoji: '😎',
+    desc: 'Aucun effort',
+    class:
+      'border-blue-100 dark:border-blue-950/40 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:border-blue-350',
+  },
 ]
 
 const isEvaluating = ref(false)
@@ -1287,24 +1591,24 @@ function openEvaluationModal(cardId: number, rawTag: string) {
   evaluationModal.value = {
     visible: true,
     cardId,
-    rawTag
+    rawTag,
   }
 }
 
 async function submitSm2Evaluation(score: number) {
   const { cardId, rawTag } = evaluationModal.value
   if (!cardId || !rawTag) return
-  
+
   try {
     isEvaluating.value = true
     await api.patch(`/flashcards/${cardId}/review`, { score })
-    
+
     const state = placeholderStates.value[rawTag]
     if (state) {
       state.score = score
       placeholderStates.value = { ...placeholderStates.value }
     }
-    
+
     evaluationModal.value.visible = false
   } catch (err) {
     console.error('Erreur lors du vote SM-2', err)
@@ -1317,7 +1621,7 @@ async function submitSm2Evaluation(score: number) {
 const selectionText = ref('')
 const selectionStart = ref(0)
 const selectionEnd = ref(0)
-const savedSelectionContent = ref('')  // snapshot du textarea au moment de la sélection
+const savedSelectionContent = ref('') // snapshot du textarea au moment de la sélection
 const showSelectionMenu = ref(false)
 const selectionMenuPos = ref({ top: 0, left: 0 })
 
@@ -1350,10 +1654,12 @@ const inputModal = ref<ModalConfig>({
   icon: null,
   fields: [],
   onConfirm: () => {},
-  onCancel: () => {}
+  onCancel: () => {},
 })
 
-function openModal(config: Omit<ModalConfig, 'visible' | 'onConfirm' | 'onCancel'>): Promise<ModalField[] | null> {
+function openModal(
+  config: Omit<ModalConfig, 'visible' | 'onConfirm' | 'onCancel'>,
+): Promise<ModalField[] | null> {
   return new Promise((resolve) => {
     inputModal.value = {
       ...config,
@@ -1365,7 +1671,7 @@ function openModal(config: Omit<ModalConfig, 'visible' | 'onConfirm' | 'onCancel
       onCancel: () => {
         inputModal.value.visible = false
         resolve(null)
-      }
+      },
     }
     // Focus le premier champ après rendu
     setTimeout(() => {
@@ -1398,7 +1704,7 @@ const formatButtons = [
   { label: 'Titre H1', prefix: '# ', suffix: '' },
   { label: 'Titre H2', prefix: '## ', suffix: '' },
   { label: 'Gras', prefix: '**', suffix: '**' },
-  { label: 'Italique', prefix: '*', suffix: '*' }
+  { label: 'Italique', prefix: '*', suffix: '*' },
 ]
 
 const latexButtons = [
@@ -1406,21 +1712,24 @@ const latexButtons = [
   { label: 'En Ligne', prefix: '$', suffix: '$' },
   { label: 'Fraction', prefix: '\\frac{', suffix: '}{}' },
   { label: 'Somme', prefix: '\\sum_{', suffix: '}^{}' },
-  { label: 'Intégrale', prefix: '\\int_{', suffix: '}^{}' }
+  { label: 'Intégrale', prefix: '\\int_{', suffix: '}^{}' },
 ]
 
 const codeButtons = [
   { label: 'En Ligne', prefix: '`', suffix: '`' },
-  { label: 'Bloc Code', prefix: '```\n', suffix: '\n```' }
+  { label: 'Bloc Code', prefix: '```\n', suffix: '\n```' },
 ]
 
 // Reload components when route parameter changes (for linked notes navigation)
-watch(() => route.params.id, async (newVal) => {
-  if (newVal) {
-    noteId.value = newVal as string
-    await loadNoteDetails()
-  }
-})
+watch(
+  () => route.params.id,
+  async (newVal) => {
+    if (newVal) {
+      noteId.value = newVal as string
+      await loadNoteDetails()
+    }
+  },
+)
 
 onMounted(async () => {
   // Afficher la note d'abord : on n'attend plus le chargement des listes
@@ -1434,7 +1743,9 @@ onMounted(async () => {
     bindersStore.fetchBinders(),
     tagsStore.fetchTags(),
     loadUserDiagrams(),
-  ]).catch(() => { /* non bloquant : l'éditeur reste utilisable */ })
+  ]).catch(() => {
+    /* non bloquant : l'éditeur reste utilisable */
+  })
 })
 
 onBeforeUnmount(() => {
@@ -1461,19 +1772,23 @@ async function fetchDiagramIfNeeded(id: number) {
   }
 }
 
-watch(noteBody, (newVal) => {
-  const matches = newVal.matchAll(/\[diagram:(\d+)\]/g)
-  for (const match of matches) {
-    const id = Number(match[1])
-    fetchDiagramIfNeeded(id)
-  }
-}, { immediate: true })
+watch(
+  noteBody,
+  (newVal) => {
+    const matches = newVal.matchAll(/\[diagram:(\d+)\]/g)
+    for (const match of matches) {
+      const id = Number(match[1])
+      fetchDiagramIfNeeded(id)
+    }
+  },
+  { immediate: true },
+)
 
 function insertDiagramTag(event: Event) {
   const select = event.target as HTMLSelectElement
   const id = select.value
   if (!id) return
-  
+
   insertText(`[diagram:${id}]`, '')
   select.value = '' // Reset
 }
@@ -1482,7 +1797,7 @@ async function loadNoteDetails() {
   loading.value = true
   isSaving.value = false
   saveStatus.value = 'Enregistré'
-  
+
   const note = await notesStore.fetchNoteById(noteId.value)
   if (note) {
     title.value = note.title
@@ -1492,14 +1807,14 @@ async function loadNoteDetails() {
     shareToken.value = (note as any).share_token || null
     noteFlashcards.value = (note as any).flashcards || []
     noteTags.value = (note as any).tags || []
-    
+
     // Parse structured divisions
     const parsed = parseStructuredNote(note.content)
     noteContext.value = parsed.context
     noteDefinition.value = parsed.definition
     noteBody.value = parsed.body
     noteLinks.value = parsed.linkedIds
-    
+
     if (route.query.edit === 'true') {
       isEditMode.value = true
     } else if (route.query.edit === 'false') {
@@ -1542,7 +1857,9 @@ async function copyShareLink() {
   try {
     await navigator.clipboard.writeText(shareUrl.value)
     shareCopied.value = true
-    setTimeout(() => { shareCopied.value = false }, 2000)
+    setTimeout(() => {
+      shareCopied.value = false
+    }, 2000)
   } catch {}
 }
 
@@ -1556,19 +1873,24 @@ function parseStructuredNote(rawContent: string) {
   // Extraire les liens
   const linksMatch = rawContent.match(/<!-- LINKED_NOTES: ([a-fA-F0-9-,\s]*) -->/)
   if (linksMatch) {
-    linkedIdsVal = linksMatch[1].split(',')
-      .map(id => id.trim())
-      .filter(id => id.length > 0)
+    linkedIdsVal = linksMatch[1]
+      .split(',')
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0)
   }
 
   // Extraire le contexte
-  const contextMatch = rawContent.match(/<!-- SECTION_CONTEXT -->([\s\S]*?)<!-- END_SECTION_CONTEXT -->/)
+  const contextMatch = rawContent.match(
+    /<!-- SECTION_CONTEXT -->([\s\S]*?)<!-- END_SECTION_CONTEXT -->/,
+  )
   if (contextMatch) {
     contextVal = contextMatch[1].trim()
   }
 
   // Extraire la définition
-  const defMatch = rawContent.match(/<!-- SECTION_DEFINITION -->([\s\S]*?)<!-- END_SECTION_DEFINITION -->/)
+  const defMatch = rawContent.match(
+    /<!-- SECTION_DEFINITION -->([\s\S]*?)<!-- END_SECTION_DEFINITION -->/,
+  )
   if (defMatch) {
     definitionVal = defMatch[1].trim()
   }
@@ -1590,27 +1912,27 @@ function parseStructuredNote(rawContent: string) {
     context: contextVal,
     definition: definitionVal,
     body: bodyVal,
-    linkedIds: linkedIdsVal
+    linkedIds: linkedIdsVal,
   }
 }
 
 function compileStructuredNote() {
   let raw = ''
-  
+
   if (noteContext.value.trim()) {
     raw += `<!-- SECTION_CONTEXT -->\n${noteContext.value.trim()}\n<!-- END_SECTION_CONTEXT -->\n\n`
   }
-  
+
   if (noteDefinition.value.trim()) {
     raw += `<!-- SECTION_DEFINITION -->\n${noteDefinition.value.trim()}\n<!-- END_SECTION_DEFINITION -->\n\n`
   }
-  
+
   raw += `<!-- SECTION_BODY -->\n${noteBody.value.trim()}\n<!-- END_SECTION_BODY -->\n\n`
-  
+
   if (noteLinks.value.length > 0) {
     raw += `<!-- LINKED_NOTES: ${noteLinks.value.join(', ')} -->`
   }
-  
+
   return raw
 }
 
@@ -1619,21 +1941,21 @@ function renderSm2Buttons(cardId: number | null, rawTag: string): string {
   if (!cardId) {
     // En révision active, on n'affiche pas le rappel « En attente de sauvegarde… »
     // (bruit visuel pendant la révision) : seul le mode Lecture/édition l'indique.
-    if (notesStore.isReviewModeActive) return '';
-    return `<span class="text-[10px] text-slate-450 italic font-semibold align-middle">En attente de sauvegarde...</span>`;
+    if (notesStore.isReviewModeActive) return ''
+    return `<span class="text-[10px] text-slate-450 italic font-semibold align-middle">En attente de sauvegarde...</span>`
   }
-  const state = placeholderStates.value[rawTag];
-  if (!state || state.score === undefined) return '';
-  
+  const state = placeholderStates.value[rawTag]
+  if (!state || state.score === undefined) return ''
+
   const buttons = [
-    { label: "À revoir", val: 1 },
-    { label: "Difficile", val: 2 },
-    { label: "Correct", val: 3 },
-    { label: "Facile", val: 5 }
-  ];
-  
-  const b = buttons.find(x => x.val === state.score);
-  return `<button type="button" data-action="sm2-re-evaluate" data-card-id="${cardId}" data-tag="${encodeURIComponent(rawTag)}" class="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-[9px] font-bold text-indigo-650 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 align-middle transition-all cursor-pointer">★ ${b ? b.label : state.score}</button>`;
+    { label: 'À revoir', val: 1 },
+    { label: 'Difficile', val: 2 },
+    { label: 'Correct', val: 3 },
+    { label: 'Facile', val: 5 },
+  ]
+
+  const b = buttons.find((x) => x.val === state.score)
+  return `<button type="button" data-action="sm2-re-evaluate" data-card-id="${cardId}" data-tag="${encodeURIComponent(rawTag)}" class="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-[9px] font-bold text-indigo-650 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 align-middle transition-all cursor-pointer">★ ${b ? b.label : state.score}</button>`
 }
 
 // Rendering marked + LaTeX + Definition tooltips + Active Reading Placeholders
@@ -1681,7 +2003,7 @@ function renderMarkup(text: string): string {
   temp = temp.replace(/\[diagram:(\d+)\]/g, (_match, idStr) => {
     const id = Number(idStr)
     const diag = loadedDiagrams.value[id]
-    
+
     let html = ''
     if (diag === undefined) {
       html = `
@@ -1696,87 +2018,102 @@ function renderMarkup(text: string): string {
     } else {
       html = renderDiagramHtml(diag)
     }
-    
+
     const key = `DIAGRAMPLACEHOLDER${placeholders.length}`
     placeholders.push(html)
     return key
   })
 
-  const isReview = notesStore.isReviewModeActive;
-  const shuffleArray = (arr: any[]) => arr.map((a: any) => [Math.random(), a]).sort((a: any, b: any) => a[0] - b[0]).map((a: any) => a[1]);
+  const isReview = notesStore.isReviewModeActive
+  const shuffleArray = (arr: any[]) =>
+    arr
+      .map((a: any) => [Math.random(), a])
+      .sort((a: any, b: any) => a[0] - b[0])
+      .map((a: any) => a[1])
 
   // Trou: {{trou::mot caché}}
   temp = temp.replace(/\{\{trou::(.*?)\}\}/g, (rawTag, word) => {
-    const card = noteFlashcards.value.find(c => c.original_text === rawTag);
-    const cardId = card ? card.id : null;
-    
+    const card = noteFlashcards.value.find((c) => c.original_text === rawTag)
+    const cardId = card ? card.id : null
+
     if (!isReview) {
-      const displayHtml = `<span class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-semibold border-b border-indigo-500">${word}</span>`;
-      const key = `REVISIONPLACEHOLDER${placeholders.length}`;
-      placeholders.push(displayHtml);
-      return key;
+      const displayHtml = `<span class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-semibold border-b border-indigo-500">${word}</span>`
+      const key = `REVISIONPLACEHOLDER${placeholders.length}`
+      placeholders.push(displayHtml)
+      return key
     } else {
-      placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || { revealed: false };
-      const state = placeholderStates.value[rawTag];
-      
-      let elementHtml = "";
+      placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || { revealed: false }
+      const state = placeholderStates.value[rawTag]
+
+      let elementHtml = ''
       if (!state.revealed) {
-        elementHtml = `<span class="px-2.5 py-0.5 bg-slate-200 dark:bg-slate-750 text-transparent rounded-lg cursor-pointer border border-slate-300 dark:border-slate-600 select-none hover:bg-slate-300 hover:text-slate-500/10 active:scale-95 transition-all inline-block align-middle font-mono font-bold" data-action="reveal" data-tag="${encodeURIComponent(rawTag)}">???</span>`;
+        elementHtml = `<span class="px-2.5 py-0.5 bg-slate-200 dark:bg-slate-750 text-transparent rounded-lg cursor-pointer border border-slate-300 dark:border-slate-600 select-none hover:bg-slate-300 hover:text-slate-500/10 active:scale-95 transition-all inline-block align-middle font-mono font-bold" data-action="reveal" data-tag="${encodeURIComponent(rawTag)}">???</span>`
       } else {
-        elementHtml = `<span class="bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-lg font-bold border-b border-indigo-400 inline-flex items-center align-middle select-all transition-all">${word}${renderSm2Buttons(cardId, rawTag)}</span>`;
+        elementHtml = `<span class="bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-lg font-bold border-b border-indigo-400 inline-flex items-center align-middle select-all transition-all">${word}${renderSm2Buttons(cardId, rawTag)}</span>`
       }
-      const key = `REVISIONPLACEHOLDER${placeholders.length}`;
-      placeholders.push(elementHtml);
-      return key;
+      const key = `REVISIONPLACEHOLDER${placeholders.length}`
+      placeholders.push(elementHtml)
+      return key
     }
-  });
+  })
 
   // QCM: {{qcm::Question ?::Option1|*OptionCorrecte*|Option3}}
   temp = temp.replace(/\{\{qcm::(.*?)::(.*?)\}\}/g, (rawTag, question, optionsStr) => {
-    const card = noteFlashcards.value.find(c => c.original_text === rawTag);
-    const cardId = card ? card.id : null;
-    const options = optionsStr.split('|').map((o: string) => o.trim());
-    
+    const card = noteFlashcards.value.find((c) => c.original_text === rawTag)
+    const cardId = card ? card.id : null
+    const options = optionsStr.split('|').map((o: string) => o.trim())
+
     if (!isReview) {
-      const listItems = options.map((opt: string) => {
-        const isCorrect = opt.startsWith('*') && opt.endsWith('*');
-        const cleanOpt = opt.replace(/\*/g, '');
-        return isCorrect 
-          ? `<li class="font-extrabold text-emerald-600 dark:text-emerald-400">✓ ${cleanOpt} (Correct)</li>`
-          : `<li>${cleanOpt}</li>`;
-      }).join('');
-      
+      const listItems = options
+        .map((opt: string) => {
+          const isCorrect = opt.startsWith('*') && opt.endsWith('*')
+          const cleanOpt = opt.replace(/\*/g, '')
+          return isCorrect
+            ? `<li class="font-extrabold text-emerald-600 dark:text-emerald-400">✓ ${cleanOpt} (Correct)</li>`
+            : `<li>${cleanOpt}</li>`
+        })
+        .join('')
+
       const displayHtml = `
         <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold block mb-1">QCM</strong>
           <p class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-2">${question}</p>
           <ul class="list-none pl-0 mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-400">${listItems}</ul>
         </div>
-      `;
-      const key = `REVISIONPLACEHOLDER${placeholders.length}`;
-      placeholders.push(displayHtml);
-      return '\n\n' + key + '\n\n';
+      `
+      const key = `REVISIONPLACEHOLDER${placeholders.length}`
+      placeholders.push(displayHtml)
+      return '\n\n' + key + '\n\n'
     } else {
-      placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || { answered: false, selectedOption: null };
-      const state = placeholderStates.value[rawTag];
-      
-      const buttonsHtml = options.map((opt: string) => {
-        const isCorrect = opt.startsWith('*') && opt.endsWith('*');
-        const cleanOpt = opt.replace(/\*/g, '');
-        let btnClass = "px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 text-xs font-semibold transition-all active:scale-95";
-        
-        if (state.answered) {
-          if (isCorrect) {
-            btnClass = "px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold";
-          } else if (state.selectedOption === cleanOpt) {
-            btnClass = "px-3 py-1.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold";
-          } else {
-            btnClass = "px-3 py-1.5 border border-slate-100 dark:border-slate-850 opacity-40 rounded-xl text-xs font-semibold";
+      placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || {
+        answered: false,
+        selectedOption: null,
+      }
+      const state = placeholderStates.value[rawTag]
+
+      const buttonsHtml = options
+        .map((opt: string) => {
+          const isCorrect = opt.startsWith('*') && opt.endsWith('*')
+          const cleanOpt = opt.replace(/\*/g, '')
+          let btnClass =
+            'px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 text-xs font-semibold transition-all active:scale-95'
+
+          if (state.answered) {
+            if (isCorrect) {
+              btnClass =
+                'px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold'
+            } else if (state.selectedOption === cleanOpt) {
+              btnClass =
+                'px-3 py-1.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold'
+            } else {
+              btnClass =
+                'px-3 py-1.5 border border-slate-100 dark:border-slate-850 opacity-40 rounded-xl text-xs font-semibold'
+            }
           }
-        }
-        return `<button type="button" class="${btnClass}" data-action="qcm-select" data-tag="${encodeURIComponent(rawTag)}" data-option="${encodeURIComponent(cleanOpt)}" ${state.answered ? 'disabled' : ''}>${cleanOpt}</button>`;
-      }).join(' ');
-      
+          return `<button type="button" class="${btnClass}" data-action="qcm-select" data-tag="${encodeURIComponent(rawTag)}" data-option="${encodeURIComponent(cleanOpt)}" ${state.answered ? 'disabled' : ''}>${cleanOpt}</button>`
+        })
+        .join(' ')
+
       const elementHtml = `
         <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
@@ -1786,52 +2123,63 @@ function renderMarkup(text: string): string {
           <p class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-3">${question}</p>
           <div class="flex flex-wrap gap-2">${buttonsHtml}</div>
         </div>
-      `;
-      const key = `REVISIONPLACEHOLDER${placeholders.length}`;
-      placeholders.push(elementHtml);
-      return '\n\n' + key + '\n\n';
+      `
+      const key = `REVISIONPLACEHOLDER${placeholders.length}`
+      placeholders.push(elementHtml)
+      return '\n\n' + key + '\n\n'
     }
-  });
+  })
 
   // VF: {{vf::Affirmation::Vrai/Faux::Justification}}
-  temp = temp.replace(/\{\{vf::(.*?)::(.*?)::(.*?)\}\}/g, (rawTag, assertion, answer, justification) => {
-    const card = noteFlashcards.value.find(c => c.original_text === rawTag);
-    const cardId = card ? card.id : null;
-    const isVrai = answer.trim().toLowerCase() === "vrai";
-    
-    if (!isReview) {
-      const displayHtml = `
+  temp = temp.replace(
+    /\{\{vf::(.*?)::(.*?)::(.*?)\}\}/g,
+    (rawTag, assertion, answer, justification) => {
+      const card = noteFlashcards.value.find((c) => c.original_text === rawTag)
+      const cardId = card ? card.id : null
+      const isVrai = answer.trim().toLowerCase() === 'vrai'
+
+      if (!isReview) {
+        const displayHtml = `
         <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold block mb-1">Vrai ou Faux</strong>
           <p class="font-semibold text-sm text-slate-800 dark:text-slate-100">${assertion}</p>
           <div class="mt-2 text-xs font-bold">Réponse : <span class="${isVrai ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${answer}</span></div>
           <div class="text-xs text-slate-500 dark:text-slate-400 italic mt-1">${justification}</div>
         </div>
-      `;
-      const key = `REVISIONPLACEHOLDER${placeholders.length}`;
-      placeholders.push(displayHtml);
-      return '\n\n' + key + '\n\n';
-    } else {
-      placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || { answered: false, selectedAnswer: null };
-      const state = placeholderStates.value[rawTag];
-      
-      const btns = ["Vrai", "Faux"].map(btnVal => {
-        let btnClass = "px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all active:scale-95";
-        const isThisCorrect = btnVal.toLowerCase() === answer.trim().toLowerCase();
-        
-        if (state.answered) {
-          if (isThisCorrect) {
-            btnClass = "px-4 py-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold";
-          } else if (state.selectedAnswer === btnVal) {
-            btnClass = "px-4 py-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-600 dark:text-rose-455 rounded-xl text-xs font-bold";
-          } else {
-            btnClass = "px-4 py-2 border border-slate-100 dark:border-slate-850 opacity-40 rounded-xl text-xs font-bold";
-          }
+      `
+        const key = `REVISIONPLACEHOLDER${placeholders.length}`
+        placeholders.push(displayHtml)
+        return '\n\n' + key + '\n\n'
+      } else {
+        placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || {
+          answered: false,
+          selectedAnswer: null,
         }
-        return `<button type="button" class="${btnClass}" data-action="vf-select" data-tag="${encodeURIComponent(rawTag)}" data-value="${btnVal}" ${state.answered ? 'disabled' : ''}>${btnVal}</button>`;
-      }).join(' ');
-      
-      const elementHtml = `
+        const state = placeholderStates.value[rawTag]
+
+        const btns = ['Vrai', 'Faux']
+          .map((btnVal) => {
+            let btnClass =
+              'px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all active:scale-95'
+            const isThisCorrect = btnVal.toLowerCase() === answer.trim().toLowerCase()
+
+            if (state.answered) {
+              if (isThisCorrect) {
+                btnClass =
+                  'px-4 py-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold'
+              } else if (state.selectedAnswer === btnVal) {
+                btnClass =
+                  'px-4 py-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-600 dark:text-rose-455 rounded-xl text-xs font-bold'
+              } else {
+                btnClass =
+                  'px-4 py-2 border border-slate-100 dark:border-slate-850 opacity-40 rounded-xl text-xs font-bold'
+              }
+            }
+            return `<button type="button" class="${btnClass}" data-action="vf-select" data-tag="${encodeURIComponent(rawTag)}" data-value="${btnVal}" ${state.answered ? 'disabled' : ''}>${btnVal}</button>`
+          })
+          .join(' ')
+
+        const elementHtml = `
         <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
             <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold">Vrai ou Faux</strong>
@@ -1839,63 +2187,74 @@ function renderMarkup(text: string): string {
           </div>
           <p class="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-3">${assertion}</p>
           <div class="flex gap-3 mb-3">${btns}</div>
-          ${state.answered ? `
+          ${
+            state.answered
+              ? `
             <div class="bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs mt-3">
               <div class="font-bold text-slate-700 dark:text-slate-300 mb-1">Justification :</div>
               <div class="italic text-slate-500 dark:text-slate-400">${justification}</div>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
-      `;
-      const key = `REVISIONPLACEHOLDER${placeholders.length}`;
-      placeholders.push(elementHtml);
-      return '\n\n' + key + '\n\n';
-    }
-  });
+      `
+        const key = `REVISIONPLACEHOLDER${placeholders.length}`
+        placeholders.push(elementHtml)
+        return '\n\n' + key + '\n\n'
+      }
+    },
+  )
 
   // Ordre: {{ordre::Titre::Étape 1 > Étape 2 > Étape 3}}
   temp = temp.replace(/\{\{ordre::(.*?)::(.*?)\}\}/g, (rawTag, title, stepsStr) => {
-    const card = noteFlashcards.value.find(c => c.original_text === rawTag);
-    const cardId = card ? card.id : null;
-    const steps = stepsStr.split('>').map((s: string) => s.trim());
-    
+    const card = noteFlashcards.value.find((c) => c.original_text === rawTag)
+    const cardId = card ? card.id : null
+    const steps = stepsStr.split('>').map((s: string) => s.trim())
+
     const cleanStep = (str: string) => {
-      const cleaned = str.replace(/^(?:étape\s*\d+[\s\-:]*|\d+[\.\s\-:]+)\s*/i, '').trim();
-      return cleaned.length > 0 ? cleaned : str;
-    };
-    
+      const cleaned = str.replace(/^(?:étape\s*\d+[\s\-:]*|\d+[\.\s\-:]+)\s*/i, '').trim()
+      return cleaned.length > 0 ? cleaned : str
+    }
+
     if (!isReview) {
-      const stepItems = steps.map((s: string) => `<li class="mb-1">${cleanStep(s)}</li>`).join('');
+      const stepItems = steps.map((s: string) => `<li class="mb-1">${cleanStep(s)}</li>`).join('')
       const displayHtml = `
         <div class="bg-slate-50/50 dark:bg-slate-900/50 p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl my-2 max-w-2xl shadow-sm not-prose">
           <strong class="text-[9px] uppercase tracking-wider text-slate-455 font-bold block mb-0.5">Séquence : ${title}</strong>
           <ol class="list-decimal mt-1.5 space-y-0.5 text-xs" style="margin-left: 1rem !important; padding-left: 1rem !important;">${stepItems}</ol>
         </div>
-      `;
-      const key = `REVISIONPLACEHOLDER${placeholders.length}`;
-      placeholders.push(displayHtml);
-      return '\n\n' + key + '\n\n';
+      `
+      const key = `REVISIONPLACEHOLDER${placeholders.length}`
+      placeholders.push(displayHtml)
+      return '\n\n' + key + '\n\n'
     } else {
-      placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || { 
-        answered: false, 
-        order: shuffleArray([...steps]) 
-      };
-      const state = placeholderStates.value[rawTag];
-      
-      const stepButtons = state.order.map((step: string, idx: number) => {
-        return `
+      placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || {
+        answered: false,
+        order: shuffleArray([...steps]),
+      }
+      const state = placeholderStates.value[rawTag]
+
+      const stepButtons = state.order
+        .map((step: string, idx: number) => {
+          return `
           <div class="flex items-center justify-between p-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold mb-1.5 shadow-sm">
             <span>${cleanStep(step)}</span>
-            ${!state.answered ? `
+            ${
+              !state.answered
+                ? `
               <div class="flex gap-1 no-print">
                 <button type="button" class="px-1.5 py-0.5 hover:bg-slate-100 dark:hover:bg-slate-850 rounded text-slate-400 hover:text-indigo-650" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="up">▲</button>
                 <button type="button" class="px-1.5 py-0.5 hover:bg-slate-100 dark:hover:bg-slate-850 rounded text-slate-400 hover:text-indigo-650" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="down">▼</button>
               </div>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
-        `;
-      }).join('');
-      
+        `
+        })
+        .join('')
+
       const elementHtml = `
         <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
@@ -1904,39 +2263,48 @@ function renderMarkup(text: string): string {
           </div>
           <div class="mt-3">${stepButtons}</div>
           
-          ${!state.answered ? `
+          ${
+            !state.answered
+              ? `
             <button type="button" class="w-full mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent" data-action="order-validate" data-tag="${encodeURIComponent(rawTag)}">
               Valider l'ordre
             </button>
-          ` : `
+          `
+              : `
             <div class="mt-3 bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
               <div class="font-bold text-slate-700 dark:text-slate-350">Ordre attendu :</div>
               <div class="flex flex-wrap items-center gap-1">
                 ${steps.map((s: string) => `<span class="bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200/50 text-[10px] font-semibold">${cleanStep(s)}</span>`).join(' ➜ ')}
               </div>
             </div>
-          `}
+          `
+          }
         </div>
-      `;
-      const key = `REVISIONPLACEHOLDER${placeholders.length}`;
-      placeholders.push(elementHtml);
-      return '\n\n' + key + '\n\n';
+      `
+      const key = `REVISIONPLACEHOLDER${placeholders.length}`
+      placeholders.push(elementHtml)
+      return '\n\n' + key + '\n\n'
     }
-  });
+  })
 
   // Assoc: {{assoc::Titre::A=1 | B=2 | C=3}}
   temp = temp.replace(/\{\{assoc::(.*?)::(.*?)\}\}/g, (rawTag, title, pairsStr) => {
-    const card = noteFlashcards.value.find(c => c.original_text === rawTag);
-    const cardId = card ? card.id : null;
+    const card = noteFlashcards.value.find((c) => c.original_text === rawTag)
+    const cardId = card ? card.id : null
     const pairs = pairsStr.split('|').map((p: string) => {
       // Utiliser indexOf pour splitter uniquement au premier '=' (évite les bugs avec les expressions contenant des =)
       const eqIdx = p.indexOf('=')
       if (eqIdx === -1) return { key: p.trim(), value: '' }
       return { key: p.substring(0, eqIdx).trim(), value: p.substring(eqIdx + 1).trim() }
-    });
-    
+    })
+
     if (!isReview) {
-      const rows = pairs.map((p: { key: string, value: string }) => `<tr><td class="border border-slate-200 dark:border-slate-800 p-2 font-semibold text-slate-700 dark:text-slate-300">${p.key}</td><td class="border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-400">${p.value}</td></tr>`).join('');
+      const rows = pairs
+        .map(
+          (p: { key: string; value: string }) =>
+            `<tr><td class="border border-slate-200 dark:border-slate-800 p-2 font-semibold text-slate-700 dark:text-slate-300">${p.key}</td><td class="border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-400">${p.value}</td></tr>`,
+        )
+        .join('')
       const displayHtml = `
         <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Associations : ${title}</strong>
@@ -1950,54 +2318,67 @@ function renderMarkup(text: string): string {
             <tbody>${rows}</tbody>
           </table>
         </div>
-      `;
-      const key = `REVISIONPLACEHOLDER${placeholders.length}`;
-      placeholders.push(displayHtml);
-      return '\n\n' + key + '\n\n';
+      `
+      const key = `REVISIONPLACEHOLDER${placeholders.length}`
+      placeholders.push(displayHtml)
+      return '\n\n' + key + '\n\n'
     } else {
-      const keysList = pairs.map((p: any) => p.key);
-      const valuesList = pairs.map((p: any) => p.value);
-      
+      const keysList = pairs.map((p: any) => p.key)
+      const valuesList = pairs.map((p: any) => p.value)
+
       placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || {
         answered: false,
         shuffledKeys: shuffleArray([...keysList]),
         shuffledValues: shuffleArray([...valuesList]),
         selectedKey: null,
-        matches: {}
-      };
-      
-      const state = placeholderStates.value[rawTag];
-      
-      const keysHtml = state.shuffledKeys.map((k: string) => {
-        const isMatched = state.matches[k] !== undefined;
-        let btnClass = "p-2 border text-left rounded-xl text-xs font-semibold shadow-sm transition-all";
-        if (state.selectedKey === k) {
-          btnClass += " border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/10";
-        } else if (isMatched) {
-          btnClass += " border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-850 text-slate-400 cursor-not-allowed opacity-60";
-        } else {
-          btnClass += " border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer";
-        }
-        
-        return `<button type="button" class="${btnClass}" data-action="assoc-key-select" data-tag="${encodeURIComponent(rawTag)}" data-key="${encodeURIComponent(k)}" ${isMatched || state.answered ? 'disabled' : ''}>${k}</button>`;
-      }).join('');
-      
-      const valuesHtml = state.shuffledValues.map((v: string) => {
-        const isMatched = Object.values(state.matches).includes(v);
-        let btnClass = "p-2 border text-left rounded-xl text-xs font-semibold shadow-sm transition-all";
-        if (isMatched) {
-          btnClass += " border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-850 text-slate-400 cursor-not-allowed opacity-60";
-        } else {
-          btnClass += " border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer";
-        }
-        
-        return `<button type="button" class="${btnClass}" data-action="assoc-value-select" data-tag="${encodeURIComponent(rawTag)}" data-value="${encodeURIComponent(v)}" ${isMatched || state.answered || !state.selectedKey ? 'disabled' : ''}>${v}</button>`;
-      }).join('');
-      
-      const matchesHtml = Object.entries(state.matches).map(([k, v]) => {
-        return `<div class="flex items-center justify-between p-2 bg-indigo-50/50 dark:bg-slate-850 border border-indigo-100 dark:border-slate-800 rounded-xl text-[11px] font-semibold">${k} ➜ ${v} ${!state.answered ? `<button type="button" class="text-rose-500 hover:text-rose-700 ml-2" data-action="assoc-remove" data-tag="${encodeURIComponent(rawTag)}" data-key="${encodeURIComponent(k)}">✕</button>` : ''}</div>`;
-      }).join('');
-      
+        matches: {},
+      }
+
+      const state = placeholderStates.value[rawTag]
+
+      const keysHtml = state.shuffledKeys
+        .map((k: string) => {
+          const isMatched = state.matches[k] !== undefined
+          let btnClass =
+            'p-2 border text-left rounded-xl text-xs font-semibold shadow-sm transition-all'
+          if (state.selectedKey === k) {
+            btnClass +=
+              ' border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/10'
+          } else if (isMatched) {
+            btnClass +=
+              ' border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-850 text-slate-400 cursor-not-allowed opacity-60'
+          } else {
+            btnClass +=
+              ' border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer'
+          }
+
+          return `<button type="button" class="${btnClass}" data-action="assoc-key-select" data-tag="${encodeURIComponent(rawTag)}" data-key="${encodeURIComponent(k)}" ${isMatched || state.answered ? 'disabled' : ''}>${k}</button>`
+        })
+        .join('')
+
+      const valuesHtml = state.shuffledValues
+        .map((v: string) => {
+          const isMatched = Object.values(state.matches).includes(v)
+          let btnClass =
+            'p-2 border text-left rounded-xl text-xs font-semibold shadow-sm transition-all'
+          if (isMatched) {
+            btnClass +=
+              ' border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-850 text-slate-400 cursor-not-allowed opacity-60'
+          } else {
+            btnClass +=
+              ' border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer'
+          }
+
+          return `<button type="button" class="${btnClass}" data-action="assoc-value-select" data-tag="${encodeURIComponent(rawTag)}" data-value="${encodeURIComponent(v)}" ${isMatched || state.answered || !state.selectedKey ? 'disabled' : ''}>${v}</button>`
+        })
+        .join('')
+
+      const matchesHtml = Object.entries(state.matches)
+        .map(([k, v]) => {
+          return `<div class="flex items-center justify-between p-2 bg-indigo-50/50 dark:bg-slate-850 border border-indigo-100 dark:border-slate-800 rounded-xl text-[11px] font-semibold">${k} ➜ ${v} ${!state.answered ? `<button type="button" class="text-rose-500 hover:text-rose-700 ml-2" data-action="assoc-remove" data-tag="${encodeURIComponent(rawTag)}" data-key="${encodeURIComponent(k)}">✕</button>` : ''}</div>`
+        })
+        .join('')
+
       const elementHtml = `
         <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
@@ -2011,32 +2392,42 @@ function renderMarkup(text: string): string {
           
           ${Object.keys(state.matches).length > 0 ? `<div class="mt-4 border-t border-slate-200 dark:border-slate-800 pt-3"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2">Liaisons créées :</div><div class="flex flex-col gap-1.5">${matchesHtml}</div></div>` : ''}
           
-          ${!state.answered ? `
+          ${
+            !state.answered
+              ? `
             <button type="button" class="w-full mt-4 px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent disabled:opacity-40" data-action="assoc-validate" data-tag="${encodeURIComponent(rawTag)}" ${Object.keys(state.matches).length !== keysList.length ? 'disabled' : ''}>
               Valider les liaisons
             </button>
-          ` : `
+          `
+              : `
             <div class="mt-4 bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
               <div class="font-bold text-slate-700 dark:text-slate-350">Associations attendues :</div>
               <div class="grid grid-cols-1 gap-1.5">
                 ${pairs.map((p: any) => `<div class="text-[11px] font-semibold text-slate-500"><span class="text-indigo-600 dark:text-indigo-400 font-bold">${p.key}</span> ➜ ${p.value}</div>`).join('')}
               </div>
             </div>
-          `}
+          `
+          }
         </div>
-      `;
-      const key = `REVISIONPLACEHOLDER${placeholders.length}`;
-      placeholders.push(elementHtml);
-      return '\n\n' + key + '\n\n';
+      `
+      const key = `REVISIONPLACEHOLDER${placeholders.length}`
+      placeholders.push(elementHtml)
+      return '\n\n' + key + '\n\n'
     }
-  });
+  })
 
   // 6. Mark down parse
   let html = marked.parse(temp) as string
 
   placeholders.forEach((placeholderHtml, idx) => {
-    html = html.replace(new RegExp(`LATEXBLOCKPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
-    html = html.replace(new RegExp(`LATEXINLINEPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
+    html = html.replace(
+      new RegExp(`LATEXBLOCKPLACEHOLDER${idx}(?!\\d)`, 'g'),
+      () => placeholderHtml,
+    )
+    html = html.replace(
+      new RegExp(`LATEXINLINEPLACEHOLDER${idx}(?!\\d)`, 'g'),
+      () => placeholderHtml,
+    )
     html = html.replace(new RegExp(`DEFPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
     html = html.replace(new RegExp(`DIAGRAMPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
     html = html.replace(new RegExp(`REVISIONPLACEHOLDER${idx}(?!\\d)`, 'g'), () => placeholderHtml)
@@ -2055,8 +2446,9 @@ function renderMarkup(text: string): string {
 }
 
 function renderDiagramHtml(diagram: any): string {
-  if (!diagram) return '<div class="text-xs text-slate-450 italic my-2">Diagramme introuvable.</div>'
-  
+  if (!diagram)
+    return '<div class="text-xs text-slate-450 italic my-2">Diagramme introuvable.</div>'
+
   try {
     const data = JSON.parse(diagram.code)
     if (data && data.type === 'visual') {
@@ -2064,10 +2456,20 @@ function renderDiagramHtml(diagram: any): string {
       const connectionsList = data.connections || []
       const bgImg = data.backgroundImage || ''
       const masksList = data.masks || []
-      
-      const maxX = Math.max(...nodesList.map((n: any) => n.x), ...masksList.map((m: any) => m.x + m.width), 350) + 80
-      const maxY = Math.max(...nodesList.map((n: any) => n.y), ...masksList.map((m: any) => m.y + m.height), 200) + 80
-      
+
+      const maxX =
+        Math.max(
+          ...nodesList.map((n: any) => n.x),
+          ...masksList.map((m: any) => m.x + m.width),
+          350,
+        ) + 80
+      const maxY =
+        Math.max(
+          ...nodesList.map((n: any) => n.y),
+          ...masksList.map((m: any) => m.y + m.height),
+          200,
+        ) + 80
+
       let linesSvg = ''
       connectionsList.forEach((conn: any) => {
         const fromNode = nodesList.find((n: any) => n.id === conn.from)
@@ -2076,7 +2478,7 @@ function renderDiagramHtml(diagram: any): string {
           linesSvg += `<line x1="${fromNode.x}" y1="${fromNode.y}" x2="${toNode.x}" y2="${toNode.y}" stroke="#6366f1" stroke-width="2" marker-end="url(#arrow-preview)" />`
         }
       })
-      
+
       let nodesHtml = ''
       nodesList.forEach((node: any) => {
         let shapeStyle = ''
@@ -2087,12 +2489,12 @@ function renderDiagramHtml(diagram: any): string {
         } else if (node.type === 'diamond') {
           shapeStyle = `width: 45px; height: 45px; transform: rotate(45deg);`
         }
-        
+
         let colorHex = '#6366f1'
         if (node.color.includes('emerald')) colorHex = '#10b981'
         else if (node.color.includes('amber')) colorHex = '#f59e0b'
         else if (node.color.includes('pink')) colorHex = '#ec4899'
-        
+
         if (node.type === 'diamond') {
           nodesHtml += `
             <div class="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center" style="top: ${node.y}px; left: ${node.x}px; width: 45px; height: 45px;">
@@ -2108,28 +2510,30 @@ function renderDiagramHtml(diagram: any): string {
           `
         }
       })
-      
+
       // Background image inside SVG
       let bgImgHtml = ''
       if (bgImg) {
         bgImgHtml = `<image href="${bgImg}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" />`
       }
-      
+
       // Occlusion masks inside SVG
       let masksSvg = ''
       let activeReviewHtml = ''
       const isReview = notesStore.isReviewModeActive
-      
+
       masksList.forEach((mask: any) => {
         const rawTag = `[diagram:${diagram.id}] mask:${mask.id}`
         placeholderStates.value[rawTag] = placeholderStates.value[rawTag] || { revealed: false }
         const state = placeholderStates.value[rawTag]
-        
+
         if (isReview) {
           const isRevealed = state.revealed
-          const fillClass = isRevealed ? 'fill-transparent stroke-rose-500/20' : 'fill-slate-800 dark:fill-slate-700 opacity-100 cursor-pointer'
+          const fillClass = isRevealed
+            ? 'fill-transparent stroke-rose-500/20'
+            : 'fill-slate-800 dark:fill-slate-700 opacity-100 cursor-pointer'
           const pointerEvents = isRevealed ? 'pointer-events-none' : 'pointer-events-auto'
-          
+
           masksSvg += `
             <rect 
               x="${mask.x}" 
@@ -2142,9 +2546,9 @@ function renderDiagramHtml(diagram: any): string {
               data-tag="${encodeURIComponent(rawTag)}"
             />
           `
-          
+
           if (isRevealed) {
-            const card = noteFlashcards.value.find(c => c.original_text === rawTag)
+            const card = noteFlashcards.value.find((c) => c.original_text === rawTag)
             const cardId = card ? card.id : null
             activeReviewHtml += `
               <div class="mt-2 p-2.5 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900 flex flex-col items-center gap-2">
@@ -2168,7 +2572,7 @@ function renderDiagramHtml(diagram: any): string {
           `
         }
       })
-      
+
       return `
         <div class="relative w-full border border-slate-150 dark:border-slate-800 rounded-2xl bg-slate-50/20 dark:bg-slate-950/15 p-2 overflow-hidden my-4 no-print select-none" style="height: ${Math.min(500, maxY + 120)}px;">
           <div class="absolute inset-x-0 top-0 px-4 py-1 flex items-center justify-between text-[8px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50/80 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800/60 z-10">
@@ -2191,7 +2595,7 @@ function renderDiagramHtml(diagram: any): string {
             </div>
           </div>
           <div class="absolute inset-x-0 bottom-0 p-2 bg-white/95 dark:bg-slate-900/95 border-t border-slate-100 dark:border-slate-800/80 z-20 flex flex-col gap-1.5 max-h-36 overflow-y-auto">
-            ${activeReviewHtml || `<div class="text-[9px] text-slate-400 italic text-center py-1">${isReview ? 'Aucun masque d\'occlusion révélé.' : 'Légende : masques d\'occlusion affichés.'}</div>`}
+            ${activeReviewHtml || `<div class="text-[9px] text-slate-400 italic text-center py-1">${isReview ? "Aucun masque d'occlusion révélé." : "Légende : masques d'occlusion affichés."}</div>`}
           </div>
         </div>
       `
@@ -2216,25 +2620,25 @@ function renderDiagramHtml(diagram: any): string {
 function handleTextareaSelect(event: Event) {
   const textarea = textareaRef.value
   if (!textarea) return
-  
+
   const start = textarea.selectionStart
   const end = textarea.selectionEnd
-  
+
   if (start !== end) {
     const selected = textarea.value.substring(start, end).trim()
     if (selected.length > 0) {
       selectionText.value = selected
       selectionStart.value = start
       selectionEnd.value = end
-      savedSelectionContent.value = textarea.value  // snapshot du contenu au moment de la sélection
-      
+      savedSelectionContent.value = textarea.value // snapshot du contenu au moment de la sélection
+
       if (event instanceof MouseEvent) {
         const viewportWidth = window.innerWidth
         // Clamp the left position to keep the bar within bounds (safeguard for screen width)
         const leftBound = Math.max(160, Math.min(event.clientX, viewportWidth - 160))
         selectionMenuPos.value = {
           top: event.clientY - 12,
-          left: leftBound
+          left: leftBound,
         }
       } else {
         const rect = textarea.getBoundingClientRect()
@@ -2243,10 +2647,10 @@ function handleTextareaSelect(event: Event) {
         const leftBound = Math.max(160, Math.min(centerLeft, viewportWidth - 160))
         selectionMenuPos.value = {
           top: rect.top + 60,
-          left: leftBound
+          left: leftBound,
         }
       }
-      
+
       showSelectionMenu.value = true
       return
     }
@@ -2254,16 +2658,31 @@ function handleTextareaSelect(event: Event) {
   showSelectionMenu.value = false
 }
 
-async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'code' | 'bloc_code' | 'def' | 'qcm' | 'ordre' | 'assoc' | 'vf' | 'math_bloc' | 'math_ligne' | 'diagramme') {
+async function applySelectionTransform(
+  type:
+    | 'trou'
+    | 'gras'
+    | 'italique'
+    | 'code'
+    | 'bloc_code'
+    | 'def'
+    | 'qcm'
+    | 'ordre'
+    | 'assoc'
+    | 'vf'
+    | 'math_bloc'
+    | 'math_ligne'
+    | 'diagramme',
+) {
   const textarea = textareaRef.value
   if (!textarea) return
-  
+
   // Utiliser le snapshot du contenu au moment de la sélection (évite le décalage stale après await)
   const text = savedSelectionContent.value || textarea.value
   const start = selectionStart.value
   const end = selectionEnd.value
   const selected = text.substring(start, end)
-  
+
   let replaced = ''
   if (type === 'trou') {
     replaced = `{{trou::${selected}}}`
@@ -2284,8 +2703,8 @@ async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'cod
       confirmBg: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20',
       confirmLabel: 'Ajouter la définition',
       fields: [
-        { label: 'Définition', type: 'text', value: '', placeholder: 'Entrez la définition...' }
-      ]
+        { label: 'Définition', type: 'text', value: '', placeholder: 'Entrez la définition...' },
+      ],
     })
     if (!result) return
     replaced = `[${selected}]{def:${result[0].value.trim() || 'Définition...'}}`
@@ -2298,10 +2717,15 @@ async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'cod
       confirmBg: 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20',
       confirmLabel: 'Créer le QCM',
       fields: [
-        { label: 'Question', type: 'text', value: 'Question ?', placeholder: 'Entrez la question...' },
+        {
+          label: 'Question',
+          type: 'text',
+          value: 'Question ?',
+          placeholder: 'Entrez la question...',
+        },
         { label: 'Option fausse 1', type: 'text', value: '', placeholder: 'Mauvaise réponse 1...' },
-        { label: 'Option fausse 2', type: 'text', value: '', placeholder: 'Mauvaise réponse 2...' }
-      ]
+        { label: 'Option fausse 2', type: 'text', value: '', placeholder: 'Mauvaise réponse 2...' },
+      ],
     })
     if (!result) return
     replaced = `{{qcm::${result[0].value}::${result[1].value}|*${selected}*|${result[2].value}}}`
@@ -2314,9 +2738,19 @@ async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'cod
       confirmBg: 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20',
       confirmLabel: 'Créer la séquence',
       fields: [
-        { label: 'Titre de la séquence', type: 'text', value: 'Ordre', placeholder: 'Ex : Étapes de la photosynthèse' },
-        { label: 'Étape suivante', type: 'text', value: '', placeholder: 'Entrez l’étape qui suit...' }
-      ]
+        {
+          label: 'Titre de la séquence',
+          type: 'text',
+          value: 'Ordre',
+          placeholder: 'Ex : Étapes de la photosynthèse',
+        },
+        {
+          label: 'Étape suivante',
+          type: 'text',
+          value: '',
+          placeholder: 'Entrez l’étape qui suit...',
+        },
+      ],
     })
     if (!result) return
     replaced = `{{ordre::${result[0].value}::${selected} > ${result[1].value}}}`
@@ -2329,9 +2763,19 @@ async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'cod
       confirmBg: 'bg-pink-600 hover:bg-pink-700 shadow-pink-600/20',
       confirmLabel: 'Créer l’association',
       fields: [
-        { label: 'Titre du groupe', type: 'text', value: 'Relations', placeholder: 'Ex : Capitales' },
-        { label: `Valeur associée à « ${selected} »`, type: 'text', value: '', placeholder: 'Ex : Paris' }
-      ]
+        {
+          label: 'Titre du groupe',
+          type: 'text',
+          value: 'Relations',
+          placeholder: 'Ex : Capitales',
+        },
+        {
+          label: `Valeur associée à « ${selected} »`,
+          type: 'text',
+          value: '',
+          placeholder: 'Ex : Paris',
+        },
+      ],
     })
     if (!result) return
     replaced = `{{assoc::${result[0].value}::${selected} = ${result[1].value}}}`
@@ -2345,8 +2789,8 @@ async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'cod
       confirmLabel: 'Créer la question',
       fields: [
         { label: 'Cette assertion est...', type: 'bool', value: true },
-        { label: 'Justification', type: 'text', value: '', placeholder: 'Expliquez pourquoi...' }
-      ]
+        { label: 'Justification', type: 'text', value: '', placeholder: 'Expliquez pourquoi...' },
+      ],
     })
     if (!result) return
     const ans = result[0].value ? 'Vrai' : 'Faux'
@@ -2359,11 +2803,12 @@ async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'cod
     if (allUserDiagrams.value.length === 0) {
       await openModal({
         title: 'Aucun diagramme',
-        description: 'Vous n’avez créé aucun diagramme. Allez dans le module Diagrammes pour en créer un.',
+        description:
+          'Vous n’avez créé aucun diagramme. Allez dans le module Diagrammes pour en créer un.',
         icon: Image,
         iconBg: 'bg-sky-500',
         confirmLabel: 'Compris',
-        fields: []
+        fields: [],
       })
       return
     }
@@ -2379,19 +2824,19 @@ async function applySelectionTransform(type: 'trou' | 'gras' | 'italique' | 'cod
           label: 'Diagramme',
           type: 'select',
           value: allUserDiagrams.value[0]?.id,
-          options: allUserDiagrams.value.map(d => ({ value: d.id, label: d.title }))
-        }
-      ]
+          options: allUserDiagrams.value.map((d) => ({ value: d.id, label: d.title })),
+        },
+      ],
     })
     if (!result) return
     replaced = `[diagram:${result[0].value}]`
   }
-  
+
   noteBody.value = text.substring(0, start) + replaced + text.substring(end)
-  
+
   triggerAutoSave()
   showSelectionMenu.value = false
-  
+
   setTimeout(() => {
     textarea.focus()
     const newPos = start + replaced.length
@@ -2407,35 +2852,29 @@ function handleMarkdownClick(event: MouseEvent) {
 async function handlePlaceholderInteraction(event: MouseEvent) {
   const target = event.target as HTMLElement
   const action = target.getAttribute('data-action')
-  
+
   if (!action) return
-  
+
   const rawTag = decodeURIComponent(target.getAttribute('data-tag') || '')
   if (!rawTag) return
-  
+
   const state = placeholderStates.value[rawTag]
-  
+
   if (action === 'reveal') {
     state.revealed = true
-  }
-  
-  else if (action === 'qcm-select') {
+  } else if (action === 'qcm-select') {
     const optionSelected = decodeURIComponent(target.getAttribute('data-option') || '')
     state.selectedOption = optionSelected
     state.answered = true
-  }
-  
-  else if (action === 'vf-select') {
+  } else if (action === 'vf-select') {
     const val = target.getAttribute('data-value') || ''
     state.selectedAnswer = val
     state.answered = true
-  }
-  
-  else if (action === 'order-move') {
+  } else if (action === 'order-move') {
     const idx = Number(target.getAttribute('data-index'))
     const dir = target.getAttribute('data-dir')
     const list = [...state.order]
-    
+
     if (dir === 'up' && idx > 0) {
       const tempVal = list[idx]
       list[idx] = list[idx - 1]
@@ -2446,74 +2885,61 @@ async function handlePlaceholderInteraction(event: MouseEvent) {
       list[idx + 1] = tempVal
     }
     state.order = list
-  }
-  
-  else if (action === 'order-validate') {
+  } else if (action === 'order-validate') {
     state.answered = true
-  }
-  
-  else if (action === 'assoc-key-select') {
+  } else if (action === 'assoc-key-select') {
     const key = decodeURIComponent(target.getAttribute('data-key') || '')
     state.selectedKey = key
-  }
-  
-  else if (action === 'assoc-value-select') {
+  } else if (action === 'assoc-value-select') {
     const val = decodeURIComponent(target.getAttribute('data-value') || '')
     if (state.selectedKey) {
       state.matches[state.selectedKey] = val
       state.selectedKey = null
     }
-  }
-  
-  else if (action === 'assoc-remove') {
+  } else if (action === 'assoc-remove') {
     const key = decodeURIComponent(target.getAttribute('data-key') || '')
     delete state.matches[key]
-  }
-  
-  else if (action === 'assoc-validate') {
+  } else if (action === 'assoc-validate') {
     state.answered = true
-  }
-  
-  else if (action === 'sm2-vote') {
+  } else if (action === 'sm2-vote') {
     const cardId = Number(target.getAttribute('data-card-id'))
     const score = Number(target.getAttribute('data-score'))
-    
+
     try {
       target.setAttribute('disabled', 'true')
       target.innerText = '...'
-      
+
       await api.patch(`/flashcards/${cardId}/review`, { score })
       state.score = score
     } catch (err) {
       console.error('Erreur lors du vote SM-2', err)
       alert("Erreur lors de l'enregistrement de l'évaluation.")
       target.removeAttribute('disabled')
-      target.innerText = score === 1 ? 'À revoir' : score === 2 ? 'Difficile' : score === 3 ? 'Correct' : 'Facile'
+      target.innerText =
+        score === 1 ? 'À revoir' : score === 2 ? 'Difficile' : score === 3 ? 'Correct' : 'Facile'
     }
-  }
-  
-  else if (action === 'sm2-re-evaluate') {
+  } else if (action === 'sm2-re-evaluate') {
     const cardId = Number(target.getAttribute('data-card-id'))
     openEvaluationModal(cardId, rawTag)
   }
-  
-  // Trigger evaluation modal if applicable
-  const isActionRequiringEvaluation = 
-    (action === 'reveal') || // Trou or diagram mask revealed
-    (action === 'qcm-select') ||
-    (action === 'vf-select') ||
-    (action === 'order-validate') ||
-    (action === 'assoc-validate')
 
-  const card = noteFlashcards.value.find(c => c.original_text === rawTag)
+  // Trigger evaluation modal if applicable
+  const isActionRequiringEvaluation =
+    action === 'reveal' || // Trou or diagram mask revealed
+    action === 'qcm-select' ||
+    action === 'vf-select' ||
+    action === 'order-validate' ||
+    action === 'assoc-validate'
+
+  const card = noteFlashcards.value.find((c) => c.original_text === rawTag)
   const cardId = card ? card.id : null
-    
+
   if (isActionRequiringEvaluation && cardId && (!state || state.score === undefined)) {
     setTimeout(() => {
       openEvaluationModal(cardId, rawTag)
     }, 700)
   }
-  
+
   // Force reactive update
   placeholderStates.value = { ...placeholderStates.value }
 }
@@ -2532,13 +2958,13 @@ async function toggleMode() {
 
 function getBinderName(bId: string | null): string {
   if (bId === null) return 'Général (Aucun)'
-  const b = bindersStore.binders.find(x => x.id === bId)
+  const b = bindersStore.binders.find((x) => x.id === bId)
   return b ? b.name : 'Général (Aucun)'
 }
 
 // Linked Notes logic
 const linkableNotes = computed(() => {
-  return notesStore.notes.filter(n => n.id !== noteId.value && !noteLinks.value.includes(n.id))
+  return notesStore.notes.filter((n) => n.id !== noteId.value && !noteLinks.value.includes(n.id))
 })
 
 function addNoteLink() {
@@ -2550,12 +2976,12 @@ function addNoteLink() {
 }
 
 function removeNoteLink(id: string) {
-  noteLinks.value = noteLinks.value.filter(linkedId => linkedId !== id)
+  noteLinks.value = noteLinks.value.filter((linkedId) => linkedId !== id)
   triggerAutoSave()
 }
 
 function getNoteTitle(id: string): string {
-  const n = notesStore.notes.find(x => x.id === id)
+  const n = notesStore.notes.find((x) => x.id === id)
   return n ? n.title : 'Note inconnue'
 }
 
@@ -2619,10 +3045,10 @@ function insertText(prefix: string, suffix: string) {
   const end = textarea.selectionEnd
   const text = textarea.value
   const selected = text.substring(start, end)
-  
+
   const replacement = prefix + selected + suffix
   noteBody.value = text.substring(0, start) + replacement + text.substring(end)
-  
+
   setTimeout(() => {
     textarea.focus()
     const newCursorPos = start + prefix.length + selected.length + suffix.length
@@ -2639,15 +3065,16 @@ async function insertDefinitionTooltip() {
   const end = textarea.selectionEnd
   const text = textarea.value
   const selected = text.substring(start, end)
-  
+
   if (!selected.trim()) {
     await openModal({
       title: 'Sélection requise',
-      description: 'Veuillez sélectionner un mot ou un terme dans le texte pour lui associer une définition.',
+      description:
+        'Veuillez sélectionner un mot ou un terme dans le texte pour lui associer une définition.',
       icon: BookOpen,
       iconBg: 'bg-emerald-500',
       confirmLabel: 'Compris',
-      fields: []
+      fields: [],
     })
     return
   }
@@ -2660,14 +3087,19 @@ async function insertDefinitionTooltip() {
     confirmBg: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20',
     confirmLabel: 'Ajouter la définition',
     fields: [
-      { label: 'Définition', type: 'text', value: '', placeholder: `Définissez « ${selected} »...` }
-    ]
+      {
+        label: 'Définition',
+        type: 'text',
+        value: '',
+        placeholder: `Définissez « ${selected} »...`,
+      },
+    ],
   })
   if (!result || !result[0].value.trim()) return
 
   const replacement = `[${selected}]{def:${result[0].value.trim()}}`
   noteBody.value = text.substring(0, start) + replacement + text.substring(end)
-  
+
   setTimeout(() => {
     textarea.focus()
     const newCursorPos = start + replacement.length
@@ -2700,7 +3132,7 @@ async function hideFromView() {
 }
 
 function triggerAutoSave() {
-  if (isReadOnly.value) return  // note partagée en lecture seule : pas de sauvegarde
+  if (isReadOnly.value) return // note partagée en lecture seule : pas de sauvegarde
   saveStatus.value = 'Modifications...'
   isSaving.value = true
 
@@ -2713,16 +3145,21 @@ function triggerAutoSave() {
 async function saveNote() {
   isSaving.value = true
   saveStatus.value = 'Sauvegarde...'
-  
+
   // Re-build markdown raw note structure
   const rawContent = compileStructuredNote()
-  
+
   try {
-    const updated = await notesStore.updateNote(noteId.value, title.value, rawContent, binderId.value)
+    const updated = await notesStore.updateNote(
+      noteId.value,
+      title.value,
+      rawContent,
+      binderId.value,
+    )
     if (updated) {
       noteFlashcards.value = (updated as any).flashcards || []
     }
-    const index = notesStore.notes.findIndex(n => n.id === noteId.value)
+    const index = notesStore.notes.findIndex((n) => n.id === noteId.value)
     if (index !== -1) {
       notesStore.notes[index].binder_id = binderId.value
     }
@@ -2749,16 +3186,24 @@ function handlePdfExport(options: PdfExportOptions) {
   setTimeout(() => {
     window.print()
     document.body.classList.remove(
-      'pdf-theme-modern', 'pdf-theme-academic', 'pdf-theme-minimal',
-      'pdf-size-compact', 'pdf-size-standard', 'pdf-size-comfortable'
+      'pdf-theme-modern',
+      'pdf-theme-academic',
+      'pdf-theme-minimal',
+      'pdf-size-compact',
+      'pdf-size-standard',
+      'pdf-size-comfortable',
     )
   }, 150)
 }
 
 async function saveNoteTags(tags: Tag[]) {
   if (!noteId.value) return
-  noteTags.value = await tagsStore.setTagsForEntity('notes', noteId.value, tags.map(tag => tag.id))
-  const note = notesStore.notes.find(item => item.id === noteId.value)
+  noteTags.value = await tagsStore.setTagsForEntity(
+    'notes',
+    noteId.value,
+    tags.map((tag) => tag.id),
+  )
+  const note = notesStore.notes.find((item) => item.id === noteId.value)
   if (note) note.tags = noteTags.value
 }
 </script>
@@ -2772,7 +3217,9 @@ async function saveNoteTags(tags: Tag[]) {
   }
 
   /* Universal exact print color rendering */
-  *, *:before, *:after {
+  *,
+  *:before,
+  *:after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
@@ -2791,7 +3238,15 @@ async function saveNoteTags(tags: Tag[]) {
   }
 
   /* Hide interactive, navigation, and modal components */
-  aside, header, nav, button, select, input, .no-print, [no-print], .teleport-modal {
+  aside,
+  header,
+  nav,
+  button,
+  select,
+  input,
+  .no-print,
+  [no-print],
+  .teleport-modal {
     display: none !important;
   }
 
@@ -2803,7 +3258,10 @@ async function saveNoteTags(tags: Tag[]) {
     color: #0f172a !important;
   }
 
-  .min-h-screen, main, .max-w-6xl, .max-w-4xl {
+  .min-h-screen,
+  main,
+  .max-w-6xl,
+  .max-w-4xl {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
@@ -2813,12 +3271,18 @@ async function saveNoteTags(tags: Tag[]) {
 
   /* Theme styling variations */
   body.pdf-theme-modern {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      sans-serif !important;
     color: #0f172a !important;
   }
 
   body.pdf-theme-academic {
-    font-family: Georgia, Cambria, "Times New Roman", Times, serif !important;
+    font-family: Georgia, Cambria, 'Times New Roman', Times, serif !important;
     color: #111827 !important;
   }
 
@@ -2877,7 +3341,16 @@ async function saveNoteTags(tags: Tag[]) {
   }
 
   /* Page break avoidance for compound blocks */
-  pre, code, table, blockquote, .katex-display, .not-prose, .print-toc-block, .print-glossary-block, .print-header-banner, img {
+  pre,
+  code,
+  table,
+  blockquote,
+  .katex-display,
+  .not-prose,
+  .print-toc-block,
+  .print-glossary-block,
+  .print-header-banner,
+  img {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
@@ -2888,7 +3361,7 @@ async function saveNoteTags(tags: Tag[]) {
     border: 1px solid #cbd5e1 !important;
     border-radius: 8px !important;
     padding: 12px 16px !important;
-    font-family: "JetBrains Mono", Consolas, monospace !important;
+    font-family: 'JetBrains Mono', Consolas, monospace !important;
     white-space: pre-wrap !important;
     word-break: break-word !important;
   }
@@ -2945,7 +3418,9 @@ async function saveNoteTags(tags: Tag[]) {
 
 .popup-enter-active,
 .popup-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 .popup-enter-from,
 .popup-leave-to {

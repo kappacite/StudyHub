@@ -192,6 +192,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'notes/:id/feynman',
+        name: 'NoteFeynman',
+        component: () => import('../views/Notes/NoteFeynman.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'exam/setup',
         name: 'ExamSetup',
         component: () => import('../views/Exam/ExamSetup.vue'),
