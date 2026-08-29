@@ -160,6 +160,40 @@ def test_binder_stats_query_budget(client, auth_headers, app):
     assert count["n"] <= 8
 
 
+def test_binder_stats_total_duration_seconds_sums_across_sets(client, auth_headers):
+    """Temps total d'etude du classeur (Task 9) = somme des sessions de tous
+    ses ensembles de revision -- aucune requete de plus, aucune fabrication."""
+    binder_id = _binder(client, auth_headers, "Révisions")
+    set_id, item = _qcm_set(client, auth_headers, binder_id, "QCM Maths")
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={
+            "duration_seconds": 30,
+            "answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}],
+        },
+        headers=auth_headers,
+    )
+    vf_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF Histoire", "type": "vf", "binder_id": binder_id},
+        headers=auth_headers,
+    ).json["id"]
+    vf_item = client.post(
+        f"/api/v1/revision/sets/{vf_id}/items",
+        json={"payload": {"assertion": "Vrai ?", "correct": True}},
+        headers=auth_headers,
+    ).json
+    client.post(
+        f"/api/v1/revision/sets/{vf_id}/study/answer/{vf_item['id']}",
+        json={"score": 5, "duration_seconds": 20},
+        headers=auth_headers,
+    )
+
+    resp = client.get(f"/api/v1/stats/binders/{binder_id}", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json["total_duration_seconds"] == 50
+
+
 def test_binder_stats_breaks_down_heterogeneous_set_by_item_type(client, auth_headers):
     """Un ensemble heterogene doit apparaitre dans CHAQUE bucket de type que
     ses items couvrent reellement (pas invisible, pas un bucket unique

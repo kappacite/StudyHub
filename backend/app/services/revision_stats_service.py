@@ -130,21 +130,24 @@ def weekly_progression(
 
 def session_history(sessions: list[StudySession]) -> list[SessionHistoryDay]:
     """Regroupe les sessions notées par jour calendaire (`created_at.date()`),
-    la plus récente en premier, avec le taux de réussite agrégé du jour."""
+    la plus récente en premier, avec le taux de réussite agrégé du jour et la
+    durée cumulée réelle du jour (Task 9, somme de `duration_seconds`)."""
     by_day: dict = {}
     for s in sessions:
         if s.grade is None:
             continue
         day = s.created_at.date()
-        acc = by_day.setdefault(day, {"reviews": 0, "successes": 0})
+        acc = by_day.setdefault(day, {"reviews": 0, "successes": 0, "duration": 0})
         acc["reviews"] += 1
         if s.grade >= 3:
             acc["successes"] += 1
+        acc["duration"] += s.duration_seconds or 0
     return [
         SessionHistoryDay(
             date=day,
             reviews=by_day[day]["reviews"],
             success_rate=round(by_day[day]["successes"] / by_day[day]["reviews"] * 100, 1),
+            duration_seconds=by_day[day]["duration"],
         )
         for day in sorted(by_day.keys(), reverse=True)
     ]
@@ -194,6 +197,12 @@ class _SetAggregate:
         return (
             round(sum(self.difficulties) / len(self.difficulties), 1) if self.difficulties else 0.0
         )
+
+    @property
+    def total_duration_seconds(self) -> int:
+        """Temps cumulé réel (Task 9) : somme des `duration_seconds` des
+        sessions notées déjà chargées -- aucune requête supplémentaire."""
+        return sum(s.duration_seconds or 0 for s in self.graded_sessions)
 
 
 class RevisionStatsService:
@@ -358,6 +367,7 @@ class RevisionStatsService:
             grade_distribution=grade_distribution(agg.graded_sessions),
             weekly_progression=weekly_progression(agg.graded_sessions, now),
             session_history=session_history(agg.graded_sessions),
+            total_duration_seconds=agg.total_duration_seconds,
         )
 
     def _build_verdicts(
@@ -450,6 +460,7 @@ class RevisionStatsService:
             tot.mature_successes += agg.mature_successes
             tot.success_rates.extend(agg.success_rates)
             tot.difficulties.extend(agg.difficulties)
+            tot.graded_sessions.extend(agg.graded_sessions)
 
             # Répartition par type d'ITEM (pas d'ensemble) : un ensemble
             # hétérogène compte dans chacun des types que ses items couvrent
@@ -508,4 +519,5 @@ class RevisionStatsService:
             sets=summaries,
             weakest_sets=weakest,
             verdicts=verdicts,
+            total_duration_seconds=tot.total_duration_seconds,
         )

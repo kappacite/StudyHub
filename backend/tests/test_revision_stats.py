@@ -259,7 +259,7 @@ def _definition_with_item(client, auth_headers):
     return set_id, item
 
 
-def _add_session(item_id, grade, created_at):
+def _add_session(item_id, grade, created_at, duration_seconds=0):
     """Insere directement une StudySession avec un created_at controle -- le
     endpoint /study/answer ne permet pas de piloter created_at (server_default
     func.now(), insensible a freezegun sur SQLite) : necessaire pour tester le
@@ -271,7 +271,7 @@ def _add_session(item_id, grade, created_at):
         StudySession(
             user_id=_add_session.uid,
             module="definition",
-            duration_seconds=0,
+            duration_seconds=duration_seconds,
             cards_reviewed=1,
             cards_correct=1 if grade >= 3 else 0,
             item_id=item_id,
@@ -368,6 +368,52 @@ def test_set_stats_new_fields_default_when_never_reviewed(client, auth_headers):
     assert len(body["weekly_progression"]) == 6
     assert all(w["reviews"] == 0 and w["success_rate"] == 0.0 for w in body["weekly_progression"])
     assert body["session_history"] == []
+    assert body["total_duration_seconds"] == 0
+
+
+# --- Duree cumulee reelle (Task 9, reviser-hub-redesign) ---------------------
+
+
+def test_set_stats_total_duration_seconds_sums_real_sessions(client, auth_headers, app):
+    """Temps cumule = somme des duration_seconds des sessions deja chargees
+    par get_set_stats -- aucune requete supplementaire, pas de fabrication."""
+    set_id, item = _definition_with_item(client, auth_headers)
+
+    from app.models.user import User
+
+    with app.app_context():
+        uid = User.query.filter_by(email="test@example.com").first().id
+        _add_session.uid = uid
+        now = datetime.utcnow()
+        _add_session(item["id"], 5, now, duration_seconds=30)
+        _add_session(item["id"], 4, now - timedelta(days=1), duration_seconds=45)
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    assert stats.json["total_duration_seconds"] == 75
+
+
+def test_set_stats_session_history_sums_duration_per_day(client, auth_headers, app):
+    """La colonne Duree de l'historique doit sommer les sessions du meme jour
+    calendaire, comme reviews/success_rate le font deja."""
+    set_id, item = _definition_with_item(client, auth_headers)
+
+    from app.models.user import User
+
+    with app.app_context():
+        uid = User.query.filter_by(email="test@example.com").first().id
+        _add_session.uid = uid
+        today_9am = datetime.utcnow().replace(hour=9, minute=0, second=0, microsecond=0)
+        _add_session(item["id"], 5, today_9am, duration_seconds=20)
+        _add_session(item["id"], 1, today_9am + timedelta(hours=2), duration_seconds=10)
+        _add_session(item["id"], 4, today_9am - timedelta(days=1), duration_seconds=40)
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    history = stats.json["session_history"]
+    assert len(history) == 2
+    assert history[0]["duration_seconds"] == 30  # aujourd'hui : 20 + 10
+    assert history[1]["duration_seconds"] == 40  # hier
 
 
 def test_set_stats_on_heterogeneous_set_counts_all_item_types(client, auth_headers):

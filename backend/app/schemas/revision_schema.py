@@ -74,6 +74,10 @@ class RevisionItemUpdate(BaseModel):
 
 class RevisionItemAnswer(BaseModel):
     score: int = Field(..., ge=0, le=5, description="Score d'évaluation SM-2 de 0 à 5")
+    # Duree reelle ecoulee sur cet item (Task 9) -- optionnelle pour retro-
+    # compatibilite avec un client qui ne l'envoie pas encore : defaut 0,
+    # jamais estime/invente.
+    duration_seconds: int = Field(0, ge=0)
 
 
 class RevisionItemResponse(BaseModel):
@@ -106,6 +110,9 @@ class RevisionRunAnswer(BaseModel):
 
 class RevisionRunRequest(BaseModel):
     answers: list[RevisionRunAnswer]
+    # Duree totale du passage (Task 9), repartie par question via divmod
+    # dans le service -- optionnelle, defaut 0, jamais estimee/inventee.
+    duration_seconds: int = Field(0, ge=0)
 
 
 class RevisionRunQuestionResult(BaseModel):
@@ -133,6 +140,8 @@ class RevisionGradeRequest(BaseModel):
     #   association -> {"matches": {left: right}}
     #   ordre       -> {"order": [str, ...]}
     answer: dict[str, Any]
+    # Duree reelle ecoulee sur cet item (Task 9) -- optionnelle, defaut 0.
+    duration_seconds: int = Field(0, ge=0)
 
 
 class RevisionGradeResult(BaseModel):
@@ -211,6 +220,7 @@ class SessionHistoryDay(BaseModel):
     date: date
     reviews: int
     success_rate: float
+    duration_seconds: int = 0
 
 
 class RevisionSetStats(BaseModel):
@@ -233,6 +243,8 @@ class RevisionSetStats(BaseModel):
     grade_distribution: GradeDistribution = GradeDistribution()
     weekly_progression: list[WeeklyProgressionPoint] = []
     session_history: list[SessionHistoryDay] = []
+    # Temps cumule reel (Task 9), somme des StudySession deja chargees.
+    total_duration_seconds: int = 0
 
 
 # --- Stats par classeur (A8) -------------------------------------------------
@@ -283,3 +295,7 @@ class RevisionBinderStats(BaseModel):
     sets: list[RevisionSetSummary] = []
     weakest_sets: list[RevisionSetSummary] = []  # ensembles les plus à risque
     verdicts: list[str] = []
+    # Temps total d'etude reel (Task 9), somme des sessions de tous les
+    # ensembles de revision du classeur -- les decks de flashcards ne sont
+    # pas inclus (duree non trackee cote flashcard_service, hors perimetre).
+    total_duration_seconds: int = 0

@@ -444,6 +444,109 @@ def test_answer_item_on_heterogeneous_set_does_not_crash(client, auth_headers, a
         assert sess.module == "flashcard"
 
 
+# --- Duree de revision reelle (Task 9, reviser-hub-redesign) ----------------
+
+
+def test_answer_item_records_real_duration_seconds(client, auth_headers, app):
+    """Un duration_seconds poste doit atterrir tel quel sur la StudySession
+    creee -- plus de valeur figee a 0 (cf. Task 9)."""
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "La Terre est plate.", "correct": False}},
+        headers=auth_headers,
+    ).json
+
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/answer/{item['id']}",
+        json={"score": 5, "duration_seconds": 42},
+        headers=auth_headers,
+    )
+    with app.app_context():
+        from app.models.study_session import StudySession
+
+        sess = StudySession.query.filter_by(item_id=item["id"]).first()
+        assert sess.duration_seconds == 42
+
+
+def test_answer_item_omitted_duration_defaults_to_zero(client, auth_headers, app):
+    """Retro-compatibilite : un client qui n'envoie pas duration_seconds ne
+    doit pas voir de valeur inventee -- 0 exactement, comme avant."""
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "La Terre est plate.", "correct": False}},
+        headers=auth_headers,
+    ).json
+
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/answer/{item['id']}",
+        json={"score": 5},
+        headers=auth_headers,
+    )
+    with app.app_context():
+        from app.models.study_session import StudySession
+
+        sess = StudySession.query.filter_by(item_id=item["id"]).first()
+        assert sess.duration_seconds == 0
+
+
+def test_grade_item_records_real_duration_seconds(client, auth_headers, app):
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "Le ciel est bleu.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
+        json={"answer": {"value": True}, "duration_seconds": 17},
+        headers=auth_headers,
+    )
+    with app.app_context():
+        from app.models.study_session import StudySession
+
+        sess = StudySession.query.filter_by(item_id=item["id"]).first()
+        assert sess.duration_seconds == 17
+
+
+def test_grade_item_omitted_duration_defaults_to_zero(client, auth_headers, app):
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "Le ciel est bleu.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
+        json={"answer": {"value": True}},
+        headers=auth_headers,
+    )
+    with app.app_context():
+        from app.models.study_session import StudySession
+
+        sess = StudySession.query.filter_by(item_id=item["id"]).first()
+        assert sess.duration_seconds == 0
+
+
 def test_grade_item_on_heterogeneous_set_does_not_crash(client, auth_headers):
     """Meme constat que ci-dessus pour le chemin auto-corrige (vf/association/ordre)."""
     set_id = client.post(

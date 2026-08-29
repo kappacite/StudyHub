@@ -1,16 +1,22 @@
 import math
-from flask import Blueprint, request, jsonify
+
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity
-from app.extensions import db
-from app.dao.revision_dao import RevisionSetDAO, RevisionItemDAO
+
 from app.dao.binder_dao import BinderDAO
-from app.services.revision_service import RevisionService
-from app.schemas.revision_schema import (
-    RevisionSetCreate, RevisionSetUpdate,
-    RevisionItemCreate, RevisionItemUpdate, RevisionItemAnswer,
-    RevisionRunRequest, RevisionGradeRequest,
-)
+from app.dao.revision_dao import RevisionItemDAO, RevisionSetDAO
+from app.extensions import db
 from app.middlewares.auth_middleware import jwt_required_middleware
+from app.schemas.revision_schema import (
+    RevisionGradeRequest,
+    RevisionItemAnswer,
+    RevisionItemCreate,
+    RevisionItemUpdate,
+    RevisionRunRequest,
+    RevisionSetCreate,
+    RevisionSetUpdate,
+)
+from app.services.revision_service import RevisionService
 
 revision_bp = Blueprint("revision", __name__)
 
@@ -21,6 +27,7 @@ revision_service = RevisionService(set_dao, item_dao, binder_dao)
 
 
 # --- Ensembles ---------------------------------------------------------------
+
 
 @revision_bp.route("/sets", methods=["GET"])
 @jwt_required_middleware
@@ -34,10 +41,12 @@ def get_sets():
 
     sets, total = revision_service.get_sets(user_id, set_type, binder_id, search, page, per_page)
     pages = math.ceil(total / per_page) if total > 0 else 0
-    return jsonify({
-        "data": [s.model_dump() for s in sets],
-        "pagination": {"page": page, "per_page": per_page, "total": total, "pages": pages},
-    }), 200
+    return jsonify(
+        {
+            "data": [s.model_dump() for s in sets],
+            "pagination": {"page": page, "per_page": per_page, "total": total, "pages": pages},
+        }
+    ), 200
 
 
 @revision_bp.route("/sets", methods=["POST"])
@@ -76,6 +85,7 @@ def delete_set(set_id):
 
 # --- Items -------------------------------------------------------------------
 
+
 @revision_bp.route("/sets/<int:set_id>/items", methods=["GET"])
 @jwt_required_middleware
 def get_items(set_id):
@@ -112,6 +122,7 @@ def delete_item(set_id, item_id):
 
 # --- Étude (SM-2) ------------------------------------------------------------
 
+
 @revision_bp.route("/sets/<int:set_id>/study", methods=["GET"])
 @jwt_required_middleware
 def study_set(set_id):
@@ -125,7 +136,9 @@ def study_set(set_id):
 def answer_item(set_id, item_id):
     user_id = int(get_jwt_identity())
     data = RevisionItemAnswer.model_validate(request.get_json() or {})
-    result = revision_service.answer_item(user_id, set_id, item_id, data.score)
+    result = revision_service.answer_item(
+        user_id, set_id, item_id, data.score, data.duration_seconds
+    )
     return jsonify(result.model_dump()), 200
 
 
@@ -143,5 +156,7 @@ def run_qcm(set_id):
 def grade_item(set_id, item_id):
     user_id = int(get_jwt_identity())
     data = RevisionGradeRequest.model_validate(request.get_json() or {})
-    result = revision_service.grade_item(user_id, set_id, item_id, data.answer)
+    result = revision_service.grade_item(
+        user_id, set_id, item_id, data.answer, data.duration_seconds
+    )
     return jsonify(result.model_dump()), 200
