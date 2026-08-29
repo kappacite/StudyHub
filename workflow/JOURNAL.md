@@ -10,6 +10,16 @@ Chantier actif : aucun
 
 ## Historique
 
+- 2026-08-29 — [reviser-hub] **Task 9 ajoutée post-clôture** (demande utilisateur en chat) : durée
+  de révision réelle dans les statistiques (« Temps cumulé », colonne « Durée », « Temps total
+  d'étude » classeur), jusque-là omise faute de suivi réel. Chronométrage réel côté frontend
+  (`RevisionStudy.vue`/`QcmRun.vue`), répartition `divmod` pour le passage QCM groupé, aucune
+  fabrication (omission = toujours `0`). 1 tour, revue immédiatement propre. 1 écart pré-existant
+  signalé hors scope : `StudySessionDAO` ne filtre pas par `user_id` (mélange de sessions
+  multi-élèves déjà possible sur un ensemble partagé, pas une régression de cette tâche). Vérifié
+  visuellement en direct (durée réelle postée via l'API, rendue correctement sur les 2 écrans).
+  Détail complet : `workflow/reviser-hub/JOURNAL.md`. Prochaine action : revue finale de branche,
+  puis demander à l'utilisateur de pousser `feature/reviser-hub` et ouvrir la PR.
 - 2026-08-29 — [reviser-hub] **Correction et reclôture** : la clôture précédente (ci-dessous)
   n'avait jamais consulté les vraies maquettes Direction A — répétition de l'erreur documentée
   dans la mémoire `migration-ecran-verify-mockup`. Correction complète via

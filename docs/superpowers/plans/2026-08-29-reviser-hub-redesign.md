@@ -589,7 +589,7 @@ no `duration_seconds` (old client, or a test that doesn't send one), default to 
 before — do not estimate or invent a plausible-looking number. Conventional Commits, French body.
 Never `git push`.
 
-- [ ] **Step 1: Read the current call sites**
+- [x] **Step 1: Read the current call sites**
 
 Read `RevisionService.answer_item`/`.grade_item`/`.run_qcm` (backend/app/services/revision_service.py:308-425)
 and their 3 route handlers (backend/app/api/v1/revision.py:123-147) in full. Read
@@ -597,7 +597,7 @@ and their 3 route handlers (backend/app/api/v1/revision.py:123-147) in full. Rea
 `QcmRun.vue`'s `onMounted`/`submit` in full — these line numbers may have shifted since this plan
 was written, read the actual current file.
 
-- [ ] **Step 2: Backend — write failing tests**
+- [x] **Step 2: Backend — write failing tests**
 
 Add tests asserting: (a) `POST .../study/answer/:id` and `.../study/grade/:id` with a
 `duration_seconds` in the body produce a `StudySession` row with that exact value (not `0`); (b)
@@ -606,9 +606,9 @@ omitting `duration_seconds` still defaults to `0` (no regression, no fabrication
 rows whose `duration_seconds` values sum to exactly 100 (e.g. via `divmod`, so no fractional
 seconds lost or invented).
 
-- [ ] **Step 3: Run to verify RED, then implement, then verify GREEN**
+- [x] **Step 3: Run to verify RED, then implement, then verify GREEN**
 
-- [ ] **Step 4: Backend stats — write failing tests**
+- [x] **Step 4: Backend stats — write failing tests**
 
 `test_revision_stats.py`: a fixture with several sessions carrying real, distinct
 `duration_seconds` values (constructed the same way the existing weekly/day-grouping tests already
@@ -617,15 +617,15 @@ do — direct DB insert with controlled `created_at`, per that file's establishe
 `duration_seconds` summed correctly; assert `GET /revision/binders/:id/stats` returns a
 binder-level `total_duration_seconds` summed across its revision sets' sessions.
 
-- [ ] **Step 5: Run to verify RED, then implement, then verify GREEN, then full backend suite**
+- [x] **Step 5: Run to verify RED, then implement, then verify GREEN, then full backend suite**
 
-- [ ] **Step 6: Frontend — widen types, add the timer instrumentation**
+- [x] **Step 6: Frontend — widen types, add the timer instrumentation**
 
 Widen `SetStats`/`BinderStats` in `stores/revision.ts`. Add the `durationSeconds` param to
 `answerItem`/`gradeItem`/`runQcm`. Instrument `RevisionStudy.vue`/`QcmRun.vue` with the timers
 described above.
 
-- [ ] **Step 7: Frontend — write failing tests for the timer wiring and the new UI**
+- [x] **Step 7: Frontend — write failing tests for the timer wiring and the new UI**
 
 Component tests: mocking `Date.now()` (or using fake timers) to assert a specific elapsed duration
 gets included in the API call payload for at least one `RevisionStudy.vue` submit path and for
@@ -633,14 +633,14 @@ gets included in the API call payload for at least one `RevisionStudy.vue` submi
 assert the new duration stat(s) render the `formatDuration` output for a fixture value (e.g. 8100s
 → "2h 15", 480s → "8 min").
 
-- [ ] **Step 8: Run to verify RED, then implement the UI + `formatDuration`, then verify GREEN**
+- [x] **Step 8: Run to verify RED, then implement the UI + `formatDuration`, then verify GREEN**
 
-- [ ] **Step 9: Full suite + type-check**
+- [x] **Step 9: Full suite + type-check**
 
 Run `cd backend && .venv/Scripts/python.exe -m pytest -q` and
 `cd web && npx vitest run && npx vue-tsc -b`.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add backend/app/schemas/revision_schema.py backend/app/api/v1/revision.py backend/app/services/revision_service.py backend/app/services/revision_stats_service.py backend/tests/ web/src/stores/revision.ts web/src/views/Reviews/RevisionStudy.vue web/src/views/Reviews/QcmRun.vue web/src/views/Reviews/RevisionSetStats.vue web/src/views/Reviews/RevisionBinderStats.vue web/src/utils/ web/tests/

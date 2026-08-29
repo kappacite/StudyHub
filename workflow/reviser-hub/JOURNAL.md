@@ -176,3 +176,47 @@ correction n'y touchait).
 Suite complète verte tout au long (voir ledger `.superpowers/sdd/2026-08-29-reviser-hub-redesign/progress.md`
 pour le détail tâche par tâche), `vue-tsc -b` propre. Chantier prêt à clôturer — cette fois contre
 les vraies maquettes.
+
+## 2026-08-29 (Task 9 — durée de révision réelle, demande utilisateur post-clôture)
+
+L'utilisateur a demandé, après la clôture ci-dessus, d'ajouter la durée de révision dans les
+statistiques comme le montrent les maquettes (« Temps cumulé », colonne « Durée » de l'historique
+de sessions, « Temps total d'étude » au niveau classeur) — délibérément omise dans les Tasks 5-6
+car `StudySession.duration_seconds` était codé en dur à `0` à chaque point de création (jamais
+suivi). Ajoutée comme Task 9 du plan, exécutée en TDD (subagent-driven-development, 1 seul tour :
+revue immédiatement propre, 0 Critical/Important).
+
+**Backend** : `RevisionItemAnswer`/`RevisionGradeRequest`/`RevisionRunRequest` gagnent
+`duration_seconds` (optionnel, défaut `0` — omission = toujours `0`, jamais inventé).
+`answer_item`/`grade_item` utilisent la durée réelle reçue ; `run_qcm` reçoit une durée totale pour
+tout le passage et la répartit sur ses items via `divmod` (ex. 100s/3 questions → [34,33,33],
+somme exacte, testé). `revision_stats_service.py` ajoute `total_duration_seconds` (ensemble et
+classeur) et `SessionHistoryDay.duration_seconds`, tous calculés à partir des sessions déjà
+chargées (aucune requête de plus).
+
+**Frontend** : `RevisionStudy.vue` et `QcmRun.vue` chronomètrent réellement le temps passé
+(`Date.now()` au montage/changement d'item, calcul à la soumission) et l'envoient via
+`revisionStore` (aucun nouvel appel API direct introduit dans un composant — vigilance explicite
+après les 2 précédents tours de correction sur ce point). `formatDuration` (nouvel utilitaire
+partagé) formate « 2h 15 » / « 8 min » à l'identique des maquettes. `RevisionSetStats.vue` : trio
+passé à 3 colonnes (ajout « Temps cumulé »), historique gagne une colonne « Durée ».
+`RevisionBinderStats.vue` : **décision du contrôleur** — « Temps total d'étude » ajouté comme 5ᵉ
+carte plutôt que de remplacer « Taux de réussite moyen » (déjà réel, déjà approuvé en Task 6) dans
+son emplacement exact de la maquette ; supprimer un contenu déjà validé juste pour coller au
+nombre de cartes de la maquette n'en valait pas la peine.
+
+Revue : spec ✅, qualité Approved, 0 Critical/Important. Les deux points à enjeu réel (l'arithmétique
+`divmod` et le filtrage `user_id` des nouvelles agrégations) ont été vérifiés indépendamment à la
+main par le relecteur, pas seulement pris sur la foi du rapport. 1 écart pré-existant signalé (hors
+scope de cette tâche) : `StudySessionDAO.get_for_items` ne filtre pas par `user_id` — un ensemble
+partagé (« cours ») peut déjà mélanger les sessions de plusieurs élèves dans les stats du
+propriétaire ; ce n'est pas une régression de cette tâche (tous les autres agrégats de ce service
+en héritent déjà), mais mérite un futur audit dédié de `revision_stats_service.py`.
+
+**Vérification visuelle réelle** (environnement natif redémarré brièvement, même procédure) : un
+nouvel item créé et noté avec une durée explicite de 135s via l'API confirme `total_duration_seconds:
+135` et `session_history[0].duration_seconds: 135` côté backend ; côté frontend, `RevisionSetStats.vue`
+affiche bien « 2 min » dans le trio ET dans la colonne Durée de l'historique, `RevisionBinderStats.vue`
+affiche la 5ᵉ carte « Temps total d'étude : 2 min · Depuis la création » sans avoir supprimé aucune
+des 4 cartes existantes — confirme visuellement que la décision « ajouter, pas remplacer » est bien
+ce qui a été livré.
