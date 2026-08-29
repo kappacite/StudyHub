@@ -1,8 +1,8 @@
 # Réviser — hub global
 
-Statut : pr-ouverte
+Statut : clos
 Branche : feature/reviser-hub
-PR : #130
+PR : #130 (mergée)
 
 ## Pourquoi
 
