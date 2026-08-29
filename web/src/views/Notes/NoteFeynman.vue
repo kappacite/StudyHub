@@ -269,11 +269,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../../services/api'
+import { useNotesStore } from '../../stores/notes'
+import feynmanService from '../../services/feynmanService'
+import type { FeynmanGap, FeynmanResult } from '../../services/feynmanService'
 import { ChevronLeft, Clock, Sparkles, RotateCcw, Compass } from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()
+const notesStore = useNotesStore()
 
 const noteId = ref(route.params.id as string)
 const noteTitle = ref('')
@@ -281,17 +284,13 @@ const noteTitle = ref('')
 const step = ref<'work' | 'results'>('work')
 const feynmanDraft = ref('')
 const feynmanTimer = ref(0)
-let timerInterval: any = null
+let timerInterval: ReturnType<typeof setInterval> | null = null
 
 const feynmanWordCount = computed(() => {
   if (!feynmanDraft.value.trim()) return 0
   return feynmanDraft.value.trim().split(/\s+/).length
 })
 
-interface FeynmanGap {
-  concept: string
-  issue: string
-}
 const feynmanResult = ref({
   score: 0,
   jargon: [] as string[],
@@ -327,8 +326,8 @@ function stopTimer() {
 
 async function loadNote() {
   try {
-    const res = await api.get(`/notes/${noteId.value}`)
-    noteTitle.value = res.data.title
+    const note = await notesStore.fetchNoteById(noteId.value)
+    if (note) noteTitle.value = note.title
   } catch (err) {
     console.error('Erreur lors du chargement de la note', err)
   }
@@ -364,18 +363,18 @@ async function evaluateFeynman() {
   feynmanAnalyzing.value = true
 
   try {
-    const response = await api.post('/feynman/analyze', {
-      note_id: noteId.value,
-      user_explanation: feynmanDraft.value,
-      duration_seconds: feynmanTimer.value,
-    })
+    const analyzeResponse = await feynmanService.analyze(
+      noteId.value,
+      feynmanDraft.value,
+      feynmanTimer.value,
+    )
 
-    if (response.data.status === 'SUCCESS' && response.data.result) {
-      applyFeynmanResult(response.data.result)
+    if (analyzeResponse.status === 'SUCCESS' && analyzeResponse.result) {
+      applyFeynmanResult(analyzeResponse.result)
       return
     }
 
-    const { task_id } = response.data
+    const { task_id } = analyzeResponse
     if (!task_id) throw new Error("L'API n'a pas retourné d'identifiant de tâche (task_id).")
 
     let finished = false
@@ -384,14 +383,13 @@ async function evaluateFeynman() {
     while (!finished && attempts < maxAttempts) {
       attempts++
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      const poll = await api.get(`/feynman/tasks/${task_id}`)
-      const status = poll.data.status
-      if (status === 'SUCCESS') {
+      const poll = await feynmanService.pollTask(task_id)
+      if (poll.status === 'SUCCESS') {
         finished = true
-        applyFeynmanResult(poll.data.result)
-      } else if (status === 'FAILURE' || poll.data.error) {
+        applyFeynmanResult(poll.result ?? {})
+      } else if (poll.status === 'FAILURE' || poll.error) {
         finished = true
-        throw new Error(poll.data.error?.message || "L'analyse a échoué.")
+        throw new Error(poll.error?.message || "L'analyse a échoué.")
       }
     }
     if (!finished) throw new Error("L'analyse a mis trop de temps. Veuillez réessayer.")
@@ -403,13 +401,7 @@ async function evaluateFeynman() {
   }
 }
 
-function applyFeynmanResult(result: {
-  clarity_score?: number
-  jargon?: string[]
-  gaps?: FeynmanGap[]
-  feedback?: string
-  suggestion?: string
-}) {
+function applyFeynmanResult(result: FeynmanResult) {
   feynmanResult.value = {
     score: Math.max(0, Math.min(100, Math.round(result.clarity_score ?? 0))),
     jargon: Array.isArray(result.jargon) ? result.jargon : [],
