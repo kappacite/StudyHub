@@ -220,3 +220,57 @@ affiche bien « 2 min » dans le trio ET dans la colonne Durée de l'historique,
 affiche la 5ᵉ carte « Temps total d'étude : 2 min · Depuis la création » sans avoir supprimé aucune
 des 4 cartes existantes — confirme visuellement que la décision « ajouter, pas remplacer » est bien
 ce qui a été livré.
+
+## 2026-08-30 (revue finale de branche, tour de correction, chantier prêt pour la PR)
+
+Revue finale de toute la branche (31 commits à l'époque, Opus, 6 passes déclarées) contre `main`,
+per `superpowers:subagent-driven-development`. Verdict : **1 Critical, 4 Important, 9 Minor.**
+
+**Critical** : `FocusItem.type` élargi (Task 1/2) pour inclure `'revision_set'`, mais seul
+`Reviews.vue` (Task 7) savait le traiter. 5 autres consommateurs vivants ne géraient pas cette
+valeur — exactement le balayage que le brief de la Task 2 demandait explicitement, fait en lecture
+apparemment sans suite sur tout l'arbre : `Accueil.vue`/`FocusPage.vue` (bouton « Réviser » inerte,
+icône/libellé qui retombent sur la branche *assignment* — un ensemble de révision dû affichait
+l'icône et le texte d'un devoir sur l'écran le plus visité de l'appli), `FocusWidget.vue` (CTA du
+tableau de bord inerte), `StudyDeck.vue`/`Blurting.vue` (`handleNextFocusItem` sans branche —
+cassait la file unifiée « Tout réviser » en plein vol, le curseur ayant déjà avancé). Aucune revue
+de tâche ne pouvait l'attraper : la casse vivait entièrement hors de la liste de fichiers de
+chaque tâche, et `vue-tsc -b` restait vert car chaque site est une chaîne `if/else if`, pas un
+`switch` exhaustif.
+
+**Important** : (2) le nouveau `total_duration_seconds` (Task 9) aggrave un écart préexistant de
+`StudySessionDAO` (aucun filtre `user_id`) — les autres champs affectés sont des ratios bornés qui
+dégénèrent vers une moyenne de classe sur un ensemble « cours » partagé, mais une somme de durée
+est non bornée et se présente comme une affirmation à la première personne (« Temps total d'étude
+— Depuis la création »), avec fuite secondaire du temps d'étude des autres élèves. (3)
+`RevisionBinderStats.vue` filtrait les decks par `binder_id` direct uniquement, alors que la moitié
+« ensembles » de la même vue fusionnée (et le bouton « Inclure les sous-classeurs ») est
+descendants-inclusive — sous-compte et rend le bouton incohérent sur tout classeur avec
+sous-classeurs. (4) `RevisionSetStats.vue` et `RevisionBinderStats.vue` avaient toutes deux perdu
+leur état d'erreur pendant la refonte (Round 2) — page blanche sur échec réseau. (5)
+`NoteFeynman.vue` (Task 3, écrit avant les 2 tours de correction de ce même défaut sur cette
+branche) appelait `api.*` directement depuis le composant, plus un `any` explicite.
+
+**Tour de correction** (1 seul dispatch couvrant Critical + les 4 Important + 3 Minors bon marché
+directement liés — `run_qcm` écrivait `item_type=rset.type` au lieu de `item.type` ; le bouton
+« Réviser cette série » de `RevisionSetStats.vue` ignorait la branche QCM `/run` ; le chrono de
+`QcmRun.vue` démarrait avant le chargement réseau) : 4 commits, suite complète verte (backend
+319/324, les 5 échecs `test_import.py` Windows préexistants et non liés ; frontend 384/384,
+`vue-tsc -b` propre). Re-revue ciblée : **les 8 constats ADDRESSÉS, aucune casse nouvelle
+Critical/Important.** Attention particulière portée aux deux points à enjeu réel — vérifié
+indépendamment que l'utilitaire partagé `focusItemTarget.ts` route correctement QCM vs non-QCM
+sur les 5 fichiers réellement corrigés (pas seulement la revendication du commit), et que le
+scoping `user_id` de `StudySessionDAO` ne casse pas le cas légitime (un propriétaire d'ensemble
+partagé voit toujours ses propres sessions) — deux nouveaux tests d'isolation cross-utilisateur
+vérifient les *valeurs*, pas seulement les codes 403/404, dont un dédié spécifiquement au nouveau
+`total_duration_seconds`.
+
+2 Minors relevés, tous deux classés sans suite (ni bloquants ni correctifs nécessaires) : une
+incohérence entre `StudyDeck.vue` (corrige incidemment aussi le cas `assignment`) et
+`Blurting.vue` (le laisse tel quel) — inoffensif, route vers la vraie destination existante, pas
+une route morte ; et une garde `!== null` sur `binder_id` qui préserve exactement le comportement
+antérieur, notée seulement pour référence future.
+
+**Chantier prêt pour la PR.** Revue finale propre, ledger complet dans
+`.superpowers/sdd/2026-08-29-reviser-hub-redesign/progress.md` (supprimé après cette clôture,
+l'historique git fait foi comme pour les chantiers précédents).

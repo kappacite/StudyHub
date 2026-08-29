@@ -10,6 +10,16 @@ Chantier actif : aucun
 
 ## Historique
 
+- 2026-08-30 — [reviser-hub] **Revue finale de branche + tour de correction, chantier prêt pour
+  la PR.** 1 Critical trouvé (un type élargi — `FocusItem.type` + `'revision_set'` — câblé dans un
+  seul consommateur sur 6, cassant le bouton « Réviser » sur `Accueil.vue`/`FocusPage.vue`/
+  `FocusWidget.vue` et la file unifiée sur `StudyDeck.vue`/`Blurting.vue` ; aucune revue de tâche
+  ne pouvait le voir, hors de toute liste de fichiers déclarée) + 4 Important (scoping `user_id`
+  manquant sur les nouvelles stats de durée ; classeurs/decks avec des périmètres
+  descendants incohérents ; état d'erreur perdu sur 2 écrans refondus ; appel API direct + `any`
+  dans un nouveau composant). 1 seul tour de correction (4 commits), re-revue ciblée propre.
+  Détail complet : `workflow/reviser-hub/JOURNAL.md`. Prochaine action : demander à l'utilisateur
+  de pousser `feature/reviser-hub`, puis ouvrir la PR.
 - 2026-08-29 — [reviser-hub] **Task 9 ajoutée post-clôture** (demande utilisateur en chat) : durée
   de révision réelle dans les statistiques (« Temps cumulé », colonne « Durée », « Temps total
   d'étude » classeur), jusque-là omise faute de suivi réel. Chronométrage réel côté frontend
