@@ -5,10 +5,26 @@ Chantier actif : aucun
 ## Chantiers ouverts
 
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
-- `ecrans-peripheriques-visuels` — pas commencé, indépendant
+- `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir sa note du 2026-08-30 :
+  `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes, détail dans `bibliotheque-redesign`)
 - `classes-examens-planning` — pas commencé, indépendant
+- `bibliotheque-redesign` — **planifié seulement**, pas ouvert (`Binders.vue`, requiert un
+  brainstorming avant exécution — voir `workflow/bibliotheque-redesign/CONTEXT.md`)
 
 ## Historique
+
+- 2026-08-30 — [bibliotheque-redesign] Chantier créé en `Statut : planifie` (investigation
+  demandée en chat, sur le modèle de la correction `reviser-hub`) : `Binders.vue` n'a jamais
+  été comparé aux vraies maquettes Direction A (confirmé depuis son commit fondateur,
+  `77ff833`, 2026-06-21). `RevisionSetDetail.vue`/`RevisionSetModal.vue` déjà vérifiés
+  (`bibliotheque-ensembles`), hors scope. `PDFs.vue`/`Diagrams.vue` montrent le même écart
+  mais restent le territoire de `ecrans-peripheriques-visuels` (déjà planifié, note ajoutée
+  là-bas) — pas dupliqués ici. Spec :
+  `docs/superpowers/specs/2026-08-30-bibliotheque-redesign-design.md`. Plan brouillon (pas
+  prêt à exécuter, requiert `superpowers:brainstorming` sur l'arbre de sous-dossiers et le
+  contenu non rangé à la racine) : `docs/superpowers/plans/2026-08-30-bibliotheque-redesign.md`.
+  Aucune implémentation lancée, sur demande explicite de l'utilisateur. Prochaine action :
+  brainstorming avec l'utilisateur pour ouvrir ce chantier, ou choisir un autre chantier.
 
 - 2026-08-30 — [reviser-hub] **PR #130 mergée dans `main`** (squash, `358e5b0`), CI verte (6/6
   checks — le job E2E Playwright avait cassé sur le 1ᵉʳ run sur un test jamais migré après le

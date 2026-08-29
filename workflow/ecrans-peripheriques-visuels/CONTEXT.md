@@ -31,3 +31,23 @@ chantier `editeur-notes-notation-ia` (méthode Feynman).
 
 `ETAT.md`, section « Plan global par flux... », flux 7 ; ordre des écrans historique de la
 phase 4 (section « Ordre des écrans »).
+
+## Note ajoutée le 2026-08-30 (chantier `bibliotheque-redesign`)
+
+Investigation faite pour un autre chantier (`bibliotheque-redesign`,
+`docs/superpowers/specs/2026-08-30-bibliotheque-redesign-design.md`) a confirmé, en comparant
+directement aux vraies maquettes Direction A, que `PDFs.vue` et `Diagrams.vue` divergent
+fortement de leurs maquettes respectives :
+- `PDFs.dc.html` montre un **lecteur/annotateur intégré** (surlignage, note ancrée, navigation
+  page par page) — `PDFs.vue` actuel est une simple grille de fichiers (import/liste/tags),
+  aucune lecture ni annotation en place. Écart de fonctionnalité, pas seulement de mise en
+  page — à trancher avant d'exécuter la tâche « Migrer PDF » ci-dessus : vrai lecteur (coût
+  réel) ou grille actuelle acceptée comme simplification assumée.
+- `Diagrams.dc.html` montre une **galerie** (grille de vignettes) comme écran d'entrée, avant
+  d'ouvrir un éditeur — cohérent avec le « coquille uniquement » déjà noté ci-dessus : ajouter
+  cette vue galerie en amont de l'éditeur existant (qui n'a pas de maquette propre) satisferait
+  la maquette sans toucher au canevas/moteur.
+
+Utiliser ces deux constats au moment d'ouvrir ce chantier plutôt que de redériver la
+comparaison — les fichiers `.dc.html` sont ré-extractibles via la procédure de la mémoire
+`extract-claude-design-mockup` si besoin de les revoir en détail.
