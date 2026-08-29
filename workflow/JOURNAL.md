@@ -5,12 +5,18 @@ Chantier actif : aucun
 ## Chantiers ouverts
 
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
-- `reviser-hub` — pas commencé, débloqué (`backend-ensembles-heterogenes` mergé)
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
 
+- 2026-08-29 — [reviser-hub] Chantier `code clos` : 11 tâches TDD (subagent-driven-development),
+  toutes approuvées sans tour de correction. Correctif backend réel trouvé et corrigé (stats
+  silencieusement vides pour tout ensemble hétérogène révisé — filtrage par type d'ensemble au
+  lieu de type d'item sur le discriminant polymorphe de `StudySession`). `RevisionSetManage.vue`
+  retiré (doublon de `RevisionSetDetail.vue`). Vérification visuelle réelle faite dès cette
+  clôture (pas différée). Détail complet : `workflow/reviser-hub/JOURNAL.md`. Prochaine action :
+  demander à l'utilisateur de pousser `feature/reviser-hub`, puis ouvrir la PR.
 - 2026-08-29 — [bibliotheque-ensembles] **PR #128 mergée dans `main`** (squash, `af20f00`),
   CI verte (6/6 checks). Chantier `clos`. Prochaine action : choisir le prochain chantier à
   ouvrir (`editeur-notes-notation-ia`, `reviser-hub`, `ecrans-peripheriques-visuels` ou

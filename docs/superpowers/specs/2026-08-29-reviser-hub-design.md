@@ -155,12 +155,17 @@ soit mal affiché, soit — pour les stats — silencieusement vide.
   duplication minimale, à trancher au moment du plan selon la taille du
   diff). Clic → `router.push('/revision/sets/${set.id}')`
   (`RevisionSetDetail.vue`) au lieu du `/manage` actuel.
-- Bouton « Gérer » (actuel, pousse vers `/revision/sets/:id/manage`) :
-  supprimé de toutes les lignes (onglets existants inclus, pas seulement
-  Mixte) — cohérence : un seul chemin de gestion des items pour tout
-  ensemble, homogène ou non, désormais `RevisionSetDetail.vue`. Le bouton
-  « Stats » (`/revision/sets/:id/stats`) reste inchangé sur toutes les
-  lignes, y compris Mixte.
+- Bouton « Gérer » : repointé de `/revision/sets/:id/manage` vers
+  `/revision/sets/:id` (`RevisionSetDetail.vue`) sur **toutes** les lignes
+  (onglets existants inclus, pas seulement Mixte) — même bouton, même
+  libellé, seule la destination change. Cohérence : un seul chemin de
+  gestion des items pour tout ensemble, homogène ou non. Le bouton « Stats »
+  (`/revision/sets/:id/stats`) reste inchangé sur toutes les lignes, y
+  compris Mixte.
+- Pas de bouton « Créer » sur l'onglet Mixte (le `v-if="currentSetType"`
+  existant le masque déjà naturellement, `currentSetType` valant `null` sur
+  cet onglet) — création d'un ensemble hétérogène déjà possible depuis
+  Bibliothèque, décision de ne pas dupliquer ce point d'entrée ici.
 - `set.type === 'qcm' ? 'Lancer' : 'Étudier'` : inchangé pour les 5 onglets
   existants (jamais atteint pour l'onglet Mixte, `set.type` y est toujours
   `null` — le bouton de lancement de l'onglet Mixte pousse simplement vers
@@ -178,16 +183,25 @@ soit mal affiché, soit — pour les stats — silencieusement vide.
   icône/badge de type (`it.type`, désormais toujours renseigné par le
   backend), réutilisant le set d'icônes déjà utilisé dans
   `RevisionSetDetail.vue`.
-- Édition d'un item depuis cette liste : `RevisionItemModal` ouvert avec le
-  type propre de l'item (`it.type`), pas un `locked-type` unique pour tout
-  l'écran comme c'est le cas aujourd'hui (`:locked-type="stats?.type"`,
-  actuellement incohérent dès que `stats.type` est `null`).
+- Édition d'un item depuis cette liste : `RevisionItemModal` accepte déjà
+  `props.editItem?.type || props.lockedType || ...` — le type de l'item
+  édité prime toujours sur `lockedType` en édition (correctif déjà fait par
+  `bibliotheque-ensembles`, le sélecteur de type est d'ailleurs masqué en
+  édition, `v-if="!isEdit && !lockedType"`). `:locked-type="stats?.type"`
+  est donc déjà inerte pour ce flux, pas un bug fonctionnel — juste du code
+  mort trompeur (laisse penser que `stats.type` pilote le type affiché).
+  Retiré simplement (prop supprimée de l'appel), pas remplacé.
 
 ### `RevisionBinderStats.vue`
 
-- `TYPE_LABELS: Record<RevisionType, string>` reste à 5 entrées (les types
-  concrets) — plus besoin d'entrée « mixte », le breakdown groupe désormais
-  par type d'item réel (cf. § Backend, jamais null).
+- `TYPE_LABELS: Record<RevisionType, string>` (5 entrées, sans `flashcard`)
+  doit devenir `Record<RevisionItemType, string>` (6 entrées, + `Flashcards`)
+  — le breakdown groupe désormais par type d'*item* réel (cf. § Backend),
+  qui inclut `flashcard`, jamais couvert par `RevisionType` (type
+  *homogène* d'ensemble, 5 valeurs seulement, `flashcard` ne peut jamais
+  être le type d'un ensemble homogène). `typeLabel()` n'a plus besoin de
+  gérer un cas « mixte » pour ce tableau (chaque clé est un type concret,
+  jamais null) — seul le badge par ensemble (ci-dessous) doit gérer `null`.
 - « Répartition par type » : consomme directement `by_type` (déjà groupé
   par item côté backend) — aucun changement de logique d'affichage, la
   donnée en entrée est simplement correcte pour la première fois pour un
