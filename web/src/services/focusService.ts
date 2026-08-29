@@ -1,7 +1,7 @@
 import api from './api'
 
 export interface FocusItem {
-  type: 'deck' | 'note' | 'assignment'
+  type: 'deck' | 'note' | 'assignment' | 'revision_set'
   id: number | string
   title: string
   count: number
@@ -56,7 +56,7 @@ const focusService = {
   async getFocusRetention() {
     const response = await api.get<FocusRetention>('/focus/retention')
     return response.data
-  }
+  },
 }
 
 export default focusService
