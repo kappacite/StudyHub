@@ -526,6 +526,9 @@ const currentRouteName = computed(() => {
   if (name === 'ExamSession') return "Session d'Examen"
   if (name === 'ExamResults') return "Résultats d'Examen"
   if (name === 'AssignmentDetail') return 'Détails du devoir'
+  if (name === 'RevisionSetDetail') return 'Ensemble de révision'
+  if (name === 'RevisionSetTypeItems') return 'Éléments par type'
+  if (name === 'RevisionStudy') return 'Session de révision'
   return name
 })
 

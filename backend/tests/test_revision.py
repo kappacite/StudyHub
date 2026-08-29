@@ -414,3 +414,52 @@ def test_answer_item_records_item_type_not_set_type(client, auth_headers, app):
 
         sess = StudySession.query.filter_by(item_id=item["id"]).first()
         assert sess.item_type == "flashcard"
+
+
+def test_answer_item_on_heterogeneous_set_does_not_crash(client, auth_headers, app):
+    """Un ensemble reellement heterogene (type: None, cas normal depuis la
+    bibliotheque) doit pouvoir etre etudie -- `StudySession.module` ne peut pas
+    rester `rset.type` (None) sous peine de violer sa contrainte NOT NULL."""
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "Heterogene"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"type": "flashcard", "payload": {"front": "Chat", "back": "Cat"}},
+        headers=auth_headers,
+    ).json
+
+    response = client.post(
+        f"/api/v1/revision/sets/{set_id}/study/answer/{item['id']}",
+        json={"score": 4},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    with app.app_context():
+        from app.models.study_session import StudySession
+
+        sess = StudySession.query.filter_by(item_id=item["id"]).first()
+        assert sess.module == "flashcard"
+
+
+def test_grade_item_on_heterogeneous_set_does_not_crash(client, auth_headers):
+    """Meme constat que ci-dessus pour le chemin auto-corrige (vf/association/ordre)."""
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "Heterogene"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"type": "vf", "payload": {"assertion": "Le ciel est bleu.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    response = client.post(
+        f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
+        json={"answer": {"value": True}},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200

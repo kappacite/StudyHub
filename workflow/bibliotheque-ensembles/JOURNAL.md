@@ -86,3 +86,57 @@ une session ultérieure si l'environnement se stabilise, avant un merge définit
 
 **Prochaine étape** : revue finale de branche entière (le modèle le plus capable), puis
 procédure de clôture de chantier (push, PR).
+
+## 2026-08-29 (vérification visuelle réelle — comble l'écart laissé ouvert)
+
+Reprise du chantier pour combler le seul point restant du plan. L'environnement Docker partagé
+était de nouveau libre (`docker ps` vide), mais l'utilisateur a explicitement demandé de ne
+pas passer par Docker pour cette vérification (accident de configuration constaté au passage :
+son `.env` à la racine du dépôt pointe `DATABASE_URL` vers l'hôte `db` du réseau Docker interne,
+introuvable en dehors — et le frontend Docker qu'il avait lancé pour tester servait une image
+**périmée** avec `VITE_API_BASE_URL=http://localhost:5000` baké au build, d'où les rejets CSP
+`connect-src 'self'` qu'il observait : correctif communiqué, hors périmètre de ce chantier).
+
+Environnement natif monté à la place, isolé de tout ce qui tournait déjà : venv Python dans
+cette worktree (`backend/.venv`, `cryptography` récent pris à la place de la version épinglée
+— pas de roue arm64 pour l'ancienne sur cette machine ; `psycopg2-binary` exclu, inutile en
+SQLite dev), backend Flask natif port 5050 (`DATABASE_URL` SQLite explicite pour court-circuiter
+le `.env` racine repéré ci-dessus, que le chargement amont de Flask/dotenv remonte sinon depuis
+`backend/`), Vite dev natif port 5173 (whitelist CORS déjà en place côté backend). Compte de
+test créé via l'API, navigateur réel (extension Chrome) pour desktop clair/sombre, script
+Playwright ad hoc (déjà une dépendance du dépôt, `web/tests-e2e`) pour la fenêtre mobile
+375×812 — le redimensionnement de la fenêtre Chrome elle-même s'est avéré bloqué sur cette
+machine (`resize_window` rapporte un succès mais `window.innerWidth` ne bouge jamais).
+
+**Bug bloquant réel trouvé et corrigé** (`9d1e5d3` — à confirmer au commit) : la création d'un
+ensemble hétérogène puis sa révision réelle (`Réviser l'ensemble`, self-eval flashcard/définition,
+correction auto vf/association/ordre) plantait systématiquement en 500
+(`sqlite3.IntegrityError: NOT NULL constraint failed: study_sessions.module`). Cause :
+`RevisionService.answer_item` et `.grade_item` posaient `module=rset.type`, jamais mis à jour
+pour tenir compte de la nullabilité de `RevisionSet.type` introduite par ce chantier même (D8) —
+tous les tests existants créaient des ensembles *homogènes* (`type` renseigné), aucun ne
+couvrait un ensemble réellement hétérogène bout en bout via les endpoints d'étude, donc rien ne
+l'attrapait. C'est précisément le type de régression que l'étape de vérification visuelle
+différée était censée intercepter. Corrigé en TDD (2 tests ajoutés reproduisant le crash sur
+`type: None` avant le correctif, `module=rset.type or item.type` ensuite) — suite complète
+`test_revision.py` verte (21/21), suite backend complète verte sauf 5 échecs pré-existants et
+sans rapport (`test_import.py`, verrou de fichier temporaire Windows sur `NamedTemporaryFile`,
+environnement local uniquement).
+
+**Défaut mineur trouvé et corrigé** : les 3 nouvelles routes de ce chantier
+(`RevisionSetDetail`, `RevisionSetTypeItems`, `RevisionStudy`) étaient absentes de la table de
+traduction du titre d'en-tête mobile (`AppLayout.vue::currentRouteName`), qui affichait donc le
+nom de route brut JS tronqué (ex. `RevisionSetTypeI…`). Ajout des 3 libellés français, en
+évitant l'apostrophe (piège déjà présent dans le code existant : la classe Tailwind
+`capitalize` traite tout caractère après une apostrophe comme un nouveau mot, ce qui aurait
+donné `L'Ensemble` au lieu de `l'ensemble`).
+
+**Vérifié visuellement, sans anomalie** : bascule Notes/Révision/Autres, création d'ensemble
+hétérogène (`RevisionSetModal`), les 6 types dans `RevisionItemModal` (dont `flashcard`,
+correctif de la Task 7), regroupement par type dans `RevisionSetDetail` (icônes dédiées),
+`RevisionSetTypeItems`, dispatch de révision par type dans `RevisionStudy` (flashcard,
+définition en self-eval ; vf, association, ordre en correction auto), exclusion des QCM de la
+révision par item avec message dédié (`?type=qcm`), le tout en clair et sombre sur desktop et
+en 375×812 sur mobile (écrans + les 2 modales).
+
+Suite complète frontend verte (325/325), `vue-tsc -b` propre. Chantier prêt à clôturer.

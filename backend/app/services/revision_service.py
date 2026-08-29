@@ -332,9 +332,12 @@ class RevisionService:
             updated = item
 
         # Historique unifié (D5) : on renseigne item_id + item_type.
+        # module ne peut pas rester rset.type tel quel : None pour un ensemble
+        # hétérogène (D8), violerait la contrainte NOT NULL -- item.type retombe
+        # toujours sur une valeur concrète (cf. Task 3 du chantier bibliotheque-ensembles).
         study_session = StudySession(
             user_id=user_id,
-            module=rset.type,
+            module=rset.type or item.type,
             duration_seconds=0,
             cards_reviewed=1,
             cards_correct=1 if score >= 3 else 0,
@@ -456,7 +459,8 @@ class RevisionService:
         self._item_dao.db.add(
             StudySession(
                 user_id=user_id,
-                module=rset.type,
+                # cf. answer_item : rset.type est None pour un ensemble hétérogène (D8).
+                module=rset.type or item.type,
                 duration_seconds=0,
                 cards_reviewed=1,
                 cards_correct=1 if is_correct else 0,

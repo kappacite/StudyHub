@@ -23,8 +23,10 @@
   le plan — sans lui la création d'un ensemble hétérogène était rejetée par l'API)
 - [x] Correctif `TeacherDashboard.vue` (Task 10, risque de plantage réel trouvé en revue de la
   Task 2 — écran non lié à ce chantier mais cassé par la nullabilité de `RevisionSet.type`)
-- [ ] Vérification visuelle clair/sombre × desktop/mobile — **non faite** (voir journal :
-  environnement de dev déjà occupé par d'autres conteneurs, risque de perturber un
-  environnement partagé jugé supérieur au bénéfice ; couverture par 39 tests de vues montés
-  réellement avec assertions DOM, plus 2 tours de revue par tâche, jugée suffisante pour cette
-  clôture — à combler si l'environnement se stabilise), mise à jour `ETAT.md` à suivre
+- [x] Vérification visuelle clair/sombre × desktop/mobile — **faite** (environnement natif
+  hors Docker : venv local + SQLite pour le backend, Vite dev pour le frontend ; navigateur
+  réel pour desktop/clair/sombre, Playwright 375×812 pour mobile). A trouvé et corrigé un bug
+  bloquant réel (`module=rset.type` → `NOT NULL` sur `study_sessions` pour tout ensemble
+  vraiment hétérogène) plus un défaut mineur (titres mobiles manquants) — détail complet dans
+  le journal. `ETAT.md` §« Plan global par flux » précise explicitement ne plus être mis à jour
+  au fil de l'exécution (suivi déplacé vers `workflow/`) — rien à y changer.
