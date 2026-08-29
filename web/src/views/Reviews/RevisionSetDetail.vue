@@ -142,19 +142,8 @@ import {
   BaseEmptyState,
   ListRow,
 } from '../../components/ui/base'
-import {
-  Play,
-  Pencil,
-  Trash2,
-  Plus,
-  AlertCircle,
-  Layers,
-  HelpCircle,
-  Rows3,
-  BookOpen,
-  ListOrdered,
-  Shuffle,
-} from 'lucide-vue-next'
+import { Play, Pencil, Trash2, Plus, AlertCircle } from 'lucide-vue-next'
+import { REVISION_ITEM_TYPE_META } from '../../utils/revisionItemTypeMeta'
 
 const router = useRouter()
 const route = useRoute()
@@ -167,15 +156,6 @@ const set = ref<RevisionSet | null>(null)
 const items = ref<RevisionItem[]>([])
 const showSetModal = ref(false)
 const showItemModal = ref(false)
-
-const TYPE_META: Record<RevisionItemType, { label: string; icon: unknown }> = {
-  flashcard: { label: 'Flashcards', icon: Layers },
-  qcm: { label: 'QCM', icon: HelpCircle },
-  vf: { label: 'Vrai / Faux', icon: Rows3 },
-  definition: { label: 'Définition', icon: BookOpen },
-  ordre: { label: 'Ordre', icon: ListOrdered },
-  association: { label: 'Association', icon: Shuffle },
-}
 
 function formatLastReviewed(items: RevisionItem[]): string {
   const dates = items
@@ -200,8 +180,8 @@ const typeGroups = computed(() => {
   return Array.from(byType.entries()).map(([type, groupItems]) => ({
     type,
     items: groupItems,
-    label: TYPE_META[type].label,
-    icon: TYPE_META[type].icon,
+    label: REVISION_ITEM_TYPE_META[type].label,
+    icon: REVISION_ITEM_TYPE_META[type].icon,
     lastReviewedLabel: formatLastReviewed(groupItems),
   }))
 })
