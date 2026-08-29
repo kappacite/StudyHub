@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from app.dao.binder_dao import BinderDAO
 from app.dao.revision_dao import RevisionItemDAO, RevisionSetDAO
@@ -8,6 +8,7 @@ from app.dao.study_session_dao import StudySessionDAO
 from app.models.revision import RevisionItem, RevisionSet
 from app.models.study_session import StudySession
 from app.schemas.revision_schema import (
+    GradeDistribution,
     RevisionBinderStats,
     RevisionHistoryPoint,
     RevisionItemStats,
@@ -15,6 +16,8 @@ from app.schemas.revision_schema import (
     RevisionSetStats,
     RevisionSetSummary,
     RevisionTypeBreakdown,
+    SessionHistoryDay,
+    WeeklyProgressionPoint,
 )
 
 
@@ -71,6 +74,82 @@ def project_mastery_date(
     return d
 
 
+WEEKLY_PROGRESSION_WEEKS = 6  # taille de la fenêtre glissante (D9/reviser-hub-redesign)
+
+
+def grade_distribution(sessions: list[StudySession]) -> GradeDistribution:
+    """Répartit des StudySession notées (grade 0-5, cf. invariants-sm2) en 4
+    paliers pédagogiques. Cf. docstring de `GradeDistribution` pour le détail
+    du bucketing et pourquoi il ne déplace pas le seuil SM-2 (score >= 3)."""
+    buckets = {"again": 0, "hard": 0, "good": 0, "easy": 0}
+    for s in sessions:
+        if s.grade is None:
+            continue
+        if s.grade <= 1:
+            buckets["again"] += 1
+        elif s.grade == 2:
+            buckets["hard"] += 1
+        elif s.grade <= 4:
+            buckets["good"] += 1
+        else:
+            buckets["easy"] += 1
+    return GradeDistribution(**buckets)
+
+
+def _week_start(d: datetime) -> date:
+    """Lundi de la semaine ISO contenant `d` (semaines lundi-dimanche)."""
+    return d.date() - timedelta(days=d.weekday())
+
+
+def weekly_progression(
+    sessions: list[StudySession], now: datetime, weeks: int = WEEKLY_PROGRESSION_WEEKS
+) -> list[WeeklyProgressionPoint]:
+    """Bucket les sessions notées par semaine ISO sur une fenêtre glissante de
+    `weeks` semaines : index 0 = plus ancienne, index `weeks - 1` = semaine
+    courante. Une session hors fenêtre est exclue (pas d'erreur)."""
+    reviews = [0] * weeks
+    successes = [0] * weeks
+    current_week_start = _week_start(now)
+    for s in sessions:
+        if s.grade is None:
+            continue
+        diff_weeks = (current_week_start - _week_start(s.created_at)).days // 7
+        if 0 <= diff_weeks < weeks:
+            idx = weeks - 1 - diff_weeks
+            reviews[idx] += 1
+            if s.grade >= 3:
+                successes[idx] += 1
+    return [
+        WeeklyProgressionPoint(
+            reviews=reviews[i],
+            success_rate=round(successes[i] / reviews[i] * 100, 1) if reviews[i] else 0.0,
+        )
+        for i in range(weeks)
+    ]
+
+
+def session_history(sessions: list[StudySession]) -> list[SessionHistoryDay]:
+    """Regroupe les sessions notées par jour calendaire (`created_at.date()`),
+    la plus récente en premier, avec le taux de réussite agrégé du jour."""
+    by_day: dict = {}
+    for s in sessions:
+        if s.grade is None:
+            continue
+        day = s.created_at.date()
+        acc = by_day.setdefault(day, {"reviews": 0, "successes": 0})
+        acc["reviews"] += 1
+        if s.grade >= 3:
+            acc["successes"] += 1
+    return [
+        SessionHistoryDay(
+            date=day,
+            reviews=by_day[day]["reviews"],
+            success_rate=round(by_day[day]["successes"] / by_day[day]["reviews"] * 100, 1),
+        )
+        for day in sorted(by_day.keys(), reverse=True)
+    ]
+
+
 @dataclass
 class _SetAggregate:
     """Métriques d'un ensemble + accumulateurs bruts (recomposables au niveau classeur)."""
@@ -86,6 +165,9 @@ class _SetAggregate:
     success_rates: list = field(default_factory=list)  # par item révisé
     difficulties: list = field(default_factory=list)  # par item
     item_summaries: list = field(default_factory=list)
+    graded_sessions: list = field(
+        default_factory=list
+    )  # toutes les StudySession notées, tous items confondus
 
     @property
     def mastery_rate(self) -> float:
@@ -206,6 +288,7 @@ class RevisionStatsService:
             if reviews:
                 agg.reviewed_items += 1
                 agg.success_rates.append(item_success)
+            agg.graded_sessions.extend(graded)
             agg.difficulties.append(difficulty)
             if is_mature:
                 agg.mastered_count += 1
@@ -272,6 +355,9 @@ class RevisionStatsService:
             avg_difficulty=agg.avg_difficulty,
             verdicts=verdicts,
             items=agg.item_summaries,
+            grade_distribution=grade_distribution(agg.graded_sessions),
+            weekly_progression=weekly_progression(agg.graded_sessions, now),
+            session_history=session_history(agg.graded_sessions),
         )
 
     def _build_verdicts(

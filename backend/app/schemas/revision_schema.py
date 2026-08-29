@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -182,6 +182,37 @@ class RevisionItemSummary(BaseModel):
     due: bool
 
 
+class GradeDistribution(BaseModel):
+    """Répartition des notes SM-2 (0-5) en 4 paliers pédagogiques : 0-1 -> Encore
+    (échec net), 2 -> Difficile (échec limité), 3-4 -> Bien (réussite avec effort),
+    5 -> Facile (réussite parfaite). Le seuil réussite/échec de SM-2 lui-même
+    (score >= 3, cf. invariants-sm2) tombe pile entre « hard » et « good » -- ce
+    bucketing ajoute une graduation de chaque côté de cette frontière, il ne la
+    déplace pas."""
+
+    again: int = 0
+    hard: int = 0
+    good: int = 0
+    easy: int = 0
+
+
+class WeeklyProgressionPoint(BaseModel):
+    """Un point de la fenêtre des 6 dernières semaines (index 0 = plus ancienne,
+    index 5 = semaine courante), semaines ISO lundi-dimanche."""
+
+    reviews: int = 0
+    success_rate: float = 0.0
+
+
+class SessionHistoryDay(BaseModel):
+    """Une ligne d'historique = un jour calendaire (created_at.date()) agrégeant
+    toutes les sessions notées de l'ensemble ce jour-là."""
+
+    date: date
+    reviews: int
+    success_rate: float
+
+
 class RevisionSetStats(BaseModel):
     set_id: int
     type: str | None = None
@@ -197,6 +228,11 @@ class RevisionSetStats(BaseModel):
     avg_difficulty: float
     verdicts: list[str] = []  # messages actionnables
     items: list[RevisionItemSummary] = []
+    # Stats de la page RevisionSetStats (D9/reviser-hub-redesign) : calculées à
+    # partir des sessions déjà chargées par get_set_stats, aucune requête de plus.
+    grade_distribution: GradeDistribution = GradeDistribution()
+    weekly_progression: list[WeeklyProgressionPoint] = []
+    session_history: list[SessionHistoryDay] = []
 
 
 # --- Stats par classeur (A8) -------------------------------------------------

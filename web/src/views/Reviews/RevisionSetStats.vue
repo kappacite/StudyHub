@@ -1,27 +1,5 @@
 <template>
-  <div class="space-y-6 max-w-3xl mx-auto animate-fade-in">
-    <div class="flex items-center justify-between text-sm font-semibold">
-      <button
-        class="text-ink-muted hover:text-primary dark:text-ink-subtle flex items-center gap-1"
-        @click="goBack"
-      >
-        <ChevronLeft class="w-4 h-4" /> Retour
-      </button>
-      <div v-if="stats" class="flex items-center gap-2">
-        <span
-          class="text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider"
-        >
-          Stats · {{ stats.name }}
-        </span>
-        <span
-          data-test="set-type-badge"
-          class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-surface-soft text-ink-muted dark:bg-surface-soft dark:text-ink-subtle"
-        >
-          {{ setTypeLabel }}
-        </span>
-      </div>
-    </div>
-
+  <PageContainer>
     <div
       v-if="loading"
       class="py-20 text-center text-sm font-semibold text-ink-subtle uppercase tracking-widest"
@@ -30,28 +8,110 @@
     </div>
 
     <template v-else-if="stats">
-      <!-- KPIs -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div
-          v-for="kpi in kpis"
-          :key="kpi.label"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-4"
-        >
-          <p class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">
-            {{ kpi.label }}
+      <!-- En-tête -->
+      <div class="flex items-end justify-between gap-5 flex-wrap">
+        <div class="min-w-0">
+          <p class="font-mono text-[11px] tracking-wide text-ink-subtle uppercase mb-1.5">
+            Réviser · Statistiques
           </p>
-          <p class="text-xl font-bold mt-1" :class="kpi.class || 'text-ink dark:text-white'">
-            {{ kpi.value }}
-          </p>
-          <p v-if="kpi.hint" class="text-[10px] text-ink-subtle mt-0.5">{{ kpi.hint }}</p>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="font-display text-display-lg text-ink truncate">{{ stats.name }}</h1>
+            <span
+              data-test="set-type-badge"
+              class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-surface-soft text-ink-muted shrink-0"
+            >
+              {{ setTypeLabel }}
+            </span>
+          </div>
+          <p class="text-sm text-ink-muted mt-1.5">{{ subtitleText }}</p>
         </div>
+        <BaseButton data-test="study-set-button" @click="studySet">
+          <template #icon><Play class="w-4 h-4" /></template>
+          Réviser cette série
+        </BaseButton>
+      </div>
+
+      <!-- Grille principale : réussite + progression -->
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-6 items-start">
+        <!-- Taux de réussite global -->
+        <BaseCard padding="lg" class="flex flex-col gap-5">
+          <h3 class="text-xs font-bold uppercase tracking-wide text-ink-subtle">
+            Taux de réussite global
+          </h3>
+          <div class="flex items-baseline gap-2">
+            <span class="font-display font-mono text-5xl font-bold text-primary leading-none">{{
+              Math.round(stats.avg_success_rate)
+            }}</span>
+            <span class="font-display text-2xl font-bold text-primary">%</span>
+          </div>
+          <p class="text-xs text-ink-muted leading-relaxed">
+            Sur {{ stats.reviewed_items }}/{{ stats.items_count }} élément(s) révisé(s). Difficulté
+            moyenne : <span class="font-mono">{{ stats.avg_difficulty }}/10</span>.
+          </p>
+
+          <div class="border-t border-dashed border-line pt-4">
+            <p class="text-[11px] font-bold uppercase tracking-wide text-ink-subtle mb-2.5">
+              Par notation SM2
+            </p>
+            <div class="flex items-end gap-2 h-16">
+              <div
+                v-for="bar in gradeBars"
+                :key="bar.key"
+                data-test="grade-bar"
+                class="w-5 rounded-sm"
+                :class="bar.colorClass"
+                :style="{ height: bar.heightPct + '%' }"
+              />
+            </div>
+            <div class="flex gap-2 mt-1.5 font-mono text-[9px] text-ink-subtle">
+              <span v-for="bar in gradeBars" :key="bar.key" class="w-5 text-center">{{
+                bar.label
+              }}</span>
+            </div>
+          </div>
+        </BaseCard>
+
+        <!-- Progression dans le temps -->
+        <BaseCard padding="lg">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold uppercase tracking-wide text-ink-subtle">
+              Progression dans le temps
+            </h3>
+            <span class="font-mono text-[11px] text-ink-subtle">6 dernières semaines</span>
+          </div>
+          <div class="flex items-end gap-2.5 h-28">
+            <div
+              v-for="(week, i) in stats.weekly_progression"
+              :key="i"
+              data-test="week-bar"
+              class="w-6 rounded-sm"
+              :class="weekBarColorClass(week)"
+              :style="{ height: weekBarHeight(week) + '%' }"
+            />
+          </div>
+          <div class="flex gap-2.5 mt-2 font-mono text-[9px] text-ink-subtle">
+            <span v-for="(_, i) in stats.weekly_progression" :key="i" class="w-6 text-center"
+              >S{{ i + 1 }}</span
+            >
+          </div>
+
+          <div class="border-t border-dashed border-line mt-5 pt-4 grid grid-cols-2 gap-4">
+            <div>
+              <p class="font-mono text-xl font-bold text-primary">
+                {{ stats.mastered_count }}/{{ stats.items_count }}
+              </p>
+              <p class="text-xs text-ink-muted">Cartes mûres</p>
+            </div>
+            <div>
+              <p class="font-mono text-xl font-bold text-primary">{{ totalReviews }}</p>
+              <p class="text-xs text-ink-muted">Révisions totales</p>
+            </div>
+          </div>
+        </BaseCard>
       </div>
 
       <!-- Verdicts actionnables -->
-      <div
-        v-if="stats.verdicts.length"
-        class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-5 space-y-2"
-      >
+      <BaseCard v-if="stats.verdicts.length" padding="lg" class="space-y-2">
         <p class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">À retenir</p>
         <ul class="space-y-1.5">
           <li
@@ -62,12 +122,42 @@
             <span class="text-primary mt-0.5">›</span>{{ v }}
           </li>
         </ul>
-      </div>
+      </BaseCard>
 
-      <!-- Items -->
-      <div
-        class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-5"
-      >
+      <!-- Historique des sessions -->
+      <BaseCard padding="lg">
+        <h3 class="font-display text-base font-bold text-ink mb-4">Historique des sessions</h3>
+        <p
+          v-if="stats.session_history.length === 0"
+          class="text-center py-6 text-xs text-ink-subtle uppercase tracking-wider"
+        >
+          Aucune session enregistrée.
+        </p>
+        <div v-else class="flex flex-col">
+          <div class="grid grid-cols-3 gap-3.5 pb-2.5 border-b border-line">
+            <span class="font-mono text-[10px] uppercase tracking-wide text-ink-subtle">Date</span>
+            <span class="font-mono text-[10px] uppercase tracking-wide text-ink-subtle"
+              >Révisions</span
+            >
+            <span class="font-mono text-[10px] uppercase tracking-wide text-ink-subtle">Score</span>
+          </div>
+          <div
+            v-for="day in stats.session_history"
+            :key="day.date"
+            data-test="session-history-row"
+            class="grid grid-cols-3 gap-3.5 items-center py-3 border-b border-dashed border-line last:border-0"
+          >
+            <span class="text-sm text-ink">{{ formatDay(day.date) }}</span>
+            <span class="font-mono text-sm text-ink-muted">{{ day.reviews }}</span>
+            <span class="font-mono text-sm font-bold" :class="scoreClass(day.success_rate)"
+              >{{ day.success_rate }}%</span
+            >
+          </div>
+        </div>
+      </BaseCard>
+
+      <!-- Éléments (gestion) -->
+      <BaseCard padding="lg">
         <p class="text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-3">
           Éléments ({{ stats.items.length }})
         </p>
@@ -96,17 +186,17 @@
                   <span class="flex flex-wrap gap-1.5 mt-1">
                     <span
                       v-if="it.is_leech"
-                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger"
+                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-danger-soft text-danger"
                       >Sangsue</span
                     >
                     <span
                       v-if="it.is_mature"
-                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-success-soft text-success dark:bg-success-soft dark:text-success"
+                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-success-soft text-success"
                       >Mûr</span
                     >
                     <span
                       v-if="it.due"
-                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-warning-soft text-warning dark:bg-warning-soft dark:text-warning"
+                      class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-warning-soft text-warning"
                       >À réviser</span
                     >
                   </span>
@@ -131,6 +221,7 @@
               </button>
               <template v-if="canEdit">
                 <button
+                  :data-test="`edit-item-${it.item_id}`"
                   class="shrink-0 p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft transition-all"
                   title="Modifier l'élément"
                   @click="openEdit(it.item_id)"
@@ -221,7 +312,7 @@
             Aucun élément dans cet ensemble.
           </p>
         </div>
-      </div>
+      </BaseCard>
     </template>
 
     <RevisionItemModal
@@ -233,16 +324,26 @@
       @close="showEditModal = false"
       @updated="onItemSaved"
     />
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useRevisionStore } from '../../stores/revision'
-import type { SetStats, ItemStats, RevisionItem, RevisionSet } from '../../stores/revision'
+import type {
+  SetStats,
+  ItemStats,
+  RevisionItem,
+  RevisionSet,
+  GradeDistribution,
+  WeeklyProgressionPoint,
+} from '../../stores/revision'
 import RevisionItemModal from '../../components/decks/RevisionItemModal.vue'
-import { ChevronLeft, Pencil, Trash2 } from 'lucide-vue-next'
+import PageContainer from '../../components/ui/base/PageContainer.vue'
+import BaseCard from '../../components/ui/base/BaseCard.vue'
+import BaseButton from '../../components/ui/base/BaseButton.vue'
+import { Play, Pencil, Trash2 } from 'lucide-vue-next'
 import { REVISION_ITEM_TYPE_META } from '../../utils/revisionItemTypeMeta'
 
 const router = useRouter()
@@ -266,6 +367,71 @@ const setTypeLabel = computed(() => {
   const t = stats.value?.type
   return t ? REVISION_ITEM_TYPE_META[t].label : 'Mixte'
 })
+
+const subtitleText = computed(() => {
+  const s = stats.value
+  if (!s) return ''
+  const count = `${s.items_count} élément${s.items_count > 1 ? 's' : ''}`
+  const desc = setMeta.value?.description
+  return desc ? `Série de ${count} · ${desc}` : `Série de ${count}`
+})
+
+// Par notation SM2 (0-5, cf. invariants-sm2) : encore/difficile/bien/facile.
+// Mêmes tokens sémantiques que le reste du design system (cf. skill
+// design-system : primary = « Bien », accent = « Difficile », success =
+// « Facile », danger = « Encore »).
+const GRADE_BAR_META = [
+  { key: 'again', label: 'Enc.', colorClass: 'bg-danger' },
+  { key: 'hard', label: 'Diff.', colorClass: 'bg-accent' },
+  { key: 'good', label: 'Bien', colorClass: 'bg-primary' },
+  { key: 'easy', label: 'Fac.', colorClass: 'bg-success' },
+] as const
+
+const gradeBars = computed(() => {
+  const dist = stats.value?.grade_distribution
+  if (!dist) return []
+  const counts = GRADE_BAR_META.map((m) => dist[m.key as keyof GradeDistribution])
+  const max = Math.max(1, ...counts)
+  return GRADE_BAR_META.map((m, i) => ({
+    ...m,
+    count: counts[i],
+    heightPct: counts[i] ? Math.max(8, Math.round((counts[i] / max) * 100)) : 0,
+  }))
+})
+
+const totalReviews = computed(() => {
+  const d = stats.value?.grade_distribution
+  if (!d) return 0
+  return d.again + d.hard + d.good + d.easy
+})
+
+function weekBarHeight(week: WeeklyProgressionPoint): number {
+  if (!week.reviews) return 0
+  return Math.max(8, Math.round(week.success_rate))
+}
+
+function weekBarColorClass(week: WeeklyProgressionPoint): string {
+  if (!week.reviews) return 'bg-line'
+  if (week.success_rate >= 90) return 'bg-success'
+  if (week.success_rate >= 75) return 'bg-primary'
+  if (week.success_rate >= 50) return 'bg-accent'
+  return 'bg-danger'
+}
+
+function formatDay(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`)
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function scoreClass(rate: number): string {
+  if (rate >= 85) return 'text-success'
+  if (rate >= 60) return 'text-accent'
+  return 'text-danger'
+}
+
+function studySet() {
+  router.push(`/revision/sets/${setId}/study`)
+}
 
 async function loadItems() {
   if (canEdit.value) {
@@ -320,36 +486,6 @@ async function confirmDeleteItem(itemId: number) {
   }
 }
 
-const kpis = computed(() => {
-  const s = stats.value
-  if (!s) return []
-  return [
-    {
-      label: 'Maîtrise',
-      value: `${s.mastery_rate}%`,
-      hint: `${s.mastered_count}/${s.items_count} mûrs`,
-    },
-    {
-      label: 'Rétention réelle',
-      value: `${s.true_retention}%`,
-      class: s.true_retention && s.true_retention < 85 ? 'text-rose-500' : 'text-emerald-600',
-      hint: 'cible 85%',
-    },
-    { label: 'Réussite moy.', value: `${s.avg_success_rate}%` },
-    {
-      label: 'À réviser',
-      value: String(s.due_count),
-      class: s.due_count ? 'text-amber-600' : undefined,
-    },
-    {
-      label: 'Sangsues',
-      value: String(s.leeches_count),
-      class: s.leeches_count ? 'text-rose-500' : undefined,
-    },
-    { label: 'Difficulté moy.', value: `${s.avg_difficulty}/10` },
-  ]
-})
-
 async function toggle(itemId: number) {
   if (expanded.value === itemId) {
     expanded.value = null
@@ -388,24 +524,4 @@ const masteryText = computed(() => {
     return new Date(d.mastery_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
   return '—'
 })
-
-function goBack() {
-  router.back()
-}
 </script>
-
-<style scoped>
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-</style>

@@ -122,6 +122,24 @@ export interface ItemSummary {
   due: boolean
 }
 
+export interface GradeDistribution {
+  again: number
+  hard: number
+  good: number
+  easy: number
+}
+
+export interface WeeklyProgressionPoint {
+  reviews: number
+  success_rate: number
+}
+
+export interface SessionHistoryDay {
+  date: string
+  reviews: number
+  success_rate: number
+}
+
 export interface SetStats {
   set_id: number
   type: RevisionType | null
@@ -137,6 +155,9 @@ export interface SetStats {
   avg_difficulty: number
   verdicts: string[]
   items: ItemSummary[]
+  grade_distribution: GradeDistribution
+  weekly_progression: WeeklyProgressionPoint[]
+  session_history: SessionHistoryDay[]
 }
 
 export interface SetSummary {

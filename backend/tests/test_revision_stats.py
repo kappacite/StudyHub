@@ -247,6 +247,129 @@ def test_item_stats_on_heterogeneous_set_item(client, auth_headers):
     assert len(body["history"]) == 1
 
 
+def _definition_with_item(client, auth_headers):
+    set_id = client.post(
+        "/api/v1/revision/sets", json={"name": "D", "type": "definition"}, headers=auth_headers
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"term": "T", "definition": "D"}},
+        headers=auth_headers,
+    ).json
+    return set_id, item
+
+
+def _add_session(item_id, grade, created_at):
+    """Insere directement une StudySession avec un created_at controle -- le
+    endpoint /study/answer ne permet pas de piloter created_at (server_default
+    func.now(), insensible a freezegun sur SQLite) : necessaire pour tester le
+    bucketing hebdomadaire/quotidien."""
+    from app.extensions import db
+    from app.models.study_session import StudySession
+
+    db.session.add(
+        StudySession(
+            user_id=_add_session.uid,
+            module="definition",
+            duration_seconds=0,
+            cards_reviewed=1,
+            cards_correct=1 if grade >= 3 else 0,
+            item_id=item_id,
+            item_type="definition",
+            grade=grade,
+            created_at=created_at,
+        )
+    )
+    db.session.commit()
+
+
+def test_set_stats_grade_distribution_buckets_sm2_scale(client, auth_headers, app):
+    """Repartition des notes SM-2 (0-5, cf. invariants-sm2) en 4 paliers pedagogiques :
+    0-1 -> Encore (echec net), 2 -> Difficile (echec limite), 3-4 -> Bien (reussite
+    avec effort), 5 -> Facile (reussite parfaite). Le seuil reussite/echec SM-2 lui
+    meme (score >= 3) tombe pile entre 'hard' et 'good' -- ce bucketing ajoute une
+    graduation de chaque cote de cette frontiere, il ne la deplace pas."""
+    set_id, item = _definition_with_item(client, auth_headers)
+
+    from app.models.user import User
+
+    with app.app_context():
+        uid = User.query.filter_by(email="test@example.com").first().id
+        _add_session.uid = uid
+        now = datetime.utcnow()
+        for grade in [0, 1, 2, 2, 3, 4, 5]:
+            _add_session(item["id"], grade, now)
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    assert stats.json["grade_distribution"] == {"again": 2, "hard": 2, "good": 2, "easy": 1}
+
+
+def test_set_stats_weekly_progression_six_week_window(client, auth_headers, app):
+    """Progression hebdomadaire (6 dernieres semaines, semaines ISO lundi-dimanche) :
+    une session vieille d'exactement 5 semaines tombe dans le bucket le plus ancien
+    (index 0), la session du jour dans le plus recent (index 5) ; une session hors
+    fenetre (10 semaines) est exclue du total."""
+    set_id, item = _definition_with_item(client, auth_headers)
+
+    from app.models.user import User
+
+    with app.app_context():
+        uid = User.query.filter_by(email="test@example.com").first().id
+        _add_session.uid = uid
+        now = datetime.utcnow()
+        _add_session(item["id"], 5, now)  # semaine courante : reussite
+        _add_session(item["id"], 1, now - timedelta(weeks=5))  # semaine la + ancienne : echec
+        _add_session(item["id"], 5, now - timedelta(weeks=10))  # hors fenetre
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    weeks = stats.json["weekly_progression"]
+    assert len(weeks) == 6
+    assert weeks[0]["reviews"] == 1 and weeks[0]["success_rate"] == 0.0
+    assert weeks[-1]["reviews"] == 1 and weeks[-1]["success_rate"] == 100.0
+    assert sum(w["reviews"] for w in weeks) == 2  # la session a -10 semaines n'apparait pas
+
+
+def test_set_stats_session_history_grouped_by_day(client, auth_headers, app):
+    """Historique de sessions : une ligne par jour calendaire (created_at.date()),
+    le plus recent en premier, avec le taux de reussite agrege du jour."""
+    set_id, item = _definition_with_item(client, auth_headers)
+
+    from app.models.user import User
+
+    with app.app_context():
+        uid = User.query.filter_by(email="test@example.com").first().id
+        _add_session.uid = uid
+        today_9am = datetime.utcnow().replace(hour=9, minute=0, second=0, microsecond=0)
+        _add_session(item["id"], 5, today_9am)
+        _add_session(item["id"], 1, today_9am + timedelta(hours=2))
+        _add_session(item["id"], 4, today_9am - timedelta(days=1))
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    history = stats.json["session_history"]
+    assert len(history) == 2
+    assert history[0]["reviews"] == 2 and history[0]["success_rate"] == 50.0
+    assert history[1]["reviews"] == 1 and history[1]["success_rate"] == 100.0
+
+
+def test_set_stats_new_fields_default_when_never_reviewed(client, auth_headers):
+    """Ensemble jamais revise : les nouveaux champs ont une forme saine (pas
+    d'erreur de validation Pydantic, pas de division par zero)."""
+    set_id = client.post(
+        "/api/v1/revision/sets", json={"name": "Vide", "type": "qcm"}, headers=auth_headers
+    ).json["id"]
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    body = stats.json
+    assert body["grade_distribution"] == {"again": 0, "hard": 0, "good": 0, "easy": 0}
+    assert len(body["weekly_progression"]) == 6
+    assert all(w["reviews"] == 0 and w["success_rate"] == 0.0 for w in body["weekly_progression"])
+    assert body["session_history"] == []
+
+
 def test_set_stats_on_heterogeneous_set_counts_all_item_types(client, auth_headers):
     """Ensemble heterogene avec 2 types d'items notes : get_set_stats doit
     compter les deux. Avant le correctif, un seul appel de sessions groupe
