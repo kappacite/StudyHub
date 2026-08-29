@@ -87,6 +87,30 @@ interface ApiOverrides {
   heatmap?: () => Promise<unknown>
   sessions?: () => Promise<unknown>
   dashboard?: () => Promise<unknown>
+  revisionSets?: () => Promise<unknown>
+}
+
+const QCM_SET = {
+  id: 1,
+  name: 'Série QCM',
+  description: null,
+  type: 'qcm',
+  binder_id: null,
+  tuning_default: 1,
+  is_public: false,
+  item_count: 12,
+  read_only: false,
+}
+const MIXED_SET = {
+  id: 2,
+  name: 'Série mixte',
+  description: null,
+  type: null,
+  binder_id: null,
+  tuning_default: 1,
+  is_public: false,
+  item_count: 5,
+  read_only: false,
 }
 
 function makeApiGetMock(over: ApiOverrides = {}) {
@@ -99,6 +123,9 @@ function makeApiGetMock(over: ApiOverrides = {}) {
     }
     if (url.startsWith('/focus/retention')) {
       return (over.focusRetention ?? (() => Promise.resolve({ data: { by_subject: DEFAULT_RETENTION } })))()
+    }
+    if (url.startsWith('/revision/sets')) {
+      return (over.revisionSets ?? (() => Promise.resolve({ data: { data: [QCM_SET, MIXED_SET] } })))()
     }
     if (url.startsWith('/decks')) {
       return (over.decks ?? (() => Promise.resolve({ data: { data: DEFAULT_DECKS } })))()
@@ -131,6 +158,8 @@ function createTestRouter(): Router {
       { path: '/decks/:id/study', name: 'StudyDeck', component: stub },
       { path: '/notes/:id/blurting', name: 'Blurting', component: stub },
       { path: '/bibliotheque/:id?', name: 'Bibliotheque', component: stub },
+      { path: '/revision/sets/:id/study', name: 'RevisionStudy', component: stub },
+      { path: '/revision/sets/:id/run', name: 'QcmRun', component: stub },
     ],
   })
 }
@@ -329,6 +358,53 @@ describe('Accueil', () => {
       await rows[0].findComponent(BaseButton).trigger('click')
       await flushPromises()
       expect(router.currentRoute.value.fullPath).toBe('/bibliotheque/30')
+    })
+
+    it('affiche un ensemble de révision dû avec un résumé dédié (pas le libellé "Devoir")', async () => {
+      const items: FocusItem[] = [
+        { type: 'revision_set', id: 1, title: 'Série QCM', count: 12, is_late: false, last_session_ago_days: null },
+      ]
+      api.get.mockImplementation(
+        makeApiGetMock({ focusToday: () => Promise.resolve({ data: { ...DEFAULT_FOCUS_TODAY, items } }) }),
+      )
+      const { wrapper } = await mountAccueil()
+      const rows = wrapper.findAllComponents(ListRow)
+      expect(rows[0].props('subtitle')).toBe('12 élément(s) de la série à revoir')
+      expect(rows[0].props('subtitle')).not.toContain('Devoir')
+    })
+
+    it('navigue vers /revision/sets/:id/run au clic sur "Réviser" pour un ensemble QCM homogène', async () => {
+      const items: FocusItem[] = [
+        { type: 'revision_set', id: 1, title: 'Série QCM', count: 12, is_late: false, last_session_ago_days: null },
+      ]
+      api.get.mockImplementation(
+        makeApiGetMock({ focusToday: () => Promise.resolve({ data: { ...DEFAULT_FOCUS_TODAY, items } }) }),
+      )
+      const { wrapper, router } = await mountAccueil()
+      const rows = wrapper.findAllComponents(ListRow)
+      await rows[0].findComponent(BaseButton).trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.fullPath).toBe('/revision/sets/1/run')
+    })
+
+    it('navigue vers /revision/sets/:id/study pour un ensemble hétérogène ou inconnu du store', async () => {
+      const items: FocusItem[] = [
+        { type: 'revision_set', id: 2, title: 'Série mixte', count: 5, is_late: false, last_session_ago_days: null },
+        { type: 'revision_set', id: 99, title: 'Ensemble inconnu', count: 3, is_late: false, last_session_ago_days: null },
+      ]
+      api.get.mockImplementation(
+        makeApiGetMock({ focusToday: () => Promise.resolve({ data: { ...DEFAULT_FOCUS_TODAY, items } }) }),
+      )
+      const { wrapper, router } = await mountAccueil()
+      const rows = wrapper.findAllComponents(ListRow)
+
+      await rows[0].findComponent(BaseButton).trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.fullPath).toBe('/revision/sets/2/study')
+
+      await rows[1].findComponent(BaseButton).trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.fullPath).toBe('/revision/sets/99/study')
     })
 
     it('affiche l\'état vide "Tout est à jour !" quand il n\'y a aucun item à réviser', async () => {

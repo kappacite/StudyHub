@@ -7,6 +7,15 @@
       Chargement des statistiques…
     </div>
 
+    <!-- Erreur de chargement -->
+    <p
+      v-else-if="error"
+      data-test="stats-error"
+      class="rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
+    >
+      {{ error }}
+    </p>
+
     <template v-else-if="stats">
       <!-- En-tête -->
       <div class="flex items-end justify-between gap-5 flex-wrap">
@@ -189,6 +198,7 @@ import { Play } from 'lucide-vue-next'
 import { REVISION_ITEM_TYPE_META } from '../../utils/revisionItemTypeMeta'
 import { successRateTextClass, successRateBgClass } from '../../utils/successRate'
 import { formatDuration } from '../../utils/duration'
+import { getRevisionSetRoute } from '../../utils/focusItemTarget'
 
 const router = useRouter()
 const route = useRoute()
@@ -197,6 +207,7 @@ const revisionStore = useRevisionStore()
 const setId = Number(route.params.id)
 const loading = ref(true)
 const stats = ref<SetStats | null>(null)
+const error = ref<string | null>(null)
 
 // Description de l'ensemble (sous-titre uniquement -- l'edition des elements
 // vit desormais sur RevisionSetDetail.vue / RevisionSetTypeItems.vue, pas ici :
@@ -263,7 +274,7 @@ function formatDay(iso: string): string {
 }
 
 function studySet() {
-  router.push(`/revision/sets/${setId}/study`)
+  router.push(getRevisionSetRoute(setId, stats.value?.type))
 }
 
 onMounted(async () => {
@@ -276,6 +287,7 @@ onMounted(async () => {
     }
   } catch (e) {
     console.error('Erreur de chargement des stats', e)
+    error.value = 'Impossible de charger les statistiques.'
   } finally {
     loading.value = false
   }

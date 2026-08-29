@@ -40,7 +40,11 @@ const stub = { template: '<div />' }
 function createTestRouter(): Router {
   return createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/revision/sets/:id/stats', name: 'RevisionSetStats', component: stub }],
+    routes: [
+      { path: '/revision/sets/:id/stats', name: 'RevisionSetStats', component: stub },
+      { path: '/revision/sets/:id/study', name: 'RevisionStudy', component: stub },
+      { path: '/revision/sets/:id/run', name: 'QcmRun', component: stub },
+    ],
   })
 }
 
@@ -55,6 +59,7 @@ interface MountOverrides {
     duration_seconds?: number
   }[]
   total_duration_seconds?: number
+  statsError?: boolean
 }
 
 function defaultWeeklyProgression() {
@@ -67,6 +72,7 @@ async function mountStats(setType: string | null, overrides: MountOverrides = {}
   setActivePinia(pinia)
   api.get.mockImplementation((url: string) => {
     if (/\/stats\/sets\/\d+$/.test(url)) {
+      if (overrides.statsError) return Promise.reject(new Error('network down'))
       return Promise.resolve({
         data: {
           set_id: 7,
@@ -98,32 +104,32 @@ async function mountStats(setType: string | null, overrides: MountOverrides = {}
   await router.isReady()
   const wrapper = mount(RevisionSetStats, { global: { plugins: [pinia, router] } })
   await flushPromises()
-  return wrapper
+  return { wrapper, router }
 }
 
 describe('RevisionSetStats', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it("affiche Mixte quand l'ensemble est heterogene", async () => {
-    const wrapper = await mountStats(null, {
+    const { wrapper } = await mountStats(null, {
       items: [itemSummary(1, 'flashcard'), itemSummary(2, 'vf')],
     })
     expect(wrapper.text()).toContain('Mixte')
   })
 
   it("affiche le libelle du type concret quand l'ensemble est homogene", async () => {
-    const wrapper = await mountStats('qcm', { items: [itemSummary(1, 'qcm')] })
+    const { wrapper } = await mountStats('qcm', { items: [itemSummary(1, 'qcm')] })
     expect(wrapper.text()).toContain('QCM')
     expect(wrapper.text()).not.toContain('Mixte')
   })
 
   it('affiche le taux de reussite global dans la carte hero', async () => {
-    const wrapper = await mountStats('qcm', { items: [itemSummary(1, 'qcm')] })
+    const { wrapper } = await mountStats('qcm', { items: [itemSummary(1, 'qcm')] })
     expect(wrapper.text()).toContain('87')
   })
 
   it('affiche les 4 barres de repartition des notes SM2', async () => {
-    const wrapper = await mountStats('qcm', {
+    const { wrapper } = await mountStats('qcm', {
       items: [itemSummary(1, 'qcm')],
       grade_distribution: { again: 2, hard: 1, good: 3, easy: 1 },
     })
@@ -131,7 +137,7 @@ describe('RevisionSetStats', () => {
   })
 
   it('affiche une ligne par jour dans l historique des sessions', async () => {
-    const wrapper = await mountStats('qcm', {
+    const { wrapper } = await mountStats('qcm', {
       items: [itemSummary(1, 'qcm')],
       session_history: [
         { date: '2026-08-29', reviews: 2, success_rate: 50 },
@@ -145,7 +151,7 @@ describe('RevisionSetStats', () => {
   })
 
   it('affiche un etat vide quand aucune session n a ete enregistree', async () => {
-    const wrapper = await mountStats('qcm', {
+    const { wrapper } = await mountStats('qcm', {
       items: [itemSummary(1, 'qcm')],
       session_history: [],
     })
@@ -154,7 +160,7 @@ describe('RevisionSetStats', () => {
   })
 
   it('affiche "Cartes vues" comme libelle de colonne (et non "Revisions")', async () => {
-    const wrapper = await mountStats('qcm', {
+    const { wrapper } = await mountStats('qcm', {
       items: [itemSummary(1, 'qcm')],
       session_history: [{ date: '2026-08-29', reviews: 2, success_rate: 50 }],
     })
@@ -162,7 +168,7 @@ describe('RevisionSetStats', () => {
   })
 
   it('colore le score de session avec le meme seuil (>=70 succes, sinon echec) que partout ailleurs', async () => {
-    const wrapper = await mountStats('qcm', {
+    const { wrapper } = await mountStats('qcm', {
       items: [itemSummary(1, 'qcm')],
       session_history: [
         { date: '2026-08-29', reviews: 1, success_rate: 70 },
@@ -175,7 +181,7 @@ describe('RevisionSetStats', () => {
   })
 
   it('affiche le temps cumule reel dans le trio hero, formate en heures/minutes (Task 9)', async () => {
-    const wrapper = await mountStats('qcm', {
+    const { wrapper } = await mountStats('qcm', {
       items: [itemSummary(1, 'qcm')],
       total_duration_seconds: 8100,
     })
@@ -184,7 +190,7 @@ describe('RevisionSetStats', () => {
   })
 
   it('affiche la duree reelle par jour dans la colonne Duree de l historique (Task 9)', async () => {
-    const wrapper = await mountStats('qcm', {
+    const { wrapper } = await mountStats('qcm', {
       items: [itemSummary(1, 'qcm')],
       session_history: [{ date: '2026-08-29', reviews: 2, success_rate: 50, duration_seconds: 480 }],
     })
@@ -193,7 +199,7 @@ describe('RevisionSetStats', () => {
   })
 
   it('colore les barres de progression hebdomadaire avec le meme seuil de reussite (>=70)', async () => {
-    const wrapper = await mountStats('qcm', {
+    const { wrapper } = await mountStats('qcm', {
       items: [itemSummary(1, 'qcm')],
       weekly_progression: [
         { reviews: 0, success_rate: 0 },
@@ -209,5 +215,44 @@ describe('RevisionSetStats', () => {
     expect(bars[0].classes()).toContain('bg-line') // pas de revision cette semaine-la
     expect(bars[1].classes()).toContain('bg-danger') // 69% < seuil
     expect(bars[2].classes()).toContain('bg-success') // 70% >= seuil
+  })
+
+  // ── Finding #8 (revue de branche reviser-hub) : le bouton "Reviser cette
+  // serie" ignorait la branche /run pour un ensemble QCM homogene ──────────
+  describe('bouton "Reviser cette serie"', () => {
+    it('navigue vers /revision/sets/:id/run pour un ensemble QCM homogene', async () => {
+      const { wrapper, router } = await mountStats('qcm', { items: [itemSummary(1, 'qcm')] })
+      await wrapper.get('[data-test="study-set-button"]').trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/run')
+    })
+
+    it('navigue vers /revision/sets/:id/study pour un ensemble heterogene', async () => {
+      const { wrapper, router } = await mountStats(null, {
+        items: [itemSummary(1, 'flashcard'), itemSummary(2, 'vf')],
+      })
+      await wrapper.get('[data-test="study-set-button"]').trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/study')
+    })
+
+    it('navigue vers /revision/sets/:id/study pour un ensemble homogene non-QCM', async () => {
+      const { wrapper, router } = await mountStats('vf', { items: [itemSummary(1, 'vf')] })
+      await wrapper.get('[data-test="study-set-button"]').trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/study')
+    })
+  })
+
+  // ── Finding #4 (revue de branche reviser-hub) : page blanche sans message
+  // ni retry en cas d'echec de chargement des stats ──────────────────────────
+  describe('etat erreur', () => {
+    it('affiche un message d\'erreur (et pas une page blanche) quand /stats/sets/:id echoue', async () => {
+      const { wrapper } = await mountStats('qcm', { statsError: true })
+      const error = wrapper.find('[data-test="stats-error"]')
+      expect(error.exists()).toBe(true)
+      expect(error.text()).toBe('Impossible de charger les statistiques.')
+      expect(wrapper.find('[data-test="study-set-button"]').exists()).toBe(false)
+    })
   })
 })

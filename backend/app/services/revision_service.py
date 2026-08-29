@@ -428,7 +428,7 @@ class RevisionService:
                     cards_reviewed=1,
                     cards_correct=1 if is_correct else 0,
                     item_id=item.id,
-                    item_type=rset.type,
+                    item_type=item.type,
                     grade=grade,
                 )
             )

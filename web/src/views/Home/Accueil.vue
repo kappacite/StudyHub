@@ -388,7 +388,9 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useDecksStore } from '../../stores/decks'
 import { useFocusStore } from '../../stores/focus'
+import { useRevisionStore } from '../../stores/revision'
 import type { FocusItem } from '../../services/focusService'
+import { getFocusItemTarget, REVISION_SET_ICON } from '../../utils/focusItemTarget'
 import {
   PageContainer,
   PageHeader,
@@ -418,6 +420,7 @@ import {
 const authStore = useAuthStore()
 const decksStore = useDecksStore()
 const focusStore = useFocusStore()
+const revisionStore = useRevisionStore()
 const router = useRouter()
 
 const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
@@ -519,21 +522,21 @@ const maturityMaturePercent = computed(() =>
 function getItemIcon(item: FocusItem) {
   if (item.type === 'deck') return Layers
   if (item.type === 'note') return FileText
+  if (item.type === 'revision_set') return REVISION_SET_ICON
   return GraduationCap
 }
 
 function getItemSummary(item: FocusItem) {
   if (item.type === 'deck') return `${item.count} carte(s) mémoire à réviser`
   if (item.type === 'note') return 'Feuille blanche à restituer (Blurting)'
+  if (item.type === 'revision_set') return `${item.count} élément(s) de la série à revoir`
   return item.due_date
     ? `Devoir à terminer avant le ${new Date(item.due_date).toLocaleDateString('fr-FR')}`
     : 'Devoir sans date limite'
 }
 
 function studyItem(item: FocusItem) {
-  if (item.type === 'deck') router.push(`/decks/${item.id}/study?focus=true`)
-  else if (item.type === 'note') router.push(`/notes/${item.id}/blurting?focus=true&from=focus`)
-  else if (item.type === 'assignment') router.push(`/bibliotheque/${item.id}`)
+  router.push(getFocusItemTarget(item, revisionStore.sets))
 }
 
 function continueReview() {
@@ -664,7 +667,16 @@ async function loadDashboard() {
   loading.value = true
   loadError.value = false
   try {
-    await Promise.all([focusStore.loadFocusData(), decksStore.fetchDecks()])
+    await Promise.all([
+      focusStore.loadFocusData(),
+      decksStore.fetchDecks(),
+      // Sert uniquement à distinguer un ensemble QCM homogène (mode /run) d'un
+      // ensemble hétérogène (mode /study) dans la file "À réviser maintenant" :
+      // son échec ne doit pas empêcher l'affichage du reste du tableau de bord.
+      revisionStore.fetchSets().catch((err) => {
+        console.error('Erreur de chargement des ensembles de révision', err)
+      }),
+    ])
     const weekParams = getStartAndEndOfWeek()
     await Promise.all([
       api.get('/stats/overview').then((res) => {

@@ -126,6 +126,50 @@ def test_run_updates_sm2_and_sessions(client, auth_headers, app):
         assert sess is not None and sess.grade == 5
 
 
+def test_run_records_item_type_from_item_not_from_set(client, auth_headers, app):
+    """Revue de branche reviser-hub, finding #7 : run_qcm ecrivait item_type=rset.type
+    sur la StudySession au lieu de item_type=item.type (pattern deja correct dans
+    answer_item/grade_item). Sans effet observable aujourd'hui puisque run_qcm exige
+    un ensemble homogene QCM (item.type == rset.type == "qcm" a la creation), mais
+    silencieusement faux si un item finit par porter un type different -- l'agregation
+    des stats groupe par item.type et manquerait alors cette session. On force ce cas
+    limite en mutant item.type directement en base apres creation."""
+    set_id = _qcm_set(client, auth_headers)
+    q = _add_item(
+        client,
+        auth_headers,
+        set_id,
+        {
+            "question": "2+2 ?",
+            "options": [
+                {"id": "a", "text": "3", "correct": False},
+                {"id": "b", "text": "4", "correct": True},
+            ],
+        },
+    )
+
+    with app.app_context():
+        from app.extensions import db
+        from app.models.revision import RevisionItem
+
+        item = db.session.get(RevisionItem, q["id"])
+        item.type = "flashcard"
+        db.session.commit()
+
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={"answers": [{"item_id": q["id"], "selected_option_ids": ["b"]}]},
+        headers=auth_headers,
+    )
+
+    with app.app_context():
+        from app.models.study_session import StudySession
+
+        sess = StudySession.query.filter_by(item_id=q["id"]).first()
+        assert sess is not None
+        assert sess.item_type == "flashcard"
+
+
 def test_run_rejects_non_qcm_set(client, auth_headers):
     set_id = client.post(
         "/api/v1/revision/sets", json={"name": "VF", "type": "vf"}, headers=auth_headers
