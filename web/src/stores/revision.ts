@@ -111,6 +111,7 @@ export interface ItemStats {
 
 export interface ItemSummary {
   item_id: number
+  type: RevisionItemType
   label: string
   reviews: number
   success_rate: number
@@ -123,7 +124,7 @@ export interface ItemSummary {
 
 export interface SetStats {
   set_id: number
-  type: RevisionType
+  type: RevisionType | null
   name: string
   items_count: number
   reviewed_items: number
@@ -140,7 +141,7 @@ export interface SetStats {
 
 export interface SetSummary {
   set_id: number
-  type: RevisionType
+  type: RevisionType | null
   name: string
   items_count: number
   reviewed_items: number
@@ -154,7 +155,7 @@ export interface SetSummary {
 }
 
 export interface TypeBreakdown {
-  type: RevisionType
+  type: RevisionItemType
   sets_count: number
   items_count: number
   mastered_count: number
