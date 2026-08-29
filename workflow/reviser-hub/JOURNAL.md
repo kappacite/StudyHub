@@ -272,5 +272,23 @@ une route morte ; et une garde `!== null` sur `binder_id` qui préserve exacteme
 antérieur, notée seulement pour référence future.
 
 **Chantier prêt pour la PR.** Revue finale propre, ledger complet dans
-`.superpowers/sdd/2026-08-29-reviser-hub-redesign/progress.md` (supprimé après cette clôture,
-l'historique git fait foi comme pour les chantiers précédents).
+`.superpowers/sdd/2026-08-29-reviser-hub-redesign/progress.md`.
+
+## 2026-08-30 (PR #130, CI rouge sur un test E2E jamais migré, corrigé)
+
+PR ouverte, poussée. CI : 5/6 checks verts immédiatement, le 6ᵉ (`Frontend · E2E (Playwright)`)
+rouge — 5 tests échoués dans `web/tests-e2e/reviews-ai-flashcards.spec.ts`, tous en timeout sur
+`getByRole('button', { name: /Générer depuis Notes/i })` après `page.goto('/reviser')`.
+
+Cause : ce fichier E2E teste le bouton de génération de flashcards IA qui vivait sur `Reviews.vue`
+— déplacé vers `Decks.vue` par la Task 4 de ce même chantier, puis retiré définitivement de
+`Reviews.vue` par la Task 7. Le fichier n'avait jamais été mis à jour pour suivre le déplacement.
+Aucune tâche ne pouvait s'en apercevoir : les tests E2E Playwright (`tests-e2e/`) sont une suite
+distincte des tests unitaires Vitest, exécutée uniquement en CI (`npm run e2e` / job GitHub Actions),
+jamais par les `npx vitest run` que chaque tâche de ce chantier a systématiquement lancés en local.
+
+Corrigé : fichier renommé `decks-ai-flashcards.spec.ts` (reflète sa nouvelle portée),
+`page.goto('/reviser')` → `page.goto('/decks')` (2 occurrences), commentaire d'en-tête mis à jour.
+Bouton, structure de la modale (3 `<select>` uniquement dans la modale, aucun sur la liste de decks
+elle-même) et flux de génération inchangés — vérifié directement dans `Decks.vue`. Testé en local
+(`npx playwright test tests-e2e/decks-ai-flashcards.spec.ts`) : 5/5 verts avant de pousser.
