@@ -171,6 +171,7 @@ class RevisionItemStats(BaseModel):
 
 class RevisionItemSummary(BaseModel):
     item_id: int
+    type: str
     label: str
     reviews: int
     success_rate: float
@@ -183,7 +184,7 @@ class RevisionItemSummary(BaseModel):
 
 class RevisionSetStats(BaseModel):
     set_id: int
-    type: str
+    type: str | None = None
     name: str
     items_count: int
     reviewed_items: int
@@ -205,7 +206,7 @@ class RevisionSetSummary(BaseModel):
     """Résumé d'un ensemble dans la vue agrégée d'un classeur (sans les items)."""
 
     set_id: int
-    type: str
+    type: str | None = None
     name: str
     items_count: int
     reviewed_items: int

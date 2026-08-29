@@ -1,15 +1,20 @@
 import math
-from datetime import datetime, timedelta
-from typing import List, Optional
 from dataclasses import dataclass, field
-from app.dao.revision_dao import RevisionSetDAO, RevisionItemDAO
-from app.dao.study_session_dao import StudySessionDAO
+from datetime import datetime, timedelta
+
 from app.dao.binder_dao import BinderDAO
-from app.models.revision import RevisionSet, RevisionItem
+from app.dao.revision_dao import RevisionItemDAO, RevisionSetDAO
+from app.dao.study_session_dao import StudySessionDAO
+from app.models.revision import RevisionItem, RevisionSet
 from app.models.study_session import StudySession
 from app.schemas.revision_schema import (
-    RevisionItemStats, RevisionSetStats, RevisionHistoryPoint, RevisionItemSummary,
-    RevisionSetSummary, RevisionTypeBreakdown, RevisionBinderStats,
+    RevisionBinderStats,
+    RevisionHistoryPoint,
+    RevisionItemStats,
+    RevisionItemSummary,
+    RevisionSetStats,
+    RevisionSetSummary,
+    RevisionTypeBreakdown,
 )
 
 
@@ -17,17 +22,22 @@ def item_label(set_type: str, payload: dict) -> str:
     """Libellé court d'un item selon son type (pour les listes de stats)."""
     payload = payload or {}
     raw = (
-        payload.get("question") or payload.get("assertion")
-        or payload.get("term") or payload.get("title") or ""
+        payload.get("question")
+        or payload.get("assertion")
+        or payload.get("term")
+        or payload.get("title")
+        or ""
     )
     raw = str(raw).strip() or "(sans titre)"
     return raw[:80]
-from app.middlewares.error_handler import ResourceNotFoundError, ForbiddenError
+
+
+from app.middlewares.error_handler import ForbiddenError, ResourceNotFoundError
 
 # Seuils (cf. D5).
-MATURE_DAYS = 21          # un item est « mûr » quand son intervalle ≥ 21 jours (Anki)
-LEECH_LAPSES = 4          # sangsue : échoué au moins 4 fois
-TARGET_RETENTION = 85.0   # cible de rétention réelle (%)
+MATURE_DAYS = 21  # un item est « mûr » quand son intervalle ≥ 21 jours (Anki)
+LEECH_LAPSES = 4  # sangsue : échoué au moins 4 fois
+TARGET_RETENTION = 85.0  # cible de rétention réelle (%)
 
 
 def difficulty_from_ef(ease_factor: float) -> float:
@@ -37,7 +47,7 @@ def difficulty_from_ef(ease_factor: float) -> float:
     return round(d, 1)
 
 
-def retrievability(interval: int, last_reviewed: Optional[datetime], now: datetime) -> float:
+def retrievability(interval: int, last_reviewed: datetime | None, now: datetime) -> float:
     """Récupérabilité R ∈ [0,1] via la courbe d'oubli d'Ebbinghaus R = exp(-t/S)."""
     if not last_reviewed or interval <= 0:
         return 0.0
@@ -46,8 +56,9 @@ def retrievability(interval: int, last_reviewed: Optional[datetime], now: dateti
     return round(min(1.0, max(0.0, r)), 2)
 
 
-def project_mastery_date(interval: int, ease_factor: float, next_review: Optional[datetime],
-                         now: datetime) -> Optional[datetime]:
+def project_mastery_date(
+    interval: int, ease_factor: float, next_review: datetime | None, now: datetime
+) -> datetime | None:
     """Date de maîtrise estimée : projection SM-2 (réussites) jusqu'à interval ≥ MATURE_DAYS."""
     cur = max(1, interval)
     ef = max(1.3, ease_factor or 2.5)
@@ -63,6 +74,7 @@ def project_mastery_date(interval: int, ease_factor: float, next_review: Optiona
 @dataclass
 class _SetAggregate:
     """Métriques d'un ensemble + accumulateurs bruts (recomposables au niveau classeur)."""
+
     set: RevisionSet
     items_count: int = 0
     reviewed_items: int = 0
@@ -71,8 +83,8 @@ class _SetAggregate:
     due_count: int = 0
     mature_reviews: int = 0
     mature_successes: int = 0
-    success_rates: list = field(default_factory=list)   # par item révisé
-    difficulties: list = field(default_factory=list)     # par item
+    success_rates: list = field(default_factory=list)  # par item révisé
+    difficulties: list = field(default_factory=list)  # par item
     item_summaries: list = field(default_factory=list)
 
     @property
@@ -81,20 +93,35 @@ class _SetAggregate:
 
     @property
     def avg_success_rate(self) -> float:
-        return round(sum(self.success_rates) / len(self.success_rates), 1) if self.success_rates else 0.0
+        return (
+            round(sum(self.success_rates) / len(self.success_rates), 1)
+            if self.success_rates
+            else 0.0
+        )
 
     @property
     def true_retention(self) -> float:
-        return round(self.mature_successes / self.mature_reviews * 100, 1) if self.mature_reviews else 0.0
+        return (
+            round(self.mature_successes / self.mature_reviews * 100, 1)
+            if self.mature_reviews
+            else 0.0
+        )
 
     @property
     def avg_difficulty(self) -> float:
-        return round(sum(self.difficulties) / len(self.difficulties), 1) if self.difficulties else 0.0
+        return (
+            round(sum(self.difficulties) / len(self.difficulties), 1) if self.difficulties else 0.0
+        )
 
 
 class RevisionStatsService:
-    def __init__(self, set_dao: RevisionSetDAO, item_dao: RevisionItemDAO,
-                 session_dao: StudySessionDAO, binder_dao: BinderDAO = None):
+    def __init__(
+        self,
+        set_dao: RevisionSetDAO,
+        item_dao: RevisionItemDAO,
+        session_dao: StudySessionDAO,
+        binder_dao: BinderDAO = None,
+    ):
         self._set_dao = set_dao
         self._item_dao = item_dao
         self._session_dao = session_dao
@@ -107,6 +134,7 @@ class RevisionStatsService:
         if rset.user_id != user_id:
             if rset.binder_id:
                 from app.utils.security import check_binder_access
+
                 check_binder_access(self._set_dao.db, rset.binder_id, user_id, write_required=False)
             else:
                 raise ForbiddenError("Accès interdit à cet ensemble.")
@@ -114,8 +142,9 @@ class RevisionStatsService:
 
     # --- Item -----------------------------------------------------------------
 
-    def _compute_item_stats(self, item: RevisionItem, item_type: str,
-                            sessions: List[StudySession], now: datetime) -> RevisionItemStats:
+    def _compute_item_stats(
+        self, item: RevisionItem, item_type: str, sessions: list[StudySession], now: datetime
+    ) -> RevisionItemStats:
         graded = [s for s in sessions if s.grade is not None]
         reviews = len(graded)
         successes = sum(1 for s in graded if s.grade >= 3)
@@ -140,7 +169,9 @@ class RevisionStatsService:
             is_mature=is_mature,
             is_leech=lapses >= LEECH_LAPSES,
             mastered=is_mature,
-            mastery_date=None if is_mature else project_mastery_date(item.interval, item.ease_factor, item.next_review, now),
+            mastery_date=None
+            if is_mature
+            else project_mastery_date(item.interval, item.ease_factor, item.next_review, now),
             history=[RevisionHistoryPoint(date=s.created_at, grade=s.grade) for s in graded],
         )
 
@@ -154,8 +185,9 @@ class RevisionStatsService:
 
     # --- Ensemble -------------------------------------------------------------
 
-    def _aggregate_set(self, rset: RevisionSet, items: List[RevisionItem],
-                       by_item: dict, now: datetime) -> _SetAggregate:
+    def _aggregate_set(
+        self, rset: RevisionSet, items: list[RevisionItem], by_item: dict, now: datetime
+    ) -> _SetAggregate:
         """Calcule les métriques d'un ensemble à partir d'items + sessions déjà chargés
         (aucune requête ici : appelable en boucle sans N+1)."""
         agg = _SetAggregate(set=rset, items_count=len(items))
@@ -184,17 +216,20 @@ class RevisionStatsService:
             if is_due:
                 agg.due_count += 1
 
-            agg.item_summaries.append(RevisionItemSummary(
-                item_id=item.id,
-                label=item_label(rset.type, item.payload),
-                reviews=reviews,
-                success_rate=item_success,
-                difficulty=difficulty,
-                retrievability=retrievability(item.interval, last_reviewed, now),
-                is_leech=is_leech,
-                is_mature=is_mature,
-                due=is_due,
-            ))
+            agg.item_summaries.append(
+                RevisionItemSummary(
+                    item_id=item.id,
+                    type=item.type or rset.type,
+                    label=item_label(rset.type, item.payload),
+                    reviews=reviews,
+                    success_rate=item_success,
+                    difficulty=difficulty,
+                    retrievability=retrievability(item.interval, last_reviewed, now),
+                    is_leech=is_leech,
+                    is_mature=is_mature,
+                    due=is_due,
+                )
+            )
         return agg
 
     def get_set_stats(self, user_id: int, set_id: int) -> RevisionSetStats:
@@ -211,8 +246,12 @@ class RevisionStatsService:
 
         agg = self._aggregate_set(rset, items, by_item, now)
         verdicts = self._build_verdicts(
-            agg.items_count, agg.reviewed_items, agg.leeches_count, agg.due_count,
-            agg.true_retention, agg.mature_reviews,
+            agg.items_count,
+            agg.reviewed_items,
+            agg.leeches_count,
+            agg.due_count,
+            agg.true_retention,
+            agg.mature_reviews,
         )
 
         return RevisionSetStats(
@@ -232,14 +271,18 @@ class RevisionStatsService:
             items=agg.item_summaries,
         )
 
-    def _build_verdicts(self, items_count, reviewed_items, leeches, due, true_retention, mature_reviews) -> List[str]:
+    def _build_verdicts(
+        self, items_count, reviewed_items, leeches, due, true_retention, mature_reviews
+    ) -> list[str]:
         verdicts = []
         if items_count == 0:
             return ["Ajoutez des éléments pour commencer à réviser."]
         if leeches:
             verdicts.append(f"{leeches} élément(s) « sangsue » à reformuler ou scinder.")
         if mature_reviews and true_retention < TARGET_RETENTION:
-            verdicts.append(f"Rétention réelle {true_retention} % < cible {int(TARGET_RETENTION)} % : espacement peut-être trop agressif.")
+            verdicts.append(
+                f"Rétention réelle {true_retention} % < cible {int(TARGET_RETENTION)} % : espacement peut-être trop agressif."
+            )
         if due:
             verdicts.append(f"{due} élément(s) à réviser aujourd'hui.")
         if reviewed_items == 0:
@@ -250,7 +293,9 @@ class RevisionStatsService:
 
     # --- Classeur (A8) --------------------------------------------------------
 
-    def get_binder_stats(self, user_id: int, binder_id, include_descendants: bool = True) -> RevisionBinderStats:
+    def get_binder_stats(
+        self, user_id: int, binder_id, include_descendants: bool = True
+    ) -> RevisionBinderStats:
         """Agrège les stats de tous les ensembles de révision d'un classeur (et,
         par défaut, de son sous-arbre). Les decks de flashcards ont leurs stats
         propres (`/stats/decks/:id`) et ne sont pas inclus ici."""
@@ -284,20 +329,28 @@ class RevisionStatsService:
                 by_item.setdefault(sess.item_id, []).append(sess)
 
         # Agrégation par ensemble (réutilise la logique de get_set_stats).
-        summaries: List[RevisionSetSummary] = []
-        by_type_acc: dict = {}   # type -> [sets, items, mastered]
-        tot = _SetAggregate(set=binder)   # accumulateur global
+        summaries: list[RevisionSetSummary] = []
+        by_type_acc: dict = {}  # type -> [sets, items, mastered]
+        tot = _SetAggregate(set=binder)  # accumulateur global
 
         for rset in sets:
             agg = self._aggregate_set(rset, items_by_set.get(rset.id, []), by_item, now)
-            summaries.append(RevisionSetSummary(
-                set_id=rset.id, type=rset.type, name=rset.name,
-                items_count=agg.items_count, reviewed_items=agg.reviewed_items,
-                mastered_count=agg.mastered_count, mastery_rate=agg.mastery_rate,
-                avg_success_rate=agg.avg_success_rate, true_retention=agg.true_retention,
-                leeches_count=agg.leeches_count, due_count=agg.due_count,
-                avg_difficulty=agg.avg_difficulty,
-            ))
+            summaries.append(
+                RevisionSetSummary(
+                    set_id=rset.id,
+                    type=rset.type,
+                    name=rset.name,
+                    items_count=agg.items_count,
+                    reviewed_items=agg.reviewed_items,
+                    mastered_count=agg.mastered_count,
+                    mastery_rate=agg.mastery_rate,
+                    avg_success_rate=agg.avg_success_rate,
+                    true_retention=agg.true_retention,
+                    leeches_count=agg.leeches_count,
+                    due_count=agg.due_count,
+                    avg_difficulty=agg.avg_difficulty,
+                )
+            )
             tot.items_count += agg.items_count
             tot.reviewed_items += agg.reviewed_items
             tot.mastered_count += agg.mastered_count
@@ -315,7 +368,10 @@ class RevisionStatsService:
 
         by_type = [
             RevisionTypeBreakdown(
-                type=t, sets_count=a[0], items_count=a[1], mastered_count=a[2],
+                type=t,
+                sets_count=a[0],
+                items_count=a[1],
+                mastered_count=a[2],
                 mastery_rate=round(a[2] / a[1] * 100, 1) if a[1] else 0.0,
             )
             for t, a in sorted(by_type_acc.items())
@@ -328,8 +384,12 @@ class RevisionStatsService:
         )[:5]
 
         verdicts = self._build_verdicts(
-            tot.items_count, tot.reviewed_items, tot.leeches_count, tot.due_count,
-            tot.true_retention, tot.mature_reviews,
+            tot.items_count,
+            tot.reviewed_items,
+            tot.leeches_count,
+            tot.due_count,
+            tot.true_retention,
+            tot.mature_reviews,
         )
 
         return RevisionBinderStats(
