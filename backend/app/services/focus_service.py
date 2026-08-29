@@ -1,25 +1,30 @@
 from datetime import datetime, timedelta
-from typing import Dict, Any, List
+
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
+
 from app.extensions import db
-from app.models.flashcard import Flashcard
+from app.models.binder import Binder
 from app.models.deck import Deck
+from app.models.flashcard import Flashcard
 from app.models.note import Note
 from app.models.study_session import StudySession
-from app.models.binder import Binder
 from app.schemas.focus_schema import (
-    FocusTodayResponse, FocusItemSchema,
-    FocusForecastResponse, ForecastItemSchema,
-    FocusRetentionResponse, RetentionSubjectSchema
+    FocusForecastResponse,
+    FocusItemSchema,
+    FocusRetentionResponse,
+    FocusTodayResponse,
+    ForecastItemSchema,
+    RetentionSubjectSchema,
 )
+
 
 class FocusService:
     def get_today_items(self, user_id: int) -> FocusTodayResponse:
         now = datetime.utcnow()
         today = now.date()
         one_day_ago = now - timedelta(days=1)
-        
+
         # 1. Cartes dues : UNE requête (au lieu d'une par deck), deck eager-loadé,
         #    + dernier passage par deck en UNE requête groupée.
         due_cards_all = (
@@ -43,13 +48,13 @@ class FocusService:
 
         # Regroupement par deck + filtrage des types de cartes valides (en Python,
         # car cela dépend du parsing de original_text).
-        cards_by_deck: Dict[int, list] = {}
+        cards_by_deck: dict[int, list] = {}
         for c in due_cards_all:
             if c.original_text:
-                is_def = c.original_text.startswith('[') and ']{def:' in c.original_text
-                is_vf = '{{vf::' in c.original_text
-                is_qcm = '{{qcm::' in c.original_text
-                is_occl = c.original_text.startswith('[diagram:') and 'mask:' in c.original_text
+                is_def = c.original_text.startswith("[") and "]{def:" in c.original_text
+                is_vf = "{{vf::" in c.original_text
+                is_qcm = "{{qcm::" in c.original_text
+                is_occl = c.original_text.startswith("[diagram:") and "mask:" in c.original_text
                 if not (is_def or is_vf or is_qcm or is_occl):
                     continue
             cards_by_deck.setdefault(c.deck_id, []).append(c)
@@ -71,14 +76,16 @@ class FocusService:
             last_session_ago_days = (now - last_session_time).days if last_session_time else None
 
             deck = due_cards[0].deck  # eager-loadé, pas de requête supplémentaire
-            deck_items.append(FocusItemSchema(
-                type="deck",
-                id=str(deck_id),
-                title=deck.name,
-                count=count,
-                is_late=is_late,
-                last_session_ago_days=last_session_ago_days
-            ))
+            deck_items.append(
+                FocusItemSchema(
+                    type="deck",
+                    id=str(deck_id),
+                    title=deck.name,
+                    count=count,
+                    is_late=is_late,
+                    last_session_ago_days=last_session_ago_days,
+                )
+            )
 
         # 2. Fetch due notes for blurting
         notes = db.session.query(Note).filter(Note.user_id == user_id).all()
@@ -109,45 +116,94 @@ class FocusService:
                 blurting_count += 1
                 if is_late:
                     total_late_notes += 1
-                
-                note_items.append(FocusItemSchema(
-                    type="note",
-                    id=note.id,
-                    title=note.title or "Note sans titre",
-                    count=1,
-                    is_late=is_late,
-                    last_session_ago_days=last_session_ago_days
-                ))
 
-        items = deck_items + note_items
+                note_items.append(
+                    FocusItemSchema(
+                        type="note",
+                        id=note.id,
+                        title=note.title or "Note sans titre",
+                        count=1,
+                        is_late=is_late,
+                        last_session_ago_days=last_session_ago_days,
+                    )
+                )
+
+        # 3. Ensembles de révision (D8/reviser-hub) : un item par ENSEMBLE ayant
+        #    au moins un item dû, pas un par item (même principe que deck_items).
+        from app.models.revision import RevisionItem, RevisionSet
+
+        due_revision_items = (
+            db.session.query(RevisionItem)
+            .join(RevisionSet)
+            .filter(RevisionSet.user_id == user_id, RevisionItem.next_review <= now)
+            .all()
+        )
+        items_by_set: dict[int, list] = {}
+        for it in due_revision_items:
+            items_by_set.setdefault(it.set_id, []).append(it)
+
+        revision_set_items = []
+        revision_set_count = 0
+        total_late_revision = 0
+        if items_by_set:
+            sets_by_id = {
+                s.id: s
+                for s in db.session.query(RevisionSet)
+                .filter(RevisionSet.id.in_(items_by_set.keys()))
+                .all()
+            }
+            for set_id, due_items in items_by_set.items():
+                rset = sets_by_id.get(set_id)
+                if rset is None:
+                    continue
+                count = len(due_items)
+                revision_set_count += count
+                late_items = [i for i in due_items if i.next_review < one_day_ago]
+                is_late = len(late_items) > 0
+                total_late_revision += len(late_items)
+                revision_set_items.append(
+                    FocusItemSchema(
+                        type="revision_set",
+                        id=str(set_id),
+                        title=rset.name,
+                        count=count,
+                        is_late=is_late,
+                        last_session_ago_days=None,
+                    )
+                )
+
+        items = deck_items + note_items + revision_set_items
         # Sort items: late ones first
         items.sort(key=lambda x: (not x.is_late, x.title))
 
-        # 3. Devoirs avec deadline ≤ 3 jours (Feature 10)
+        # 4. Devoirs avec deadline ≤ 3 jours (Feature 10)
         assignment_items = []
         assignment_count = 0
         try:
-            from app.services.class_service import ClassService
-            from app.dao.group_dao import GroupDAO
             from app.dao.binder_dao import BinderDAO
+            from app.dao.group_dao import GroupDAO
             from app.dao.user_dao import UserDAO
+            from app.services.class_service import ClassService
+
             class_service = ClassService(
                 group_dao=GroupDAO(db.session),
                 binder_dao=BinderDAO(db.session),
-                user_dao=UserDAO(db.session)
+                user_dao=UserDAO(db.session),
             )
             due_soon = class_service.get_assignments_due_soon(user_id, days=3)
             for asgn in due_soon:
                 is_late = asgn.status == "late"
-                assignment_items.append(FocusItemSchema(
-                    type="assignment",
-                    id=asgn.binder_id,
-                    assignment_id=asgn.id,
-                    title=f"{asgn.title} ({asgn.group_name})",
-                    count=1,
-                    is_late=is_late,
-                    due_date=asgn.due_date.date().isoformat() if asgn.due_date else None
-                ))
+                assignment_items.append(
+                    FocusItemSchema(
+                        type="assignment",
+                        id=asgn.binder_id,
+                        assignment_id=asgn.id,
+                        title=f"{asgn.title} ({asgn.group_name})",
+                        count=1,
+                        is_late=is_late,
+                        due_date=asgn.due_date.date().isoformat() if asgn.due_date else None,
+                    )
+                )
             assignment_count = len(assignment_items)
         except Exception:
             pass  # Ne pas bloquer le Focus si les classes ne sont pas disponibles
@@ -156,29 +212,29 @@ class FocusService:
         all_items.sort(key=lambda x: (not x.is_late, x.title))
 
         return FocusTodayResponse(
-            total_due=flashcard_count + blurting_count + assignment_count,
-            late_count=total_late_cards + total_late_notes,
+            total_due=flashcard_count + blurting_count + assignment_count + revision_set_count,
+            late_count=total_late_cards + total_late_notes + total_late_revision,
             flashcard_count=flashcard_count,
             blurting_count=blurting_count,
             assignment_count=assignment_count,
-            items=all_items
+            items=all_items,
         )
 
     def get_forecast(self, user_id: int, days: int = 14) -> FocusForecastResponse:
         now = datetime.utcnow()
         today_date = now.date()
-        
-        forecast_dict = { (today_date + timedelta(days=i)).isoformat(): 0 for i in range(days) }
+
+        forecast_dict = {(today_date + timedelta(days=i)).isoformat(): 0 for i in range(days)}
 
         # Query all flashcards of the user
         cards = db.session.query(Flashcard).join(Deck).filter(Deck.user_id == user_id).all()
         for c in cards:
             if c.next_review:
                 if c.original_text:
-                    is_def = c.original_text.startswith('[') and ']{def:' in c.original_text
-                    is_vf = '{{vf::' in c.original_text
-                    is_qcm = '{{qcm::' in c.original_text
-                    is_occl = c.original_text.startswith('[diagram:') and 'mask:' in c.original_text
+                    is_def = c.original_text.startswith("[") and "]{def:" in c.original_text
+                    is_vf = "{{vf::" in c.original_text
+                    is_qcm = "{{qcm::" in c.original_text
+                    is_occl = c.original_text.startswith("[diagram:") and "mask:" in c.original_text
                     if not (is_def or is_vf or is_qcm or is_occl):
                         continue
                 card_date = c.next_review.date()
@@ -195,19 +251,15 @@ class FocusService:
                 level = "medium"
             else:
                 level = "high"
-            
-            forecast_list.append(ForecastItemSchema(
-                date=date_str,
-                count=count,
-                load_level=level
-            ))
+
+            forecast_list.append(ForecastItemSchema(date=date_str, count=count, load_level=level))
 
         return FocusForecastResponse(forecast=forecast_list)
 
     def get_retention_by_subject(self, user_id: int) -> FocusRetentionResponse:
         now = datetime.utcnow()
         binders = db.session.query(Binder).filter(Binder.user_id == user_id).all()
-        
+
         by_subject = []
         for binder in binders:
             # Query sessions in the last 30 days for this binder
@@ -219,14 +271,18 @@ class FocusService:
                     Deck.binder_id == binder._id,
                     StudySession.user_id == user_id,
                     StudySession.module == "flashcard",
-                    StudySession.created_at >= now - timedelta(days=30)
+                    StudySession.created_at >= now - timedelta(days=30),
                 )
                 .all()
             )
 
             # Calculation of retention percentage (correct / reviewed)
-            cards_reviewed_30d = sum(s.cards_reviewed for s in sessions_30d if s.cards_reviewed is not None)
-            cards_correct_30d = sum(s.cards_correct for s in sessions_30d if s.cards_correct is not None)
+            cards_reviewed_30d = sum(
+                s.cards_reviewed for s in sessions_30d if s.cards_reviewed is not None
+            )
+            cards_correct_30d = sum(
+                s.cards_correct for s in sessions_30d if s.cards_correct is not None
+            )
             retention_pct = 0.0
             if cards_reviewed_30d > 0:
                 retention_pct = round((cards_correct_30d / cards_reviewed_30d) * 100.0, 2)
@@ -236,47 +292,50 @@ class FocusService:
 
             # Calculation of trend (rate over last 7 days vs rate 7-14 days ago)
             sessions_a = [s for s in sessions_30d if s.created_at >= now - timedelta(days=7)]
-            sessions_b = [s for s in sessions_30d if now - timedelta(days=14) <= s.created_at < now - timedelta(days=7)]
-            
+            sessions_b = [
+                s
+                for s in sessions_30d
+                if now - timedelta(days=14) <= s.created_at < now - timedelta(days=7)
+            ]
+
             reviewed_a = sum(s.cards_reviewed for s in sessions_a if s.cards_reviewed is not None)
             correct_a = sum(s.cards_correct for s in sessions_a if s.cards_correct is not None)
             rate_a = (correct_a / reviewed_a * 100.0) if reviewed_a > 0 else 0.0
-            
+
             reviewed_b = sum(s.cards_reviewed for s in sessions_b if s.cards_reviewed is not None)
             correct_b = sum(s.cards_correct for s in sessions_b if s.cards_correct is not None)
             rate_b = (correct_b / reviewed_b * 100.0) if reviewed_b > 0 else 0.0
-            
+
             trend_7d = round(rate_a - rate_b, 2)
 
             # Overdue flashcards count in the binder
             overdue_cards = (
                 db.session.query(Flashcard)
                 .join(Deck)
-                .filter(
-                    Deck.binder_id == binder._id,
-                    Flashcard.next_review <= now
-                )
+                .filter(Deck.binder_id == binder._id, Flashcard.next_review <= now)
                 .all()
             )
             overdue_count = 0
             for c in overdue_cards:
                 if c.original_text:
-                    is_def = c.original_text.startswith('[') and ']{def:' in c.original_text
-                    is_vf = '{{vf::' in c.original_text
-                    is_qcm = '{{qcm::' in c.original_text
-                    is_occl = c.original_text.startswith('[diagram:') and 'mask:' in c.original_text
+                    is_def = c.original_text.startswith("[") and "]{def:" in c.original_text
+                    is_vf = "{{vf::" in c.original_text
+                    is_qcm = "{{qcm::" in c.original_text
+                    is_occl = c.original_text.startswith("[diagram:") and "mask:" in c.original_text
                     if is_def or is_vf or is_qcm or is_occl:
                         overdue_count += 1
                 else:
                     overdue_count += 1
 
-            by_subject.append(RetentionSubjectSchema(
-                binder_id=binder.id,
-                binder_name=binder.name,
-                retention_pct=retention_pct,
-                overdue_count=overdue_count,
-                trend_7d=trend_7d
-            ))
+            by_subject.append(
+                RetentionSubjectSchema(
+                    binder_id=binder.id,
+                    binder_name=binder.name,
+                    retention_pct=retention_pct,
+                    overdue_count=overdue_count,
+                    trend_7d=trend_7d,
+                )
+            )
 
         # Sort subjects by binder name
         by_subject.sort(key=lambda x: x.binder_name)

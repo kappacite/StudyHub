@@ -1,18 +1,21 @@
+from typing import Literal
+
 from pydantic import BaseModel
-from typing import List, Optional
+
 
 class FocusItemSchema(BaseModel):
-    type: str  # "deck" | "note" | "assignment"
+    type: Literal["deck", "note", "assignment", "revision_set"]
     id: str
     title: str
     count: int
     is_late: bool
-    last_session_ago_days: Optional[int] = None
-    due_date: Optional[str] = None    # ISO date string, pour les devoirs
-    assignment_id: Optional[int] = None  # id du devoir si type="assignment"
+    last_session_ago_days: int | None = None
+    due_date: str | None = None  # ISO date string, pour les devoirs
+    assignment_id: int | None = None  # id du devoir si type="assignment"
 
     class Config:
         from_attributes = True
+
 
 class FocusTodayResponse(BaseModel):
     total_due: int
@@ -20,10 +23,11 @@ class FocusTodayResponse(BaseModel):
     flashcard_count: int
     blurting_count: int
     assignment_count: int = 0
-    items: List[FocusItemSchema]
+    items: list[FocusItemSchema]
 
     class Config:
         from_attributes = True
+
 
 class ForecastItemSchema(BaseModel):
     date: str  # "YYYY-MM-DD"
@@ -33,11 +37,13 @@ class ForecastItemSchema(BaseModel):
     class Config:
         from_attributes = True
 
+
 class FocusForecastResponse(BaseModel):
-    forecast: List[ForecastItemSchema]
+    forecast: list[ForecastItemSchema]
 
     class Config:
         from_attributes = True
+
 
 class RetentionSubjectSchema(BaseModel):
     binder_id: str
@@ -49,8 +55,9 @@ class RetentionSubjectSchema(BaseModel):
     class Config:
         from_attributes = True
 
+
 class FocusRetentionResponse(BaseModel):
-    by_subject: List[RetentionSubjectSchema]
+    by_subject: list[RetentionSubjectSchema]
 
     class Config:
         from_attributes = True
