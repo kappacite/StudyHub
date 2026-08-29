@@ -1,2503 +1,381 @@
 <template>
   <PageContainer>
     <PageHeader
-      title="Espace Révisions 🧠"
-      subtitle="Multipliez l'efficacité de votre apprentissage grâce aux meilleures techniques cognitives."
-    >
-      <template #actions>
-        <div class="flex flex-col items-end gap-2">
-          <!-- Catégories : Classiques vs IA -->
-          <div class="flex p-1 bg-surface-soft border border-line rounded-full gap-1">
-            <button
-              v-for="cat in categories"
-              :key="cat.id"
-              class="px-4 py-2 text-xs font-bold rounded-full transition-colors"
-              :class="
-                activeCategory === cat.id
-                  ? 'bg-primary text-white shadow-elev-primary'
-                  : 'text-ink-muted hover:text-ink'
-              "
-              @click="selectCategory(cat.id)"
-            >
-              {{ cat.name }}
-            </button>
-          </div>
-          <!-- Sous-onglets de la catégorie active -->
-          <div
-            class="flex flex-wrap justify-end p-1 bg-surface-soft border border-line rounded-full gap-1"
-          >
-            <button
-              v-for="tab in currentTabs"
-              :key="tab.id"
-              :data-test="`tab-${tab.id}`"
-              class="px-3.5 py-1.5 text-xs font-bold rounded-full transition-colors"
-              :class="
-                activeTab === tab.id
-                  ? 'bg-surface text-primary shadow-elev-1'
-                  : 'text-ink-muted hover:text-ink'
-              "
-              @click="activeTab = tab.id"
-            >
-              {{ tab.name }}
-            </button>
-          </div>
-        </div>
-      </template>
-    </PageHeader>
+      title="Réviser"
+      subtitle="Vue d'ensemble de tout ce qui est dû, tous decks et séries confondus."
+    />
 
-    <!-- Bandeau : à réviser maintenant (file unifiée focus) -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-primary/20 bg-primary-soft/60 p-5"
+    <!-- Bandeau résumé : file unifiée (focusStore) -->
+    <BaseCard
+      class="border-l-4 border-l-accent flex flex-col sm:flex-row sm:items-center justify-between gap-6"
     >
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-4 min-w-0">
         <div
-          class="w-11 h-11 rounded-2xl bg-primary text-white flex items-center justify-center shrink-0"
+          class="w-12 h-12 shrink-0 rounded-full bg-accent-soft text-accent flex items-center justify-center"
         >
-          <Flame class="w-5 h-5" />
+          <Flame class="w-6 h-6" />
         </div>
-        <div>
-          <p class="text-sm font-bold text-ink">
-            {{
-              focusStore.totalDue > 0
-                ? `${focusStore.totalDue} élément(s) à réviser maintenant`
-                : 'Tout est à jour 🎉'
-            }}
-          </p>
-          <p class="text-xs text-ink-muted">
-            {{
-              focusStore.lateCount > 0
-                ? `${focusStore.lateCount} en retard`
-                : 'File unifiée : flashcards, ensembles typés et feuilles blanches.'
-            }}
-          </p>
+        <div class="min-w-0">
+          <p class="text-base font-bold text-ink">{{ summarySentence }}</p>
+          <p class="text-meta text-ink-muted mt-1">{{ summarySubSentence }}</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 shrink-0 flex-wrap">
         <router-link
           to="/exam/setup"
-          class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-full bg-surface text-ink border border-line hover:bg-surface-soft transition-colors"
+          class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-lg bg-surface text-ink border border-line hover:bg-surface-soft transition-colors"
         >
           <ShieldAlert class="w-4 h-4" />
           Examen blanc
         </router-link>
-        <BaseButton :disabled="focusStore.totalDue === 0" @click="continueReview">
-          <template #icon><Compass class="w-4 h-4" /></template>
+        <BaseButton
+          data-test="review-all"
+          :disabled="focusStore.totalDue === 0"
+          @click="continueReview"
+        >
+          <template #icon><Play class="w-4 h-4" /></template>
           {{ focusStore.totalDue > 0 ? 'Tout réviser' : 'Rien à réviser' }}
         </BaseButton>
       </div>
+    </BaseCard>
+
+    <!-- Erreur de chargement -->
+    <p
+      v-if="focusStore.error"
+      class="rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
+    >
+      {{ focusStore.error }}
+    </p>
+
+    <!-- Chargement -->
+    <div v-if="focusStore.loading" class="space-y-4">
+      <BaseSkeleton v-for="n in 3" :key="n" custom-class="h-28 w-full" />
     </div>
 
-    <!-- Active Tab Panel -->
-    <div class="transition-all duration-300">
-      <!-- TAB 1: FLASHCARDS (ESPACEMENT SM-2) -->
-      <div v-if="activeTab === 'flashcards'" class="space-y-6">
-        <div
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm"
-        >
+    <template v-else>
+      <!-- En retard / Aujourd'hui : même forme de ligne, une source par ligne -->
+      <BaseCard v-for="section in dueSections" :key="section.key" :data-test="section.testId">
+        <div class="flex items-center gap-2.5 mb-4">
+          <h3 class="font-display text-base font-bold" :class="section.titleClass">
+            {{ section.title }}
+          </h3>
+          <span class="font-mono text-xs px-2 py-0.5 rounded-full" :class="section.countClass">{{
+            section.items.length
+          }}</span>
+        </div>
+
+        <div class="flex flex-col">
           <div
-            class="flex items-center justify-between mb-6 flex-wrap gap-4 border-b border-line dark:border-line pb-4"
+            v-for="item in section.items"
+            :key="`${item.type}-${item.id}`"
+            :data-test="`due-row-${item.type}-${item.id}`"
+            class="flex items-center gap-3 sm:gap-4 py-3.5 border-b border-dashed border-line last:border-b-0"
           >
-            <div>
-              <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2">
-                <Layers class="w-5 h-5 text-primary" />
-                Decks de Répétition Espacée
-              </h2>
-              <p class="text-xs text-ink-subtle mt-1">
-                L'algorithme SM-2 calcule automatiquement la prochaine date de révision pour
-                maximiser votre rétention.
-              </p>
-            </div>
-
-            <div class="flex items-center gap-2 flex-wrap">
-              <button
-                class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95 duration-200"
-                @click="openCreate('basic')"
-              >
-                <Plus class="w-4 h-4" />
-                Nouvelle carte
-              </button>
-              <button
-                class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95 duration-200"
-                @click="openGenerateModal"
-              >
-                <Sparkles class="w-4 h-4 text-warning animate-pulse" />
-                Générer depuis Notes / Classeurs
-              </button>
-            </div>
-          </div>
-
-          <div v-if="decksLoading" class="flex items-center justify-center py-12">
-            <svg
-              class="animate-spin h-6 w-6 text-primary"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          </div>
-
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div
-              v-for="deck in decksWithStats"
-              :key="deck.id"
-              class="flex flex-col justify-between p-5 rounded-2xl bg-surface-soft dark:bg-surface-soft border border-line dark:border-line hover:shadow-md transition-all group"
-            >
-              <div>
-                <div class="flex items-start justify-between">
-                  <h3
-                    class="font-bold text-base text-ink dark:text-white group-hover:text-primary dark:group-hover:text-primary transition-colors truncate max-w-[200px]"
-                  >
-                    {{ deck.name }}
-                  </h3>
-
-                  <span
-                    class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
-                    :class="
-                      deck.due_count > 0
-                        ? 'bg-warning-soft text-warning dark:bg-warning-soft dark:text-warning'
-                        : 'bg-success-soft text-success dark:bg-success-soft dark:text-success'
-                    "
-                  >
-                    {{ deck.due_count > 0 ? `${deck.due_count} À réviser` : 'À jour' }}
-                  </span>
-                </div>
-
-                <p
-                  class="text-xs text-ink-muted dark:text-ink-subtle mt-2 line-clamp-2 min-h-[32px]"
-                >
-                  {{ deck.description || 'Aucune description fournie.' }}
-                </p>
-
-                <div
-                  class="flex items-center gap-2 mt-4 text-[10px] font-bold text-ink-subtle uppercase tracking-wider"
-                >
-                  <span>{{ deck.card_count }} carte(s)</span>
-                  <span>•</span>
-                  <span>Rétention : {{ deck.retention_rate }}%</span>
-                </div>
-              </div>
-
-              <div class="flex gap-2 mt-6">
-                <button
-                  class="flex-1 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all text-center shadow-sm shadow-elev-primary hover:shadow-elev-primary active:scale-[0.98]"
-                  @click="router.push(`/decks/${deck.id}/study`)"
-                >
-                  {{ deck.due_count > 0 ? 'Réviser maintenant' : 'Révision libre' }}
-                </button>
-                <button
-                  class="px-3 py-2 text-xs font-bold text-ink-muted hover:text-primary bg-surface hover:bg-surface-soft border border-line dark:bg-surface-soft dark:text-ink-subtle dark:border-line dark:hover:bg-surface-soft rounded-xl transition-all"
-                  title="Gérer les cartes"
-                  @click="router.push('/decks')"
-                >
-                  Gérer
-                </button>
-              </div>
-            </div>
-
-            <div
-              v-if="decksStore.decks.length === 0"
-              class="col-span-full text-center py-12 bg-surface-soft dark:bg-surface-soft border border-dashed border-line dark:border-line rounded-2xl"
-            >
-              <Layers class="w-8 h-8 text-ink-subtle mx-auto mb-2" />
-              <p class="text-sm font-semibold text-ink-muted">
-                Aucun deck de flashcards disponible
-              </p>
-              <button
-                class="mt-4 px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl active:scale-95 transition-all"
-                @click="router.push('/decks')"
-              >
-                Créer un deck
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB: ENSEMBLES TYPÉS CLASSIQUES (QCM / V-F / association / définition / ordre / mixte) -->
-      <div v-if="currentSetType || isMixteTab" class="space-y-6">
-        <div
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm"
-        >
-          <div class="flex items-center justify-between mb-5">
-            <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2">
-              <Layers class="w-5 h-5 text-primary" />
-              {{ currentSetTypeLabel }} ({{ typedSets.length }})
-            </h2>
-            <button
-              v-if="currentSetType"
-              class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95"
-              @click="openCreate(currentSetType)"
-            >
-              <Plus class="w-4 h-4" />
-              Créer
-            </button>
-          </div>
-
-          <div v-if="typedSets.length === 0" class="text-center py-12 text-sm text-ink-subtle">
-            {{
-              isMixteTab
-                ? 'Aucun ensemble hétérogène. Créez-en un depuis la Bibliothèque.'
-                : 'Aucun ensemble de ce type. Cliquez sur « Créer » pour en ajouter un.'
-            }}
-          </div>
-
-          <div v-else class="grid gap-3 sm:grid-cols-2">
-            <div
-              v-for="set in typedSets"
-              :key="set.id"
-              class="border border-line dark:border-line rounded-2xl p-4"
-            >
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                  <p class="font-bold text-sm text-ink dark:text-white truncate">{{ set.name }}</p>
-                  <p
-                    class="text-[10px] font-semibold uppercase tracking-wider mt-0.5 flex items-center gap-1.5"
-                  >
-                    <span class="text-primary dark:text-primary">{{ set.item_count }} item(s)</span>
-                    <span v-if="set.read_only" class="text-warning dark:text-warning"
-                      >· Cours partagé</span
-                    >
-                  </p>
-                </div>
-                <button
-                  v-if="!set.read_only"
-                  class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft dark:hover:bg-primary-soft"
-                  title="Réglages"
-                  @click="toggleSetSettings(set.id)"
-                >
-                  <Settings class="w-4 h-4" />
-                </button>
-              </div>
-
-              <div class="flex items-center gap-2 mt-3">
-                <button
-                  :data-test="`study-set-${set.id}`"
-                  class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-strong active:scale-95 transition-all"
-                  @click="openSet(set)"
-                >
-                  <Compass class="w-3.5 h-3.5" /> {{ set.type === 'qcm' ? 'Lancer' : 'Étudier' }}
-                </button>
-                <button
-                  v-if="!set.read_only"
-                  :data-test="`manage-set-${set.id}`"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-ink-muted dark:text-ink-subtle border border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft transition-all"
-                  title="Gérer les éléments"
-                  @click="router.push(`/revision/sets/${set.id}`)"
-                >
-                  <Pencil class="w-3.5 h-3.5" /> Gérer
-                </button>
-                <button
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-ink-muted dark:text-ink-subtle border border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft transition-all"
-                  title="Statistiques"
-                  @click="router.push(`/revision/sets/${set.id}/stats`)"
-                >
-                  <Activity class="w-3.5 h-3.5" /> Stats
-                </button>
-              </div>
-
-              <!-- Réglages : renommer, fine-tuning, classeur, suppression -->
-              <div
-                v-if="openSettingsId === set.id"
-                class="mt-3 pt-3 border-t border-line dark:border-line space-y-3"
-              >
-                <div>
-                  <label
-                    class="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-1"
-                    >Nom</label
-                  >
-                  <input
-                    v-model="setEdit.name"
-                    class="w-full text-sm px-3 py-1.5 rounded-lg border border-line dark:border-line bg-surface dark:bg-surface-soft"
-                  />
-                </div>
-                <div>
-                  <label
-                    class="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-1"
-                    >Fine-tuning SM-2 (×{{ setEdit.tuning_default.toFixed(2) }})</label
-                  >
-                  <input
-                    v-model.number="setEdit.tuning_default"
-                    type="range"
-                    min="0.5"
-                    max="2"
-                    step="0.1"
-                    class="w-full accent-primary"
-                  />
-                  <p class="text-[10px] text-ink-subtle">
-                    &lt; 1 : réviser plus souvent · &gt; 1 : espacer
-                  </p>
-                </div>
-                <div>
-                  <label
-                    class="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest mb-1"
-                    >Classeur</label
-                  >
-                  <select
-                    v-model="setEdit.binder_id"
-                    class="w-full text-sm px-3 py-1.5 rounded-lg border border-line dark:border-line bg-surface dark:bg-surface-soft"
-                  >
-                    <option :value="null">— Aucun —</option>
-                    <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">
-                      {{ b.name }}
-                    </option>
-                  </select>
-                </div>
-                <div class="flex items-center justify-between gap-2 pt-1">
-                  <button
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-danger hover:bg-danger-soft dark:hover:bg-danger-soft transition-all"
-                    @click="deleteSet(set.id)"
-                  >
-                    <Trash2 class="w-3.5 h-3.5" /> Supprimer
-                  </button>
-                  <button
-                    :disabled="savingSet"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-strong active:scale-95 transition-all disabled:opacity-50"
-                    @click="saveSetSettings(set.id)"
-                  >
-                    Enregistrer
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB: ÉVALUATION IA -->
-      <div v-if="activeTab === 'evaluation'" class="space-y-6">
-        <div
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm max-w-2xl mx-auto"
-        >
-          <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2 mb-2">
-            <Sparkles class="w-5 h-5 text-warning" />
-            Feuille d'évaluation IA
-          </h2>
-          <p class="text-xs text-ink-subtle mb-6">
-            L'IA génère, à partir d'une note, une évaluation variée (QCM, vrai/faux, textes à trous,
-            questions ouvertes). À la fin, des flashcards sont proposées pour vos lacunes — vous
-            choisissez de les ajouter (ou non) au deck de votre choix.
-          </p>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2"
-                >Sélectionnez la note</label
-              >
-              <select
-                v-model="selectedNoteId"
-                class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
-              >
-                <option :value="null" disabled>Choisir une note...</option>
-                <option v-for="note in notesStore.notes" :key="note.id" :value="note.id">
-                  {{ note.title }}
-                </option>
-              </select>
-            </div>
-
-            <button
-              :disabled="selectedNoteId === null"
-              class="w-full py-3 mt-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-[0.98]"
-              @click="startEvaluation"
-            >
-              Générer l'évaluation
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 2: FEUILLE BLANCHE -->
-      <div v-if="activeTab === 'blank-sheet'" class="space-y-6">
-        <!-- Step 1: Configuration -->
-        <div
-          v-if="blankSheetStep === 'config'"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm max-w-2xl mx-auto"
-        >
-          <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2 mb-2">
-            <FileText class="w-5 h-5 text-primary" />
-            Méthode de la Feuille Blanche
-          </h2>
-          <p class="text-xs text-ink-subtle mb-6">
-            Cette technique d'Active Recall consiste à écrire de mémoire tout ce dont vous vous
-            souvenez sur un sujet, puis à le confronter au cours original pour identifier
-            immédiatement vos lacunes.
-          </p>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2"
-                >Source de révision</label
-              >
-              <div class="grid grid-cols-2 gap-4">
-                <button
-                  class="p-4 border rounded-2xl text-center font-semibold text-sm transition-all"
-                  :class="[
-                    blankSheetSourceType === 'note'
-                      ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
-                      : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft',
-                  ]"
-                  @click="blankSheetSourceType = 'note'"
-                >
-                  Une Note Individuelle
-                </button>
-                <button
-                  class="p-4 border rounded-2xl text-center font-semibold text-sm transition-all"
-                  :class="[
-                    blankSheetSourceType === 'binder'
-                      ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
-                      : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft',
-                  ]"
-                  @click="blankSheetSourceType = 'binder'"
-                >
-                  Un Classeur entier
-                </button>
-              </div>
-            </div>
-
-            <!-- Note Selector -->
-            <div v-if="blankSheetSourceType === 'note'">
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2"
-                >Sélectionnez la note</label
-              >
-              <select
-                v-model="selectedNoteId"
-                class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
-              >
-                <option :value="null" disabled>Choisir une note...</option>
-                <option v-for="note in notesStore.notes" :key="note.id" :value="note.id">
-                  {{ note.title }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Binder Selector -->
-            <div v-if="blankSheetSourceType === 'binder'">
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2"
-                >Sélectionnez le classeur</label
-              >
-              <select
-                v-model="selectedBinderId"
-                class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
-              >
-                <option :value="null" disabled>Choisir un classeur...</option>
-                <option v-for="binder in bindersStore.binders" :key="binder.id" :value="binder.id">
-                  {{ binder.name }}
-                </option>
-              </select>
-            </div>
-
-            <button
-              :disabled="!isReadyToStartBlankSheet"
-              class="w-full py-3 mt-4 text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-elev-primary active:scale-[0.98]"
-              @click="startBlankSheet"
-            >
-              Démarrer la feuille blanche
-            </button>
-          </div>
-        </div>
-
-        <!-- Step 2: Recall Draft Work -->
-        <div
-          v-if="blankSheetStep === 'work'"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-6"
-        >
-          <div class="flex items-center justify-between border-b border-line dark:border-line pb-4">
-            <div>
-              <span class="text-[10px] font-bold text-primary uppercase tracking-wider"
-                >Révision en cours : Feuille Blanche</span
-              >
-              <h2 class="text-lg font-bold">{{ blankSheetSubjectTitle }}</h2>
-            </div>
-
-            <div class="flex items-center gap-4 text-xs font-bold">
-              <span class="text-ink-subtle">Mots saisis : {{ blankSheetWordCount }}</span>
-              <span
-                class="px-3 py-1 bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger rounded-lg"
-              >
-                Temps : {{ formatTimer(blankSheetTimer) }}
-              </span>
-            </div>
-          </div>
-
-          <textarea
-            v-model="blankSheetDraft"
-            placeholder="Écrivez de mémoire tout ce que vous avez retenu sur le sujet..."
-            rows="12"
-            class="w-full p-6 text-sm border border-line dark:border-line rounded-2xl bg-surface-soft dark:bg-surface-soft focus:outline-none focus:ring-2 focus:ring-primary resize-none font-sans leading-relaxed"
-          ></textarea>
-
-          <div class="flex gap-4">
-            <button
-              class="px-5 py-2.5 text-xs font-bold text-ink-muted hover:text-ink dark:text-ink-subtle dark:hover:text-ink-subtle"
-              @click="cancelReview"
-            >
-              Abandonner
-            </button>
-            <button
-              :disabled="!blankSheetDraft.trim()"
-              class="flex-1 py-3 text-xs font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
-              @click="evaluateBlankSheet"
-            >
-              Évaluer ma mémoire
-            </button>
-          </div>
-        </div>
-
-        <!-- Step 3: Interactive Results -->
-        <div
-          v-if="blankSheetStep === 'results'"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-8"
-        >
-          <div
-            class="flex flex-col md:flex-row md:items-center justify-between border-b border-line dark:border-line pb-6 gap-6"
-          >
-            <div>
-              <span class="text-[10px] font-bold text-success uppercase tracking-wider"
-                >Résultats de la révision</span
-              >
-              <h2 class="text-lg font-bold">{{ blankSheetSubjectTitle }}</h2>
-              <p class="text-xs text-ink-subtle mt-1">
-                Étudié pendant {{ formatTimer(blankSheetTimer) }}.
-              </p>
-            </div>
-
-            <!-- Radial Progress Badge -->
-            <div class="flex items-center gap-4">
-              <div
-                class="relative w-16 h-16 rounded-full flex items-center justify-center bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary font-extrabold text-lg border border-primary"
-              >
-                {{ blankSheetResult.score }}%
-              </div>
-              <div>
-                <p class="text-xs font-bold text-ink-subtle uppercase tracking-wider">
-                  Taux de rappel
-                </p>
-                <p class="text-xs text-ink-muted dark:text-ink-subtle mt-0.5">
-                  {{ blankSheetResult.remembered.length }} /
-                  {{ blankSheetResult.totalKeywords }} concepts clés retrouvés.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Breakdown list -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Remembered -->
-            <div
-              class="p-5 rounded-2xl bg-success-soft border border-success dark:bg-success-soft dark:border-success space-y-3"
-            >
-              <h3
-                class="text-xs font-bold text-success dark:text-success uppercase tracking-wider flex items-center gap-1.5"
-              >
-                <CheckCircle2 class="w-4 h-4 text-success" />
-                Concepts Retenus ({{ blankSheetResult.remembered.length }})
-              </h3>
-              <div class="flex flex-wrap gap-1.5 pt-1">
-                <span
-                  v-for="kw in blankSheetResult.remembered"
-                  :key="kw"
-                  class="px-2.5 py-0.5 bg-surface border border-success text-success dark:bg-success-soft dark:border-success dark:text-success text-[11px] font-semibold rounded-lg"
-                >
-                  {{ kw }}
-                </span>
-                <span
-                  v-if="blankSheetResult.remembered.length === 0"
-                  class="text-xs text-ink-subtle font-medium"
-                  >Aucun concept clé n'a été mémorisé.</span
-                >
-              </div>
-            </div>
-
-            <!-- Missed -->
-            <div
-              class="p-5 rounded-2xl bg-danger-soft border border-danger dark:bg-danger-soft dark:border-danger space-y-3"
-            >
-              <h3
-                class="text-xs font-bold text-danger dark:text-danger uppercase tracking-wider flex items-center gap-1.5"
-              >
-                <Flame class="w-4 h-4 text-danger" />
-                Lacunes identifiées ({{ blankSheetResult.missed.length }})
-              </h3>
-              <div class="flex flex-wrap gap-1.5 pt-1">
-                <span
-                  v-for="kw in blankSheetResult.missed"
-                  :key="kw"
-                  class="px-2.5 py-0.5 bg-surface border border-danger text-danger dark:bg-danger-soft dark:border-danger dark:text-danger text-[11px] font-semibold rounded-lg"
-                >
-                  {{ kw }}
-                </span>
-                <span
-                  v-if="blankSheetResult.missed.length === 0"
-                  class="text-xs text-ink-subtle font-medium"
-                  >Parfait ! Vous n'avez oublié aucun concept clé. 🎉</span
-                >
-              </div>
-            </div>
-          </div>
-
-          <!-- Comparative Text View (Original text diff style) -->
-          <div class="space-y-3">
-            <h3 class="text-xs font-bold text-ink-subtle uppercase tracking-wider">
-              Analyse visuelle du document original
-            </h3>
-            <p class="text-xs text-ink-subtle">
-              Les concepts clés oubliés sont
-              <span
-                class="bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger px-1 rounded font-bold"
-                >surlignés en rouge</span
-              >. Les concepts retenus sont
-              <span
-                class="bg-success-soft text-success dark:bg-success-soft dark:text-success px-1 rounded font-bold"
-                >en vert</span
-              >.
-            </p>
-
-            <div
-              v-dompurify-html="blankSheetResult.highlightedText"
-              class="w-full p-6 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-2xl text-sm leading-relaxed whitespace-pre-line font-sans"
-            ></div>
-          </div>
-
-          <button
-            class="px-6 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95"
-            @click="blankSheetStep = 'config'"
-          >
-            Faire une autre révision
-          </button>
-        </div>
-      </div>
-
-      <!-- TAB 3: METHODE FEYNMAN -->
-      <div v-if="activeTab === 'feynman'" class="space-y-6">
-        <!-- Step 1: Configuration -->
-        <div
-          v-if="feynmanStep === 'config'"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm max-w-2xl mx-auto"
-        >
-          <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2 mb-2">
-            <Sparkles class="w-5 h-5 text-primary" />
-            Méthode Feynman
-          </h2>
-          <p class="text-xs text-ink-subtle mb-6">
-            La meilleure façon de comprendre un concept est de l'expliquer le plus simplement
-            possible, comme si vous parliez à un enfant de 10 ans. Cette méthode met en évidence les
-            points d'ombre de votre compréhension.
-          </p>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2"
-                >Sélectionnez la note / concept</label
-              >
-              <select
-                v-model="selectedNoteId"
-                class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
-              >
-                <option :value="null" disabled>Choisir une note...</option>
-                <option v-for="note in notesStore.notes" :key="note.id" :value="note.id">
-                  {{ note.title }}
-                </option>
-              </select>
-            </div>
-
-            <button
-              :disabled="selectedNoteId === null"
-              class="w-full py-3 mt-4 text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
-              @click="startFeynman"
-            >
-              Lancer l'exercice de simplification
-            </button>
-          </div>
-        </div>
-
-        <!-- Step 2: Work Draft -->
-        <div
-          v-if="feynmanStep === 'work'"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-6"
-        >
-          <div class="flex items-center justify-between border-b border-line dark:border-line pb-4">
-            <div>
-              <span class="text-[10px] font-bold text-primary uppercase tracking-wider"
-                >Exercice Feynman : Expliquer simplement</span
-              >
-              <h2 class="text-lg font-bold">{{ feynmanSubjectTitle }}</h2>
-            </div>
-
-            <div class="flex items-center gap-4 text-xs font-bold">
-              <span class="text-ink-subtle">Mots : {{ feynmanWordCount }}</span>
-              <span
-                class="px-3 py-1 bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger rounded-lg"
-              >
-                Temps : {{ formatTimer(feynmanTimer) }}
-              </span>
-            </div>
-          </div>
-
-          <div
-            class="p-4 bg-primary-soft border-l-4 border-primary rounded-r-xl dark:bg-primary-soft dark:border-primary text-xs leading-relaxed text-primary dark:text-primary"
-          >
-            <strong>Consigne :</strong> Décrivez ce concept avec vos propres mots en évitant les
-            termes techniques trop complexes. Soyez clair, concis et illustrez votre explication par
-            une métaphore ou un exemple simple.
-          </div>
-
-          <textarea
-            v-model="feynmanDraft"
-            placeholder="Tapez votre explication simplifiée ici..."
-            rows="10"
-            class="w-full p-6 text-sm border border-line dark:border-line rounded-2xl bg-surface-soft dark:bg-surface-soft focus:outline-none focus:ring-2 focus:ring-primary resize-none font-sans leading-relaxed"
-          ></textarea>
-
-          <p
-            v-if="feynmanError"
-            class="text-xs font-semibold text-danger bg-danger-soft border border-danger/30 rounded-xl px-4 py-3"
-          >
-            {{ feynmanError }}
-          </p>
-
-          <div class="flex gap-4">
-            <button
-              :disabled="feynmanAnalyzing"
-              class="px-5 py-2.5 text-xs font-bold text-ink-muted hover:text-ink dark:text-ink-subtle dark:hover:text-ink-subtle disabled:opacity-50"
-              @click="cancelReview"
-            >
-              Abandonner
-            </button>
-            <button
-              :disabled="!feynmanDraft.trim() || feynmanAnalyzing"
-              class="flex-1 py-3 text-xs font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
-              @click="evaluateFeynman"
-            >
-              <Sparkles v-if="!feynmanAnalyzing" class="w-4 h-4" />
-              {{
-                feynmanAnalyzing
-                  ? "L'IA analyse votre explication…"
-                  : "Analyser mon explication avec l'IA"
-              }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Step 3: Feedback Results -->
-        <div
-          v-if="feynmanStep === 'results'"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-8"
-        >
-          <div
-            class="flex flex-col md:flex-row md:items-center justify-between border-b border-line dark:border-line pb-6 gap-6"
-          >
-            <div>
-              <span class="text-[10px] font-bold text-accent uppercase tracking-wider"
-                >Analyse Feynman</span
-              >
-              <h2 class="text-lg font-bold">{{ feynmanSubjectTitle }}</h2>
-              <p class="text-xs text-ink-subtle mt-1">Soumis en {{ formatTimer(feynmanTimer) }}.</p>
-            </div>
-
-            <!-- Feynman Score -->
-            <div class="flex items-center gap-4">
-              <div
-                class="relative w-16 h-16 rounded-full flex items-center justify-center bg-accent-soft dark:bg-accent-soft text-accent dark:text-accent font-extrabold text-lg border border-accent"
-              >
-                {{ feynmanResult.score }}%
-              </div>
-              <div>
-                <p class="text-xs font-bold text-ink-subtle uppercase tracking-wider">
-                  Score de clarté
-                </p>
-                <p class="text-xs text-ink-muted dark:text-ink-subtle mt-0.5">
-                  Évalué par l'IA : simplicité, exactitude et couverture.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bilan IA -->
-          <div
-            v-if="feynmanResult.feedback"
-            class="p-5 rounded-2xl bg-primary-soft/60 border border-primary/20 dark:bg-primary-soft dark:border-primary"
-          >
-            <h4
-              class="text-xs font-bold text-primary dark:text-primary uppercase tracking-wider flex items-center gap-1.5 mb-2"
-            >
-              <Sparkles class="w-4 h-4" />
-              Bilan de l'IA
-            </h4>
-            <p class="text-sm text-ink dark:text-ink-subtle leading-relaxed whitespace-pre-line">
-              {{ feynmanResult.feedback }}
-            </p>
-          </div>
-
-          <!-- Evaluation Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Jargon alert -->
-            <div
-              class="p-5 rounded-2xl border space-y-2"
-              :class="[
-                feynmanResult.jargon.length > 0
-                  ? 'bg-warning-soft border-warning dark:bg-warning-soft dark:border-warning'
-                  : 'bg-success-soft border-success dark:bg-success-soft dark:border-success',
-              ]"
-            >
-              <h4
-                class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
-                :class="[
-                  feynmanResult.jargon.length > 0
-                    ? 'text-warning dark:text-warning'
-                    : 'text-success dark:text-success',
-                ]"
-              >
-                <Compass class="w-4.5 h-4.5" />
-                Jargon à simplifier
-              </h4>
-              <p class="text-xs text-ink-subtle">
-                Termes techniques employés sans être vulgarisés (à reformuler simplement).
-              </p>
-              <div v-if="feynmanResult.jargon.length > 0" class="flex flex-wrap gap-1 mt-2">
-                <span
-                  v-for="w in feynmanResult.jargon"
-                  :key="w"
-                  class="px-2 py-0.5 bg-warning-soft dark:bg-warning-soft text-warning text-[10px] font-semibold rounded-lg"
-                  >{{ w }}</span
-                >
-              </div>
-              <p v-else class="text-xs font-semibold text-success mt-2">
-                Aucun jargon : votre explication reste accessible.
-              </p>
-            </div>
-
-            <!-- Gaps / lacunes -->
-            <div
-              class="p-5 rounded-2xl border space-y-2"
-              :class="[
-                feynmanResult.gaps.length > 0
-                  ? 'bg-danger-soft border-danger/40 dark:bg-danger-soft dark:border-danger'
-                  : 'bg-success-soft border-success dark:bg-success-soft dark:border-success',
-              ]"
-            >
-              <h4
-                class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
-                :class="[
-                  feynmanResult.gaps.length > 0
-                    ? 'text-danger dark:text-danger'
-                    : 'text-success dark:text-success',
-                ]"
-              >
-                <Clock class="w-4.5 h-4.5" />
-                Points à approfondir
-              </h4>
-              <p class="text-xs text-ink-subtle">
-                Concepts essentiels manquants, incomplets ou erronés vs la note.
-              </p>
-              <ul v-if="feynmanResult.gaps.length > 0" class="space-y-1.5 mt-2">
-                <li v-for="(g, i) in feynmanResult.gaps" :key="i" class="text-xs">
-                  <span class="font-bold text-ink dark:text-white">{{ g.concept }}</span>
-                  <span class="text-ink-muted dark:text-ink-subtle"> — {{ g.issue }}</span>
-                </li>
-              </ul>
-              <p v-else class="text-xs font-semibold text-success mt-2">
-                Tous les concepts clés sont couverts.
-              </p>
-            </div>
-
-            <!-- Suggestions -->
-            <div
-              class="p-5 rounded-2xl bg-surface-soft border border-line dark:bg-surface-soft dark:border-line space-y-2"
-            >
-              <h4
-                class="text-xs font-bold text-ink-muted dark:text-ink-subtle uppercase tracking-wider flex items-center gap-1.5"
-              >
-                <Sparkles class="w-4.5 h-4.5 text-primary" />
-                Suggestion
-              </h4>
-              <p class="text-xs text-ink-muted dark:text-ink-subtle leading-relaxed mt-2">
-                {{
-                  feynmanResult.suggestion ||
-                  "Continuez ainsi : reprenez l'exercice sur un autre concept."
-                }}
-              </p>
-            </div>
-          </div>
-
-          <button
-            class="px-6 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95"
-            @click="feynmanStep = 'config'"
-          >
-            Faire une autre révision
-          </button>
-        </div>
-      </div>
-
-      <!-- TAB 4: AUTO-QCM -->
-      <div v-if="activeTab === 'quiz'" class="space-y-6">
-        <!-- Step 1: Configuration -->
-        <div
-          v-if="quizStep === 'config'"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm max-w-2xl mx-auto"
-        >
-          <h2 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2 mb-2">
-            <Activity class="w-5 h-5 text-primary" />
-            Générateur de Quiz Interactif
-          </h2>
-          <p class="text-xs text-ink-subtle mb-6">
-            Entraînez-vous activement. Le système analyse le texte de la note sélectionnée pour
-            extraire les concepts clés et générer des questions à choix multiples.
-          </p>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2"
-                >Sélectionnez la note</label
-              >
-              <select
-                v-model="selectedNoteId"
-                class="w-full px-4 py-3 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
-              >
-                <option :value="null" disabled>Choisir une note...</option>
-                <option v-for="note in notesStore.notes" :key="note.id" :value="note.id">
-                  {{ note.title }}
-                </option>
-              </select>
-            </div>
-
-            <button
-              :disabled="selectedNoteId === null"
-              class="w-full py-3 mt-4 text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
-              @click="startQuiz"
-            >
-              Générer mon Quiz
-            </button>
-          </div>
-        </div>
-
-        <!-- Step 2: Quiz Session -->
-        <div
-          v-if="quizStep === 'work'"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-8 max-w-3xl mx-auto"
-        >
-          <div class="flex items-center justify-between border-b border-line dark:border-line pb-4">
-            <div>
-              <span class="text-[10px] font-bold text-primary uppercase tracking-wider"
-                >Quiz actif : {{ quizSubjectTitle }}</span
-              >
-              <h2 class="text-base font-bold">Répondez aux questions</h2>
-            </div>
-
+            <div class="w-1 self-stretch rounded-sm shrink-0" :class="section.railClass" />
             <span
-              class="px-3 py-1 bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary text-xs font-bold rounded-lg"
+              :data-test="`badge-${item.type}-${item.id}`"
+              class="font-mono text-tiny font-bold uppercase tracking-wide px-2 py-0.5 rounded-full shrink-0"
+              :class="badgeClass(item)"
             >
-              {{ quizQuestions.length }} Question(s)
+              {{ badgeLabel(item) }}
             </span>
-          </div>
-
-          <div class="space-y-8">
-            <div
-              v-for="(q, qIdx) in quizQuestions"
-              :key="qIdx"
-              class="p-5 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-2xl space-y-4"
-            >
-              <h3 class="font-bold text-sm leading-relaxed text-ink dark:text-ink-subtle">
-                Question {{ qIdx + 1 }} : {{ q.questionText }}
-              </h3>
-
-              <div class="grid grid-cols-1 gap-2.5">
-                <button
-                  v-for="(opt, optIdx) in q.options"
-                  :key="optIdx"
-                  class="w-full px-4 py-3 rounded-xl border text-left text-xs font-semibold transition-all active:scale-[0.99] flex items-center justify-between"
-                  :class="[
-                    quizAnswers[qIdx] === opt
-                      ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
-                      : 'border-line hover:bg-surface-soft dark:border-line dark:hover:bg-surface-soft text-ink dark:text-ink-subtle',
-                  ]"
-                  @click="quizAnswers[qIdx] = opt"
-                >
-                  <span>{{ opt }}</span>
-                  <span
-                    class="w-4 h-4 rounded-full border border-line flex items-center justify-center"
-                    :class="[
-                      quizAnswers[qIdx] === opt
-                        ? 'border-primary bg-primary text-white dark:border-primary dark:bg-primary'
-                        : '',
-                    ]"
-                  >
-                    <span
-                      v-if="quizAnswers[qIdx] === opt"
-                      class="w-1.5 h-1.5 rounded-full bg-surface"
-                    ></span>
-                  </span>
-                </button>
-              </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-ink truncate">{{ item.title }}</p>
+              <p class="font-mono text-xs text-ink-muted mt-0.5 truncate">{{ metaLine(item) }}</p>
             </div>
-          </div>
-
-          <div class="flex gap-4 border-t border-line dark:border-line pt-6">
             <button
-              class="px-5 py-2.5 text-xs font-bold text-ink-muted hover:text-ink dark:text-ink-subtle dark:hover:text-ink-subtle"
-              @click="cancelReview"
+              :data-test="`review-${item.type}-${item.id}`"
+              class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-line bg-surface text-ink text-xs font-bold hover:bg-surface-soft transition-colors"
+              @click="studyItem(item)"
             >
-              Abandonner
-            </button>
-            <button
-              :disabled="!isQuizFinished"
-              class="flex-1 py-3 text-xs font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
-              @click="evaluateQuiz"
-            >
-              Valider mes réponses
+              <Play class="w-3.5 h-3.5" />
+              Réviser
             </button>
           </div>
         </div>
+      </BaseCard>
 
-        <!-- Step 3: Quiz Feedback Results -->
-        <div
-          v-if="quizStep === 'results'"
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-8 max-w-3xl mx-auto"
-        >
+      <!-- À venir : /focus/forecast ne renvoie qu'une charge agrégée par jour
+           (flashcards uniquement), pas des sources nommées — on liste donc les
+           jours à charge non nulle plutôt que d'inventer des lignes par source. -->
+      <BaseCard v-if="upcomingDays.length > 0" data-test="section-upcoming">
+        <div class="flex items-center gap-2.5 mb-4 flex-wrap">
+          <h3 class="font-display text-base font-bold text-ink-muted">À venir</h3>
+          <span class="font-mono text-xs px-2 py-0.5 rounded-full bg-app text-ink-muted">{{
+            upcomingDays.length
+          }}</span>
+          <span class="font-mono text-tiny text-ink-subtle uppercase tracking-wide"
+            >Charge prévue · flashcards</span
+          >
+        </div>
+
+        <div class="flex flex-col">
           <div
-            class="flex flex-col md:flex-row md:items-center justify-between border-b border-line dark:border-line pb-6 gap-6"
+            v-for="day in upcomingDays"
+            :key="day.date"
+            :data-test="`upcoming-row-${day.date}`"
+            class="flex items-center gap-3 sm:gap-4 py-3.5 border-b border-dashed border-line last:border-b-0"
           >
-            <div>
-              <span class="text-[10px] font-bold text-primary uppercase tracking-wider"
-                >Résultats du Quiz</span
-              >
-              <h2 class="text-lg font-bold">{{ quizSubjectTitle }}</h2>
-              <p class="text-xs text-ink-subtle mt-1">Quiz complété.</p>
-            </div>
-
-            <!-- Quiz Radial Score -->
-            <div class="flex items-center gap-4">
-              <div
-                class="relative w-16 h-16 rounded-full flex items-center justify-center bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary font-extrabold text-lg border border-primary"
-              >
-                {{ Math.round((quizResult.score / quizQuestions.length) * 100) }}%
-              </div>
-              <div>
-                <p class="text-xs font-bold text-ink-subtle uppercase tracking-wider">
-                  Score Final
-                </p>
-                <p class="text-xs text-ink-muted dark:text-ink-subtle mt-0.5">
-                  {{ quizResult.score }} / {{ quizQuestions.length }} réponses correctes.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Question Correction Stack -->
-          <div class="space-y-6">
-            <div
-              v-for="(q, qIdx) in quizQuestions"
-              :key="qIdx"
-              class="p-5 rounded-2xl border leading-relaxed space-y-3"
-              :class="[
-                quizAnswers[qIdx] === q.correctAnswer
-                  ? 'bg-success-soft border-success dark:bg-success-soft dark:border-success'
-                  : 'bg-danger-soft border-danger dark:bg-danger-soft dark:border-danger',
-              ]"
+            <div class="w-1 self-stretch rounded-sm shrink-0 bg-line" />
+            <span
+              class="font-mono text-tiny font-bold uppercase tracking-wide px-2 py-0.5 rounded-full shrink-0 bg-cat-deck text-primary-ink"
             >
-              <div class="flex items-start justify-between">
-                <h4 class="font-bold text-sm text-ink dark:text-ink-subtle">
-                  Question {{ qIdx + 1 }} : {{ q.questionText }}
-                </h4>
-                <span
-                  class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
-                  :class="[
-                    quizAnswers[qIdx] === q.correctAnswer
-                      ? 'bg-success-soft text-success dark:bg-success-soft dark:text-success'
-                      : 'bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger',
-                  ]"
-                >
-                  {{ quizAnswers[qIdx] === q.correctAnswer ? 'Correct' : 'Incorrect' }}
-                </span>
-              </div>
-
-              <div class="text-xs space-y-2 mt-2">
-                <p class="text-ink-muted">
-                  Votre réponse :
-                  <strong
-                    :class="[
-                      quizAnswers[qIdx] === q.correctAnswer
-                        ? 'text-success dark:text-success'
-                        : 'text-danger dark:text-danger',
-                    ]"
-                    >{{ quizAnswers[qIdx] }}</strong
-                  >
-                </p>
-                <p v-if="quizAnswers[qIdx] !== q.correctAnswer" class="text-ink-muted">
-                  Réponse attendue :
-                  <strong class="text-success dark:text-success">{{ q.correctAnswer }}</strong>
-                </p>
-              </div>
+              Cartes
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-ink truncate">{{ day.title }}</p>
+              <p class="font-mono text-xs text-ink-muted mt-0.5">{{ day.meta }}</p>
             </div>
+            <span
+              class="shrink-0 font-mono text-tiny font-bold uppercase tracking-wide text-ink-muted px-2.5 py-1 rounded-full bg-surface-soft"
+              >{{ day.label }}</span
+            >
           </div>
-
-          <button
-            class="px-6 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all shadow-md active:scale-95"
-            @click="quizStep = 'config'"
-          >
-            Refaire un Quiz
-          </button>
         </div>
-      </div>
+      </BaseCard>
 
-      <!-- Generate Flashcards Modal -->
-      <div
-        v-if="showGenerateModal"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print animate-fade-in"
-      >
-        <div
-          class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-6"
+      <!-- Rien à réviser -->
+      <BaseCard v-if="dueSections.length === 0 && upcomingDays.length === 0" padding="none">
+        <BaseEmptyState
+          title="Tout est à jour 🎉"
+          description="Aucun deck, aucune série et aucune feuille blanche n'attend votre révision aujourd'hui."
         >
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-bold text-ink dark:text-white flex items-center gap-2">
-              <Sparkles class="w-5 h-5 text-primary" />
-              Générer des Flashcards
-            </h3>
-            <button
-              class="text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle text-sm"
-              @click="showGenerateModal = false"
-            >
-              ✕
-            </button>
-          </div>
-
-          <p class="text-xs text-ink-muted -mt-2">
-            L'IA analyse votre note ou votre classeur pour rédiger des questions/réponses ciblées,
-            prêtes à réviser.
-          </p>
-
-          <div class="space-y-4">
-            <!-- Source selection -->
-            <div>
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2"
-                >Source d'extraction</label
-              >
-              <div class="grid grid-cols-2 gap-4">
-                <button
-                  class="p-3 border rounded-xl text-center font-semibold text-xs transition-all"
-                  :class="[
-                    genSourceType === 'note'
-                      ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
-                      : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft',
-                  ]"
-                  @click="genSourceType = 'note'"
-                >
-                  Une Note
-                </button>
-                <button
-                  class="p-3 border rounded-xl text-center font-semibold text-xs transition-all"
-                  :class="[
-                    genSourceType === 'binder'
-                      ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
-                      : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft',
-                  ]"
-                  @click="genSourceType = 'binder'"
-                >
-                  Un Classeur
-                </button>
-              </div>
-            </div>
-
-            <!-- Note Selector -->
-            <div v-if="genSourceType === 'note'">
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2"
-                >Sélectionnez la note</label
-              >
-              <select
-                v-model="genNoteId"
-                class="w-full px-3 py-2.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option :value="null" disabled>Choisir une note...</option>
-                <option v-for="n in notesStore.notes" :key="n.id" :value="n.id">
-                  {{ n.title }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Binder Selector -->
-            <div v-if="genSourceType === 'binder'">
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2"
-                >Sélectionnez le classeur</label
-              >
-              <select
-                v-model="genBinderId"
-                class="w-full px-3 py-2.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option :value="null" disabled>Choisir un classeur...</option>
-                <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">
-                  {{ b.name }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Target Deck Select -->
-            <div>
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider mb-2"
-                >Deck de destination</label
-              >
-              <div class="grid grid-cols-2 gap-4 mb-3">
-                <button
-                  class="p-3 border rounded-xl text-center font-semibold text-xs transition-all"
-                  :class="[
-                    genDeckTarget === 'new'
-                      ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
-                      : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft',
-                  ]"
-                  @click="genDeckTarget = 'new'"
-                >
-                  Nouveau Deck
-                </button>
-                <button
-                  class="p-3 border rounded-xl text-center font-semibold text-xs transition-all"
-                  :class="[
-                    genDeckTarget === 'existing'
-                      ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
-                      : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft',
-                  ]"
-                  :disabled="decksStore.decks.length === 0"
-                  @click="genDeckTarget = 'existing'"
-                >
-                  Deck existant
-                </button>
-              </div>
-
-              <!-- New Deck Name Input -->
-              <div v-if="genDeckTarget === 'new'">
-                <input
-                  v-model="genNewDeckName"
-                  type="text"
-                  placeholder="Nom du nouveau deck (ex: Chimie, Bio...)"
-                  class="w-full px-3 py-2 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <!-- Existing Deck Dropdown -->
-              <div v-if="genDeckTarget === 'existing'">
-                <select
-                  v-model="genExistingDeckId"
-                  class="w-full px-3 py-2.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option :value="null" disabled>Choisir un deck...</option>
-                  <option v-for="d in decksStore.decks" :key="d.id" :value="d.id">
-                    {{ d.name }}
-                  </option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Coverage slider -->
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <label class="block text-xs font-bold text-ink-subtle uppercase tracking-wider"
-                >Taux de couverture</label
-              >
-              <span class="text-xs font-bold text-primary tabular-nums">{{ genCoverage }}%</span>
-            </div>
-            <input
-              v-model.number="genCoverage"
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              class="w-full accent-primary cursor-pointer"
-              aria-label="Taux de couverture des notions"
-            />
-            <p class="mt-1.5 text-[11px] leading-snug text-ink-muted dark:text-ink-subtle">
-              Part des <strong>notions</strong> importantes de la note transformées en flashcards.
-              100 % = toutes les notions à réviser (définitions, nuances, faits clés) — pas le texte
-              brut.
-            </p>
-          </div>
-
-          <!-- Alert messages or status -->
-          <div
-            v-if="genStatusMessage"
-            class="p-3 text-xs rounded-xl"
-            :class="[
-              genStatusIsError
-                ? 'bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger'
-                : 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary',
-            ]"
-          >
-            {{ genStatusMessage }}
-          </div>
-
-          <div class="flex gap-3 justify-end border-t border-line dark:border-line pt-4">
-            <button
-              class="px-4 py-2 text-xs font-bold text-ink-muted hover:text-ink dark:text-ink-subtle dark:hover:text-ink-subtle"
-              @click="showGenerateModal = false"
-            >
-              Fermer
-            </button>
-            <button
-              :disabled="!isReadyToGenerate"
-              class="px-5 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50 rounded-xl transition-all shadow-md active:scale-95"
-              @click="executeFlashcardGeneration"
-            >
-              {{ genDeckTarget === 'new' ? 'Générer' : 'Mettre à jour' }}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Création d'un élément de révision (carte ou ensemble typé) -->
-      <RevisionItemModal
-        v-if="showCreateModal"
-        :binder-id="null"
-        :decks="decksStore.decks"
-        :initial-type="createType"
-        @close="showCreateModal = false"
-        @created="onItemCreated"
-      />
-    </div>
+          <template #icon><Flame class="w-6 h-6" /></template>
+        </BaseEmptyState>
+      </BaseCard>
+    </template>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useDecksStore } from '../../stores/decks'
-import { useNotesStore } from '../../stores/notes'
-import { useBindersStore } from '../../stores/binders'
+import { Flame, Play, ShieldAlert } from 'lucide-vue-next'
+import {
+  PageContainer,
+  PageHeader,
+  BaseButton,
+  BaseCard,
+  BaseEmptyState,
+  BaseSkeleton,
+} from '../../components/ui/base'
+import { useFocusStore } from '../../stores/focus'
 import { useRevisionStore } from '../../stores/revision'
 import type { RevisionType } from '../../stores/revision'
-import api from '../../services/api'
-import RevisionItemModal from '../../components/decks/RevisionItemModal.vue'
-import { PageContainer, PageHeader, BaseButton } from '../../components/ui/base'
-import { useFocusStore } from '../../stores/focus'
 import type { FocusItem } from '../../services/focusService'
-import {
-  Layers,
-  FileText,
-  Sparkles,
-  Activity,
-  CheckCircle2,
-  Flame,
-  Clock,
-  Compass,
-  Settings,
-  Trash2,
-  Plus,
-  Pencil,
-  ShieldAlert,
-} from '@lucide/vue'
 
 const router = useRouter()
-const decksStore = useDecksStore()
-const notesStore = useNotesStore()
-const bindersStore = useBindersStore()
-const revisionStore = useRevisionStore()
 const focusStore = useFocusStore()
+const revisionStore = useRevisionStore()
 
-// Bandeau « à réviser maintenant » : file unifiée (réutilise le store focus).
+// ─── Navigation ─────────────────────────────────────────────────────────────
+
+/** Type propre de l'ensemble de révision (null = hétérogène, undefined = inconnu). */
+function setType(item: FocusItem): RevisionType | null | undefined {
+  const set = revisionStore.sets.find((s) => String(s.id) === String(item.id))
+  return set ? set.type : undefined
+}
+
 function studyItem(item: FocusItem) {
   if (item.type === 'deck') router.push(`/decks/${item.id}/study?focus=true`)
   else if (item.type === 'note') router.push(`/notes/${item.id}/blurting?focus=true&from=focus`)
   else if (item.type === 'assignment') router.push(`/bibliotheque/${item.id}`)
+  else if (item.type === 'revision_set') {
+    // Un ensemble homogène QCM se joue en mode « run » (série notée) ; tout le
+    // reste — y compris un ensemble inconnu du store — passe par /study.
+    const mode = setType(item) === 'qcm' ? 'run' : 'study'
+    router.push(`/revision/sets/${item.id}/${mode}`)
+  }
 }
+
 function continueReview() {
   const first = focusStore.startUnifiedReview()
   if (first) studyItem(first)
 }
 
-// C2 — deux catégories : Classiques (flashcards + types de révision) et IA.
-const SET_TYPE_LABELS: Record<RevisionType, string> = {
-  qcm: 'QCM',
-  vf: 'Vrai / Faux',
+// ─── Badges de type ─────────────────────────────────────────────────────────
+
+const SET_TYPE_BADGES: Record<RevisionType, string> = {
+  qcm: 'Série QCM',
+  vf: 'Vrai-Faux',
   association: 'Association',
   definition: 'Définition',
   ordre: 'Ordre',
 }
 
-const categories = [
-  {
-    id: 'classic',
-    name: 'Classiques',
-    tabs: [
-      { id: 'flashcards', name: 'Flashcards' },
-      { id: 'set-qcm', name: 'QCM' },
-      { id: 'set-vf', name: 'Vrai / Faux' },
-      { id: 'set-association', name: 'Association' },
-      { id: 'set-definition', name: 'Définition' },
-      { id: 'set-ordre', name: 'Ordre' },
-      { id: 'set-mixte', name: 'Mixte' },
-    ],
-  },
-  {
-    id: 'ai',
-    name: 'IA',
-    tabs: [
-      { id: 'evaluation', name: 'Évaluation IA' },
-      { id: 'blank-sheet', name: 'Feuille Blanche' },
-      { id: 'feynman', name: 'Méthode Feynman' },
-      { id: 'quiz', name: 'Quiz Auto-QCM' },
-    ],
-  },
-]
-
-const activeCategory = ref('classic')
-const activeTab = ref('flashcards')
-const currentTabs = computed(
-  () => categories.find((c) => c.id === activeCategory.value)?.tabs ?? [],
-)
-function selectCategory(id: string) {
-  activeCategory.value = id
-  activeTab.value = currentTabs.value[0]?.id ?? 'flashcards'
+function badgeLabel(item: FocusItem): string {
+  if (item.type === 'deck') return 'Deck'
+  if (item.type === 'note') return 'Feuille blanche'
+  if (item.type === 'assignment') return 'Devoir'
+  const type = setType(item)
+  if (type === undefined) return 'Série'
+  return type === null ? 'Série mixte' : SET_TYPE_BADGES[type]
 }
 
-// Ensembles typés (Classiques hors flashcards) — 'set-mixte' est un
-// pseudo-type (ensembles hétérogènes, type: null), pas un RevisionType.
-const currentSetType = computed<RevisionType | null>(() =>
-  activeTab.value.startsWith('set-') && activeTab.value !== 'set-mixte'
-    ? (activeTab.value.slice(4) as RevisionType)
-    : null,
-)
-const isMixteTab = computed(() => activeTab.value === 'set-mixte')
-const currentSetTypeLabel = computed(() => {
-  if (isMixteTab.value) return 'Mixte'
-  return currentSetType.value ? SET_TYPE_LABELS[currentSetType.value] : ''
-})
-const typedSets = computed(() => {
-  if (isMixteTab.value) return revisionStore.sets.filter((s) => s.type === null)
-  return currentSetType.value
-    ? revisionStore.sets.filter((s) => s.type === currentSetType.value)
-    : []
-})
-
-function openSet(set: { id: number; type: RevisionType | null }) {
-  router.push(`/revision/sets/${set.id}/${set.type === 'qcm' ? 'run' : 'study'}`)
+function badgeClass(item: FocusItem): string {
+  if (item.type === 'deck') return 'bg-cat-deck text-primary-ink'
+  if (item.type === 'note') return 'bg-success text-primary-ink'
+  if (item.type === 'assignment') return 'bg-ink-muted text-app'
+  return 'bg-cat-set text-primary-ink'
 }
 
-// Création d'éléments de révision (déplacée ici depuis le menu classeur).
-// Les éléments sont créés « non rangés » (binderId=null) ; on les rattache
-// ensuite à un classeur via la vue Classeurs (« Ajouter un élément existant »).
-type CreateType = RevisionType | 'basic'
-const showCreateModal = ref(false)
-const createType = ref<CreateType>('basic')
+// ─── Lignes ─────────────────────────────────────────────────────────────────
 
-function openCreate(type: CreateType) {
-  createType.value = type
-  showCreateModal.value = true
+function plural(n: number): string {
+  return n > 1 ? 's' : ''
 }
 
-async function onItemCreated() {
-  showCreateModal.value = false
-  await Promise.all([decksStore.fetchDecks(), revisionStore.fetchSets()])
-  await fetchDecksStats()
+function lastPassage(days: number): string {
+  if (days <= 0) return "dernier passage aujourd'hui"
+  if (days === 1) return 'dernier passage hier'
+  return `dernier passage il y a ${days} jours`
 }
 
-const openSettingsId = ref<number | null>(null)
-const savingSet = ref(false)
-const setEdit = ref<{ name: string; tuning_default: number; binder_id: string | null }>({
-  name: '',
-  tuning_default: 1,
-  binder_id: null,
-})
-function toggleSetSettings(setId: number) {
-  if (openSettingsId.value === setId) {
-    openSettingsId.value = null
-    return
-  }
-  const set = revisionStore.sets.find((s) => s.id === setId)
-  if (!set) return
-  setEdit.value = {
-    name: set.name,
-    tuning_default: set.tuning_default ?? 1,
-    binder_id: set.binder_id ?? null,
-  }
-  openSettingsId.value = setId
-}
-async function saveSetSettings(setId: number) {
-  savingSet.value = true
-  try {
-    await revisionStore.updateSet(setId, {
-      name: setEdit.value.name,
-      tuning_default: setEdit.value.tuning_default,
-      binder_id: setEdit.value.binder_id,
-    })
-    openSettingsId.value = null
-  } catch (e) {
-    console.error("Erreur de mise à jour de l'ensemble", e)
-  } finally {
-    savingSet.value = false
-  }
-}
-async function deleteSet(setId: number) {
-  if (!confirm('Supprimer cet ensemble et tous ses items ?')) return
-  try {
-    await revisionStore.deleteSet(setId)
-    openSettingsId.value = null
-  } catch (e) {
-    console.error("Erreur de suppression de l'ensemble", e)
-  }
-}
+function metaLine(item: FocusItem): string {
+  const parts: string[] = []
 
-function startEvaluation() {
-  if (selectedNoteId.value === null) return
-  router.push(`/notes/${selectedNoteId.value}/evaluation`)
-}
-
-// Decks logic
-const decksLoading = ref(false)
-const dueCounts = ref<Record<number, number>>({})
-const retentionRates = ref<Record<number, number>>({})
-
-const decksWithStats = computed(() => {
-  return decksStore.decks.map((deck) => {
-    return {
-      ...deck,
-      due_count: dueCounts.value[deck.id] || 0,
-      retention_rate: retentionRates.value[deck.id] || 0,
-    }
-  })
-})
-
-// Blank Sheet logic
-const blankSheetStep = ref<'config' | 'work' | 'results'>('config')
-const blankSheetSourceType = ref<'note' | 'binder'>('note')
-const selectedNoteId = ref<string | null>(null)
-const selectedBinderId = ref<string | null>(null)
-const blankSheetDraft = ref('')
-const blankSheetTimer = ref(0)
-let timerInterval: any = null
-
-const blankSheetWordCount = computed(() => {
-  if (!blankSheetDraft.value.trim()) return 0
-  return blankSheetDraft.value.trim().split(/\s+/).length
-})
-
-const isReadyToStartBlankSheet = computed(() => {
-  if (blankSheetSourceType.value === 'note') return selectedNoteId.value !== null
-  return selectedBinderId.value !== null
-})
-
-const blankSheetSubjectTitle = computed(() => {
-  if (blankSheetSourceType.value === 'note') {
-    const note = notesStore.notes.find((n) => n.id === selectedNoteId.value)
-    return note ? note.title : 'Note sans titre'
+  if (item.type === 'deck') {
+    parts.push(`${item.count} carte${plural(item.count)}${item.is_late ? ' en retard' : ''}`)
+  } else if (item.type === 'revision_set') {
+    parts.push(`${item.count} élément${plural(item.count)} à revoir`)
+  } else if (item.type === 'note') {
+    parts.push('Feuille blanche sur 1 note')
   } else {
-    const binder = bindersStore.binders.find((b) => b.id === selectedBinderId.value)
-    return binder ? `Classeur : ${binder.name}` : 'Classeur sans titre'
-  }
-})
-
-// French stop words list to filter out common words in active recall evaluation
-const stopWords = new Set([
-  'comme',
-  'dans',
-  'votre',
-  'leurs',
-  'avec',
-  'pour',
-  'cette',
-  'mais',
-  'pour',
-  'dans',
-  'cette',
-  'plus',
-  'avec',
-  'tout',
-  'tous',
-  'cette',
-  'sans',
-  'dans',
-  'cette',
-  'sont',
-  'cette',
-  'cette',
-  'elle',
-  'elles',
-  'nous',
-  'vous',
-  'leur',
-  'leurs',
-  'ainsi',
-  'alors',
-  'apres',
-  'assez',
-  'au profit',
-  'aujourd',
-  'aussi',
-  'autant',
-  'autour',
-  'autre',
-  'autres',
-  'avant',
-  'avec',
-  'beaucoup',
-  'bien',
-  'bientot',
-  'car',
-  'ceci',
-  'cela',
-  'celle',
-  'celles',
-  'celui',
-  'ceux',
-  'chaque',
-  'chez',
-  'comment',
-  'dehors',
-  'depuis',
-  'derriere',
-  'desormais',
-  'dessous',
-  'dessus',
-  'devant',
-  'devenir',
-  'devenu',
-  'devoir',
-  'differentes',
-  'differents',
-  'dire',
-  'divers',
-  'diverse',
-  'diverses',
-  'doit',
-  'doivent',
-  'donc',
-  'dont',
-  'durant',
-  'effet',
-  'egalement',
-  'elles',
-  'encore',
-  'entre',
-  'envers',
-  'environ',
-  'est-ce',
-  'etaient',
-  'etais',
-  'etait',
-  'etant',
-  'ete',
-  'etes',
-  'etre',
-  'faudra',
-  'faut',
-  'fois',
-  'grace',
-  'hormis',
-  'hors',
-  'ici',
-  'il',
-  'ils',
-  'jamais',
-  'jusque',
-  'leur',
-  'leurs',
-  'lors',
-  'maintenant',
-  'mais',
-  'malgre',
-  'meme',
-  'memes',
-  'mieux',
-  'moins',
-  'moment',
-  'monde',
-  'moyen',
-  'naguere',
-  'neanmoins',
-  'notamment',
-  'notre',
-  'notres',
-  'nous',
-  'nouveau',
-  'nouveaux',
-  'nulle',
-  'nulles',
-  'outre',
-  'parfois',
-  'parmi',
-  'partout',
-  'pendant',
-  'personne',
-  'peu',
-  'peut',
-  'peuvent',
-  'peux',
-  'plus',
-  'plusieurs',
-  'plutot',
-  'pour',
-  'pourquoi',
-  'pourtant',
-  'pres',
-  'presque',
-  'puis',
-  'quand',
-  'quel',
-  'quelle',
-  'quelles',
-  'quelque',
-  'quelques',
-  'quels',
-  'qui',
-  'quiconque',
-  'quoi',
-  'quoique',
-  'rien',
-  'sans',
-  'sauf',
-  'selon',
-  'seraient',
-  'serais',
-  'serait',
-  'seront',
-  'ses',
-  'seulement',
-  'sinon',
-  'sitot',
-  'soi-t',
-  'soit',
-  'sommes',
-  'son-t',
-  'sont',
-  'sous',
-  'souvent',
-  'suivante',
-  'suivantes',
-  'suivants',
-  'sujet',
-  'sur',
-  'surtout',
-  'tandis',
-  'tant',
-  'tard',
-  'tel',
-  'telle',
-  'telles',
-  'tels',
-  'temps',
-  'tout',
-  'toute',
-  'toutes',
-  'touts',
-  'traverse',
-  'tres',
-  'trois',
-  'trop',
-  'trouve',
-  'valeur',
-  'vers',
-  'voici',
-  'voila',
-  'voire',
-  'volontiers',
-  'votre',
-  'votres',
-  'vous',
-  'vraisemblablement',
-])
-
-// Evaluation results schema
-const blankSheetResult = ref({
-  score: 0,
-  remembered: [] as string[],
-  missed: [] as string[],
-  totalKeywords: 0,
-  highlightedText: '',
-})
-
-// Feynman logic
-const feynmanStep = ref<'config' | 'work' | 'results'>('config')
-const feynmanDraft = ref('')
-const feynmanTimer = ref(0)
-
-const feynmanWordCount = computed(() => {
-  if (!feynmanDraft.value.trim()) return 0
-  return feynmanDraft.value.trim().split(/\s+/).length
-})
-
-const feynmanSubjectTitle = computed(() => {
-  const note = notesStore.notes.find((n) => n.id === selectedNoteId.value)
-  return note ? note.title : ''
-})
-
-interface FeynmanGap {
-  concept: string
-  issue: string
-}
-const feynmanResult = ref({
-  score: 0,
-  jargon: [] as string[],
-  gaps: [] as FeynmanGap[],
-  feedback: '',
-  suggestion: '',
-})
-const feynmanAnalyzing = ref(false)
-const feynmanError = ref('')
-
-// Quiz / QCM logic
-const quizStep = ref<'config' | 'work' | 'results'>('config')
-const quizSubjectTitle = ref('')
-interface QuizQuestion {
-  questionText: string
-  options: string[]
-  correctAnswer: string
-}
-const quizQuestions = ref<QuizQuestion[]>([])
-const quizAnswers = ref<Record<number, string>>({})
-const quizResult = ref({
-  score: 0,
-})
-
-const isQuizFinished = computed(() => {
-  return (
-    quizQuestions.value.length > 0 &&
-    Object.keys(quizAnswers.value).length === quizQuestions.value.length
-  )
-})
-
-// Utility functions
-function formatTimer(sec: number): string {
-  const m = Math.floor(sec / 60)
-    .toString()
-    .padStart(2, '0')
-  const s = (sec % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
-}
-
-function getCleanText(content: string): string {
-  if (!content) return ''
-  let clean = content
-    .replace(/<!-- SECTION_CONTEXT -->[\s\S]*?<!-- END_SECTION_CONTEXT -->/g, '') // remove context headers if desired, or keep. Let's keep content and only strip comments
-    .replace(/<!-- SECTION_CONTEXT -->/g, '')
-    .replace(/<!-- END_SECTION_CONTEXT -->/g, '')
-    .replace(/<!-- SECTION_DEFINITION -->/g, '')
-    .replace(/<!-- END_SECTION_DEFINITION -->/g, '')
-    .replace(/<!-- SECTION_BODY -->/g, '')
-    .replace(/<!-- END_SECTION_BODY -->/g, '')
-    .replace(/<!-- LINKED_NOTES: [\d,\s]* -->/g, '')
-    .trim()
-
-  // Replace definition tooltips [word]{def:definition} with just "word (definition)"
-  clean = clean.replace(/\[([^\]]+)\]\{def:([^}]+)\}/g, '$1 ($2)')
-
-  // Strip Markdown markers
-  clean = clean
-    .replace(/#+\s+/g, '')
-    .replace(/\*\*|__/g, '')
-    .replace(/\*|_/g, '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/`[^`]+`/g, '')
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/\$\$[\s\S]*?\$\$/g, '')
-    .replace(/\$[^\$]+\$/g, '')
-
-  return clean
-}
-
-// Extrait les mots clés uniques d'un texte (mots > 4 caractères non vides, hors stopwords et en minuscules)
-function extractKeywords(text: string): string[] {
-  const words = text
-    .toLowerCase()
-    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'«»]/g, ' ')
-    .split(/\s+/)
-
-  const keywords = new Set<string>()
-  for (const w of words) {
-    const cleanW = w.trim()
-    if (cleanW.length > 4 && !stopWords.has(cleanW) && !/^\d+$/.test(cleanW)) {
-      keywords.add(cleanW)
-    }
-  }
-  return Array.from(keywords)
-}
-
-function startTimer(timerRef: any) {
-  timerRef.value = 0
-  timerInterval = setInterval(() => {
-    timerRef.value++
-  }, 1000)
-}
-
-function stopTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
-}
-
-function cancelReview() {
-  stopTimer()
-  blankSheetStep.value = 'config'
-  feynmanStep.value = 'config'
-  quizStep.value = 'config'
-  blankSheetDraft.value = ''
-  feynmanDraft.value = ''
-  quizQuestions.value = []
-  quizAnswers.value = {}
-}
-
-// Method Feynman Action
-function startFeynman() {
-  const note = notesStore.notes.find((n) => n.id === selectedNoteId.value)
-  if (!note) return
-  feynmanDraft.value = ''
-  feynmanStep.value = 'work'
-  startTimer(feynmanTimer)
-}
-
-async function evaluateFeynman() {
-  const note = notesStore.notes.find((n) => n.id === selectedNoteId.value)
-  if (!note || !feynmanDraft.value.trim() || feynmanAnalyzing.value) return
-
-  stopTimer()
-  feynmanError.value = ''
-  feynmanAnalyzing.value = true
-
-  // Analyse par l'IA (Gemini) : compare l'explication à la note de référence.
-  // Flux asynchrone (Celery + polling), avec repli synchrone côté serveur.
-  try {
-    const response = await api.post('/feynman/analyze', {
-      note_id: note.id,
-      user_explanation: feynmanDraft.value,
-      duration_seconds: feynmanTimer.value,
-    })
-
-    if (response.data.status === 'SUCCESS' && response.data.result) {
-      applyFeynmanResult(response.data.result)
-      return
-    }
-
-    const { task_id } = response.data
-    if (!task_id) throw new Error("L'API n'a pas retourné d'identifiant de tâche (task_id).")
-
-    let finished = false
-    let attempts = 0
-    const maxAttempts = 60 // ~2 min (60 × 2 s)
-    while (!finished && attempts < maxAttempts) {
-      attempts++
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      const poll = await api.get(`/feynman/tasks/${task_id}`)
-      const status = poll.data.status
-      if (status === 'SUCCESS') {
-        finished = true
-        applyFeynmanResult(poll.data.result)
-      } else if (status === 'FAILURE' || poll.data.error) {
-        finished = true
-        throw new Error(poll.data.error?.message || "L'analyse a échoué.")
-      }
-    }
-    if (!finished) throw new Error("L'analyse a mis trop de temps. Veuillez réessayer.")
-  } catch (err) {
-    feynmanError.value = err instanceof Error ? err.message : "L'analyse IA a échoué."
-    console.error('Erreur analyse Feynman', err)
-  } finally {
-    feynmanAnalyzing.value = false
-  }
-}
-
-function applyFeynmanResult(result: {
-  clarity_score?: number
-  jargon?: string[]
-  gaps?: FeynmanGap[]
-  feedback?: string
-  suggestion?: string
-}) {
-  feynmanResult.value = {
-    score: Math.max(0, Math.min(100, Math.round(result.clarity_score ?? 0))),
-    jargon: Array.isArray(result.jargon) ? result.jargon : [],
-    gaps: Array.isArray(result.gaps) ? result.gaps : [],
-    feedback: result.feedback || '',
-    suggestion: result.suggestion || '',
-  }
-  feynmanStep.value = 'results'
-}
-
-// Blank Sheet actions
-async function startBlankSheet() {
-  if (blankSheetSourceType.value === 'note' && selectedNoteId.value !== null) {
-    router.push(`/notes/${selectedNoteId.value}/blurting?from=reviews`)
-    return
+    parts.push(item.due_date ? `à rendre le ${item.due_date}` : 'devoir à rendre')
+    return parts.join(' · ')
   }
 
-  blankSheetDraft.value = ''
-  blankSheetStep.value = 'work'
-  startTimer(blankSheetTimer)
-}
-
-async function evaluateBlankSheet() {
-  stopTimer()
-
-  let cleanSourceText = ''
-  if (blankSheetSourceType.value === 'note') {
-    const note = notesStore.notes.find((n) => n.id === selectedNoteId.value)
-    cleanSourceText = note ? getCleanText(note.content) : ''
+  if (item.last_session_ago_days !== null && item.last_session_ago_days !== undefined) {
+    parts.push(lastPassage(item.last_session_ago_days))
   } else {
-    // Combine notes in binder
-    const notesInBinder = notesStore.notes.filter((n) => n.binder_id === selectedBinderId.value)
-    cleanSourceText = notesInBinder.map((n) => getCleanText(n.content)).join('\n\n')
+    parts.push('jamais révisé')
   }
-
-  const sourceKeywords = extractKeywords(cleanSourceText)
-
-  if (sourceKeywords.length === 0) {
-    // Fallback if note has no keywords
-    blankSheetResult.value = {
-      score: 100,
-      remembered: [],
-      missed: [],
-      totalKeywords: 0,
-      highlightedText: cleanSourceText || "Document d'origine vide.",
-    }
-    blankSheetStep.value = 'results'
-    return
-  }
-
-  // Check which keywords are in the draft
-  const draftTextClean = blankSheetDraft.value.toLowerCase()
-  const remembered = [] as string[]
-  const missed = [] as string[]
-
-  for (const kw of sourceKeywords) {
-    // Simple check if word or substring exists in draft
-    // Using regex to check word boundaries for accuracy
-    const regex = new RegExp(`\\b${kw}\\w*\\b`, 'i')
-    if (regex.test(draftTextClean)) {
-      remembered.push(kw)
-    } else {
-      missed.push(kw)
-    }
-  }
-
-  const score = Math.round((remembered.length / sourceKeywords.length) * 100)
-
-  // Highlight original clean text to show a comparative view
-  let highlighted = cleanSourceText
-
-  // Sort keywords by length descending to replace larger terms first and avoid partial replacements
-  const allKeywords = [...sourceKeywords].sort((a, b) => b.length - a.length)
-
-  for (const kw of allKeywords) {
-    const isRemembered = remembered.includes(kw)
-    const replacementClass = isRemembered
-      ? 'bg-emerald-100 text-emerald-900 border-b border-emerald-400 dark:bg-emerald-950/60 dark:text-emerald-350 px-1 rounded'
-      : 'bg-rose-100 text-rose-900 border-b border-rose-400 dark:bg-rose-950/60 dark:text-rose-350 px-1 rounded font-bold'
-
-    // Replace case-insensitively with wrapper
-    const regex = new RegExp(`(${kw}\\w*)`, 'gi')
-    highlighted = highlighted.replace(regex, `<span class="${replacementClass}">$1</span>`)
-  }
-
-  blankSheetResult.value = {
-    score,
-    remembered,
-    missed,
-    totalKeywords: sourceKeywords.length,
-    highlightedText: highlighted,
-  }
-
-  blankSheetStep.value = 'results'
-
-  // Log session to backend database
-  try {
-    await api.post('/stats/sessions', {
-      module: 'note',
-      duration_seconds: blankSheetTimer.value,
-      cards_reviewed: sourceKeywords.length,
-      cards_correct: remembered.length,
-    })
-  } catch (err) {
-    console.error('Erreur de logs session feuille blanche', err)
-  }
+  return parts.join(' · ')
 }
 
-// Auto-QCM actions
-function startQuiz() {
-  const note = notesStore.notes.find((n) => n.id === selectedNoteId.value)
-  if (!note) return
+// ─── Sections « En retard » / « Aujourd'hui » ───────────────────────────────
 
-  quizSubjectTitle.value = note.title
-  quizAnswers.value = {}
-
-  const cleanText = getCleanText(note.content)
-  const keywords = extractKeywords(cleanText)
-
-  // Generate QCM questions dynamically
-  const sentences = cleanText
-    .split(/[.!?]+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 20)
-  const generated = [] as QuizQuestion[]
-
-  // Let's create questions from sentences containing keywords
-  let sentenceCount = 0
-  for (const sentence of sentences) {
-    if (sentenceCount >= 4) break // Max 4 questions
-
-    // Find keywords in this sentence
-    const keywordsInSentence = keywords.filter((kw) => {
-      const regex = new RegExp(`\\b${kw}\\w*\\b`, 'i')
-      return regex.test(sentence)
-    })
-
-    if (keywordsInSentence.length > 0) {
-      // Pick one keyword as the answer
-      const answer = keywordsInSentence[0]
-      // Replace answer in sentence to create question
-      const regex = new RegExp(`\\b${answer}\\w*\\b`, 'i')
-      const questionText = sentence.replace(regex, '_________')
-
-      // Generate distractors (choices)
-      const distractors = keywords.filter((k) => k !== answer)
-
-      // Shuffle distractors and pick 3
-      const shuffledDistractors = distractors.sort(() => 0.5 - Math.random()).slice(0, 3)
-
-      // Make sure we have 4 options
-      const options = [answer, ...shuffledDistractors]
-      // Capitalize first letters of options
-      const formattedOptions = options.map((o) => o.charAt(0).toUpperCase() + o.slice(1)).sort()
-
-      // Correct formatted answer
-      const formattedCorrectAnswer =
-        formattedOptions.find((o) => o.toLowerCase().startsWith(answer.toLowerCase())) || answer
-
-      generated.push({
-        questionText: questionText.charAt(0).toUpperCase() + questionText.slice(1) + '.',
-        options: formattedOptions,
-        correctAnswer: formattedCorrectAnswer,
-      })
-
-      sentenceCount++
-    }
-  }
-
-  // Fallback if no questions could be parsed from sentences
-  if (generated.length === 0 && keywords.length > 1) {
-    // Fallback: simple vocabulary match question
-    const answer = keywords[0]
-    const questionText = `Quel concept est central dans le document "${note.title}" ?`
-    const distractors = keywords.slice(1, 4)
-    const options = [answer, ...distractors]
-      .map((o) => o.charAt(0).toUpperCase() + o.slice(1))
-      .sort()
-    const formattedCorrect =
-      options.find((o) => o.toLowerCase().startsWith(answer.toLowerCase())) || answer
-
-    generated.push({
-      questionText,
-      options,
-      correctAnswer: formattedCorrect,
-    })
-  }
-
-  quizQuestions.value = generated
-  quizStep.value = 'work'
+interface DueSection {
+  key: string
+  testId: string
+  title: string
+  titleClass: string
+  countClass: string
+  railClass: string
+  items: FocusItem[]
 }
 
-async function evaluateQuiz() {
-  let score = 0
-  quizQuestions.value.forEach((q, idx) => {
-    if (quizAnswers.value[idx] === q.correctAnswer) {
-      score++
-    }
-  })
+const dueSections = computed<DueSection[]>(() =>
+  [
+    {
+      key: 'late',
+      testId: 'section-late',
+      title: 'En retard',
+      titleClass: 'text-danger',
+      countClass: 'bg-danger-soft text-danger',
+      railClass: 'bg-danger',
+      items: focusStore.items.filter((i) => i.is_late),
+    },
+    {
+      key: 'today',
+      testId: 'section-today',
+      title: "Aujourd'hui",
+      titleClass: 'text-ink',
+      countClass: 'bg-accent-soft text-ink-muted',
+      railClass: 'bg-accent',
+      items: focusStore.items.filter((i) => !i.is_late),
+    },
+  ].filter((s) => s.items.length > 0),
+)
 
-  quizResult.value = { score }
-  quizStep.value = 'results'
+// ─── Section « À venir » ────────────────────────────────────────────────────
 
-  // Log study session
-  try {
-    await api.post('/stats/sessions', {
-      module: 'flashcard',
-      duration_seconds: 60, // Arbitrary duration for quiz
-      cards_reviewed: quizQuestions.value.length,
-      cards_correct: score,
-    })
-  } catch (err) {
-    console.error('Erreur logs Quiz QCM', err)
-  }
+/** Écart en jours pleins entre aujourd'hui (local) et une date ISO `YYYY-MM-DD`. */
+function daysFromToday(dateStr: string): number {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const target = new Date(`${dateStr}T00:00:00`)
+  return Math.round((target.getTime() - today.getTime()) / 86400000)
 }
 
-async function fetchDecksStats() {
-  const promises = decksStore.decks.map(async (deck) => {
-    try {
-      const response = await api.get(`/stats/decks/${deck.id}`)
-      dueCounts.value[deck.id] = response.data.cards_to_review
-      retentionRates.value[deck.id] = response.data.retention_rate
-    } catch (error) {
-      console.error(`Erreur stats deck ${deck.id}`, error)
-      dueCounts.value[deck.id] = 0
-      retentionRates.value[deck.id] = 0
-    }
-  })
-  await Promise.all(promises)
-}
-
-// Flashcard Generation state variables and functions
-const showGenerateModal = ref(false)
-const genSourceType = ref<'note' | 'binder'>('note')
-const genNoteId = ref<string | null>(null)
-const genBinderId = ref<string | null>(null)
-const genDeckTarget = ref<'new' | 'existing'>('new')
-const genNewDeckName = ref('')
-const genExistingDeckId = ref<number | null>(null)
-// Taux de couverture des notions (0–100). Défaut équilibré à 75 %.
-const genCoverage = ref(75)
-const genStatusMessage = ref('')
-const genStatusIsError = ref(false)
-
-const isReadyToGenerate = computed(() => {
-  if (genSourceType.value === 'note' && genNoteId.value === null) return false
-  if (genSourceType.value === 'binder' && genBinderId.value === null) return false
-
-  if (genDeckTarget.value === 'new') return genNewDeckName.value.trim().length > 0
-  return genExistingDeckId.value !== null
+const upcomingDateFormat = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
 })
 
-function openGenerateModal() {
-  genStatusMessage.value = ''
-  genStatusIsError.value = false
-  if (selectedNoteId.value) {
-    genNoteId.value = selectedNoteId.value
-  }
-  showGenerateModal.value = true
+interface UpcomingDay {
+  date: string
+  title: string
+  meta: string
+  label: string
 }
 
-function extractFlashcardsFromText(text: string): { front: string; back: string }[] {
-  const cards: { front: string; back: string }[] = []
-  if (!text) return cards
-
-  // 1. Tooltips: [word]{def:definition}
-  const tooltipRegex = /\[([^\]]+)\]\{def:([^}]+)\}/g
-  let match
-  while ((match = tooltipRegex.exec(text)) !== null) {
-    const front = match[1].trim()
-    const back = match[2].trim()
-    if (front && back) {
-      cards.push({ front, back })
-    }
-  }
-
-  // 2. Glossary lists: "- **Term** : Definition"
-  const boldGlossaryRegex = /(?:^|\n)(?:-\s*|\*\s*)\*\*([^*]+)\*\*\s*:\s*([^\n]+)/g
-  while ((match = boldGlossaryRegex.exec(text)) !== null) {
-    const front = match[1].trim()
-    const back = match[2].trim()
-    if (front && back && !cards.some((c) => c.front.toLowerCase() === front.toLowerCase())) {
-      cards.push({ front, back })
-    }
-  }
-
-  // 3. Colons: "Front : Back"
-  const simpleColonRegex = /(?:^|\n)([^:\n]{3,35})\s*:\s*([^.\n]{10,200})/g
-  while ((match = simpleColonRegex.exec(text)) !== null) {
-    const front = match[1].trim()
-    const back = match[2].trim()
-    if (
-      front.startsWith('#') ||
-      front.startsWith('-') ||
-      front.startsWith('*') ||
-      front.startsWith('<!--')
-    ) {
-      continue
-    }
-    if (front && back && !cards.some((c) => c.front.toLowerCase() === front.toLowerCase())) {
-      cards.push({ front, back })
-    }
-  }
-
-  return cards
-}
-
-// Récupère le texte source local (pour le repli hors-ligne sans IA)
-function localSourceText(): string {
-  if (genSourceType.value === 'note') {
-    const note = notesStore.notes.find((n) => n.id === genNoteId.value)
-    return note ? note.content : ''
-  }
-  const notesInBinder = notesStore.notes.filter((n) => n.binder_id === genBinderId.value)
-  return notesInBinder.map((n) => n.content).join('\n\n')
-}
-
-async function executeFlashcardGeneration() {
-  if (!isReadyToGenerate.value) return
-
-  genStatusMessage.value =
-    "Génération par IA en cours... (cela peut prendre jusqu'à une minute, ne fermez pas la fenêtre)"
-  genStatusIsError.value = false
-
-  try {
-    let subjectName = ''
-    if (genSourceType.value === 'note') {
-      const note = notesStore.notes.find((n) => n.id === genNoteId.value)
-      subjectName = note ? note.title : 'la note'
-    } else {
-      const binder = bindersStore.binders.find((b) => b.id === genBinderId.value)
-      subjectName = binder ? `classeur ${binder.name}` : 'le classeur'
-    }
-
-    // 1. Génération par IA (backend Gemini). Repli sur l'extraction locale
-    //    par motifs si l'IA est indisponible (clé absente, réseau…).
-    let extracted: { front: string; back: string }[] = []
-    let usedFallback = false
-    try {
-      const payload: Record<string, unknown> =
-        genSourceType.value === 'note'
-          ? { source_type: 'note', note_id: genNoteId.value, coverage: genCoverage.value }
-          : { source_type: 'binder', binder_id: genBinderId.value, coverage: genCoverage.value }
-      // Deck existant ciblé : on transmet son id pour que l'IA voie les cartes
-      // déjà présentes et évite d'en régénérer des variantes (pertinence du deck).
-      if (genDeckTarget.value === 'existing' && genExistingDeckId.value) {
-        payload.deck_id = genExistingDeckId.value
+const upcomingDays = computed<UpcomingDay[]>(() =>
+  focusStore.forecast
+    .map((f) => ({ ...f, days: daysFromToday(f.date) }))
+    .filter((f) => f.days >= 1 && f.count > 0)
+    .sort((a, b) => a.days - b.days)
+    .map((f) => {
+      const formatted = upcomingDateFormat.format(new Date(`${f.date}T00:00:00`))
+      return {
+        date: f.date,
+        title: formatted.charAt(0).toUpperCase() + formatted.slice(1),
+        meta: `${f.count} carte${plural(f.count)} prévue${plural(f.count)}`,
+        label: f.days === 1 ? 'DEMAIN' : `${f.days} JOURS`,
       }
-      // Génération IA longue : on dépasse le timeout global (10 s) et le
-      // timeout backend Gemini (90 s) pour ne pas couper une requête qui aboutit.
-      const res = await api.post('/flashcards/generate', payload, { timeout: 120000 })
-      extracted = res.data.flashcards || []
-    } catch (aiErr) {
-      const status = (aiErr as { response?: { status?: number } })?.response?.status
-      const backendMsg = (aiErr as { response?: { data?: { error?: { message?: string } } } })
-        ?.response?.data?.error?.message
+    }),
+)
 
-      // 401/429/400 : ce n'est pas « l'IA indisponible » → message précis, pas de repli.
-      if (status === 401) {
-        genStatusIsError.value = true
-        genStatusMessage.value =
-          'Votre session a expiré. Reconnectez-vous, puis relancez la génération.'
-        return
-      }
-      if (status === 429) {
-        genStatusIsError.value = true
-        genStatusMessage.value =
-          'Trop de générations en peu de temps. Patientez quelques minutes avant de réessayer.'
-        return
-      }
-      if (status === 400) {
-        genStatusIsError.value = true
-        genStatusMessage.value =
-          backendMsg || 'La source ne contient pas assez de texte pour générer des flashcards.'
-        return
-      }
+// ─── Bandeau résumé ─────────────────────────────────────────────────────────
 
-      // 502 / réseau / autres : l'IA est réellement indisponible → repli local.
-      console.warn("Génération IA indisponible, repli sur l'extraction locale.", aiErr)
-      extracted = extractFlashcardsFromText(localSourceText())
-      usedFallback = true
-    }
+const revisionSetDue = computed(() =>
+  focusStore.items.filter((i) => i.type === 'revision_set').reduce((acc, i) => acc + i.count, 0),
+)
 
-    if (extracted.length === 0) {
-      genStatusIsError.value = true
-      genStatusMessage.value = usedFallback
-        ? "L'IA est indisponible et aucune flashcard n'a pu être extraite localement. Réessayez plus tard ou ajoutez des définitions ('- **Concept** : explication') dans vos notes."
-        : "L'IA n'a généré aucune flashcard. Vérifiez que la source contient assez de contenu."
-      return
-    }
+const summarySentence = computed(() => {
+  if (focusStore.totalDue === 0) return 'Tout est à jour 🎉'
 
-    let deckId: number
-    let isNew = false
+  const parts: string[] = []
+  if (focusStore.flashcardCount > 0)
+    parts.push(`${focusStore.flashcardCount} carte${plural(focusStore.flashcardCount)}`)
+  if (revisionSetDue.value > 0)
+    parts.push(`${revisionSetDue.value} série${plural(revisionSetDue.value)}`)
+  if (focusStore.blurtingCount > 0)
+    parts.push(
+      `${focusStore.blurtingCount} feuille${plural(focusStore.blurtingCount)} blanche${plural(focusStore.blurtingCount)}`,
+    )
+  if (focusStore.assignmentCount > 0)
+    parts.push(`${focusStore.assignmentCount} devoir${plural(focusStore.assignmentCount)}`)
 
-    if (genDeckTarget.value === 'new') {
-      if (!genNewDeckName.value.trim()) {
-        genStatusIsError.value = true
-        genStatusMessage.value = 'Veuillez spécifier un nom de deck.'
-        return
-      }
-      const newDeck = await decksStore.createDeck(
-        genNewDeckName.value.trim(),
-        `Généré depuis ${subjectName}`,
-      )
-      deckId = newDeck.id
-      isNew = true
-    } else {
-      if (!genExistingDeckId.value) {
-        genStatusIsError.value = true
-        genStatusMessage.value = 'Veuillez choisir un deck existant.'
-        return
-      }
-      deckId = genExistingDeckId.value
-    }
+  const listed =
+    parts.length > 1 ? `${parts.slice(0, -1).join(', ')} et ${parts[parts.length - 1]}` : parts[0]
+  const verb = focusStore.totalDue > 1 ? 'vous attendent' : 'vous attend'
+  return `${listed} ${verb} aujourd'hui`
+})
 
-    // Fetch card cache
-    const existingCards = await decksStore.fetchCardsForDeck(deckId)
-    const existingFronts = new Set(existingCards.map((c) => c.front.toLowerCase().trim()))
+const summarySubSentence = computed(() => {
+  if (focusStore.totalDue === 0)
+    return 'File unifiée : flashcards, séries typées et feuilles blanches.'
 
-    let addedCount = 0
-    let skippedCount = 0
+  const lateItems = focusStore.items.filter((i) => i.is_late)
+  if (focusStore.lateCount === 0 || lateItems.length === 0)
+    return 'Aucun retard : vous êtes à jour sur vos échéances.'
+  if (lateItems.length === 1)
+    return `Dont ${focusStore.lateCount} en retard sur « ${lateItems[0].title} ».`
+  return `Dont ${focusStore.lateCount} en retard, répartis sur ${lateItems.length} sources.`
+})
 
-    for (const card of extracted) {
-      const frontClean = card.front.toLowerCase().trim()
-      if (existingFronts.has(frontClean)) {
-        skippedCount++
-        continue
-      }
-      await decksStore.createCard(deckId, card.front, card.back)
-      addedCount++
-    }
-
-    // Refresh local decks & stats
-    await decksStore.fetchDecks()
-    await fetchDecksStats()
-
-    genStatusIsError.value = false
-    const sourceLabel = usedFallback
-      ? ' (extraction locale, IA indisponible)'
-      : ' (générées par IA)'
-    genStatusMessage.value = `Succès ! ${addedCount} carte(s) ajoutée(s)${skippedCount > 0 ? ` (${skippedCount} doublon(s) ignoré(s))` : ''}${sourceLabel}.`
-
-    if (isNew) {
-      genNewDeckName.value = ''
-      genDeckTarget.value = 'existing'
-      genExistingDeckId.value = deckId
-    }
-  } catch (error) {
-    console.error('Erreur de génération des cartes', error)
-    genStatusIsError.value = true
-    genStatusMessage.value =
-      "Une erreur est survenue lors de la création ou de l'ajout des flashcards."
-  }
-}
+// ─── Chargement ─────────────────────────────────────────────────────────────
 
 onMounted(async () => {
-  decksLoading.value = true
-  try {
-    // Parallel fetch of all essential lists
-    await Promise.all([
-      decksStore.fetchDecks(),
-      notesStore.fetchNotes(),
-      bindersStore.fetchBinders(),
-      revisionStore.fetchSets(),
-      focusStore.loadFocusData(),
-    ])
-    // Fetch deck due counts
-    await fetchDecksStats()
-  } catch (err) {
-    console.error('Erreur chargement révisions', err)
-  } finally {
-    decksLoading.value = false
-  }
+  // `revisionStore.sets` sert uniquement à connaître le type propre d'un
+  // ensemble dû (badge + /run vs /study) : son échec ne doit pas vider le flux.
+  await Promise.all([
+    focusStore.loadFocusData(),
+    revisionStore.fetchSets().catch((err) => {
+      console.error('Erreur de chargement des ensembles de révision', err)
+    }),
+  ])
 })
 </script>
-
-<style scoped>
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-</style>
