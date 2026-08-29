@@ -88,6 +88,23 @@ def test_binder_stats_includes_descendants_by_default(client, auth_headers):
     assert excl["sets_count"] == 0 and excl["items_count"] == 0
 
 
+def test_binder_stats_exposes_binder_ids_scoped_to_include_descendants(client, auth_headers):
+    """Finding #3 (revue de branche reviser-hub) : le frontend a besoin du meme
+    perimetre de classeurs (racine + sous-arbre selon include_descendants) que
+    celui deja calcule cote backend pour scoper les decks fusionnes dans la
+    liste -- expose ici plutot que de re-marcher l'arbre cote frontend."""
+    parent_id = _binder(client, auth_headers, "Parent")
+    child_id = _binder(client, auth_headers, "Enfant", parent_id=parent_id)
+
+    inc = client.get(f"/api/v1/stats/binders/{parent_id}", headers=auth_headers).json
+    assert set(inc["binder_ids"]) == {parent_id, child_id}
+
+    excl = client.get(
+        f"/api/v1/stats/binders/{parent_id}?descendants=false", headers=auth_headers
+    ).json
+    assert excl["binder_ids"] == [parent_id]
+
+
 def test_binder_stats_isolation_between_users(client, auth_headers):
     binder_id = _binder(client, auth_headers, "Privé")
     _qcm_set(client, auth_headers, binder_id)
@@ -158,6 +175,71 @@ def test_binder_stats_query_budget(client, auth_headers, app):
     # Indépendant du nombre d'items : accès binder + descendants + sets + items
     # + 1 requête de sessions par type présent (ici 1 type). Marge raisonnable.
     assert count["n"] <= 8
+
+
+def test_binder_stats_total_duration_scoped_to_requesting_user_on_shared_binder(
+    client, auth_headers
+):
+    """Finding #2 (revue de branche reviser-hub) : un classeur partage (« cours »)
+    donne acces en lecture aux stats du classeur a tous les membres du groupe --
+    mais `total_duration_seconds` (Task 9, somme non bornee) ne doit refleter QUE
+    le temps d'etude PERSONNEL du requetant, pas la somme de tout le monde
+    (sinon un enseignant ayant etudie 15 min verrait le cumul de toute sa classe
+    sous le libelle « Temps total d'etude », qui lit comme une affirmation
+    personnelle)."""
+    binder_id = _binder(client, auth_headers, "Cours partage")
+    set_id, item = _qcm_set(client, auth_headers, binder_id)
+
+    group_resp = client.post(
+        "/api/v1/groups", json={"name": "Groupe binder stats"}, headers=auth_headers
+    )
+    group_id = group_resp.json["id"]
+    invite_code = group_resp.json["invite_code"]
+    client.post(
+        f"/api/v1/groups/{group_id}/binders",
+        json={"binder_id": binder_id, "permission": "read"},
+        headers=auth_headers,
+    )
+
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "binder_student@example.com",
+            "username": "binder_student",
+            "password": "password123",
+        },
+    )
+    student_token = client.post(
+        "/api/v1/auth/login",
+        json={"email": "binder_student@example.com", "password": "password123"},
+    ).json["access_token"]
+    student_headers = {"Authorization": f"Bearer {student_token}"}
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student_headers)
+
+    # Le proprietaire etudie 15s ; l'eleve etudie 3600s sur le MEME item partage.
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={
+            "duration_seconds": 15,
+            "answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}],
+        },
+        headers=auth_headers,
+    )
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={
+            "duration_seconds": 3600,
+            "answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}],
+        },
+        headers=student_headers,
+    )
+
+    owner_view = client.get(f"/api/v1/stats/binders/{binder_id}", headers=auth_headers).json
+    student_view = client.get(f"/api/v1/stats/binders/{binder_id}", headers=student_headers).json
+
+    # Sans le correctif : owner_view verrait 3615 (les deux sessions blendees).
+    assert owner_view["total_duration_seconds"] == 15
+    assert student_view["total_duration_seconds"] == 3600
 
 
 def test_binder_stats_total_duration_seconds_sums_across_sets(client, auth_headers):

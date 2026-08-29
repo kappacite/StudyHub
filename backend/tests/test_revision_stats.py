@@ -154,6 +154,122 @@ def test_item_stats_isolation_between_users(client, auth_headers):
     assert resp.status_code in (403, 404)
 
 
+def _share_set_with_new_user(client, owner_headers, binder_name="Cours partagé"):
+    """Cree un classeur + ensemble QCM appartenant a l'utilisateur courant
+    (owner_headers), le partage via un groupe (permission read), et fait
+    rejoindre un second utilisateur -- reproduit le cas legitime « cours
+    partage » (SM-2 partage, cf. revision_service.py) sur lequel plusieurs
+    utilisateurs enregistrent des StudySession sur les MEMES items."""
+    binder_id = client.post(
+        "/api/v1/binders", json={"name": binder_name}, headers=owner_headers
+    ).json["id"]
+    set_id, item = _qcm_with_item_in_binder(client, owner_headers, binder_id)
+
+    group_resp = client.post("/api/v1/groups", json={"name": "Groupe stats"}, headers=owner_headers)
+    group_id = group_resp.json["id"]
+    invite_code = group_resp.json["invite_code"]
+    client.post(
+        f"/api/v1/groups/{group_id}/binders",
+        json={"binder_id": binder_id, "permission": "read"},
+        headers=owner_headers,
+    )
+
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "student_stats@example.com",
+            "username": "student_stats",
+            "password": "password123",
+        },
+    )
+    student_token = client.post(
+        "/api/v1/auth/login",
+        json={"email": "student_stats@example.com", "password": "password123"},
+    ).json["access_token"]
+    student_headers = {"Authorization": f"Bearer {student_token}"}
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student_headers)
+
+    return set_id, item, student_headers
+
+
+def _qcm_with_item_in_binder(client, headers, binder_id):
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "S", "type": "qcm", "binder_id": binder_id},
+        headers=headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={
+            "payload": {
+                "question": "2+2 ?",
+                "options": [
+                    {"id": "a", "text": "3", "correct": False},
+                    {"id": "b", "text": "4", "correct": True},
+                ],
+            }
+        },
+        headers=headers,
+    ).json
+    return set_id, item
+
+
+def test_item_stats_scoped_to_requesting_user_on_shared_set(client, auth_headers):
+    """Finding #2 (revue de branche reviser-hub) : un ensemble partage (« cours »)
+    laisse legitimement plusieurs utilisateurs enregistrer des StudySession sur
+    les memes items (SM-2 partage) -- mais les stats PERSONNELLES de chacun ne
+    doivent refleter QUE ses propres sessions, pas celles blendees de tout le
+    monde ayant acces."""
+    set_id, item, student_headers = _share_set_with_new_user(client, auth_headers)
+
+    # Le proprietaire reussit (grade eleve).
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        headers=auth_headers,
+    )
+    # L'eleve rate (grade bas) -- meme item, meme ensemble partage.
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["a"]}]},
+        headers=student_headers,
+    )
+
+    owner_stats = client.get(f"/api/v1/stats/items/{item['id']}", headers=auth_headers).json
+    student_stats = client.get(f"/api/v1/stats/items/{item['id']}", headers=student_headers).json
+
+    # Sans le correctif : chacun verrait reviews == 2 et success_rate == 50 (les
+    # deux sessions blendees), pas sa propre performance.
+    assert owner_stats["reviews"] == 1
+    assert owner_stats["success_rate"] == 100.0
+    assert student_stats["reviews"] == 1
+    assert student_stats["success_rate"] == 0.0
+
+
+def test_set_stats_scoped_to_requesting_user_on_shared_set(client, auth_headers):
+    """Meme correctif que ci-dessus, au niveau agrege de l'ensemble
+    (avg_success_rate, true_retention...) -- get_set_stats passe par le meme
+    DAO.get_for_items."""
+    set_id, item, student_headers = _share_set_with_new_user(client, auth_headers)
+
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        headers=auth_headers,
+    )
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/run",
+        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["a"]}]},
+        headers=student_headers,
+    )
+
+    owner_stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers).json
+    student_stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=student_headers).json
+
+    assert owner_stats["avg_success_rate"] == 100.0
+    assert student_stats["avg_success_rate"] == 0.0
+
+
 def test_stats_schemas_accept_nullable_set_type_and_item_type():
     """RevisionSetStats/RevisionSetSummary.type doit accepter None (ensemble
     heterogene, D8) -- ces schemas de stats n'avaient jamais ete alignes avec

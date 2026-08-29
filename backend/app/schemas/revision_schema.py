@@ -279,6 +279,11 @@ class RevisionTypeBreakdown(BaseModel):
 
 class RevisionBinderStats(BaseModel):
     binder_id: str  # UUID public du classeur
+    # UUID publics du classeur + de son sous-arbre effectivement inclus (selon
+    # include_descendants) -- permet au frontend de scoper d'autres ressources
+    # (ex. decks) sur le même périmètre sans re-marcher l'arbre des classeurs
+    # (cf. revue de branche reviser-hub, finding #3).
+    binder_ids: list[str] = []
     name: str
     include_descendants: bool = True
     sets_count: int

@@ -53,20 +53,25 @@ async function mountBinderStats(opts: {
   decks?: ReturnType<typeof deckSummary>[]
   deckStatsById?: Record<number, ReturnType<typeof deckStats>>
   totalDurationSeconds?: number
+  binderIds?: string[]
+  statsError?: boolean
 }) {
   const sets = opts.sets ?? []
   const byType = opts.byType ?? []
   const decks = opts.decks ?? []
   const deckStatsById = opts.deckStatsById ?? {}
   const totalDurationSeconds = opts.totalDurationSeconds ?? 0
+  const binderIds = opts.binderIds ?? ['b1']
 
   const pinia = createPinia()
   setActivePinia(pinia)
   api.get.mockImplementation((url: string) => {
     if (/\/stats\/binders\//.test(url)) {
+      if (opts.statsError) return Promise.reject(new Error('network down'))
       return Promise.resolve({
         data: {
           binder_id: 'b1',
+          binder_ids: binderIds,
           name: 'Classeur',
           include_descendants: true,
           sets_count: sets.length,
@@ -159,5 +164,51 @@ describe('RevisionBinderStats', () => {
     })
     expect(wrapper.text()).toContain('Flashcards')
     expect(wrapper.text()).toContain('Vrai / Faux')
+  })
+
+  // ── Finding #3 (revue de branche reviser-hub) : un deck dont le parent
+  // direct est un SOUS-classeur doit apparaitre dans la liste fusionnee quand
+  // includeDescendants est actif (meme perimetre que les ensembles de
+  // revision), et en disparaitre quand il ne l'est plus ─────────────────────
+  describe('perimetre descendants (decks d\'un sous-classeur)', () => {
+    it('inclut un deck d\'un sous-classeur quand le backend renvoie ce sous-classeur dans binder_ids', async () => {
+      const decks = [deckSummary(1, 'Deck racine', { binder_id: 'b1' }), deckSummary(2, 'Deck enfant', { binder_id: 'child-1' })]
+      const deckStatsById = { 1: deckStats(1, 50), 2: deckStats(2, 70) }
+      const wrapper = await mountBinderStats({
+        decks,
+        deckStatsById,
+        binderIds: ['b1', 'child-1'],
+      })
+      const rows = wrapper.findAll('[data-test="merged-row"]')
+      expect(rows).toHaveLength(2)
+      expect(wrapper.text()).toContain('Deck racine')
+      expect(wrapper.text()).toContain('Deck enfant')
+    })
+
+    it('exclut un deck d\'un sous-classeur quand binder_ids ne contient que le classeur racine (descendants desactives)', async () => {
+      const decks = [deckSummary(1, 'Deck racine', { binder_id: 'b1' }), deckSummary(2, 'Deck enfant', { binder_id: 'child-1' })]
+      const deckStatsById = { 1: deckStats(1, 50), 2: deckStats(2, 70) }
+      const wrapper = await mountBinderStats({
+        decks,
+        deckStatsById,
+        binderIds: ['b1'],
+      })
+      const rows = wrapper.findAll('[data-test="merged-row"]')
+      expect(rows).toHaveLength(1)
+      expect(wrapper.text()).toContain('Deck racine')
+      expect(wrapper.text()).not.toContain('Deck enfant')
+    })
+  })
+
+  // ── Finding #4 (revue de branche reviser-hub) : page blanche sans message
+  // ni retry en cas d'echec de chargement des stats ──────────────────────────
+  describe('etat erreur', () => {
+    it('affiche un message d\'erreur (et pas une page blanche) quand /stats/binders/:id echoue', async () => {
+      const wrapper = await mountBinderStats({ statsError: true })
+      const error = wrapper.find('[data-test="stats-error"]')
+      expect(error.exists()).toBe(true)
+      expect(error.text()).toBe('Impossible de charger les statistiques.')
+      expect(wrapper.find('[data-test="revise-binder-button"]').exists()).toBe(false)
+    })
   })
 })

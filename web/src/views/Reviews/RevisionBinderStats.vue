@@ -7,6 +7,15 @@
       Chargement des statistiques…
     </div>
 
+    <!-- Erreur de chargement -->
+    <p
+      v-else-if="error"
+      data-test="stats-error"
+      class="rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
+    >
+      {{ error }}
+    </p>
+
     <template v-else-if="stats">
       <!-- En-tête -->
       <div class="flex items-end justify-between gap-5 flex-wrap">
@@ -201,6 +210,7 @@ const decksStore = useDecksStore()
 const binderId = String(route.params.id)
 const loading = ref(true)
 const stats = ref<BinderStats | null>(null)
+const error = ref<string | null>(null)
 const includeDescendants = ref(true)
 
 // DeckStatsResponse (retention_rate uniquement, pas de "mastered_count" cote
@@ -222,9 +232,19 @@ function typeLabel(t: RevisionType | RevisionItemType | null): string {
 // binder_id -- pas de nouvel endpoint "decks d'un classeur"). L'appel
 // /stats/decks/:id (meme forme que Reviews.vue::fetchDecksStats) passe par
 // decksStore.fetchDeckStats -- pas d'appel api direct dans cette vue.
-async function fetchDecksWithStats(): Promise<DeckWithStats[]> {
-  const decks = await decksStore.fetchDecks()
-  const scoped = decks.filter((d) => d.binder_id === binderId)
+//
+// `scopeBinderIds` : classeur courant + sous-arbre SI include_descendants (le
+// meme perimetre que celui deja utilise pour les ensembles de revision via
+// revisionStore.fetchBinderStats) -- expose par le backend (BinderStats.binder_ids,
+// cf. revue de branche finding #3) plutot que re-marche cote frontend, pour ne
+// pas melanger un cote "descendants inclus" et un cote "enfants directs
+// seulement" quand le classeur a des sous-classeurs.
+async function fetchDecksWithStats(
+  decks: Deck[],
+  scopeBinderIds: string[],
+): Promise<DeckWithStats[]> {
+  const scopeSet = new Set(scopeBinderIds)
+  const scoped = decks.filter((d) => d.binder_id !== null && scopeSet.has(d.binder_id))
   const withStats = await Promise.all(
     scoped.map(async (deck): Promise<DeckWithStats> => {
       try {
@@ -250,15 +270,17 @@ async function fetchDecksWithStats(): Promise<DeckWithStats[]> {
 
 async function reload() {
   loading.value = true
+  error.value = null
   try {
-    const [binderStats, decksWithStats] = await Promise.all([
+    const [binderStats, decks] = await Promise.all([
       revisionStore.fetchBinderStats(binderId, includeDescendants.value),
-      fetchDecksWithStats(),
+      decksStore.fetchDecks(),
     ])
     stats.value = binderStats
-    binderDecksWithStats.value = decksWithStats
+    binderDecksWithStats.value = await fetchDecksWithStats(decks, binderStats.binder_ids)
   } catch (e) {
     console.error('Erreur de chargement des stats du classeur', e)
+    error.value = 'Impossible de charger les statistiques.'
   } finally {
     loading.value = false
   }

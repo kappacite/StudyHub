@@ -187,6 +187,10 @@ export interface TypeBreakdown {
 
 export interface BinderStats {
   binder_id: string
+  // UUID publics du classeur + de son sous-arbre effectivement inclus (selon
+  // include_descendants) -- permet de scoper d'autres ressources (ex. decks)
+  // sur le meme perimetre sans re-marcher l'arbre cote frontend.
+  binder_ids: string[]
   name: string
   include_descendants: boolean
   sets_count: number

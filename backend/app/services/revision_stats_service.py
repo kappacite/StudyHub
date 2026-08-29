@@ -271,7 +271,7 @@ class RevisionStatsService:
         if not item:
             raise ResourceNotFoundError("Item de révision introuvable.")
         rset = self._get_set_or_404(item.set_id, user_id)
-        sessions = self._session_dao.get_for_item(item.id, item.type)
+        sessions = self._session_dao.get_for_item(item.id, item.type, user_id=user_id)
         return self._compute_item_stats(item, sessions, datetime.utcnow())
 
     # --- Ensemble -------------------------------------------------------------
@@ -336,7 +336,7 @@ class RevisionStatsService:
             ids_by_type.setdefault(it.type, []).append(it.id)
         by_item: dict = {}
         for item_type, ids in ids_by_type.items():
-            for sess in self._session_dao.get_for_items(ids, item_type):
+            for sess in self._session_dao.get_for_items(ids, item_type, user_id=user_id):
                 by_item.setdefault(sess.item_id, []).append(sess)
 
         agg = self._aggregate_set(rset, items, by_item, now)
@@ -403,9 +403,16 @@ class RevisionStatsService:
         # Vérifie l'accès (propriétaire OU classe partagée) ; lève 404/403.
         binder = check_binder_access(self._set_dao.db, binder_id, user_id, write_required=False)
 
+        descendant_binders = []
         binder_internal_ids = [binder._id]
         if include_descendants:
-            binder_internal_ids += [b._id for b in self._binder_dao.get_descendants(binder._id)]
+            descendant_binders = self._binder_dao.get_descendants(binder._id)
+            binder_internal_ids += [b._id for b in descendant_binders]
+        # UUID publics du classeur + de son sous-arbre effectivement inclus (selon
+        # include_descendants) : exposé en réponse pour que le frontend puisse
+        # scoper d'autres ressources (ex. decks) sur le même périmètre sans
+        # dupliquer la marche de l'arbre (cf. revue de branche, finding #3).
+        binder_ids = [binder.id] + [b.id for b in descendant_binders]
 
         now = datetime.utcnow()
         sets = self._set_dao.get_by_binders(binder_internal_ids)
@@ -424,7 +431,7 @@ class RevisionStatsService:
                 ids_by_type.setdefault(it.type, []).append(it.id)
         by_item: dict = {}
         for set_type, ids in ids_by_type.items():
-            for sess in self._session_dao.get_for_items(ids, set_type):
+            for sess in self._session_dao.get_for_items(ids, set_type, user_id=user_id):
                 by_item.setdefault(sess.item_id, []).append(sess)
 
         # Agrégation par ensemble (réutilise la logique de get_set_stats).
@@ -503,6 +510,7 @@ class RevisionStatsService:
 
         return RevisionBinderStats(
             binder_id=binder.id,
+            binder_ids=binder_ids,
             name=binder.name,
             include_descendants=include_descendants,
             sets_count=len(sets),
