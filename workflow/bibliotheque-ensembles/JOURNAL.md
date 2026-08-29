@@ -140,3 +140,8 @@ révision par item avec message dédié (`?type=qcm`), le tout en clair et sombr
 en 375×812 sur mobile (écrans + les 2 modales).
 
 Suite complète frontend verte (325/325), `vue-tsc -b` propre. Chantier prêt à clôturer.
+
+## 2026-08-29 (clôture)
+
+Toutes les cases de `PLAN.md` cochées. Prochaine étape : demander à l'utilisateur de pousser
+`feature/bibliotheque-ensembles`, puis ouvrir la PR (confirmation utilisateur préalable).
