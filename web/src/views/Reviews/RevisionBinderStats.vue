@@ -175,8 +175,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useRevisionStore } from '../../stores/revision'
 import type { BinderStats, RevisionType, RevisionItemType } from '../../stores/revision'
 import { useDecksStore } from '../../stores/decks'
-import type { Deck } from '../../stores/decks'
-import api from '../../services/api'
+import type { Deck, DeckStatsResponse } from '../../stores/decks'
 import { REVISION_ITEM_TYPE_META } from '../../utils/revisionItemTypeMeta'
 import { successRateTextClass, successRateBgClass } from '../../utils/successRate'
 import { PageContainer, BaseCard, BaseButton, BaseToggle } from '../../components/ui/base'
@@ -192,19 +191,10 @@ const loading = ref(true)
 const stats = ref<BinderStats | null>(null)
 const includeDescendants = ref(true)
 
-// Réponse de GET /stats/decks/:id (backend/app/schemas/stats_schema.py::DeckStatsResponse) --
-// pas de "mastered_count" cote deck classique : seul retention_rate (% de cartes
-// non dues) est disponible, cf. brief -- utilise comme proxy de "maitrise" pour
-// la ligne fusionnee d'un deck (pas invente : c'est le seul pourcentage exposé
-// par cet endpoint).
-interface DeckStatsResponse {
-  deck_id: number
-  retention_rate: number
-  next_review: string | null
-  cards_to_review: number
-  total_cards: number
-}
-
+// DeckStatsResponse (retention_rate uniquement, pas de "mastered_count" cote
+// deck classique) importe depuis stores/decks.ts -- utilise comme proxy de
+// "maitrise" pour la ligne fusionnee d'un deck (pas invente : c'est le seul
+// pourcentage expose par decksStore.fetchDeckStats/GET /stats/decks/:id).
 interface DeckWithStats {
   deck: Deck
   deckStats: DeckStatsResponse
@@ -217,16 +207,17 @@ function typeLabel(t: RevisionType | RevisionItemType | null): string {
 }
 
 // Reprend le pattern de Binders.vue (decksStore.fetchDecks() puis filtre par
-// binder_id -- pas de nouvel endpoint "decks d'un classeur") et de la forme
-// d'appel /stats/decks/:id de Reviews.vue::fetchDecksStats.
+// binder_id -- pas de nouvel endpoint "decks d'un classeur"). L'appel
+// /stats/decks/:id (meme forme que Reviews.vue::fetchDecksStats) passe par
+// decksStore.fetchDeckStats -- pas d'appel api direct dans cette vue.
 async function fetchDecksWithStats(): Promise<DeckWithStats[]> {
   const decks = await decksStore.fetchDecks()
   const scoped = decks.filter((d) => d.binder_id === binderId)
   const withStats = await Promise.all(
     scoped.map(async (deck): Promise<DeckWithStats> => {
       try {
-        const response = await api.get<DeckStatsResponse>(`/stats/decks/${deck.id}`)
-        return { deck, deckStats: response.data }
+        const deckStats = await decksStore.fetchDeckStats(deck.id)
+        return { deck, deckStats }
       } catch (e) {
         console.error(`Erreur stats deck ${deck.id}`, e)
         return {

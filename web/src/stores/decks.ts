@@ -43,6 +43,17 @@ interface CardsResponse {
   data: Flashcard[]
 }
 
+// Réponse de GET /stats/decks/:id (backend/app/schemas/stats_schema.py::DeckStatsResponse) --
+// pas de "mastered_count" cote deck classique : seul retention_rate (% de cartes
+// non dues) est disponible.
+export interface DeckStatsResponse {
+  deck_id: number
+  retention_rate: number
+  next_review: string | null
+  cards_to_review: number
+  total_cards: number
+}
+
 export const useDecksStore = defineStore('decks', () => {
   const decks = ref<Deck[]>([])
   const cards = ref<Flashcard[]>([])
@@ -79,6 +90,11 @@ export const useDecksStore = defineStore('decks', () => {
       // Fallback local search
       return decks.value.find((d) => d.id === id)
     }
+  }
+
+  async function fetchDeckStats(id: number) {
+    const response = await api.get<DeckStatsResponse>(`/stats/decks/${id}`)
+    return response.data
   }
 
   async function createDeck(
@@ -294,6 +310,7 @@ export const useDecksStore = defineStore('decks', () => {
     loading,
     fetchDecks,
     fetchDeckById,
+    fetchDeckStats,
     createDeck,
     updateDeck,
     deleteDeck,
