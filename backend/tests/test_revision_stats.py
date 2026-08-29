@@ -212,3 +212,36 @@ def test_stats_schemas_accept_nullable_set_type_and_item_type():
         due=False,
     )
     assert item_summary.type == "flashcard"
+
+
+def test_item_stats_on_heterogeneous_set_item(client, auth_headers):
+    """Un ensemble reellement heterogene (type: None, cree sans 'type' dans le
+    body, cf. test_create_set_without_type_is_heterogeneous) : les stats d'un
+    item doivent refleter ses sessions reelles. Avant le correctif,
+    get_item_stats passait rset.type (None) au DAO polymorphe
+    (item_id/item_type discrimine la source, pas de FK) au lieu de item.type
+    -- item_type == None ne matche jamais aucune session reelle, l'historique
+    restait silencieusement vide."""
+    set_id = client.post(
+        "/api/v1/revision/sets", json={"name": "Mixte"}, headers=auth_headers
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={
+            "type": "flashcard",
+            "payload": {"front": "Chat", "back": "Cat"},
+        },
+        headers=auth_headers,
+    ).json
+
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/answer/{item['id']}",
+        json={"score": 4},
+        headers=auth_headers,
+    )
+
+    stats = client.get(f"/api/v1/stats/items/{item['id']}", headers=auth_headers)
+    assert stats.status_code == 200
+    body = stats.json
+    assert body["reviews"] == 1
+    assert len(body["history"]) == 1

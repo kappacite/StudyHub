@@ -143,7 +143,7 @@ class RevisionStatsService:
     # --- Item -----------------------------------------------------------------
 
     def _compute_item_stats(
-        self, item: RevisionItem, item_type: str, sessions: list[StudySession], now: datetime
+        self, item: RevisionItem, sessions: list[StudySession], now: datetime
     ) -> RevisionItemStats:
         graded = [s for s in sessions if s.grade is not None]
         reviews = len(graded)
@@ -180,8 +180,8 @@ class RevisionStatsService:
         if not item:
             raise ResourceNotFoundError("Item de révision introuvable.")
         rset = self._get_set_or_404(item.set_id, user_id)
-        sessions = self._session_dao.get_for_item(item.id, rset.type)
-        return self._compute_item_stats(item, rset.type, sessions, datetime.utcnow())
+        sessions = self._session_dao.get_for_item(item.id, item.type)
+        return self._compute_item_stats(item, sessions, datetime.utcnow())
 
     # --- Ensemble -------------------------------------------------------------
 
