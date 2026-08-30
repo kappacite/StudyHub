@@ -699,15 +699,17 @@ def test_get_items_to_study_include_not_due_false_explicit(client, auth_headers,
     assert future_item["id"] not in returned_ids
 
 
-
-def test_study_items_on_shared_set_with_include_not_due_silent_noop(client, auth_headers, test_user, app):
+def test_study_items_on_shared_set_with_include_not_due_silent_noop(
+    client, auth_headers, test_user, app
+):
     """Sur une branche élève (ensemble partagé) : include_not_due est un
     no-op silencieux (jamais d'erreur). L'élève voit TOUS les items, y compris
     ceux dont le next_review du prof est dans le futur."""
     from datetime import datetime, timedelta
+
+    from app.extensions import db
     from app.models.binder import Binder
     from app.models.revision import RevisionItem
-    from app.extensions import db
 
     # Créer une classe et un élève qui la rejoint
     class_resp = client.post("/api/v1/classes", json={"name": "Classe Test"}, headers=auth_headers)
@@ -716,11 +718,15 @@ def test_study_items_on_shared_set_with_include_not_due_silent_noop(client, auth
 
     # Créer un élève et le faire rejoindre la classe
     student_email = "eleve_include@test.com"
-    student_user = client.post(
+    client.post(
         "/api/v1/auth/register",
         json={"email": student_email, "username": "eleveinclude", "password": "password123"},
-    ).json
-    student_headers = {"Authorization": f"Bearer {student_user['access_token']}"}
+    )
+    student_token = client.post(
+        "/api/v1/auth/login",
+        json={"email": student_email, "password": "password123"},
+    ).json["access_token"]
+    student_headers = {"Authorization": f"Bearer {student_token}"}
     client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student_headers)
 
     # Le prof crée un classeur et un ensemble dedans
@@ -764,12 +770,14 @@ def test_study_items_on_shared_set_with_include_not_due_silent_noop(client, auth
     )
     assert share_resp.status_code == 200
 
-    # L'élève appelle /study sans include_not_due (baseline) : ne voit que l'item dû
+    # L'élève appelle /study sans include_not_due : voit TOUS les items (branche élève = no-op)
     study_baseline = client.get(f"/api/v1/revision/sets/{set_id}/study", headers=student_headers)
     assert study_baseline.status_code == 200
     baseline_ids = [i["id"] for i in study_baseline.json]
     assert due_item["id"] in baseline_ids, "l'élève devrait voir l'item dû"
-    assert future_item["id"] not in baseline_ids, "l'élève ne devrait pas voir l'item pas encore dû sans include_not_due"
+    assert future_item["id"] in baseline_ids, (
+        "l'élève devrait aussi voir l'item pas dû (ensemble partagé, include_not_due est no-op)"
+    )
 
     # L'élève appelle /study?include_not_due=true : doit voir TOUS les items (comme sur un ensemble partagé)
     study_with_flag = client.get(
@@ -779,9 +787,13 @@ def test_study_items_on_shared_set_with_include_not_due_silent_noop(client, auth
     assert study_with_flag.status_code == 200
     returned_ids = [i["id"] for i in study_with_flag.json]
     assert due_item["id"] in returned_ids, "l'élève devrait voir l'item dû"
-    assert future_item["id"] in returned_ids, "l'élève devrait voir l'item pas dû aussi (include_not_due=true)"
+    assert future_item["id"] in returned_ids, (
+        "l'élève devrait voir l'item pas dû aussi (ensemble partagé)"
+    )
 
     # Vérifier que l'échéancier du prof n'a pas changé (GET ne doit rien modifier)
     with app.app_context():
         item_check = db.session.get(RevisionItem, future_item["id"])
-        assert item_check.next_review == future_next_review, "l'échéancier du prof ne doit pas être modifié"
+        assert item_check.next_review == future_next_review, (
+            "l'échéancier du prof ne doit pas être modifié"
+        )
