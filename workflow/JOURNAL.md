@@ -1,21 +1,31 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : bibliotheque-redesign
 
 ## Chantiers ouverts
 
 - `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution
   pas démarrée ; voir sa note du 2026-08-30 : Tâche 5 déjà livrée ailleurs, `NoteEvaluation.dc.html`
-  correspond à la future fonctionnalité « Notation », pas à `NoteEvaluation.vue` existant)
+  correspond à la future fonctionnalité « Notation », pas à `NoteEvaluation.vue` existant ;
+  tâches détaillées le même jour)
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; dépendance Blurting→Feynman déjà
-  levée ; écart Blurting probablement structurel, pas juste une retonation — détail dans
-  `bibliotheque-redesign`)
+  levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
+  le même jour)
 - `classes-examens-planning` — pas commencé, indépendant
-- `bibliotheque-redesign` — **planifié seulement**, pas ouvert (`Binders.vue`, requiert un
-  brainstorming avant exécution — voir `workflow/bibliotheque-redesign/CONTEXT.md`)
+- `bibliotheque-redesign` — **ouvert**, en cours (`Binders.vue`, branche
+  `feature/bibliotheque-redesign`, worktree `.worktrees/bibliotheque-redesign`) — voir
+  `workflow/bibliotheque-redesign/CONTEXT.md`
 
 ## Historique
+
+- 2026-08-30 — [bibliotheque-redesign] **Chantier ouvert**, décisions produit tranchées en chat
+  (arbre de sous-dossiers → grille récursive ; contenu non rangé → classeur virtuel « Non
+  classé » ; onglet « Autres » conservé). Tâches détaillées aussi pour
+  `ecrans-peripheriques-visuels` et `editeur-notes-notation-ia` (toujours pas exécutées).
+  Branche `feature/bibliotheque-redesign` créée depuis `main` à jour. Plan détaillé (4 tâches
+  TDD) : `docs/superpowers/plans/2026-08-30-bibliotheque-redesign.md`. Exécution démarrée en
+  `subagent-driven-development`.
 
 - 2026-08-30 — [bibliotheque-redesign] **Deuxième passe** (demande explicite de l'utilisateur :
   "intègre bien tous les écrans de la partie bibliothèque - notes sur le canvas") : extension

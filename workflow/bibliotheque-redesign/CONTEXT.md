@@ -1,7 +1,7 @@
 # Bibliothèque — redesign selon les vraies maquettes Direction A
 
-Statut : planifie
-Branche : (aucune — pas encore ouvert)
+Statut : ouvert
+Branche : feature/bibliotheque-redesign
 PR : (aucune)
 
 ## Pourquoi
@@ -21,11 +21,10 @@ périmètre du chantier planifié `ecrans-peripheriques-visuels` — pas dupliqu
 ## Comment
 
 Voir spec complet : `docs/superpowers/specs/2026-08-30-bibliotheque-redesign-design.md`
-(constat écran par écran, ce qui est confirmé vs. ce qui reste à trancher).
-Plan brouillon : `docs/superpowers/plans/2026-08-30-bibliotheque-redesign.md` — **pas prêt à
-exécuter**, requiert un `superpowers:brainstorming` préalable (arbre de sous-dossiers, contenu
-non rangé à la racine — touchent à la navigation même de l'app, pas de simples choix de mise
-en page).
+(constat écran par écran + § « Décisions actées en chat » : arbre de sous-dossiers retiré au
+profit d'une grille récursive, contenu non rangé accessible via un classeur virtuel « Non
+classé », onglet « Autres » conservé tel quel). Plan détaillé (4 tâches TDD, exécuté en
+`subagent-driven-development`) : `docs/superpowers/plans/2026-08-30-bibliotheque-redesign.md`.
 
 ## Dépendances
 

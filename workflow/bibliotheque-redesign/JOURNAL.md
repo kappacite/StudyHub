@@ -46,3 +46,20 @@ notes sur le canvas". Extension de l'investigation à `NoteEdit.vue` et ses 4 ou
 Toujours aucun code touché — uniquement de la documentation (spec + notes croisées dans les
 `CONTEXT.md` des chantiers concernés). Le périmètre d'exécution de `bibliotheque-redesign`
 reste `Binders.vue` uniquement ; ces 5 écrans n'y entrent pas.
+
+## 2026-08-30 (décisions actées, chantier ouvert)
+
+Utilisateur : "Détaille aussi leurs tâches et ensuite commence l'implémentation
+bibliotheque-redesign". Détail des tâches ajouté aux `PLAN.md` de `ecrans-peripheriques-visuels`
+et `editeur-notes-notation-ia` (toujours sans les exécuter). Pour ce chantier-ci : 2 décisions
+produit tranchées en chat (`AskUserQuestion`, options recommandées retenues) :
+- Arbre de sous-dossiers retiré, remplacé par une grille récursive (sous-classeurs affichés
+  comme cartes au niveau courant, navigation par clic + fil d'ariane).
+- Contenu non rangé accessible via un classeur virtuel « Non classé » sur la grille racine.
+
+Plan détaillé écrit (4 tâches TDD) : `docs/superpowers/plans/2026-08-30-bibliotheque-redesign.md`.
+Branche `feature/bibliotheque-redesign` créée depuis `main` à jour (worktree
+`.worktrees/bibliotheque-redesign`) — renommée depuis la branche `docs/plan-bibliotheque-redesign`
+qui portait les commits de planification (jamais poussée, donc renommage sans risque).
+Chantier passé de `Statut : planifie` à `ouvert`. Exécution démarrée en
+`subagent-driven-development`, suite ci-dessous.
