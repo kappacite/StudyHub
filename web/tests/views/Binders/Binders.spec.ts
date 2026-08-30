@@ -125,6 +125,11 @@ describe('Binders — racine : grille de classeurs uniquement', () => {
     expect(wrapper.findAll('button').some((b) => b.text().trim() === 'Notes')).toBe(false)
     expect(wrapper.findAll('button').some((b) => b.text().trim() === 'Révision')).toBe(false)
     expect(text).not.toContain('Sous-classeur B1')
+    // Régression fix-round revue finale : childrenAtCurrentLevel contient toujours
+    // la carte virtuelle "Non classé" à la racine, donc son .length > 0 ne doit pas
+    // suffire à afficher le titre "Sous-classeurs" ici -- la grille racine n'est pas
+    // une liste de sous-classeurs.
+    expect(text).not.toContain('Sous-classeurs')
   })
 
   // Régression revue finale (item 1) : BinderCard n'affichait plus du tout les tags

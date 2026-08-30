@@ -196,7 +196,10 @@
            l'affordance "Nouveau sous-dossier" vit déjà dans le menu "Ajouter") --
            fix revue finale, item 3. -->
       <div v-if="currentBinderId !== 'non-classe' && childrenAtCurrentLevel.length > 0">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-ink-subtle mb-3">
+        <h3
+          v-if="currentBinderId !== null"
+          class="text-xs font-bold uppercase tracking-wider text-ink-subtle mb-3"
+        >
           Sous-classeurs
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
