@@ -5,4 +5,4 @@
 - [x] Mise à jour des sélecteurs/assertions dans les tests consommateurs
       (`RevisionStudy.spec.ts`, `QcmRun.spec.ts`)
 - [x] Suite complète frontend + `vue-tsc -b` vérifiés verts
-- [ ] Clôture (`gestion-chantier`)
+- [x] Clôture (`gestion-chantier`)
