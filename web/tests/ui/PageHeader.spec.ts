@@ -37,4 +37,23 @@ describe('PageHeader', () => {
     expect(wrapper.find('.cta').exists()).toBe(true)
     expect(wrapper.find('.tabz').exists()).toBe(true)
   })
+
+  it('permet aux actions de passer à la ligne sur mobile plutôt que de déborder', () => {
+    const wrapper = mount(PageHeader, {
+      props: { title: 'Classeur' },
+      slots: {
+        actions: `
+          <button class="a1">Stats</button>
+          <button class="a2">Partager</button>
+          <button class="a3">Classe</button>
+          <button class="a4">Réviser ce dossier</button>
+          <button class="a5">Ajouter</button>
+          <button class="a6">Supprimer</button>
+        `,
+      },
+      global,
+    })
+    const actionsContainer = wrapper.find('.a1').element.parentElement as HTMLElement
+    expect(actionsContainer.className).toContain('flex-wrap')
+  })
 })
