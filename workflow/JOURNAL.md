@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : bibliotheque-redesign
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
@@ -13,11 +13,15 @@ Chantier actif : bibliotheque-redesign
   levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
   le même jour)
 - `classes-examens-planning` — pas commencé, indépendant
-- `bibliotheque-redesign` — **ouvert**, en cours (`Binders.vue`, branche
-  `feature/bibliotheque-redesign`, worktree `.worktrees/bibliotheque-redesign`) — voir
-  `workflow/bibliotheque-redesign/CONTEXT.md`
 
 ## Historique
+
+- 2026-08-30 — [bibliotheque-redesign] **PR #132 mergée dans `main`** (squash, `c222b23`), CI
+  verte (6/6 checks). Chantier `clos`. Prochaine action : choisir le prochain chantier à ouvrir
+  (`editeur-notes-notation-ia`, `ecrans-peripheriques-visuels` ou `classes-examens-planning`).
+- 2026-08-30 — [bibliotheque-redesign] **PR #132 ouverte** (`feature/bibliotheque-redesign` →
+  `main`, https://github.com/kappacite/StudyHub/pull/132). Chantier `pr-ouverte`. Prochaine
+  action : attendre la CI, puis merger.
 
 - 2026-08-30 — [bibliotheque-redesign] **Chantier clos (code).** Revue finale de branche
   (opus) : « avec corrections » — 3 Important (tags de classeur disparus de partout, invariant
