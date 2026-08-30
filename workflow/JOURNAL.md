@@ -4,14 +4,33 @@ Chantier actif : aucun
 
 ## Chantiers ouverts
 
-- `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
-- `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir sa note du 2026-08-30 :
-  `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes, détail dans `bibliotheque-redesign`)
+- `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution
+  pas démarrée ; voir sa note du 2026-08-30 : Tâche 5 déjà livrée ailleurs, `NoteEvaluation.dc.html`
+  correspond à la future fonctionnalité « Notation », pas à `NoteEvaluation.vue` existant)
+- `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
+  `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; dépendance Blurting→Feynman déjà
+  levée ; écart Blurting probablement structurel, pas juste une retonation — détail dans
+  `bibliotheque-redesign`)
 - `classes-examens-planning` — pas commencé, indépendant
 - `bibliotheque-redesign` — **planifié seulement**, pas ouvert (`Binders.vue`, requiert un
   brainstorming avant exécution — voir `workflow/bibliotheque-redesign/CONTEXT.md`)
 
 ## Historique
+
+- 2026-08-30 — [bibliotheque-redesign] **Deuxième passe** (demande explicite de l'utilisateur :
+  "intègre bien tous les écrans de la partie bibliothèque - notes sur le canvas") : extension
+  de l'investigation aux 5 écrans atteints depuis une note. `NoteEdit.vue` déjà pris en charge
+  correctement par `editeur-notes-notation-ia` (maquette citée dès la 1ère ligne de son plan) ;
+  `NoteFeynman.vue` déjà vérifié correct (`reviser-hub`) ; `Blurting.vue` montre un écart réel
+  (concepts+flashcards+rétention absents de la maquette) sous-estimé par le "retonation
+  seulement" de `ecrans-peripheriques-visuels` (note ajoutée là-bas) ; `NoteQuiz.vue`
+  globalement aligné, orphelin, risque faible ; **découverte principale** — `NoteEvaluation.dc.html`
+  correspond en réalité à la future fonctionnalité « Notation » de `editeur-notes-notation-ia`
+  (note de la fiche sur 100), pas à l'écran `NoteEvaluation.vue` existant (qui implémente
+  l'Évaluation mixte, une fonctionnalité différente) — collision de nom, note ajoutée au
+  `CONTEXT.md` de ce chantier pour ne pas la perdre avant qu'il soit ouvert. Spec mise à jour :
+  `docs/superpowers/specs/2026-08-30-bibliotheque-redesign-design.md` (§ « Écrans d'une note »).
+  Toujours aucune implémentation lancée.
 
 - 2026-08-30 — [bibliotheque-redesign] Chantier créé en `Statut : planifie` (investigation
   demandée en chat, sur le modèle de la correction `reviser-hub`) : `Binders.vue` n'a jamais

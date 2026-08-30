@@ -32,3 +32,29 @@ même chantier.
 
 `ETAT.md`, section « Plan global par flux... », flux 2 et flux 5. Plan frontend détaillé :
 `docs/superpowers/plans/2026-08-25-noteedit-migration-plan.md`.
+
+## Note ajoutée le 2026-08-30 (investigation `bibliotheque-redesign`, écrans de note)
+
+Deux constats faits en comparant les vraies maquettes Direction A à l'occasion d'un autre
+chantier (`docs/superpowers/specs/2026-08-30-bibliotheque-redesign-design.md`, § « Écrans
+d'une note ») :
+
+1. **La Tâche 5 du plan frontend ci-dessus (« construire `NoteFeynman.vue` et câbler
+   l'activité Feynman ») est déjà livrée** — pas par ce chantier, mais par `reviser-hub`
+   (Task 3 de sa redesign, mergée dans `main` via PR #130). `NoteFeynman.vue` existe déjà,
+   vérifié conforme à `NoteFeynman.dc.html`. À la reprise de `feature/noteedit-migration` :
+   cocher cette tâche sans la refaire, et vérifier seulement que le bouton « Feynman » de
+   `NoteSidebar.vue` (Tâche 4) pointe bien vers la route déjà existante
+   (`notes/:id/feynman`) plutôt que de recréer un flux.
+2. **`NoteEvaluation.dc.html` (le fichier de maquette) est la vraie référence visuelle pour la
+   future fonctionnalité « Notation »**, pas pour l'écran `NoteEvaluation.vue` qui existe déjà
+   dans le code. La maquette montre : score global sur cercle, « Points forts »/« À
+   améliorer », « Suggestions » — exactement le contrat de « Notation » décrit au § Pourquoi
+   ci-dessus (note de la fiche sur 100). Le fichier actuel `web/src/views/Notes/NoteEvaluation.vue`
+   implémente autre chose (l'« Évaluation mixte » : questions générées, score de performance
+   de l'élève en %) — collision de nom entre la maquette et le code existant, à garder en tête
+   pour ne pas mélanger les deux quand la spec détaillée du volet backend « Notation » sera
+   écrite (`PLAN.md`, première case du volet backend, pas encore faite). Le nouvel écran de
+   résultat de « Notation » devra probablement vivre dans un fichier au nom différent
+   (`NoteGrading.vue`, `NoteNotation.vue`... à trancher) pour éviter la confusion avec
+   `NoteEvaluation.vue` existant.

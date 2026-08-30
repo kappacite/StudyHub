@@ -12,7 +12,10 @@ extraction des fichiers `.dc.html` pertinents depuis l'artefact Claude Design pu
 (`https://claude.ai/code/artifact/366dcc95-8da4-41dd-8bbd-1e625a68e2c5`), lecture directe,
 comparaison structurelle avec le code Vue actuel. Fichiers extraits et lus en entier :
 `Bibliotheque.dc.html`, `Notes.dc.html`, `PDFs.dc.html`, `Diagrams.dc.html`,
-`RevisionSetDetail.dc.html`, `RevisionSetModal.dc.html`, `RevisionItemModal.dc.html`.
+`RevisionSetDetail.dc.html`, `RevisionSetModal.dc.html`, `RevisionItemModal.dc.html`,
+`NoteEdit.dc.html`, `Blurting.dc.html`, `NoteQuiz.dc.html`, `NoteEvaluation.dc.html`
+(deuxième passe, demande explicite de l'utilisateur de couvrir tous les écrans de la section
+« Bibliothèque → Notes », pas seulement l'écran liste).
 
 ## Recoupement avec un chantier déjà planifié : `ecrans-peripheriques-visuels`
 
@@ -124,6 +127,80 @@ redesign de ce futur chantier** — seulement une vérification visuelle rapide 
 plan pour confirmer qu'aucune régression ne s'est glissée depuis (screens partagés avec
 d'autres chantiers, ex. les icônes de type ajoutées par `reviser-hub`).
 
+## Écrans d'une note (`Bibliothèque → Notes → NoteEdit` et ses outils IA)
+
+Deuxième passe demandée explicitement par l'utilisateur ("intègre bien tous les écrans de la
+partie bibliothèque - notes sur le canvas") : les 5 écrans atteints depuis une note
+(`NoteEdit.vue` et ses 4 outils IA — Évaluation, Feuille blanche/Blurting, Feynman, Quiz
+Auto-QCM) ont chacun leur propre maquette. État réel, écran par écran :
+
+### `NoteEdit.dc.html` vs `NoteEdit.vue` — déjà pris en charge ailleurs, hors scope ici
+
+Chantier dédié **déjà ouvert et bien avancé** : `editeur-notes-notation-ia`, branche
+`feature/noteedit-migration` (17 commits, dont `96e068c` *« ecran 4 (editeur de notes, mode
+Zen) termine »*). Son plan (`docs/superpowers/plans/2026-08-25-noteedit-migration-plan.md`)
+cite explicitement `NoteEdit.dc.html` comme référence dès sa première ligne de contexte —
+**consulté correctement**, contrairement à `Binders.vue`. Ne pas dupliquer ce travail.
+
+### `NoteFeynman.dc.html` vs `NoteFeynman.vue` — déjà vérifié correct
+
+Construit par le chantier `reviser-hub` (Task 3 de sa redesign), directement à partir de
+cette maquette (chronomètre, brouillon, score de clarté, jargon, lacunes, suggestion) — déjà
+comparé et validé par une revue dédiée à l'époque. Rien à refaire.
+
+### `Blurting.dc.html` vs `Blurting.vue` — écart réel, sous-estimé par son chantier actuel
+
+La maquette montre un écran simple : texte libre rédigé de mémoire, bouton « Analyser avec
+l'IA », puis une **seule carte d'analyse** — score de clarté `/10`, tags « Jargon à
+simplifier », liste « Lacunes identifiées », un paragraphe de suggestion. Rien d'autre.
+
+`Blurting.vue` actuel est **beaucoup plus riche** que la maquette : score de « Rétention »
+(concept différent du score de clarté de la maquette), un bloc « Bilan de votre tuteur »
+(citation), une **cartographie des concepts du cours** (liste extensible, chaque concept avec
+un statut de mémorisation — maîtrisé/incorrect/oublié — et sa propre explication), et une
+**colonne entière de flashcards suggérées générées par l'IA** à partir des lacunes détectées.
+Aucun de ces éléments n'existe dans `Blurting.dc.html`.
+
+**Ce chantier n'a pas vocation à trancher ce point** (hors périmètre, `Binders.vue` uniquement)
+mais le signale : `ecrans-peripheriques-visuels` prévoit pour `Blurting.vue` une *« retonation
+visuelle seulement, le contenu ne change pas »* — cette décision sous-estime probablement
+l'écart réel, qui est structurel (fonctionnalités entières absentes de la maquette), pas
+seulement une question de tokens de couleur. À reconsidérer quand ce chantier sera ouvert
+(note ajoutée à son `CONTEXT.md` dans ce même commit).
+
+### `NoteQuiz.dc.html` vs `NoteQuiz.vue` — globalement aligné, non vérifié en profondeur
+
+La maquette montre un flux question par question (QCM ou Vrai/Faux), barre de progression
+« Question 3/8 », choix à puces lettrées. `NoteQuiz.vue` actuel suit la même logique générale
+(génération d'un quiz, progression, score final en %) — pas d'écart structurel évident sur un
+examen rapide, mais pas vérifié ligne à ligne (contrairement aux autres écrans de ce document).
+**Non réclamé par aucun chantier existant** — orphelin, à vérifier plus précisément le jour où
+quelqu'un touche ces écrans, risque jugé faible.
+
+### `NoteEvaluation.dc.html` vs `NoteEvaluation.vue` — collision de nom, la vraie maquette n'est pas celle qu'on croit
+
+**Constat le plus important de cette deuxième passe.** `NoteEvaluation.dc.html` ne montre pas
+un quiz : c'est l'écran **« Notation de la note »** — score global sur un cercle (`8,2`),
+« Points forts » / « À améliorer », section « Suggestions ». C'est exactement la fonctionnalité
+« Notation » décrite dans `workflow/editeur-notes-notation-ia/CONTEXT.md` (*« un nouveau bouton
+« Notation » distinct — note la qualité de la fiche sur 100, à ne pas confondre avec
+l'Évaluation mixte qui note la performance de l'élève sur des exercices générés »*) —
+**une fonctionnalité pas encore construite**, dont le volet backend n'a même pas de spec
+détaillée écrite (`workflow/editeur-notes-notation-ia/PLAN.md`, première case non cochée).
+
+Le fichier `NoteEvaluation.vue` qui existe aujourd'hui dans le code implémente une **fonctionnalité
+différente** : des questions générées par IA que l'élève répond, avec un score de performance en
+% à la fin (l'« Évaluation mixte » citée ci-dessus) — **aucune maquette du canvas ne correspond
+clairement à cet écran sous ce nom**. Autrement dit : le nom "NoteEvaluation" a été réutilisé pour
+une fonctionnalité existante sans jamais remarquer qu'une vraie maquette portant ce nom existait
+déjà pour une fonctionnalité différente et pas encore livrée.
+
+**Conséquence pratique** : quand `editeur-notes-notation-ia` écrira la spec détaillée de sa
+fonctionnalité « Notation » (son `PLAN.md`, tâche 1 du volet backend), elle dispose déjà d'une
+maquette validée pour l'écran de résultat — `NoteEvaluation.dc.html` — qu'il ne faut pas
+manquer. Note ajoutée à son `CONTEXT.md` dans ce même commit pour ne pas perdre cette
+information avant que ce chantier soit ouvert.
+
 ## Ce qui n'est PAS tranché ici (décisions pour le futur chantier)
 
 - **Portée du PDF** : construire un vrai lecteur/annotateur (investissement significatif,
@@ -144,10 +221,12 @@ d'autres chantiers, ex. les icônes de type ajoutées par `reviser-hub`).
 ## Recommandation (pour amorcer le brainstorming du futur chantier)
 
 **Périmètre de `bibliotheque-redesign` : `Binders.vue` uniquement** (racine + contenu d'un
-classeur). PDFs/Diagrams restent le territoire de `ecrans-peripheriques-visuels`, qui a
-déjà tout ce qu'il faut ci-dessus pour ne pas répéter l'erreur de `reviser-hub` quand il sera
-ouvert (à condition de le rappeler explicitement dans son propre `CONTEXT.md` — fait dans ce
-commit).
+classeur). PDFs/Diagrams restent le territoire de `ecrans-peripheriques-visuels`, et les 5
+écrans d'une note (`NoteEdit`/Blurting/NoteQuiz/NoteEvaluation/NoteFeynman) sont soit déjà
+pris en charge (`editeur-notes-notation-ia`, `reviser-hub`), soit signalés dans le
+`CONTEXT.md` du chantier concerné pour ne pas se perdre (Blurting → `ecrans-peripheriques-visuels`,
+Notation/`NoteEvaluation.dc.html` → `editeur-notes-notation-ia`) — pas dupliqués ici, notes
+ajoutées dans ce même commit.
 
 Traiter `bibliotheque-redesign` comme `reviser-hub-redesign` : ouvrir avec
 `superpowers:brainstorming` pour trancher les points ci-dessus avec l'utilisateur (arbre de

@@ -23,7 +23,10 @@ vérifiés, décisions tracées, hors scope ici).
 
 **Spec** : `docs/superpowers/specs/2026-08-30-bibliotheque-redesign-design.md` — lire en
 entier avant de commencer le brainstorming, il documente précisément où et pourquoi l'écart
-existe pour chaque écran.
+existe pour chaque écran, y compris les 5 écrans d'une note (NoteEdit/Blurting/NoteQuiz/
+NoteEvaluation/NoteFeynman, § « Écrans d'une note ») — aucun d'eux n'entre dans le périmètre
+d'exécution de *ce* plan (déjà pris en charge ou signalés ailleurs), mais leur lecture évite
+de re-découvrir plus tard des écarts déjà documentés.
 
 ---
 

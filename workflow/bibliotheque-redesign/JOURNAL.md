@@ -21,3 +21,28 @@ brouillon (pas prêt à exécuter, requiert un brainstorming préalable) :
 `docs/superpowers/plans/2026-08-30-bibliotheque-redesign.md`.
 
 Aucune implémentation lancée, conformément à la demande explicite de l'utilisateur.
+
+## 2026-08-30 (deuxième passe : les 5 écrans d'une note)
+
+Demande explicite de l'utilisateur : "intègre bien tous les écrans de la partie bibliothèque -
+notes sur le canvas". Extension de l'investigation à `NoteEdit.vue` et ses 4 outils IA
+(Blurting, NoteQuiz, NoteEvaluation, NoteFeynman), chacun avec sa propre maquette. Résultat par
+écran (détail complet dans le spec, § « Écrans d'une note ») :
+
+- `NoteEdit.vue` : déjà pris en charge correctement (`editeur-notes-notation-ia`, maquette
+  citée dès le début de son plan) — rien à faire ici.
+- `NoteFeynman.vue` : déjà vérifié correct (`reviser-hub`, Task 3) — rien à faire ici.
+- `Blurting.vue` : écart réel trouvé (rétention/bilan tuteur/cartographie des concepts/
+  flashcards suggérées — rien de tout ça dans la maquette, qui ne montre qu'une carte simple
+  clarté+jargon+lacunes+suggestion). Signalé à `ecrans-peripheriques-visuels`, dont le
+  "retonation seulement" sous-estime probablement cet écart.
+- `NoteQuiz.vue` : globalement aligné sur un examen rapide, non vérifié en profondeur, orphelin
+  (aucun chantier ne le réclame) — risque jugé faible.
+- `NoteEvaluation.vue` : **collision de nom découverte** — la maquette `NoteEvaluation.dc.html`
+  correspond en fait à la future fonctionnalité « Notation » de `editeur-notes-notation-ia`
+  (pas encore construite), pas à l'écran `NoteEvaluation.vue` qui existe déjà (implémente une
+  fonctionnalité différente, l'Évaluation mixte). Note ajoutée au `CONTEXT.md` de ce chantier.
+
+Toujours aucun code touché — uniquement de la documentation (spec + notes croisées dans les
+`CONTEXT.md` des chantiers concernés). Le périmètre d'exécution de `bibliotheque-redesign`
+reste `Binders.vue` uniquement ; ces 5 écrans n'y entrent pas.
