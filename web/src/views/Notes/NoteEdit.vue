@@ -103,7 +103,7 @@
                     v-model="title"
                     type="text"
                     placeholder="Titre de la note..."
-                    class="block flex-1 max-w-xl text-lg font-bold bg-transparent border-0 focus:ring-0 focus:outline-none placeholder-slate-300 dark:placeholder-slate-700 py-1"
+                    class="block flex-1 max-w-xl text-lg font-bold bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-ink-subtle py-1"
                     @input="triggerAutoSave"
                   />
                 </div>
@@ -217,14 +217,14 @@
                             <X class="w-4 h-4" />
                           </button>
                         </div>
-                        <p class="text-[11px] text-ink-muted dark:text-ink-subtle mb-3">
+                        <p class="text-xs text-ink-muted dark:text-ink-subtle mb-3">
                           Toute personne avec ce lien peut lire cette note.
                         </p>
                         <div
                           class="flex items-center gap-2 bg-surface-soft dark:bg-surface-soft rounded-xl px-3 py-2"
                         >
                           <span
-                            class="text-[10px] font-mono text-ink-muted dark:text-ink-subtle flex-1 truncate"
+                            class="text-tiny font-mono text-ink-muted dark:text-ink-subtle flex-1 truncate"
                             >{{ shareUrl }}</span
                           >
                           <button
@@ -260,7 +260,7 @@
               <div
                 class="flex flex-wrap items-center gap-1.5 px-6 py-2 bg-surface-soft dark:bg-surface-soft"
               >
-                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2"
+                <span class="text-tiny font-bold text-ink-subtle uppercase tracking-wider px-2"
                   >Format</span
                 >
                 <button
@@ -276,7 +276,7 @@
 
                 <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
 
-                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2"
+                <span class="text-tiny font-bold text-ink-subtle uppercase tracking-wider px-2"
                   >LaTeX</span
                 >
                 <button
@@ -292,7 +292,7 @@
 
                 <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
 
-                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2"
+                <span class="text-tiny font-bold text-ink-subtle uppercase tracking-wider px-2"
                   >Code</span
                 >
                 <button
@@ -395,7 +395,7 @@
                     <span
                       v-for="linkedId in noteLinks"
                       :key="linkedId"
-                      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface border border-line dark:bg-surface-soft dark:border-line text-ink dark:text-ink-subtle text-[11px] font-semibold rounded-lg shadow-sm"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface border border-line dark:bg-surface-soft dark:border-line text-ink dark:text-ink-subtle text-tiny font-semibold rounded-lg shadow-sm"
                     >
                       {{ getNoteTitle(linkedId) }}
                       <button
@@ -441,7 +441,7 @@
               >
                 <div class="border-b border-line dark:border-line pb-3 mb-6 no-print">
                   <span
-                    class="text-[10px] font-extrabold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider"
+                    class="text-tiny font-extrabold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider"
                     >Aperçu en temps réel</span
                   >
                 </div>
