@@ -2,9 +2,20 @@
   <PageContainer size="wide">
     <PageHeader title="Bibliothèque" :breadcrumbs="breadcrumbItems">
       <template #actions>
-        <template v-if="isOwner">
+        <!-- Racine (currentBinderId === null) : aucun onglet/contenu typé n'a de
+             sens ici (rien de typé ne peut s'attacher a binder_id === null tant
+             qu'on n'a pas navigue dans "Non classe") -- seule action : creer un
+             classeur de premier niveau, qui devient l'action primaire de la grille
+             (cf. mockup Bibliotheque.dc.html). -->
+        <template v-if="currentBinderId === null">
+          <BaseButton v-if="isOwner" size="sm" @click="openCreateModal">
+            <template #icon><FolderPlus class="w-4 h-4" /></template>
+            Nouveau classeur
+          </BaseButton>
+        </template>
+        <template v-else-if="isOwner">
           <BaseButton
-            v-if="currentBinderId !== null"
+            v-if="isRealBinderId"
             variant="secondary"
             size="sm"
             @click="router.push(`/revision/binders/${currentBinderId}/stats`)"
@@ -13,7 +24,7 @@
             Stats
           </BaseButton>
           <BaseButton
-            v-if="currentBinderId !== null"
+            v-if="isRealBinderId"
             :variant="currentBinder?.is_public ? 'soft' : 'secondary'"
             size="sm"
             @click="openShareModal"
@@ -22,7 +33,7 @@
             {{ currentBinder?.is_public ? 'Public' : 'Partager' }}
           </BaseButton>
           <BaseButton
-            v-if="currentBinderId !== null"
+            v-if="isRealBinderId"
             :variant="isSharedToClass ? 'soft' : 'secondary'"
             size="sm"
             @click="openClassShareModal"
@@ -32,7 +43,7 @@
           </BaseButton>
 
           <BaseButton
-            v-if="currentBinderId && currentDecks.length > 0"
+            v-if="isRealBinderId && currentDecks.length > 0"
             size="sm"
             @click="reviseBinder"
           >
@@ -68,14 +79,35 @@
               </div>
             </template>
           </div>
+
+          <BaseButton
+            v-if="isRealBinderId"
+            variant="danger"
+            size="sm"
+            @click="confirmDeleteCurrentBinder"
+          >
+            <template #icon><Trash2 class="w-4 h-4" /></template>
+            Supprimer
+          </BaseButton>
         </template>
-        <BaseButton v-else :loading="cloning" @click="cloneBinder">
-          <template #icon><Copy class="w-4 h-4" /></template>
-          {{ cloning ? 'Copie en cours...' : 'Créer une copie personnelle' }}
-        </BaseButton>
+        <template v-else>
+          <BaseButton :loading="cloning" @click="cloneBinder">
+            <template #icon><Copy class="w-4 h-4" /></template>
+            {{ cloning ? 'Copie en cours...' : 'Créer une copie personnelle' }}
+          </BaseButton>
+          <BaseButton
+            v-if="currentBinder?.read_only"
+            variant="ghost"
+            size="sm"
+            @click="confirmDeleteCurrentBinder"
+          >
+            <template #icon><Trash2 class="w-4 h-4" /></template>
+            Retirer de ma vue
+          </BaseButton>
+        </template>
       </template>
 
-      <template #tabs>
+      <template v-if="currentBinderId !== null" #tabs>
         <Tabs v-model="activeType" :tabs="contentTabs" />
       </template>
     </PageHeader>
@@ -153,70 +185,45 @@
       >
     </div>
 
-    <SplitView v-else>
-      <!-- Colonne gauche : arbre des dossiers -->
-      <template #left>
-        <BaseCard padding="sm">
-          <div class="flex items-center justify-between mb-2 px-1">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-ink-subtle">Dossiers</h3>
-            <button
-              v-if="isOwner"
-              class="p-1 rounded-lg text-primary hover:bg-primary-soft transition-colors"
-              title="Nouveau dossier"
-              @click="openCreateModal"
-            >
-              <FolderPlus class="w-4 h-4" />
-            </button>
-          </div>
-          <div class="space-y-1">
-            <ListRow
-              v-for="folder in currentSubBinders"
-              :key="folder.id"
-              interactive
-              class="group"
-              @click="goTo(folder.id)"
-            >
-              <template #leading>
-                <div
-                  class="w-9 h-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center"
-                >
-                  <FolderClosed class="w-4.5 h-4.5" />
-                </div>
-              </template>
-              <div class="min-w-0">
-                <span class="font-semibold text-sm text-ink truncate block">{{ folder.name }}</span>
-                <span
-                  v-if="folder.read_only"
-                  class="text-[9px] font-bold uppercase tracking-wide text-warning"
-                  >Cours</span
-                >
-                <div v-if="folder.tags?.length" class="mt-1 flex flex-wrap gap-1">
-                  <TagBadge v-for="tag in folder.tags" :key="tag.id" :tag="tag" />
-                </div>
-              </div>
-              <template #trailing>
-                <button
-                  v-if="isOwner || folder.read_only"
-                  class="opacity-0 group-hover:opacity-100 p-1.5 text-ink-subtle hover:text-danger rounded-lg hover:bg-danger-soft transition-all"
-                  :title="folder.read_only ? 'Retirer de ma vue' : 'Supprimer'"
-                  @click.stop="confirmDelete(folder)"
-                >
-                  <Trash2 class="w-4 h-4" />
-                </button>
-              </template>
-            </ListRow>
-            <p
-              v-if="currentSubBinders.length === 0"
-              class="text-center py-6 text-ink-subtle text-xs font-semibold uppercase tracking-wider"
-            >
-              Aucun sous-dossier
-            </p>
-          </div>
-        </BaseCard>
-      </template>
+    <div v-else class="space-y-6">
+      <!-- Grille de classeurs (Task 2 -- remplace l'arbre SplitView) : classeurs de
+           premier niveau + "Non classé" à la racine, sous-classeurs directs à
+           l'intérieur d'un classeur réel. Masquée uniquement pour le pseudo-classeur
+           'non-classe', qui n'a pas d'enfants propres (ce n'est pas un nœud de
+           hiérarchie) -- cf. childrenAtCurrentLevel. -->
+      <div v-if="currentBinderId !== 'non-classe'">
+        <h3
+          v-if="currentBinderId !== null"
+          class="text-xs font-bold uppercase tracking-wider text-ink-subtle mb-3"
+        >
+          Sous-classeurs
+        </h3>
+        <div
+          v-if="childrenAtCurrentLevel.length > 0"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          <BinderCard
+            v-for="child in childrenAtCurrentLevel"
+            :key="child.id"
+            :binder="cardBinderProps(child)"
+            :deck-count="cardAggregate(child).deckCount"
+            :note-count="cardAggregate(child).noteCount"
+            :last-activity-label="cardAggregate(child).lastActivityLabel"
+            @click="goTo(child.id)"
+          />
+        </div>
+        <p
+          v-else-if="currentBinderId !== null"
+          class="text-center py-6 text-ink-subtle text-xs font-semibold uppercase tracking-wider"
+        >
+          Aucun sous-classeur
+        </p>
+      </div>
 
-      <!-- Colonne droite : contenu typé -->
-      <template #right>
+      <!-- Contenu typé (Notes/Révision/Autres) : uniquement à l'intérieur d'un
+           classeur réel ou du pseudo-classeur "Non classé" -- jamais à la racine
+           (currentBinderId === null), qui n'affiche que la grille ci-dessus. -->
+      <template v-if="currentBinderId !== null">
         <div class="space-y-6">
           <!-- Notes -->
           <BaseCard v-if="activeType === 'notes'">
@@ -386,14 +393,14 @@
           <RevisionSetModal
             v-if="showSetModal"
             mode="create"
-            :binder-id="currentBinderId"
+            :binder-id="filterBinderId"
             @close="showSetModal = false"
             @created="onSetCreated"
           />
           <RevisionSetModal
             v-if="editingSet"
             mode="edit"
-            :binder-id="currentBinderId"
+            :binder-id="filterBinderId"
             :set="editingSet"
             @close="editingSet = null"
             @updated="onSetUpdated"
@@ -484,7 +491,7 @@
           </BaseCard>
         </div>
       </template>
-    </SplitView>
+    </div>
 
     <!-- Modale : rattacher un élément existant -->
     <BaseModal
@@ -713,13 +720,12 @@ import type { Binder } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
-import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
+import BinderCard, { type BinderCardBinder } from '../../components/binders/BinderCard.vue'
 import {
   PageContainer,
   PageHeader,
   Tabs,
-  SplitView,
   ListRow,
   BaseCard,
   BaseButton,
@@ -733,7 +739,6 @@ import { useRevisionStore } from '../../stores/revision'
 import type { RevisionSet, RevisionItem, RevisionItemType } from '../../stores/revision'
 import RevisionSetModal from '../../components/decks/RevisionSetModal.vue'
 import {
-  FolderClosed,
   Plus,
   ChevronRight,
   ChevronDown,
@@ -888,7 +893,9 @@ watch(
 watch(
   currentBinderId,
   async (newVal) => {
-    if (newVal !== null) {
+    // 'non-classe' est un pseudo-classeur (Task 2) : rien à charger côté API pour
+    // cette valeur, ce n'est pas un vrai id de classeur.
+    if (newVal !== null && newVal !== 'non-classe') {
       const exists = bindersStore.binders.some((b) => b.id === newVal)
       if (!exists) {
         await fetchMissingBinder(newVal)
@@ -897,6 +904,26 @@ watch(
   },
   { immediate: true },
 )
+
+// Vrai uniquement pour un classeur réel existant — jamais pour la racine (null) ni
+// pour le pseudo-classeur 'non-classe' (pas d'id réel côté backend). Sert de garde
+// pour toute action qui nécessite un vrai classeur : stats, partage, révision
+// groupée, création de sous-classeur, rattachement d'un élément existant.
+const isRealBinderId = computed(
+  () => currentBinderId.value !== null && currentBinderId.value !== 'non-classe',
+)
+
+// Distinction explicite navigation vs filtrage de contenu (cf. brief Task 2) :
+// `currentBinderId` porte la valeur de route/navigation — 'non-classe' y est une
+// valeur légitime (grille, fil d'Ariane, goTo()). `filterBinderId` est la valeur
+// attendue par les 3 computed de filtrage de contenu ci-dessous : aucune note/deck/
+// ensemble n'a jamais littéralement `binder_id === 'non-classe'`, donc on retombe
+// sur `null` pour ce cas précis. Ne jamais lire `currentBinderId` directement dans
+// currentNotes/currentDecks/currentSets (et les 2 listes "Autres" ci-dessous) —
+// c'est exactement le bug que ce nom explicite doit empêcher.
+const filterBinderId = computed<string | null>(() =>
+  currentBinderId.value === 'non-classe' ? null : currentBinderId.value,
+)
 const showModal = ref(false)
 const newFolderName = ref('')
 const folderTags = ref<Tag[]>([])
@@ -904,12 +931,28 @@ const selectedTagId = ref<number | null>(null)
 
 const showAddMenu = ref(false)
 
-const addMenu = [
-  { label: 'Sous-dossier', icon: FolderPlus, action: () => closeMenuThen(openCreateModal) },
-  { label: 'Élément existant', icon: FolderInput, action: () => closeMenuThen(openAttachModal) },
-  { label: 'Note', icon: FileText, action: () => closeMenuThen(addNote) },
-  { label: 'Diagramme', icon: Activity, action: () => closeMenuThen(addDiagram) },
-]
+// Computed (et non un tableau figé) : 'Sous-dossier'/'Élément existant' nécessitent
+// un vrai classeur parent (createBinder/attachItems attendent un id réel côté
+// backend) — masqués dans le pseudo-classeur 'Non classé'. 'Note'/'Diagramme'
+// restent proposés : ils créent du contenu non classé valide (voir addNote/
+// addDiagram, filterBinderId).
+const addMenu = computed(() => {
+  const items = [
+    { label: 'Note', icon: FileText, action: () => closeMenuThen(addNote) },
+    { label: 'Diagramme', icon: Activity, action: () => closeMenuThen(addDiagram) },
+  ]
+  if (isRealBinderId.value) {
+    items.unshift(
+      { label: 'Sous-dossier', icon: FolderPlus, action: () => closeMenuThen(openCreateModal) },
+      {
+        label: 'Élément existant',
+        icon: FolderInput,
+        action: () => closeMenuThen(openAttachModal),
+      },
+    )
+  }
+  return items
+})
 
 function closeMenuThen(fn: () => void) {
   showAddMenu.value = false
@@ -917,7 +960,9 @@ function closeMenuThen(fn: () => void) {
 }
 
 async function addNote() {
-  const note = await notesStore.createNote('Nouvelle note', '', currentBinderId.value)
+  // filterBinderId (pas currentBinderId) : depuis 'Non classé', on crée une note
+  // réellement non classée (binder_id: null), jamais binder_id: 'non-classe'.
+  const note = await notesStore.createNote('Nouvelle note', '', filterBinderId.value)
   router.push(`/notes/${note.id}?edit=true`)
 }
 
@@ -937,7 +982,8 @@ async function addDiagram() {
     const res = await api.post('/diagrams', {
       title: 'Nouveau diagramme',
       code: defaultCode,
-      binder_id: currentBinderId.value,
+      // filterBinderId (pas currentBinderId) : cf. addNote() ci-dessus.
+      binder_id: filterBinderId.value,
     })
     router.push(`/diagrams?id=${res.data.id}`)
   } catch (e) {
@@ -946,7 +992,7 @@ async function addDiagram() {
 }
 
 function reviseBinder() {
-  if (!currentBinderId.value) return
+  if (!isRealBinderId.value) return
   // Réviser tout le dossier : runner StudyDeck en mode « dossier » (cartes dues
   // agrégées sur tous les decks du classeur). Le nom alimente l'en-tête du runner.
   const name = bindersStore.binders.find((b) => b.id === currentBinderId.value)?.name || 'Dossier'
@@ -1001,17 +1047,60 @@ async function filterByTag(tagId: number | null) {
   await bindersStore.fetchBinders(tagId)
 }
 
-const currentSubBinders = computed(() =>
-  bindersStore.binders.filter((b) => b.parent_id === currentBinderId.value),
-)
+// Pseudo-classeur "Non classé" (Task 2) : représente le contenu avec
+// binder_id === null. Objet plain literal, PAS un Binder — jamais poussé dans
+// bindersStore.binders, pas de hiérarchie propre (childrenAtCurrentLevel renvoie
+// [] pour lui, cf. plus bas). N'existe qu'à la racine.
+interface VirtualBinderEntry {
+  id: 'non-classe'
+  name: string
+  virtual: true
+}
+const NON_CLASSE_ENTRY: VirtualBinderEntry = { id: 'non-classe', name: 'Non classé', virtual: true }
+
+function isVirtualEntry(entry: Binder | VirtualBinderEntry): entry is VirtualBinderEntry {
+  return 'virtual' in entry
+}
+
+// Grille de classeurs au niveau courant (remplace l'arbre SplitView, Task 2) :
+// - racine (null) : classeurs de premier niveau + carte virtuelle "Non classé" —
+//   placée en dernier (les classeurs réels de l'utilisateur passent avant le
+//   fourre-tout, cf. rapport de tâche).
+// - classeur réel : ses sous-classeurs directs.
+// - 'non-classe' : [] — ce n'est pas un nœud de hiérarchie, pas d'enfants propres.
+const childrenAtCurrentLevel = computed<(Binder | VirtualBinderEntry)[]>(() => {
+  if (currentBinderId.value === 'non-classe') return []
+  if (currentBinderId.value === null) {
+    return [...bindersStore.binders.filter((b) => b.parent_id === null), NON_CLASSE_ENTRY]
+  }
+  return bindersStore.binders.filter((b) => b.parent_id === currentBinderId.value)
+})
+
+function cardBinderProps(entry: Binder | VirtualBinderEntry): BinderCardBinder {
+  if (isVirtualEntry(entry)) return { id: entry.id, name: entry.name }
+  return { id: entry.id, name: entry.name, readOnly: entry.read_only }
+}
+
+// binderAggregate() attend un vrai id de classeur OU null (pour agréger le contenu
+// non classé) — jamais la chaîne 'non-classe' : pour la carte virtuelle, on agrège
+// donc bien sur `null`, exactement comme filterBinderId le fait pour le contenu
+// affiché une fois qu'on a cliqué dessus.
+function cardAggregate(entry: Binder | VirtualBinderEntry) {
+  const id = isVirtualEntry(entry) ? null : entry.id
+  return binderAggregate(id, decksStore.decks, notesStore.notes, revisionStore.sets)
+}
+
+// Les 3 filtres de contenu ci-dessous utilisent `filterBinderId`, PAS
+// `currentBinderId` — voir la définition de filterBinderId plus haut pour la
+// raison (distinction navigation vs filtrage).
 const currentNotes = computed(() =>
-  notesStore.notes.filter((n) => n.binder_id === currentBinderId.value),
+  notesStore.notes.filter((n) => n.binder_id === filterBinderId.value),
 )
 const currentDecks = computed(() =>
-  decksStore.decks.filter((d) => d.binder_id === currentBinderId.value),
+  decksStore.decks.filter((d) => d.binder_id === filterBinderId.value),
 )
 const currentSets = computed(() =>
-  revisionStore.sets.filter((s) => s.binder_id === currentBinderId.value),
+  revisionStore.sets.filter((s) => s.binder_id === filterBinderId.value),
 )
 
 async function loadSetAggregates() {
@@ -1034,11 +1123,13 @@ watch(currentSets, () => {
   if (activeType.value === 'revision') loadSetAggregates()
 })
 
+// Même raison que currentNotes/currentDecks/currentSets ci-dessus : filterBinderId,
+// pas currentBinderId.
 const currentDiagrams = computed(() =>
-  allDiagrams.value.filter((d) => d.binder_id === currentBinderId.value),
+  allDiagrams.value.filter((d) => d.binder_id === filterBinderId.value),
 )
 const currentPdfs = computed(() =>
-  allPdfs.value.filter((p) => p.binder_id === currentBinderId.value),
+  allPdfs.value.filter((p) => p.binder_id === filterBinderId.value),
 )
 
 const showAttachModal = ref(false)
@@ -1144,6 +1235,12 @@ async function detachItem(type: BinderItemType, id: number | string) {
 const breadcrumbItems = computed(() => {
   const items: { label: string; to?: string }[] = [{ label: 'Racine', to: '/bibliotheque' }]
   if (currentBinderId.value === null) return items
+  // Cas spécial explicite AVANT la boucle bindersStore.binders.find(...) : 'non-classe'
+  // n'est pas un id de classeur réel, cette boucle ne le trouverait jamais et
+  // produirait silencieusement un fil d'Ariane vide/faux (cf. brief Task 2).
+  if (currentBinderId.value === 'non-classe') {
+    return [...items, { label: 'Non classé' }]
+  }
   const trail: Binder[] = []
   let current = bindersStore.binders.find((b) => b.id === currentBinderId.value)
   while (current) {
@@ -1179,21 +1276,29 @@ async function createFolder() {
   }
 }
 
-async function confirmDelete(folder: Binder) {
-  // Un classeur partagé (cours/groupe) ne nous appartient pas : on le retire de
-  // notre vue, sans supprimer l'original côté propriétaire.
-  const message = folder.read_only
-    ? `Retirer le classeur partagé "${folder.name}" de votre espace ? (l'original n'est pas supprimé)`
-    : `Êtes-vous sûr de vouloir supprimer le dossier "${folder.name}" et tous ses sous-dossiers ?`
-  if (confirm(message)) {
-    await bindersStore.deleteBinder(folder.id)
-  }
-}
-
 const currentBinder = computed(() => {
   if (currentBinderId.value === null) return null
   return bindersStore.binders.find((b) => b.id === currentBinderId.value) || null
 })
+
+// Supprime (ou retire, si classeur partagé en lecture seule) le classeur RÉEL
+// actuellement ouvert, puis navigue vers son parent. Remplace, pour le classeur
+// courant, l'ancienne suppression par ligne dans l'arbre (Task 2 — la grille de
+// cartes n'expose pas d'action de suppression par carte, cf. BinderCard.vue Task 1
+// : sans cette fonction, supprimer un classeur serait devenu impossible dans toute
+// l'application).
+async function confirmDeleteCurrentBinder() {
+  const folder = currentBinder.value
+  if (!folder) return
+  const message = folder.read_only
+    ? `Retirer le classeur partagé "${folder.name}" de votre espace ? (l'original n'est pas supprimé)`
+    : `Êtes-vous sûr de vouloir supprimer le classeur "${folder.name}" et tous ses sous-classeurs ?`
+  if (confirm(message)) {
+    const parentId = folder.parent_id
+    await bindersStore.deleteBinder(folder.id)
+    goTo(parentId)
+  }
+}
 
 const authStore = useAuthStore()
 const currentUserId = computed(() => authStore.user?.id)
@@ -1205,7 +1310,7 @@ const isOwner = computed(() => {
 
 const cloning = ref(false)
 async function cloneBinder() {
-  if (currentBinderId.value === null) return
+  if (!isRealBinderId.value) return
   cloning.value = true
   try {
     const response = await api.post(`/packages/${currentBinderId.value}/clone`)
@@ -1272,7 +1377,7 @@ async function loadSharedClasses() {
 }
 
 async function openClassShareModal() {
-  if (currentBinderId.value === null) return
+  if (!isRealBinderId.value) return
   showClassShareModal.value = true
   classShareBusy.value = true
   try {
@@ -1288,13 +1393,17 @@ function isClassShared(classId: number) {
 }
 
 async function toggleClassShare(c: ClassInfo) {
-  if (currentBinderId.value === null) return
+  // isRealBinderId à lui seul ne permet pas à TS de rétrécir le type de
+  // currentBinderId.value (deux computed distincts) -- la vérification directe
+  // ci-dessous fournit le rétrécissement `string` nécessaire pour groupService.
+  const binderId = currentBinderId.value
+  if (!isRealBinderId.value || binderId === null) return
   classShareBusy.value = true
   try {
     if (isClassShared(c.id)) {
-      await groupService.unshareBinder(c.id, currentBinderId.value)
+      await groupService.unshareBinder(c.id, binderId)
     } else {
-      await groupService.shareBinder(c.id, currentBinderId.value, 'read')
+      await groupService.shareBinder(c.id, binderId, 'read')
     }
     await loadSharedClasses()
   } catch {

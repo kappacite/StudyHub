@@ -15,8 +15,15 @@ import { useTagsStore } from '../../../src/stores/tags'
 import { useAuthStore } from '../../../src/stores/auth'
 
 const BINDER = { id: 'b1', name: 'Chimie organique', parent_id: null, is_public: false, user_id: 1, tags: [] }
+const SUBBINDER = { id: 'b1-sub', name: 'Sous-classeur B1', parent_id: 'b1', is_public: false, user_id: 1, tags: [] }
 const DECK = { id: 1, binder_id: 'b1', name: 'Deck classique', description: '', reversed: false, tuning_default: 1, card_count: 5, created_at: '', tags: [] }
 const HETEROGENEOUS_SET = { id: 7, name: 'Mixte', description: null, type: null, binder_id: 'b1', tuning_default: 1, is_public: false, item_count: 3 }
+// Note NON classée (binder_id: null) et note bien classée (binder_id: 'b1') --
+// nécessaires pour tester la subtilité filterBinderId ('Non classé' doit filtrer sur
+// binder_id === null, jamais sur la chaîne littérale 'non-classe').
+const NOW = new Date().toISOString()
+const NOTE_UNCLASSIFIED = { id: 'n-libre', binder_id: null, title: 'Note libre', content: '', created_at: NOW, updated_at: NOW, tags: [] }
+const NOTE_B1 = { id: 'n-b1', binder_id: 'b1', title: 'Note du classeur b1', content: '', created_at: NOW, updated_at: NOW, tags: [] }
 
 const stub = { template: '<div />' }
 function createTestRouter(): Router {
@@ -38,15 +45,21 @@ function clickTab(wrapper: ReturnType<typeof mount>, label: string) {
   return wrapper.findAll('button').find((b) => b.text().trim() === label)!.trigger('click')
 }
 
-const NOW = new Date().toISOString()
-const OVERDUE = new Date(Date.now() - 86400000).toISOString()
+// Localise une carte de classeur (BinderCard, Task 1) par son nom affiché --
+// BinderCard.vue n'expose pas de data-test dédié (composant présentationnel pur,
+// hors périmètre de cette tâche), donc on cherche par texte comme clickTab().
+function findCard(wrapper: ReturnType<typeof mount>, name: string) {
+  return wrapper.findAll('button').find((b) => b.text().includes(name))
+}
+
+const OVERDUE_TS = new Date(Date.now() - 86400000).toISOString()
 // Item "pas encore du" : programme dans un jour, pour eviter toute course
 // avec le seuil de comparaison (next_review <= Date.now()) evalue quelques
 // microsecondes/secondes plus tard -- une valeur "maintenant" serait fragile
 // (flaky) vis-a-vis de ce <=.
 const NOT_DUE = new Date(Date.now() + 86400000).toISOString()
 const SET_7_ITEMS = [
-  { id: 101, set_id: 7, type: 'flashcard', payload: {}, tuning: 1, position: 0, interval: 1, ease_factor: 2.5, repetitions: 1, next_review: OVERDUE, created_at: NOW, updated_at: NOW },
+  { id: 101, set_id: 7, type: 'flashcard', payload: {}, tuning: 1, position: 0, interval: 1, ease_factor: 2.5, repetitions: 1, next_review: OVERDUE_TS, created_at: NOW, updated_at: NOW },
   { id: 102, set_id: 7, type: 'qcm', payload: {}, tuning: 1, position: 0, interval: 5, ease_factor: 2.5, repetitions: 1, next_review: NOT_DUE, created_at: NOW, updated_at: NOW },
 ]
 
@@ -57,11 +70,11 @@ const SET_7_ITEMS = [
 // avant le mount serait silencieusement efface des que ces appels resolvent.
 function makeGetImpl() {
   return (url: string) => {
-    if (/^\/binders\?/.test(url)) return Promise.resolve({ data: { data: [BINDER] } })
+    if (/^\/binders\?/.test(url)) return Promise.resolve({ data: { data: [BINDER, SUBBINDER] } })
     if (/^\/binders\/[^/?]+$/.test(url)) return Promise.resolve({ data: BINDER }) // fetchMissingBinder — currentBinderId watcher tourne avant que fetchBinders() ait resolu
 
     if (/^\/decks\?/.test(url)) return Promise.resolve({ data: { data: [DECK] } })
-    if (/^\/notes\?/.test(url)) return Promise.resolve({ data: { data: [] } })
+    if (/^\/notes\?/.test(url)) return Promise.resolve({ data: { data: [NOTE_UNCLASSIFIED, NOTE_B1] } })
     if (/^\/revision\/sets\?/.test(url)) return Promise.resolve({ data: { data: [HETEROGENEOUS_SET] } })
     if (url === '/revision/sets/7/items') return Promise.resolve({ data: { data: SET_7_ITEMS } })
     if (url === '/tags') return Promise.resolve({ data: { data: [] } })
@@ -71,7 +84,7 @@ function makeGetImpl() {
   }
 }
 
-async function mountBinders(binderId = 'b1') {
+async function mountBinders(binderId: string | null = 'b1') {
   const pinia = createPinia()
   setActivePinia(pinia)
   const bindersStore = useBindersStore()
@@ -87,12 +100,101 @@ async function mountBinders(binderId = 'b1') {
   api.get.mockImplementation(makeGetImpl())
 
   const router = createTestRouter()
-  await router.push(`/bibliotheque/${binderId}`)
+  await router.push(binderId ? `/bibliotheque/${binderId}` : '/bibliotheque')
   await router.isReady()
   const wrapper = mount(Binders, { global: { plugins: [pinia, router] } })
   await flushPromises()
   return { wrapper, router, bindersStore, notesStore, decksStore, revisionStore, tagsStore }
 }
+
+describe('Binders — racine : grille de classeurs uniquement', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('affiche la grille (classeurs de premier niveau + carte "Non classé") et aucun contenu d\'onglet', async () => {
+    const { wrapper } = await mountBinders(null)
+    const text = wrapper.text()
+
+    expect(text).toContain('Chimie organique')
+    expect(text).toContain('Non classé')
+    // b1 : 1 deck (DECK), 1 note (NOTE_B1)
+    expect(text).toContain('1 decks · 1 notes')
+    // Non classé : agrégat sur binder_id === null -> 0 deck, 1 note (NOTE_UNCLASSIFIED)
+    expect(text).toContain('0 decks · 1 notes')
+
+    // Ni onglets, ni contenu type, ni sous-classeur (SUBBINDER, enfant de b1) a la racine
+    expect(wrapper.findAll('button').some((b) => b.text().trim() === 'Notes')).toBe(false)
+    expect(wrapper.findAll('button').some((b) => b.text().trim() === 'Révision')).toBe(false)
+    expect(text).not.toContain('Sous-classeur B1')
+  })
+
+  it('clic sur une carte de classeur navigue vers /bibliotheque/:id', async () => {
+    const { wrapper, router } = await mountBinders(null)
+    const card = findCard(wrapper, 'Chimie organique')
+    expect(card).toBeTruthy()
+
+    await card!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/bibliotheque/b1')
+  })
+
+  it('clic sur la carte virtuelle "Non classé" navigue vers /bibliotheque/non-classe', async () => {
+    const { wrapper, router } = await mountBinders(null)
+    const card = findCard(wrapper, 'Non classé')
+    expect(card).toBeTruthy()
+
+    await card!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/bibliotheque/non-classe')
+  })
+})
+
+describe('Binders — à l\'intérieur d\'un classeur réel', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('affiche à la fois la grille des sous-classeurs ET le contenu d\'onglet', async () => {
+    const { wrapper } = await mountBinders('b1')
+    const text = wrapper.text()
+
+    expect(text).toContain('Sous-classeur B1')
+    expect(text).toContain('Notes (')
+    expect(text).toContain('Note du classeur b1')
+    // filterBinderId === currentBinderId pour un vrai classeur : la note non classée
+    // ne doit pas fuiter dans le contenu de b1.
+    expect(text).not.toContain('Note libre')
+  })
+})
+
+describe('Binders — pseudo-classeur "Non classé"', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("affiche le contenu filtré sur binder_id === null (pas sur la chaîne 'non-classe'), sans grille de sous-classeurs", async () => {
+    const { wrapper } = await mountBinders('non-classe')
+    const text = wrapper.text()
+
+    // Subtilité critique (filterBinderId) : le contenu réellement non classé doit
+    // apparaître. Si la distinction navigation/filtrage était perdue (comparaison
+    // sur la chaîne littérale 'non-classe' au lieu de null), cette liste serait
+    // vide malgré la présence de NOTE_UNCLASSIFIED dans le store.
+    expect(text).toContain('Note libre')
+    expect(text).not.toContain('Note du classeur b1')
+
+    // Aucune grille de sous-classeurs : 'non-classe' n'est pas un nœud de hiérarchie.
+    expect(text).not.toContain('Aucun sous-classeur')
+    expect(text).not.toContain('Sous-classeurs')
+    expect(findCard(wrapper, 'Chimie organique')).toBeFalsy()
+  })
+
+  it('fil d\'Ariane : "Racine / Non classé" sans planter', async () => {
+    const { wrapper } = await mountBinders('non-classe')
+    const nav = wrapper.find('nav')
+
+    expect(nav.exists()).toBe(true)
+    expect(nav.text()).toContain('Racine')
+    expect(nav.text()).toContain('Non classé')
+  })
+})
 
 describe('Binders — bascule Notes/Revision/Autres', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -219,13 +321,12 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/stats')
   })
 
-  it("non-regression : colonne Dossiers et filtre par tag restent visibles quel que soit l'onglet", async () => {
+  it("non-regression : le filtre par tag reste visible quel que soit l'onglet", async () => {
     const { wrapper } = await mountBinders()
-    expect(wrapper.text()).toContain('Dossiers')
     expect(wrapper.text()).toContain('Filtrer')
     await clickTab(wrapper, 'Révision')
     await flushPromises()
-    expect(wrapper.text()).toContain('Dossiers')
+    expect(wrapper.text()).toContain('Filtrer')
   })
 })
 
