@@ -1,8 +1,8 @@
 # Révision SM-2 — notation manuelle généralisée, QCM libres, planning visible
 
-Statut : ouvert
+Statut : clos
 Branche : feature/revision-flexibilite
-PR : (aucune)
+PR : #134
 
 ## Pourquoi
 

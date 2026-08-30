@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : revision-flexibilite
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
@@ -13,11 +13,12 @@ Chantier actif : revision-flexibilite
   levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
   le même jour)
 - `classes-examens-planning` — pas commencé, indépendant
-- `revision-flexibilite` — **ouvert**, en cours (`RevisionSet`/`RevisionItem`, branche
-  `feature/revision-flexibilite`, worktree `.worktrees/revision-flexibilite`) — voir
-  `workflow/revision-flexibilite/CONTEXT.md`
 
 ## Historique
+
+- 2026-08-30 — [revision-flexibilite] **PR #134 mergée dans `main`** (squash, `067eef0`), CI
+  verte (6/6 checks). Chantier `clos`. Prochaine action : choisir le prochain chantier à ouvrir
+  (`editeur-notes-notation-ia`, `ecrans-peripheriques-visuels` ou `classes-examens-planning`).
 
 - 2026-08-30 — [revision-flexibilite] **Chantier clos (code).** Revue finale de branche
   (opus) : « avec corrections » — 3 Important (garde anti double-soumission manquante dans la
