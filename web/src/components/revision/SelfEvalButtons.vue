@@ -3,7 +3,7 @@
     <button
       data-test="self-eval-a-revoir"
       :disabled="disabled"
-      class="py-2.5 rounded-xl text-xs font-bold border border-danger text-danger hover:bg-danger-soft dark:border-danger dark:bg-danger-soft disabled:opacity-50"
+      class="min-h-11 py-2.5 rounded-xl text-xs font-bold border border-danger text-danger hover:bg-danger-soft dark:border-danger dark:bg-danger-soft disabled:opacity-50"
       @click="emit('select', 1)"
     >
       À revoir
@@ -11,7 +11,7 @@
     <button
       data-test="self-eval-moyen"
       :disabled="disabled"
-      class="py-2.5 rounded-xl text-xs font-bold border border-warning text-warning hover:bg-warning-soft dark:border-warning dark:bg-warning-soft disabled:opacity-50"
+      class="min-h-11 py-2.5 rounded-xl text-xs font-bold border border-warning text-warning hover:bg-warning-soft dark:border-warning dark:bg-warning-soft disabled:opacity-50"
       @click="emit('select', 3)"
     >
       Moyen
@@ -19,7 +19,7 @@
     <button
       data-test="self-eval-acquis"
       :disabled="disabled"
-      class="py-2.5 rounded-xl text-xs font-bold border border-success text-success hover:bg-success-soft dark:border-success dark:bg-success-soft disabled:opacity-50"
+      class="min-h-11 py-2.5 rounded-xl text-xs font-bold border border-success text-success hover:bg-success-soft dark:border-success dark:bg-success-soft disabled:opacity-50"
       @click="emit('select', 5)"
     >
       Acquis

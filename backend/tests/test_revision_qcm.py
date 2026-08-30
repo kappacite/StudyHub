@@ -183,9 +183,11 @@ def test_answer_qcm_item_applies_provided_score_to_sm2(client, auth_headers, app
         assert sess.cards_correct == 1  # basé sur la correction réelle, pas le score
 
 
-def test_answer_qcm_item_records_item_type_from_item_not_from_set(client, auth_headers, app):
-    """Revue de branche reviser-hub, finding #7 (préservé de l'ancien run_qcm) :
-    item_type=item.type sur la StudySession, jamais rset.type."""
+def test_check_qcm_answer_rejects_item_type_mismatch(client, auth_headers, app):
+    """Revue finale de branche (defaut Important #2) : un item dont le type
+    n'est PAS "qcm", insere dans un ensemble QCM, doit faire lever une
+    ValidationError (400) a qcm-check -- pas un correct=True fabrique par
+    _score_qcm_answer retombant silencieusement sur des options vides."""
     set_id = _qcm_set(client, auth_headers)
     q = _add_item(
         client,
@@ -199,18 +201,43 @@ def test_answer_qcm_item_records_item_type_from_item_not_from_set(client, auth_h
             ],
         },
     )
-
     with app.app_context():
         item = db.session.get(RevisionItem, q["id"])
         item.type = "flashcard"
         db.session.commit()
 
-    _answer(client, auth_headers, set_id, q["id"], ["b"], score=5)
+    resp = _check(client, auth_headers, set_id, q["id"], [])
+    assert resp.status_code == 400
+
+
+def test_answer_qcm_item_rejects_item_type_mismatch(client, auth_headers, app):
+    """Meme defaut que ci-dessus, cote qcm-answer (Important #2, revue finale
+    de branche) : sans la garde sur item.type, une selection vide serait
+    comptee correct=True a tort (correct_ids == [] == selected_ids) et
+    appliquerait une note SM-2 sur une donnee fabriquee."""
+    set_id = _qcm_set(client, auth_headers)
+    q = _add_item(
+        client,
+        auth_headers,
+        set_id,
+        {
+            "question": "2+2 ?",
+            "options": [
+                {"id": "a", "text": "3", "correct": False},
+                {"id": "b", "text": "4", "correct": True},
+            ],
+        },
+    )
+    with app.app_context():
+        item = db.session.get(RevisionItem, q["id"])
+        item.type = "flashcard"
+        db.session.commit()
+
+    resp = _answer(client, auth_headers, set_id, q["id"], [], score=5)
+    assert resp.status_code == 400
 
     with app.app_context():
-        sess = StudySession.query.filter_by(item_id=q["id"]).first()
-        assert sess is not None
-        assert sess.item_type == "flashcard"
+        assert StudySession.query.filter_by(item_id=q["id"]).count() == 0
 
 
 def test_answer_qcm_item_uses_its_own_duration(client, auth_headers, app):

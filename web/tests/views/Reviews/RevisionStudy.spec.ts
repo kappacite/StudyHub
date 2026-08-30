@@ -8,10 +8,32 @@ vi.mock('../../../src/services/api', () => ({ default: api }))
 
 import RevisionStudy from '../../../src/views/Reviews/RevisionStudy.vue'
 
-const HETEROGENEOUS_SET = { id: 7, name: 'Mixte', description: null, type: null, binder_id: null, tuning_default: 1, is_public: false, item_count: 2 }
+const HETEROGENEOUS_SET = {
+  id: 7,
+  name: 'Mixte',
+  description: null,
+  type: null,
+  binder_id: null,
+  tuning_default: 1,
+  is_public: false,
+  item_count: 2,
+}
 
 function item(id: number, type: string, payload: Record<string, unknown>) {
-  return { id, set_id: 7, type, payload, tuning: 1, position: 0, interval: 0, ease_factor: 2.5, repetitions: 0, next_review: '', created_at: '', updated_at: '' }
+  return {
+    id,
+    set_id: 7,
+    type,
+    payload,
+    tuning: 1,
+    position: 0,
+    interval: 0,
+    ease_factor: 2.5,
+    repetitions: 0,
+    next_review: '',
+    created_at: '',
+    updated_at: '',
+  }
 }
 
 const stub = { template: '<div />' }
@@ -45,7 +67,10 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
   beforeEach(() => vi.clearAllMocks())
 
   it('rend le bon gabarit pour chaque item selon son propre type, dans une session mixte', async () => {
-    const items = [item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true }), item(2, 'flashcard', { front: 'Chat', back: 'Cat' })]
+    const items = [
+      item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true }),
+      item(2, 'flashcard', { front: 'Chat', back: 'Cat' }),
+    ]
     const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
 
     expect(wrapper.text()).toContain('Le ciel est bleu.')
@@ -95,7 +120,10 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
   })
 
   it('filtre la session par type quand ?type= est present', async () => {
-    const items = [item(1, 'vf', { assertion: 'A', correct: true }), item(2, 'flashcard', { front: 'B', back: 'C' })]
+    const items = [
+      item(1, 'vf', { assertion: 'A', correct: true }),
+      item(2, 'flashcard', { front: 'B', back: 'C' }),
+    ]
     const { wrapper } = await mountStudy('/revision/sets/7/study?type=vf', HETEROGENEOUS_SET, items)
 
     expect(wrapper.text()).toContain('A')
@@ -109,11 +137,14 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
     expect(wrapper.text()).toContain('Le ciel est bleu.')
   })
 
-  it('exclut les items qcm d\'une session mixte : aucune carte vide, les autres types restent normaux', async () => {
+  it("exclut les items qcm d'une session mixte : aucune carte vide, les autres types restent normaux", async () => {
     // Le qcm est place EN PREMIER : sans exclusion, l'ecran ouvrirait sur une carte
     // vide (aucune branche du template ne matche 'qcm') et resterait bloque dessus.
     const items = [
-      item(3, 'qcm', { question: 'Capitale de la France ?', options: [{ id: 'a', text: 'Paris', correct: true }] }),
+      item(3, 'qcm', {
+        question: 'Capitale de la France ?',
+        options: [{ id: 'a', text: 'Paris', correct: true }],
+      }),
       item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true }),
     ]
     const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
@@ -128,9 +159,13 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
     expect(labels).toContain('Faux')
   })
 
-  it('?type=qcm : message dedie, distinct de l\'etat vide generique', async () => {
+  it("?type=qcm : message dedie, distinct de l'etat vide generique", async () => {
     const items = [item(3, 'qcm', { question: 'Capitale de la France ?' })]
-    const { wrapper } = await mountStudy('/revision/sets/7/study?type=qcm', HETEROGENEOUS_SET, items)
+    const { wrapper } = await mountStudy(
+      '/revision/sets/7/study?type=qcm',
+      HETEROGENEOUS_SET,
+      items,
+    )
 
     expect(wrapper.text()).toContain('ne se révisent pas encore individuellement')
     expect(wrapper.text()).not.toContain("Rien à réviser pour l'instant")
@@ -173,7 +208,11 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
 
   it('?type=qcm : pas de bouton "Reviser quand meme" (le message qcm redirige deja ailleurs)', async () => {
     const items = [item(3, 'qcm', { question: 'Capitale de la France ?' })]
-    const { wrapper } = await mountStudy('/revision/sets/7/study?type=qcm', HETEROGENEOUS_SET, items)
+    const { wrapper } = await mountStudy(
+      '/revision/sets/7/study?type=qcm',
+      HETEROGENEOUS_SET,
+      items,
+    )
     expect(findButtonByText(wrapper, 'Réviser quand même')).toBeUndefined()
   })
 })
@@ -187,7 +226,8 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
 
   it('vf : soumettre une reponse appelle check (pas grade), affiche la correction et les boutons de notation, pas le bouton Suivant', async () => {
     api.post.mockImplementation((url: string) => {
-      if (url === '/revision/sets/7/study/check/1') return Promise.resolve({ data: { correct: true } })
+      if (url === '/revision/sets/7/study/check/1')
+        return Promise.resolve({ data: { correct: true } })
       return Promise.reject(new Error(`non mocké: ${url}`))
     })
     const items = [item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true })]
@@ -196,7 +236,9 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
     await findButtonByText(wrapper, 'Vrai')!.trigger('click')
     await flushPromises()
 
-    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/check/1', { answer: { value: true } })
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/check/1', {
+      answer: { value: true },
+    })
     expect(api.post).not.toHaveBeenCalledWith(expect.stringContaining('/grade/'), expect.anything())
     expect(wrapper.text()).toContain('Correct !')
     expect(wrapper.find('[data-test="self-eval-a-revoir"]').exists()).toBe(true)
@@ -208,8 +250,10 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
 
   it('vf : cliquer un bouton de notation appelle gradeItem avec le score choisi ET la reponse initialement soumise, puis affiche Suivant', async () => {
     api.post.mockImplementation((url: string) => {
-      if (url === '/revision/sets/7/study/check/1') return Promise.resolve({ data: { correct: true } })
-      if (url === '/revision/sets/7/study/grade/1') return Promise.resolve({ data: { correct: true, item: { id: 1 } } })
+      if (url === '/revision/sets/7/study/check/1')
+        return Promise.resolve({ data: { correct: true } })
+      if (url === '/revision/sets/7/study/grade/1')
+        return Promise.resolve({ data: { correct: true, item: { id: 1 } } })
       return Promise.reject(new Error(`non mocké: ${url}`))
     })
     const items = [
@@ -235,8 +279,10 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
     api.post.mockImplementation((url: string) => {
       // Reponse "value: false" jugee incorrecte par le backend, meme si
       // l'utilisateur se note ensuite "Acquis" (score 5) par erreur/exces de confiance.
-      if (url === '/revision/sets/7/study/check/1') return Promise.resolve({ data: { correct: false } })
-      if (url === '/revision/sets/7/study/grade/1') return Promise.resolve({ data: { correct: false, item: { id: 1 } } })
+      if (url === '/revision/sets/7/study/check/1')
+        return Promise.resolve({ data: { correct: false } })
+      if (url === '/revision/sets/7/study/grade/1')
+        return Promise.resolve({ data: { correct: false, item: { id: 1 } } })
       return Promise.reject(new Error(`non mocké: ${url}`))
     })
     const items = [item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true })]
@@ -252,8 +298,10 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
 
   it('association : check puis notation manuelle avant Suivant', async () => {
     api.post.mockImplementation((url: string) => {
-      if (url === '/revision/sets/7/study/check/4') return Promise.resolve({ data: { correct: true } })
-      if (url === '/revision/sets/7/study/grade/4') return Promise.resolve({ data: { correct: true, item: { id: 4 } } })
+      if (url === '/revision/sets/7/study/check/4')
+        return Promise.resolve({ data: { correct: true } })
+      if (url === '/revision/sets/7/study/grade/4')
+        return Promise.resolve({ data: { correct: true, item: { id: 4 } } })
       return Promise.reject(new Error(`non mocké: ${url}`))
     })
     const items = [item(4, 'association', { pairs: [{ left: 'Chat', right: 'Cat' }] })]
@@ -281,8 +329,10 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
 
   it('ordre : check puis notation manuelle avant Suivant', async () => {
     api.post.mockImplementation((url: string) => {
-      if (url === '/revision/sets/7/study/check/6') return Promise.resolve({ data: { correct: false } })
-      if (url === '/revision/sets/7/study/grade/6') return Promise.resolve({ data: { correct: false, item: { id: 6 } } })
+      if (url === '/revision/sets/7/study/check/6')
+        return Promise.resolve({ data: { correct: false } })
+      if (url === '/revision/sets/7/study/grade/6')
+        return Promise.resolve({ data: { correct: false, item: { id: 6 } } })
       return Promise.reject(new Error(`non mocké: ${url}`))
     })
     const items = [item(6, 'ordre', { steps: ['un', 'deux'] })]
@@ -305,5 +355,136 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
       expect.objectContaining({ score: 1 }),
     )
     expect(findButtonByText(wrapper, 'Terminer')).toBeDefined()
+  })
+})
+
+describe('RevisionStudy — garde anti double-soumission (revue finale de branche)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("vf : un double-clic sur \"Faux\" pendant l'appel check en cours n'appelle checkItemAnswer qu'une seule fois", async () => {
+    let resolveCheck!: (v: unknown) => void
+    const pending = new Promise((resolve) => {
+      resolveCheck = resolve
+    })
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/check/1') return pending
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    const fauxBtn = findButtonByText(wrapper, 'Faux')!
+    await fauxBtn.trigger('click')
+    await fauxBtn.trigger('click')
+    resolveCheck({ data: { correct: false } })
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledTimes(1)
+  })
+
+  it("vf : un double-clic sur un bouton de notation pendant l'appel grade en cours n'appelle gradeItem qu'une seule fois", async () => {
+    let resolveGrade!: (v: unknown) => void
+    const pending = new Promise((resolve) => {
+      resolveGrade = resolve
+    })
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/check/1')
+        return Promise.resolve({ data: { correct: true } })
+      if (url === '/revision/sets/7/study/grade/1') return pending
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    await findButtonByText(wrapper, 'Vrai')!.trigger('click')
+    await flushPromises()
+
+    const acquisBtn = wrapper.find('[data-test="self-eval-acquis"]')
+    await acquisBtn.trigger('click')
+    await acquisBtn.trigger('click')
+    resolveGrade({ data: { correct: true, item: { id: 1 } } })
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledTimes(2) // 1x check + 1x grade (pas 2x grade)
+  })
+
+  it("flashcard : un double-clic sur un bouton d'auto-evaluation pendant l'appel answer en cours n'appelle answerItem qu'une seule fois", async () => {
+    let resolveAnswer!: (v: unknown) => void
+    const pending = new Promise((resolve) => {
+      resolveAnswer = resolve
+    })
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/answer/2') return pending
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [item(2, 'flashcard', { front: 'Chat', back: 'Cat' })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    await wrapper.find('[data-test="reveal-flashcard-button"]').trigger('click')
+    const acquisBtn = wrapper.find('[data-test="self-eval-acquis"]')
+    await acquisBtn.trigger('click')
+    await acquisBtn.trigger('click')
+    resolveAnswer({ data: { id: 2, set_id: 7 } })
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('RevisionStudy — association : selects verrouilles pendant la notation (revue finale, defaut Important #3)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('les <select> deviennent desactives des la phase self-eval (correction deja affichee)', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/check/4')
+        return Promise.resolve({ data: { correct: true } })
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [item(4, 'association', { pairs: [{ left: 'Chat', right: 'Cat' }] })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    const select = wrapper.find('select')
+    expect(select.attributes('disabled')).toBeUndefined()
+
+    await select.setValue('Cat')
+    await findButtonByText(wrapper, 'Valider')!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+    expect(wrapper.find('select').attributes('disabled')).toBeDefined()
+  })
+})
+
+describe('RevisionStudy — boutons de notation flashcard/definition masques apres notation (revue finale, defaut Minor #4)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('flashcard : les boutons de notation disparaissent du DOM une fois la note appliquee', async () => {
+    api.post.mockResolvedValue({ data: { id: 2, set_id: 7 } })
+    const items = [item(2, 'flashcard', { front: 'Chat', back: 'Cat' })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    await wrapper.find('[data-test="reveal-flashcard-button"]').trigger('click')
+    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="self-eval-moyen"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="self-eval-a-revoir"]').exists()).toBe(false)
+  })
+
+  it('definition : les boutons de notation disparaissent du DOM une fois la note appliquee', async () => {
+    api.post.mockResolvedValue({ data: { id: 3, set_id: 7 } })
+    const items = [item(3, 'definition', { term: 'Chat', definition: 'Cat' })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    await findButtonByText(wrapper, 'Révéler la définition')!.trigger('click')
+    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(false)
   })
 })

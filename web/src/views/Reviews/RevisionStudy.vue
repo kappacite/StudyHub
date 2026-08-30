@@ -76,13 +76,15 @@
           </p>
           <div v-if="phase === 'answer'" class="grid grid-cols-2 gap-3">
             <button
-              class="py-3 rounded-xl text-sm font-bold border border-line dark:border-line hover:bg-success-soft dark:hover:bg-success-soft"
+              class="py-3 rounded-xl text-sm font-bold border border-line dark:border-line hover:bg-success-soft dark:hover:bg-success-soft disabled:opacity-50"
+              :disabled="busy"
               @click="submitVf(true)"
             >
               Vrai
             </button>
             <button
-              class="py-3 rounded-xl text-sm font-bold border border-line dark:border-line hover:bg-danger-soft dark:hover:bg-danger-soft"
+              class="py-3 rounded-xl text-sm font-bold border border-line dark:border-line hover:bg-danger-soft dark:hover:bg-danger-soft disabled:opacity-50"
+              :disabled="busy"
               @click="submitVf(false)"
             >
               Faux
@@ -105,7 +107,7 @@
               >
                 Votre auto-évaluation
               </p>
-              <SelfEvalButtons @select="selfEvalGraded" />
+              <SelfEvalButtons :disabled="busy" @select="selfEvalGraded" />
             </template>
           </div>
         </template>
@@ -130,10 +132,14 @@
             >
               {{ current.payload.back }}
             </p>
-            <p class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest">
-              Votre auto-évaluation
-            </p>
-            <SelfEvalButtons @select="selfEval" />
+            <template v-if="phase === 'reveal'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
+              >
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons :disabled="busy" @select="selfEval" />
+            </template>
           </template>
         </template>
 
@@ -154,10 +160,14 @@
             >
               {{ current.payload.definition }}
             </p>
-            <p class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest">
-              Votre auto-évaluation
-            </p>
-            <SelfEvalButtons @select="selfEval" />
+            <template v-if="phase === 'reveal'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
+              >
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons :disabled="busy" @select="selfEval" />
+            </template>
           </template>
         </template>
 
@@ -174,7 +184,7 @@
               <span class="text-ink-subtle">→</span>
               <select
                 v-model="matches[left]"
-                :disabled="phase === 'feedback'"
+                :disabled="phase !== 'answer'"
                 class="flex-1 px-3 py-2 text-sm rounded-xl border border-line dark:border-line bg-surface dark:bg-surface-soft"
               >
                 <option value="">—</option>
@@ -184,11 +194,11 @@
           </div>
           <button
             v-if="phase === 'answer'"
-            :disabled="!allMatched"
+            :disabled="!allMatched || busy"
             class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50"
             @click="submitAssoc"
           >
-            Valider
+            {{ busy ? 'Correction…' : 'Valider' }}
           </button>
           <template v-else>
             <p class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
@@ -200,7 +210,7 @@
               >
                 Votre auto-évaluation
               </p>
-              <SelfEvalButtons @select="selfEvalGraded" />
+              <SelfEvalButtons :disabled="busy" @select="selfEvalGraded" />
             </template>
           </template>
         </template>
@@ -245,10 +255,11 @@
           </ul>
           <button
             v-if="phase === 'answer'"
-            class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong"
+            :disabled="busy"
+            class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50"
             @click="submitOrdre"
           >
-            Valider
+            {{ busy ? 'Correction…' : 'Valider' }}
           </button>
           <template v-else>
             <p class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
@@ -260,7 +271,7 @@
               >
                 Votre auto-évaluation
               </p>
-              <SelfEvalButtons @select="selfEvalGraded" />
+              <SelfEvalButtons :disabled="busy" @select="selfEvalGraded" />
             </template>
           </template>
         </template>
@@ -303,6 +314,11 @@ const lastCorrect = ref(false)
 // grade (l'auto-evaluation ne fait que choisir le score, pas re-saisir une
 // reponse), reassignee a chaque soumission vf/association/ordre.
 const lastAnswer = ref<Record<string, unknown>>({})
+// Garde anti double-soumission (regression finale) : empeche un double-clic
+// pendant l'appel reseau en cours d'appliquer SM-2 deux fois ou d'ecrire deux
+// StudySession -- desactive aussi les boutons "Valider"/Vrai/Faux et
+// SelfEvalButtons a chaque emplacement ou ils sont montes.
+const busy = ref(false)
 
 const TYPE_LABELS: Record<string, string> = {
   vf: 'Vrai / Faux',
@@ -425,17 +441,33 @@ async function submitOrdre() {
 // de bord) puis on affiche la correction et on attend une auto-evaluation
 // manuelle (phase 'self-eval'), comme flashcard/definition.
 async function checkAndAwaitSelfEval(answer: Record<string, unknown>) {
-  lastAnswer.value = answer
-  const res = await revisionStore.checkItemAnswer(setId, current.value.id, answer)
-  lastCorrect.value = res.correct
-  phase.value = 'self-eval'
+  if (busy.value) return
+  busy.value = true
+  try {
+    lastAnswer.value = answer
+    const res = await revisionStore.checkItemAnswer(setId, current.value.id, answer)
+    lastCorrect.value = res.correct
+    phase.value = 'self-eval'
+  } catch (e) {
+    console.error('Erreur de correction de la reponse', e)
+  } finally {
+    busy.value = false
+  }
 }
 
 // flashcard/definition (inchange) : pas de correction objective, l'auto-
 // evaluation applique directement la note SM-2 via answerItem().
 async function selfEval(score: number) {
-  await revisionStore.answerItem(setId, current.value.id, score, elapsedSeconds())
-  applyResult(score >= 3)
+  if (busy.value) return
+  busy.value = true
+  try {
+    await revisionStore.answerItem(setId, current.value.id, score, elapsedSeconds())
+    applyResult(score >= 3)
+  } catch (e) {
+    console.error("Erreur d'enregistrement de l'auto-evaluation", e)
+  } finally {
+    busy.value = false
+  }
 }
 
 // vf/association/ordre en phase 'self-eval' (Task 5) : applique la note SM-2
@@ -444,9 +476,23 @@ async function selfEval(score: number) {
 // check) et non sur le score choisi ensuite -- les deux sont volontairement
 // independants (le score reflete la confiance/memorisation, pas l'exactitude).
 async function selfEvalGraded(score: number) {
-  await revisionStore.gradeItem(setId, current.value.id, lastAnswer.value, score, elapsedSeconds())
-  if (lastCorrect.value) correctCount.value++
-  phase.value = 'feedback'
+  if (busy.value) return
+  busy.value = true
+  try {
+    await revisionStore.gradeItem(
+      setId,
+      current.value.id,
+      lastAnswer.value,
+      score,
+      elapsedSeconds(),
+    )
+    if (lastCorrect.value) correctCount.value++
+    phase.value = 'feedback'
+  } catch (e) {
+    console.error("Erreur d'enregistrement de la notation", e)
+  } finally {
+    busy.value = false
+  }
 }
 
 function applyResult(correct: boolean) {

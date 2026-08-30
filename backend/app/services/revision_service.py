@@ -385,6 +385,8 @@ class RevisionService:
         if rset.type != "qcm":
             raise ValidationError("Le passage scoré n'est disponible que pour les QCM.")
         item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
+        if item.type != "qcm":
+            raise ValidationError("Le passage scoré n'est disponible que pour les QCM.")
 
         is_correct, earned, points, correct_ids = self._score_qcm_answer(item, selected_option_ids)
         return RevisionQcmCheckResult(
@@ -410,6 +412,8 @@ class RevisionService:
         if rset.type != "qcm":
             raise ValidationError("Le passage scoré n'est disponible que pour les QCM.")
         item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
+        if item.type != "qcm":
+            raise ValidationError("Le passage scoré n'est disponible que pour les QCM.")
 
         is_correct, earned, points, correct_ids = self._score_qcm_answer(item, selected_option_ids)
 

@@ -173,10 +173,11 @@
             </label>
           </div>
           <button
-            class="w-full px-4 py-3 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
+            class="w-full px-4 py-3 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl disabled:opacity-50"
+            :disabled="busy"
             @click="checkCurrent"
           >
-            Valider
+            {{ busy ? 'Correction…' : 'Valider' }}
           </button>
         </template>
 
@@ -214,7 +215,7 @@
             <p class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest">
               Votre auto-évaluation
             </p>
-            <SelfEvalButtons @select="chooseScore" />
+            <SelfEvalButtons :disabled="busy" @select="chooseScore" />
           </template>
 
           <button
@@ -250,6 +251,10 @@ const index = ref(0)
 const phase = ref<'answer' | 'self-eval' | 'feedback'>('answer')
 const selected = ref<string[]>([])
 const checkResult = ref<QcmCheckResult | null>(null)
+// Garde anti double-soumission (regression finale) : empeche un double-clic
+// pendant l'appel reseau en cours d'appliquer SM-2 deux fois ou d'ecrire deux
+// StudySession -- desactive aussi le bouton "Valider" et SelfEvalButtons.
+const busy = ref(false)
 // Resultats accumules localement, question par question (Task 6) : plus de
 // reponse batch a consommer depuis le backend (route /run supprimee) --
 // score/max_score/percentage finaux reconstruits a partir de cette liste.
@@ -326,22 +331,38 @@ async function reviewAnyway() {
 }
 
 async function checkCurrent() {
-  const res = await revisionStore.checkQcmAnswer(setId, current.value.id, [...selected.value])
-  checkResult.value = res
-  phase.value = 'self-eval'
+  if (busy.value) return
+  busy.value = true
+  try {
+    const res = await revisionStore.checkQcmAnswer(setId, current.value.id, [...selected.value])
+    checkResult.value = res
+    phase.value = 'self-eval'
+  } catch (e) {
+    console.error('Erreur de correction du QCM', e)
+  } finally {
+    busy.value = false
+  }
 }
 
 async function chooseScore(score: number) {
-  const res = await revisionStore.answerQcmItem(
-    setId,
-    current.value.id,
-    [...selected.value],
-    score,
-    elapsedSeconds(),
-  )
-  results.value.push(res)
-  selections[current.value.id] = [...selected.value]
-  phase.value = 'feedback'
+  if (busy.value) return
+  busy.value = true
+  try {
+    const res = await revisionStore.answerQcmItem(
+      setId,
+      current.value.id,
+      [...selected.value],
+      score,
+      elapsedSeconds(),
+    )
+    results.value.push(res)
+    selections[current.value.id] = [...selected.value]
+    phase.value = 'feedback'
+  } catch (e) {
+    console.error("Erreur d'enregistrement de la reponse QCM", e)
+  } finally {
+    busy.value = false
+  }
 }
 
 function next() {

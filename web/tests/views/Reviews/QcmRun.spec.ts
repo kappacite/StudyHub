@@ -270,6 +270,65 @@ describe('QcmRun — navigation question par question (Task 6)', () => {
   })
 })
 
+describe('QcmRun — garde anti double-soumission (revue finale de branche)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("un double-clic sur \"Valider\" pendant l'appel qcm-check en cours n'appelle checkQcmAnswer qu'une seule fois", async () => {
+    let resolveCheck!: (v: unknown) => void
+    const pending = new Promise((resolve) => {
+      resolveCheck = resolve
+    })
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/qcm-check/1') return pending
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const wrapper = await mountQcmRun([question(1)])
+
+    const checkboxes = wrapper.findAll('input[type="checkbox"]')
+    await checkboxes[1].setValue(true)
+    const validerBtn = findButtonByText(wrapper, 'Valider')!
+    await validerBtn.trigger('click')
+    await validerBtn.trigger('click')
+    resolveCheck({ data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'] } })
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledTimes(1)
+  })
+
+  it("un double-clic sur un bouton de notation pendant l'appel qcm-answer en cours n'appelle answerQcmItem qu'une seule fois", async () => {
+    let resolveAnswer!: (v: unknown) => void
+    const pending = new Promise((resolve) => {
+      resolveAnswer = resolve
+    })
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/qcm-check/1') {
+        return Promise.resolve({
+          data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'] },
+        })
+      }
+      if (url === '/revision/sets/7/study/qcm-answer/1') return pending
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const wrapper = await mountQcmRun([question(1)])
+
+    const checkboxes = wrapper.findAll('input[type="checkbox"]')
+    await checkboxes[1].setValue(true)
+    await findButtonByText(wrapper, 'Valider')!.trigger('click')
+    await flushPromises()
+
+    const acquisBtn = wrapper.find('[data-test="self-eval-acquis"]')
+    await acquisBtn.trigger('click')
+    await acquisBtn.trigger('click')
+    resolveAnswer({
+      data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'], item: { id: 1 } },
+    })
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/qcm-answer/1', expect.anything())
+    expect(api.post).toHaveBeenCalledTimes(2) // 1x qcm-check + 1x qcm-answer (pas 2x)
+  })
+})
+
 describe('QcmRun — revision libre sur liste vide (Task 6)', () => {
   beforeEach(() => vi.clearAllMocks())
 
