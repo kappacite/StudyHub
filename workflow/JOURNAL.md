@@ -1,18 +1,34 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : editeur-notes-notation-ia
 
 ## Chantiers ouverts
 
-- `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution
-  pas démarrée ; voir sa note du 2026-08-30 : Tâche 5 déjà livrée ailleurs, `NoteEvaluation.dc.html`
-  correspond à la future fonctionnalité « Notation », pas à `NoteEvaluation.vue` existant ;
-  tâches détaillées le même jour)
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; dépendance Blurting→Feynman déjà
   levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
   le même jour)
 - `classes-examens-planning` — pas commencé, indépendant
+- `editeur-notes-notation-ia` — **ouvert**, en cours (`NoteEdit.vue`, branche
+  `feature/editeur-notes-notation-ia`, worktree `.worktrees/editeur-notes-notation-ia`) — voir
+  `workflow/editeur-notes-notation-ia/CONTEXT.md`. Ancienne branche
+  `feature/noteedit-migration` (worktree `.worktrees/noteedit-migration`) abandonnée comme base
+  de merge (conflit majeur avec `reviser-hub`) mais laissée intacte comme référence — voir le
+  ruling du 2026-08-30 dans le `CONTEXT.md` de ce chantier.
+
+## Historique
+
+- 2026-08-30 — [editeur-notes-notation-ia] **Chantier ouvert, ancienne branche réconciliée.**
+  Demande utilisateur : "commence le chantier sur la refonte de l'éditeur, assure-toi de
+  respecter le canvas." Investigation a révélé que `feature/noteedit-migration` (15 commits)
+  est en conflit majeur irrésolvable avec `reviser-hub` (2477/3499 lignes de `NoteEdit.vue`
+  réécrites indépendamment). Ruling : nouvelle branche depuis `main` à jour, ancienne branche
+  traitée comme référence de conception (son stash jamais appliqué avait déjà correctement
+  identifié, via le canevas, que la modale IA doit devenir une sidebar à 3 méthodes — confirmé
+  en extrayant `NoteEdit.dc.html` moi-même). Nouveau plan (10 tâches TDD) :
+  `docs/superpowers/plans/2026-08-30-editeur-notes-redesign.md`. Volet backend (Notation)
+  laissé hors périmètre, nécessite son propre brainstorming. Exécution démarrée en
+  `subagent-driven-development`.
 
 ## Historique
 
