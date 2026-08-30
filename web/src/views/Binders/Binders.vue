@@ -1267,6 +1267,15 @@ function openCreateModal() {
 }
 
 async function createFolder() {
+  // Garde de défense en profondeur (fix revue finale, item 6) : le menu "Ajouter"
+  // masque déjà "Sous-dossier" hors d'un vrai classeur (cf. addMenu), donc ce
+  // point est aujourd'hui inatteignable avec 'non-classe' comme parent. On
+  // exclut précisément 'non-classe' -- PAS `!isRealBinderId.value` (le pattern
+  // detachItem/confirmAttach ci-dessous) : contrairement à ces fonctions,
+  // createFolder() est aussi appelée légitimement depuis la racine
+  // (currentBinderId === null, bouton "Nouveau classeur"), un cas qu'un garde
+  // sur isRealBinderId casserait.
+  if (currentBinderId.value === 'non-classe') return
   if (newFolderName.value.trim()) {
     const binder = await bindersStore.createBinder(
       newFolderName.value.trim(),
