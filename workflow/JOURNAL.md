@@ -19,6 +19,16 @@ Chantier actif : revision-flexibilite
 
 ## Historique
 
+- 2026-08-30 — [revision-flexibilite] **Chantier clos (code).** Revue finale de branche
+  (opus) : « avec corrections » — 3 Important (garde anti double-soumission manquante dans la
+  réécriture QCM/notation manuelle, asymétrie de garde QCM sur `item.type` vs `rset.type`
+  permettant une correction fabriquée, sélecteurs d'association modifiables pendant la
+  correction) + 2 Minor retenus. Tour de correction : l'agent a échoué en fin de tâche (limite
+  de session API) après avoir déjà tout écrit — vérifié directement par le contrôleur (chaque
+  diff relu, 2 suites complètes ré-exécutées indépendamment : 435/435 frontend, 336/341
+  backend), tout confirmé correct. Commit `d474ce8`. Détail complet :
+  `workflow/revision-flexibilite/JOURNAL.md`. Prochaine action : demander à l'utilisateur de
+  pousser `feature/revision-flexibilite`, puis ouvrir la PR.
 - 2026-08-30 — [revision-flexibilite] **8 tâches exécutées, vérification visuelle faite,
   chantier prêt à clôturer.** Backend : scission check/commit pour la notation manuelle
   vf/association/ordre (Task 1) et QCM par question (Task 2, suppression du passage groupé

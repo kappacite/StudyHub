@@ -91,3 +91,35 @@ par tâche + revue finale à venir). Détail complet dans le ledger
 Environnement natif de vérification démonté. Les 8 tâches sont marquées complètes dans
 `PLAN.md`. Reste : revue finale de branche complète (`subagent-driven-development`), puis
 clôture (`gestion-chantier`).
+
+## 2026-08-30 (revue finale de branche, tour de correction, chantier clos)
+
+Revue finale de branche (opus, base `0c6d3d1` → `04aa45f`) : **avec corrections**. Confirmé
+solide : la contrainte de sécurité centrale (le serveur revérifie toujours la correction,
+jamais de confiance dans un score client) tient partout, garde propriétaire/élève testée sur
+les 3 chemins d'écriture, code mort intégralement supprimé, interactions entre tâches propres.
+3 constats Important + 2 Minor retenus :
+
+1. Garde anti double-soumission manquante dans la réécriture question-par-question (`QcmRun.vue`
+   Task 6) et la notation manuelle (`RevisionStudy.vue` Task 5) — un double-clic pouvait
+   appliquer SM-2 deux fois et fausser le score final.
+2. Asymétrie de garde QCM : Task 2 vérifiait `rset.type` mais jamais `item.type`, laissant un
+   item non-qcm glissé dans un ensemble QCM être accepté comme « correct » à tort. Trouvaille
+   originaire du plan lui-même (mon brief reproduisait fidèlement l'ancienne garde) —
+   corrigée par une garde additionnelle, sans élargir le périmètre à la limitation préexistante
+   symétrique (QCM dans un ensemble hétérogène, identique à l'ancien comportement, hors scope).
+3. Sélecteurs d'association restaient modifiables pendant l'affichage de la correction.
+
+Plus 2 Minor bon marché (boutons flashcard/definition cliquables après notation ; cible tactile
+`SelfEvalButtons.vue` sous les 44px requis par le projet).
+
+**Incident de session** : l'agent de correction a échoué en fin de tâche (limite de session
+API atteinte) après avoir déjà écrit tout le travail de production sur disque — seule l'étape
+finale de rapport n'a jamais eu lieu. Plutôt que de re-dispatcher (risque de retomber sur la
+même limite), vérification directe de chaque diff par le contrôleur + exécution indépendante
+des 2 suites complètes (435/435 frontend, 336/341 backend — 5 échecs pré-existants sans
+rapport). Tout confirmé correct et complet. Commit `d474ce8`.
+
+Chantier clos (code). 8 tâches d'implémentation + revue finale + 1 tour de correction, tous
+conclus propres. Prochaine action : demander à l'utilisateur de pousser
+`feature/revision-flexibilite`, puis ouvrir la PR.
