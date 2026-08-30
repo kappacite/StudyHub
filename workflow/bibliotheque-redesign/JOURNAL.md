@@ -92,3 +92,46 @@ par tâche + revue finale). Détail complet dans le ledger
 Environnement natif de vérification démonté (processus des ports 5052/5173 arrêtés). Les 4
 tâches sont marquées complètes dans `PLAN.md`. Reste : revue finale de branche complète
 (`subagent-driven-development`), puis clôture (`gestion-chantier`).
+
+## 2026-08-30 (revue finale de branche, tour de correction, chantier clos)
+
+Revue finale de branche (opus, base `23a5a8e` → `6f28aba`) : **avec corrections**. Confirmé
+solide : distinction `filterBinderId`/`currentBinderId` réellement testée, isolation du
+classeur virtuel vérifiée sur les 8 actions concernées, changement `PageHeader` vérifié sûr
+pour ses 9 consommateurs réels. 3 constats Important + 4 Minor retenus (bon marché, chacun
+justifié par une convention explicite du projet) :
+
+1. Affichage des tags de classeur disparu partout (régression réelle — `TagBadge` retiré lors
+   du passage arbre → grille, jamais réintégré dans `BinderCard`).
+2. Couverture de test de l'invariant central de Task 3 (masquage sur « Non classé ») ~1/8
+   seulement — seul le bouton détacher était testé.
+3. Section « Sous-classeurs » vide en permanence sur tout classeur feuille — absente du
+   mockup.
+4-7. `highlighted` mort sur `BinderCard` + chrome codé à la main au lieu de composer
+   `BaseCard` (violation d'une règle explicite de `components/CLAUDE.md`) ; garde
+   défense-en-profondeur manquante sur `createFolder()` (cohérence avec `detachItem`/
+   `confirmAttach`) ; commentaire explicatif sur le `flex-wrap` de `PageHeader`.
+
+Constats mineurs restants explicitement écartés avec justification (perf `cardAggregate`,
+suppression de sous-classeur nécessitant navigation — déjà documentée en commentaire,
+`RevisionSet.updated_at` optionnel — corriger proprement toucherait 17 fichiers de test hors
+périmètre, no-op silencieux sous filtre par tag actif — limitation préexistante, décalage de
+fuseau horaire — même limitation déjà écartée par `reviser-hub`, `SplitView` orphelin — laissé
+en histoire). Détail complet, avec vérifications directes de chaque constat contre le code
+réel : `.superpowers/sdd/2026-08-30-bibliotheque-redesign/progress.md`.
+
+**Tour de correction 1/5** (commits `e37fa41`/`6f174ca`/`44635b0`) : 6/7 corrigés proprement,
+407/407 tests, `vue-tsc -b` propre. La re-revue ciblée a trouvé une **régression réelle**
+introduite par la correction n°3 : la fusion des conditions avait fait sauter la garde qui
+excluait la racine, faisant apparaître en permanence le titre « Sous-classeurs » au-dessus de
+la grille racine (qui n'est pas une liste de sous-classeurs — `childrenAtCurrentLevel` contient
+toujours la carte virtuelle "Non classé" à la racine, donc son `.length > 0` restait vrai).
+Corrigée directement par le contrôleur (diagnostic déjà exact et complet fourni par la
+re-revue, correction d'une ligne) : garde `v-if="currentBinderId !== null"` restaurée sur le
+titre seul, test de régression ajouté (vérifié RED sans le correctif, GREEN avec), commit
+`1257b8a`. Les 7 constats de la revue finale sont désormais tous réellement traités.
+
+Chantier clos (code). 4 tâches d'implémentation + revue finale + 2 tours de correction, tous
+conclus propres. Aucune fonctionnalité existante cassée (audit direct des 11 fonctionnalités
+liées aux classeurs en Task 3, vérification visuelle live en Task 4). Prochaine action :
+demander à l'utilisateur de pousser `feature/bibliotheque-redesign`, puis ouvrir la PR.

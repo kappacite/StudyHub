@@ -19,6 +19,15 @@ Chantier actif : bibliotheque-redesign
 
 ## Historique
 
+- 2026-08-30 — [bibliotheque-redesign] **Chantier clos (code).** Revue finale de branche
+  (opus) : « avec corrections » — 3 Important (tags de classeur disparus de partout, invariant
+  de masquage sur « Non classé » sous-testé à 1/8, section « Sous-classeurs » vide affichée en
+  permanence) + 4 Minor bon marché retenus. Tour de correction 1/5 : 6/7 corrigés proprement ;
+  la re-revue ciblée a trouvé une régression réelle introduite par la correction du 3e constat
+  (titre « Sous-classeurs » apparaissant en permanence à la racine), corrigée directement par
+  le contrôleur (une ligne, RED→GREEN vérifié), commit `1257b8a`. Détail complet :
+  `workflow/bibliotheque-redesign/JOURNAL.md`. Prochaine action : demander à l'utilisateur de
+  pousser `feature/bibliotheque-redesign`, puis ouvrir la PR.
 - 2026-08-30 — [bibliotheque-redesign] **4 tâches exécutées, vérification visuelle faite,
   chantier prêt à clôturer.** `subagent-driven-development` : Task 1 (`BinderCard.vue` +
   agrégats, commit `df54090`), Task 2 (grille récursive remplaçant `SplitView`, commit
