@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : revision-flexibilite
 
 ## Chantiers ouverts
 
@@ -13,8 +13,23 @@ Chantier actif : aucun
   levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
   le même jour)
 - `classes-examens-planning` — pas commencé, indépendant
+- `revision-flexibilite` — **ouvert**, en cours (`RevisionSet`/`RevisionItem`, branche
+  `feature/revision-flexibilite`, worktree `.worktrees/revision-flexibilite`) — voir
+  `workflow/revision-flexibilite/CONTEXT.md`
 
 ## Historique
+
+- 2026-08-30 — [revision-flexibilite] **Chantier ouvert.** 4 demandes utilisateur sur le
+  système SM-2 : notation manuelle généralisée (vf/association/ordre/qcm, actuellement déduite
+  automatiquement), QCM révisable librement (3 axes confirmés en chat : filtre d'échéance,
+  navigation question par question, rejeu d'une question déjà répondue), révision possible hors
+  échéancier (« rien à réviser aujourd'hui »), prochaine date de révision optimale dans les
+  stats d'ensemble. Investigation complète en fork avant plan. 2 clarifications tranchées en
+  chat (`AskUserQuestion`) : périmètre exact du blocage QCM (les 3 axes retenus), impact SM-2
+  normal pour la révision libre (pas de mode entraînement séparé). Plan détaillé (8 tâches TDD) :
+  `docs/superpowers/plans/2026-08-30-revision-flexibilite.md`. Périmètre : `RevisionSet`/
+  `RevisionItem` uniquement, decks de flashcards hors scope (non mentionnés, déjà dotés d'une
+  notation manuelle). Exécution démarrée en `subagent-driven-development`.
 
 - 2026-08-30 — [bibliotheque-redesign] **PR #132 mergée dans `main`** (squash, `c222b23`), CI
   verte (6/6 checks). Chantier `clos`. Prochaine action : choisir le prochain chantier à ouvrir
