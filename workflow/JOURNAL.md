@@ -19,6 +19,16 @@ Chantier actif : bibliotheque-redesign
 
 ## Historique
 
+- 2026-08-30 — [bibliotheque-redesign] **4 tâches exécutées, vérification visuelle faite,
+  chantier prêt à clôturer.** `subagent-driven-development` : Task 1 (`BinderCard.vue` +
+  agrégats, commit `df54090`), Task 2 (grille récursive remplaçant `SplitView`, commit
+  `850665e` — bug réel trouvé et volontairement différé : « Retirer du classeur » restait actif
+  sur « Non classé »), Task 3 (bug de Task 2 corrigé + non-régression sur 11 fonctionnalités
+  liées aux classeurs, commit `b21d1d3`), Task 4 (vérification visuelle native contre les
+  vraies maquettes, conforme ; nouveau défaut trouvé et corrigé — `PageHeader.vue`, composant
+  partagé, ne passait pas ses actions à la ligne à 375px, commit `0ddfaf1`). Détail complet :
+  `workflow/bibliotheque-redesign/JOURNAL.md`. Prochaine action : revue finale de branche, puis
+  demander à l'utilisateur de pousser `feature/bibliotheque-redesign` et ouvrir la PR.
 - 2026-08-30 — [bibliotheque-redesign] **Chantier ouvert**, décisions produit tranchées en chat
   (arbre de sous-dossiers → grille récursive ; contenu non rangé → classeur virtuel « Non
   classé » ; onglet « Autres » conservé). Tâches détaillées aussi pour

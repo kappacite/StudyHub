@@ -63,3 +63,32 @@ Branche `feature/bibliotheque-redesign` créée depuis `main` à jour (worktree
 qui portait les commits de planification (jamais poussée, donc renommage sans risque).
 Chantier passé de `Statut : planifie` à `ouvert`. Exécution démarrée en
 `subagent-driven-development`, suite ci-dessous.
+
+## 2026-08-30 (exécution des 4 tâches, vérification visuelle, prêt à clôturer)
+
+Les 4 tâches du plan exécutées via `subagent-driven-development` (implémenteur frais + revue
+par tâche + revue finale). Détail complet dans le ledger
+`.superpowers/sdd/2026-08-30-bibliotheque-redesign/progress.md`.
+
+- Task 1 (commit `df54090`) : `BinderCard.vue` + `binderAggregate()` (fonction pure, comptes +
+  dernière activité). Icône livre confirmée conforme à la maquette (`lucide-vue-next` `Book`).
+- Task 2 (commit `850665e`, tâche à plus haut risque) : `SplitView` remplacé par la grille
+  récursive. Distinction `filterBinderId`/`currentBinderId` correctement isolée (5 points
+  d'usage, testée). Bug réel trouvé et volontairement différé à Task 3 : le bouton « Retirer du
+  classeur » restait actif sur « Non classé ».
+- Task 3 (commit `b21d1d3`) : bug de Task 2 corrigé (`canDetach = isOwner && isRealBinderId`),
+  non-régression vérifiée sur les 11 fonctionnalités liées aux classeurs (détache, partage,
+  tags, clone, bannière lecture seule…).
+- Task 4 : vérification visuelle réelle (environnement natif, données de test créées via API,
+  captures Playwright root/classeur/Non-classé × mobile/desktop × clair/sombre). Conforme aux
+  maquettes et aux 2 décisions actées en chat. Non-régression live confirmée sur la fusion
+  Deck+RevisionSet de `bibliotheque-ensembles` dans l'onglet Révision.
+  Nouveau défaut trouvé en vérifiant à 375px (hors périmètre du plan mais exposé par lui) :
+  `PageHeader.vue` (composant partagé) ne passait pas ses actions à la ligne, provoquant un
+  débordement dès qu'un classeur affiche beaucoup de boutons (Task 2 en a ajouté un 6e).
+  Corrigé (commit `0ddfaf1`, `flex-wrap` ajouté, testé) — bénéficie à tout écran utilisant
+  `PageHeader` avec plusieurs actions, pas seulement celui-ci.
+
+Environnement natif de vérification démonté (processus des ports 5052/5173 arrêtés). Les 4
+tâches sont marquées complètes dans `PLAN.md`. Reste : revue finale de branche complète
+(`subagent-driven-development`), puis clôture (`gestion-chantier`).
