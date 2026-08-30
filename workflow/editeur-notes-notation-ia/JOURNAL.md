@@ -31,3 +31,20 @@ Nouveau plan détaillé écrit contre l'état réel de `main` (10 tâches TDD) :
 note, flux 2) laissé hors périmètre — nécessite son propre brainstorming, bouton Notation
 ajouté désactivé en attendant. Chantier passé de `planifié` à `ouvert`. Exécution démarrée en
 `subagent-driven-development`, suite ci-dessous.
+
+## 2026-08-30 (Tasks 1-3 : extraction des 3 modales, toutes propres)
+
+- Task 1 (commit `18fdbcc`) : extrait `NoteEditHelpModal.vue` (modale Guide), réutilise
+  `BaseModal`. 3499 → 3289 lignes. Revue propre.
+- Task 2 (commit `7c14663`) : extrait `NoteInputModal.vue` (modale de saisie générique pour
+  définition/qcm/ordre/association/vrai-faux/diagramme), logique métier gardée dans
+  `NoteEdit.vue`. 3289 → 3164 lignes. Revue propre (1 note de process : cycle RED→GREEN non
+  documenté explicitement, corrigé pour la tâche suivante).
+- Task 3 (commit `e416251`) : extrait `NoteEvaluationModal.vue` (notation SM-2 pendant la
+  lecture active — sans rapport avec l'écran séparé `NoteEvaluation.vue`, isolation vérifiée).
+  3164 → 3023 lignes. Revue propre, cycle RED→GREEN bien documenté cette fois.
+
+**Point de reprise** (utilisateur redémarre son PC) : 452/452 tests, `vue-tsc -b` propre.
+Prochaine action : dispatcher Task 4 — construction de `NoteSidebar.vue` (sidebar à 3 méthodes
+Évaluation mixte/Feuille blanche/Feynman + bouton Notation désactivé, interface canevas-vérifiée
+dans le plan détaillé). C'est la tâche la plus importante du chantier côté conformité canevas.

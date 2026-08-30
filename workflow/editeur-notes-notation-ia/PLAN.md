@@ -22,9 +22,9 @@ Hors périmètre de ce chantier (nécessite son propre brainstorming/spec). Le b
 
 Plan détaillé exécutable : `docs/superpowers/plans/2026-08-30-editeur-notes-redesign.md`.
 
-- [ ] Tâche 1 : extraire `NoteEditHelpModal.vue`
-- [ ] Tâche 2 : extraire `NoteInputModal.vue`
-- [ ] Tâche 3 : extraire `NoteEvaluationModal.vue`
+- [x] Tâche 1 : extraire `NoteEditHelpModal.vue`
+- [x] Tâche 2 : extraire `NoteInputModal.vue`
+- [x] Tâche 3 : extraire `NoteEvaluationModal.vue`
 - [ ] Tâche 4 : construire `NoteSidebar.vue` (3 méthodes canevas-vérifiées) + bouton Notation
   désactivé
 - [ ] Tâche 5 : vérifier le câblage Feynman existant (pas de reconstruction)
