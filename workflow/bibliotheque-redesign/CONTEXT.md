@@ -1,8 +1,8 @@
 # Bibliothèque — redesign selon les vraies maquettes Direction A
 
-Statut : ouvert
+Statut : clos
 Branche : feature/bibliotheque-redesign
-PR : (aucune)
+PR : #132
 
 ## Pourquoi
 
