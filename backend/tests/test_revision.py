@@ -699,53 +699,89 @@ def test_get_items_to_study_include_not_due_false_explicit(client, auth_headers,
     assert future_item["id"] not in returned_ids
 
 
-def test_study_items_on_shared_set_with_include_not_due_silent_noop(client, auth_headers, app):
+
+def test_study_items_on_shared_set_with_include_not_due_silent_noop(client, auth_headers, test_user, app):
     """Sur une branche élève (ensemble partagé) : include_not_due est un
-    no-op silencieux (jamais d'erreur)."""
+    no-op silencieux (jamais d'erreur). L'élève voit TOUS les items, y compris
+    ceux dont le next_review du prof est dans le futur."""
+    from datetime import datetime, timedelta
+    from app.models.binder import Binder
+    from app.models.revision import RevisionItem
+    from app.extensions import db
 
-    # Créer un propriétaire et son ensemble partagé
-    prof_token = client.post(
+    # Créer une classe et un élève qui la rejoint
+    class_resp = client.post("/api/v1/classes", json={"name": "Classe Test"}, headers=auth_headers)
+    class_id = class_resp.json["id"]
+    invite_code = class_resp.json["invite_code"]
+
+    # Créer un élève et le faire rejoindre la classe
+    student_email = "eleve_include@test.com"
+    student_user = client.post(
         "/api/v1/auth/register",
-        json={
-            "email": "prof@example.com",
-            "username": "prof",
-            "password": "password123",
-        },
-    ).json.get("access_token")
+        json={"email": student_email, "username": "eleveinclude", "password": "password123"},
+    ).json
+    student_headers = {"Authorization": f"Bearer {student_user['access_token']}"}
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student_headers)
 
-    if not prof_token:
-        prof_resp = client.post(
-            "/api/v1/auth/login",
-            json={
-                "email": "prof@example.com",
-                "password": "password123",
-            },
-        )
-        prof_token = prof_resp.json["access_token"]
+    # Le prof crée un classeur et un ensemble dedans
+    with app.app_context():
+        binder = Binder(user_id=test_user["id"], name="Cours Partagé")
+        db.session.add(binder)
+        db.session.commit()
+        binder_uuid = binder.id
 
-    prof_headers = {"Authorization": f"Bearer {prof_token}"}
-
-    # Le prof crée un ensemble VF
     set_id = client.post(
         "/api/v1/revision/sets",
-        json={"name": "VF Partagé", "type": "vf"},
-        headers=prof_headers,
+        json={"name": "VF Partagé", "type": "vf", "binder_id": binder_uuid},
+        headers=auth_headers,
     ).json["id"]
 
-    # Le prof crée un item
-    item = client.post(
+    # Le prof crée deux items : un dû, un pas encore dû
+    due_item = client.post(
         f"/api/v1/revision/sets/{set_id}/items",
         json={"payload": {"assertion": "La Terre est ronde.", "correct": True}},
-        headers=prof_headers,
+        headers=auth_headers,
     ).json
 
-    # Pour le test : un élève consulte l'ensemble (cas simplifié, pas de
-    # binder/sharing complet -- on teste juste que include_not_due ne crash pas
-    # sur le chemin élève).
-    # Au lieu de cela, on teste directement via le service que le paramètre
-    # ne casse rien sur get_by_set (branche élève).
+    future_item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "Le ciel est bleu.", "correct": True}},
+        headers=auth_headers,
+    ).json
 
-    # En réalité, cette branche est testée implicitement par les tests
-    # ci-dessus (un propriétaire qui accède à son propre ensemble).
-    # On peut passer ce test ou l'adapter.
-    pass
+    # Le prof planifie le second item au futur
+    with app.app_context():
+        item = db.session.get(RevisionItem, future_item["id"])
+        item.next_review = datetime.utcnow() + timedelta(days=7)
+        db.session.commit()
+        future_next_review = item.next_review
+
+    # Le prof partage le classeur avec la classe
+    share_resp = client.post(
+        f"/api/v1/groups/{class_id}/binders",
+        json={"binder_id": binder_uuid, "permission": "read"},
+        headers=auth_headers,
+    )
+    assert share_resp.status_code == 200
+
+    # L'élève appelle /study sans include_not_due (baseline) : ne voit que l'item dû
+    study_baseline = client.get(f"/api/v1/revision/sets/{set_id}/study", headers=student_headers)
+    assert study_baseline.status_code == 200
+    baseline_ids = [i["id"] for i in study_baseline.json]
+    assert due_item["id"] in baseline_ids, "l'élève devrait voir l'item dû"
+    assert future_item["id"] not in baseline_ids, "l'élève ne devrait pas voir l'item pas encore dû sans include_not_due"
+
+    # L'élève appelle /study?include_not_due=true : doit voir TOUS les items (comme sur un ensemble partagé)
+    study_with_flag = client.get(
+        f"/api/v1/revision/sets/{set_id}/study?include_not_due=true",
+        headers=student_headers,
+    )
+    assert study_with_flag.status_code == 200
+    returned_ids = [i["id"] for i in study_with_flag.json]
+    assert due_item["id"] in returned_ids, "l'élève devrait voir l'item dû"
+    assert future_item["id"] in returned_ids, "l'élève devrait voir l'item pas dû aussi (include_not_due=true)"
+
+    # Vérifier que l'échéancier du prof n'a pas changé (GET ne doit rien modifier)
+    with app.app_context():
+        item_check = db.session.get(RevisionItem, future_item["id"])
+        assert item_check.next_review == future_next_review, "l'échéancier du prof ne doit pas être modifié"
