@@ -188,20 +188,18 @@
     <div v-else class="space-y-6">
       <!-- Grille de classeurs (Task 2 -- remplace l'arbre SplitView) : classeurs de
            premier niveau + "Non classé" à la racine, sous-classeurs directs à
-           l'intérieur d'un classeur réel. Masquée uniquement pour le pseudo-classeur
-           'non-classe', qui n'a pas d'enfants propres (ce n'est pas un nœud de
-           hiérarchie) -- cf. childrenAtCurrentLevel. -->
-      <div v-if="currentBinderId !== 'non-classe'">
-        <h3
-          v-if="currentBinderId !== null"
-          class="text-xs font-bold uppercase tracking-wider text-ink-subtle mb-3"
-        >
+           l'intérieur d'un classeur réel. Masquée entièrement (titre inclus) dès
+           que le niveau courant n'a aucun enfant -- 'non-classe' n'en a jamais
+           (ce n'est pas un nœud de hiérarchie), et la plupart des classeurs
+           réels n'ont pas de sous-classeur : le placeholder "Aucun sous-classeur"
+           qui s'affichait alors en permanence a été retiré (pas dans le mockup,
+           l'affordance "Nouveau sous-dossier" vit déjà dans le menu "Ajouter") --
+           fix revue finale, item 3. -->
+      <div v-if="currentBinderId !== 'non-classe' && childrenAtCurrentLevel.length > 0">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-ink-subtle mb-3">
           Sous-classeurs
         </h3>
-        <div
-          v-if="childrenAtCurrentLevel.length > 0"
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <BinderCard
             v-for="child in childrenAtCurrentLevel"
             :key="child.id"
@@ -213,12 +211,6 @@
             @click="goTo(child.id)"
           />
         </div>
-        <p
-          v-else-if="currentBinderId !== null"
-          class="text-center py-6 text-ink-subtle text-xs font-semibold uppercase tracking-wider"
-        >
-          Aucun sous-classeur
-        </p>
       </div>
 
       <!-- Contenu typé (Notes/Révision/Autres) : uniquement à l'intérieur d'un

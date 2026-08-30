@@ -166,12 +166,27 @@ describe('Binders — à l\'intérieur d\'un classeur réel', () => {
     const { wrapper } = await mountBinders('b1')
     const text = wrapper.text()
 
+    // b1 a un sous-classeur (SUBBINDER) -> la section "Sous-classeurs" doit
+    // apparaître (cf. test miroir ci-dessous pour le cas "0 enfant").
+    expect(text).toContain('Sous-classeurs')
     expect(text).toContain('Sous-classeur B1')
     expect(text).toContain('Notes (')
     expect(text).toContain('Note du classeur b1')
     // filterBinderId === currentBinderId pour un vrai classeur : la note non classée
     // ne doit pas fuiter dans le contenu de b1.
     expect(text).not.toContain('Note libre')
+  })
+
+  // Régression revue finale (item 3) : la section "Sous-classeurs" (titre + grille
+  // ou placeholder "Aucun sous-classeur") restait affichée en permanence dès qu'on
+  // ouvrait un classeur réel, même sans aucun sous-classeur — bloc vide non présent
+  // dans le mockup. b1-sub (SUBBINDER) est un classeur réel sans enfant propre.
+  it('masque entièrement la section "Sous-classeurs" quand le classeur n\'a aucun enfant', async () => {
+    const { wrapper } = await mountBinders('b1-sub')
+    const text = wrapper.text()
+
+    expect(text).not.toContain('Sous-classeurs')
+    expect(text).not.toContain('Aucun sous-classeur')
   })
 })
 
@@ -216,6 +231,64 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
       .findAll('button')
       .find((b) => b.attributes('title') === 'Retirer du classeur')
     expect(detachButton).toBeFalsy()
+  })
+
+  // Le plan de Task 2 exigeait ce masquage pour TOUTE action portant sur un vrai
+  // classeur (isRealBinderId/addMenu), pas seulement le detach ci-dessus — revue
+  // finale : couverture manquante pour Stats/Partager/Classe/Réviser ce dossier/
+  // Supprimer/Sous-dossier/Élément existant. Le code (isRealBinderId, addMenu)
+  // était déjà correct ; ce test comble seulement le trou de couverture.
+  it('aucune action réservée à un vrai classeur (Stats/Partager/Classe/Réviser/Supprimer/Sous-dossier/Élément existant) ne s\'affiche sur le pseudo-classeur Non classé', async () => {
+    const { wrapper } = await mountBinders('non-classe')
+
+    const buttonLabel = (label: string) =>
+      wrapper.findAll('button').find((b) => b.text().trim() === label)
+
+    expect(buttonLabel('Stats')).toBeFalsy()
+    expect(buttonLabel('Partager')).toBeFalsy()
+    expect(buttonLabel('Classe')).toBeFalsy()
+    expect(buttonLabel('Réviser ce dossier')).toBeFalsy()
+    expect(buttonLabel('Supprimer')).toBeFalsy()
+
+    // Menu "Ajouter" : Sous-dossier et Élément existant nécessitent un vrai
+    // classeur parent (createBinder/attachItems attendent un id réel côté
+    // backend) — seuls Note/Diagramme restent proposés depuis 'Non classé'.
+    const addMenuButton = buttonLabel('Ajouter')
+    expect(addMenuButton).toBeTruthy()
+    await addMenuButton!.trigger('click')
+    await flushPromises()
+
+    expect(buttonLabel('Sous-dossier')).toBeFalsy()
+    expect(buttonLabel('Élément existant')).toBeFalsy()
+    expect(buttonLabel('Note')).toBeTruthy()
+    expect(buttonLabel('Diagramme')).toBeTruthy()
+  })
+
+  // Miroir du test ci-dessus sur un vrai classeur ('b1') : toutes ces actions
+  // doivent au contraire être présentes.
+  it('toutes les actions réservées à un vrai classeur s\'affichent sur un classeur réel', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    const buttonLabel = (label: string) =>
+      wrapper.findAll('button').find((b) => b.text().trim() === label)
+
+    expect(buttonLabel('Stats')).toBeTruthy()
+    expect(buttonLabel('Partager')).toBeTruthy()
+    expect(buttonLabel('Classe')).toBeTruthy()
+    // b1 a un deck (DECK) : "Réviser ce dossier" nécessite isRealBinderId ET
+    // currentDecks.length > 0.
+    expect(buttonLabel('Réviser ce dossier')).toBeTruthy()
+    expect(buttonLabel('Supprimer')).toBeTruthy()
+
+    const addMenuButton = buttonLabel('Ajouter')
+    expect(addMenuButton).toBeTruthy()
+    await addMenuButton!.trigger('click')
+    await flushPromises()
+
+    expect(buttonLabel('Sous-dossier')).toBeTruthy()
+    expect(buttonLabel('Élément existant')).toBeTruthy()
+    expect(buttonLabel('Note')).toBeTruthy()
+    expect(buttonLabel('Diagramme')).toBeTruthy()
   })
 })
 
