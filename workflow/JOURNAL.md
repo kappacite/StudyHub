@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : notation-sm2-4-paliers
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
@@ -13,11 +13,13 @@ Chantier actif : notation-sm2-4-paliers
   levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
   le même jour)
 - `classes-examens-planning` — pas commencé, indépendant
-- `notation-sm2-4-paliers` — **ouvert**, en cours (`SelfEvalButtons.vue`, branche
-  `feature/notation-sm2-4-paliers`, worktree `.worktrees/notation-sm2-4-paliers`) — voir
-  `workflow/notation-sm2-4-paliers/CONTEXT.md`
 
 ## Historique
+
+- 2026-08-30 — [notation-sm2-4-paliers] **PR #136 mergée dans `main`** (squash, `79dc362`),
+  CI verte (6/6 checks). Chantier `clos`. Prochaine action : choisir le prochain chantier à
+  ouvrir (`editeur-notes-notation-ia`, `ecrans-peripheriques-visuels` ou
+  `classes-examens-planning`).
 
 - 2026-08-30 — [notation-sm2-4-paliers] **Chantier ouvert et exécuté.** Demande utilisateur
   suite aux captures du chantier `revision-flexibilite` : boutons de notation manuelle passés

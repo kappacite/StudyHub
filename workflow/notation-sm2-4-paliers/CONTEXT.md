@@ -1,8 +1,8 @@
 # Notation manuelle — 4 paliers SM-2 (alignés sur le graphique de stats)
 
-Statut : ouvert
+Statut : clos
 Branche : feature/notation-sm2-4-paliers
-PR : (aucune)
+PR : #136
 
 ## Pourquoi
 
