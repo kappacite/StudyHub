@@ -262,6 +262,10 @@ class RevisionSetStats(BaseModel):
     session_history: list[SessionHistoryDay] = []
     # Temps cumule reel (Task 9), somme des StudySession deja chargees.
     total_duration_seconds: int = 0
+    # Prochaine echeance SM-2 agregee (Task 4, revision-flexibilite) : minimum
+    # des next_review de tous les items, y compris dans le passe (retard reel,
+    # pas masque). None uniquement si l'ensemble n'a aucun item.
+    next_review_at: datetime | None = None
 
 
 # --- Stats par classeur (A8) -------------------------------------------------
