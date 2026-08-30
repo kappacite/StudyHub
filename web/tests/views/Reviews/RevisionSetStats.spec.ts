@@ -59,6 +59,7 @@ interface MountOverrides {
     duration_seconds?: number
   }[]
   total_duration_seconds?: number
+  next_review_at?: string | null
   statsError?: boolean
 }
 
@@ -93,6 +94,7 @@ async function mountStats(setType: string | null, overrides: MountOverrides = {}
           weekly_progression: overrides.weekly_progression ?? defaultWeeklyProgression(),
           session_history: overrides.session_history ?? [],
           total_duration_seconds: overrides.total_duration_seconds ?? 0,
+          next_review_at: overrides.next_review_at ?? null,
         },
       })
     }
@@ -253,6 +255,29 @@ describe('RevisionSetStats', () => {
       expect(error.exists()).toBe(true)
       expect(error.text()).toBe('Impossible de charger les statistiques.')
       expect(wrapper.find('[data-test="study-set-button"]').exists()).toBe(false)
+    })
+  })
+
+  // ── Task 7 : date de prochaine echeance (next_review_at, Task 4 backend) ──
+  describe('prochaine echeance (next_review_at)', () => {
+    it('affiche la date formatee quand next_review_at est fourni', async () => {
+      const { wrapper } = await mountStats('qcm', {
+        items: [itemSummary(1, 'qcm')],
+        next_review_at: '2026-09-15T10:00:00Z',
+      })
+      const next = wrapper.find('[data-test="next-review-at"]')
+      expect(next.exists()).toBe(true)
+      expect(next.text()).toContain('15')
+      expect(next.text()).toContain('sept')
+      expect(next.text()).toContain('2026')
+    })
+
+    it("n'affiche pas de date factice quand next_review_at est null (ensemble sans item)", async () => {
+      const { wrapper } = await mountStats('qcm', {
+        items: [],
+        next_review_at: null,
+      })
+      expect(wrapper.find('[data-test="next-review-at"]').exists()).toBe(false)
     })
   })
 })

@@ -159,6 +159,7 @@ export interface SetStats {
   weekly_progression: WeeklyProgressionPoint[]
   session_history: SessionHistoryDay[]
   total_duration_seconds: number
+  next_review_at: string | null
 }
 
 export interface SetSummary {

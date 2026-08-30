@@ -33,6 +33,13 @@
             </span>
           </div>
           <p class="text-sm text-ink-muted mt-1.5">{{ subtitleText }}</p>
+          <p
+            v-if="nextReviewAtLabel"
+            data-test="next-review-at"
+            class="text-xs text-ink-subtle mt-1"
+          >
+            Prochaine révision prévue : <span class="font-semibold">{{ nextReviewAtLabel }}</span>
+          </p>
         </div>
         <BaseButton data-test="study-set-button" @click="studySet">
           <template #icon><Play class="w-4 h-4" /></template>
@@ -272,6 +279,19 @@ function formatDay(iso: string): string {
   const d = new Date(`${iso}T00:00:00`)
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
+
+// Prochaine echeance (Task 7, backend Task 4) : absente (null) pour un
+// ensemble sans item -- pas de valeur factice, on n'affiche alors rien
+// (contrainte globale anti-fabrication du projet).
+const nextReviewAtLabel = computed(() => {
+  const iso = stats.value?.next_review_at
+  if (!iso) return null
+  return new Date(iso).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+})
 
 function studySet() {
   router.push(getRevisionSetRoute(setId, stats.value?.type))

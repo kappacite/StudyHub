@@ -32,12 +32,21 @@
             : "Rien à réviser pour l'instant. 🎉"
         }}
       </p>
-      <button
-        class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
-        @click="goBack"
-      >
-        Retour
-      </button>
+      <div class="flex items-center justify-center gap-3">
+        <button
+          class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
+          @click="goBack"
+        >
+          Retour
+        </button>
+        <button
+          v-if="filterType !== 'qcm'"
+          class="px-4 py-2 text-sm font-bold text-primary border border-primary hover:bg-primary-soft dark:hover:bg-primary-soft rounded-xl"
+          @click="reviewAnyway"
+        >
+          Réviser quand même
+        </button>
+      </div>
     </div>
 
     <template v-else>
@@ -350,6 +359,13 @@ function setupItem() {
   }
 }
 
+// Filtrage commun a l'onMounted et a reviewAnyway (Task 7) : exclut les qcm
+// (cf. commentaire ci-dessous) puis applique le filtre ?type= eventuel.
+function applyItemFilter(studyItems: RevisionItem[]) {
+  const nonQcmItems = studyItems.filter((i) => i.type !== 'qcm')
+  return filterType.value ? nonQcmItems.filter((i) => i.type === filterType.value) : nonQcmItems
+}
+
 onMounted(async () => {
   filterType.value = (route.query.type as RevisionItemType) || null
   try {
@@ -371,10 +387,7 @@ onMounted(async () => {
     // (risque deja accepte dans le spec backend) -- exclus de la revision par
     // item plutot que de rendre une carte vide ou de rediriger vers un flux
     // lui-meme casse pour un ensemble heterogene.
-    const nonQcmItems = studyItems.filter((i) => i.type !== 'qcm')
-    items.value = filterType.value
-      ? nonQcmItems.filter((i) => i.type === filterType.value)
-      : nonQcmItems
+    items.value = applyItemFilter(studyItems)
     if (items.value.length) setupItem()
   } catch (e) {
     console.error('Erreur de chargement de la session', e)
@@ -382,6 +395,18 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+// Revision libre (Task 7, meme principe que QcmRun.vue en Task 6) : sur
+// l'etat vide generique, relance le chargement en incluant les items non dus.
+async function reviewAnyway() {
+  try {
+    const studyItems = await revisionStore.fetchStudyItems(setId, true)
+    items.value = applyItemFilter(studyItems)
+    if (items.value.length) setupItem()
+  } catch (e) {
+    console.error('Erreur de chargement de la session', e)
+  }
+}
 
 async function submitVf(value: boolean) {
   await checkAndAwaitSelfEval({ value })

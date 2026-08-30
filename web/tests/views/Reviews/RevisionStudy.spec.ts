@@ -147,6 +147,35 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
     const { router } = await mountStudy('/revision/sets/7/study', qcmSet, [])
     expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/run')
   })
+
+  // ── Task 7 : meme principe que QcmRun.vue (Task 6) -- l'etat vide generique
+  // propose de relancer la session en incluant les items non dus.
+  it('etat vide generique : bouton "Reviser quand meme" relance fetchStudyItems avec include_not_due=true et affiche les items', async () => {
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, [])
+    expect(wrapper.text()).toContain("Rien à réviser pour l'instant")
+
+    const notDueItem = item(5, 'vf', { assertion: 'Deja revisee.', correct: true })
+    api.get.mockImplementation((url: string) => {
+      if (/\/revision\/sets\/\d+$/.test(url)) return Promise.resolve({ data: HETEROGENEOUS_SET })
+      if (url === '/revision/sets/7/study?include_not_due=true') {
+        return Promise.resolve({ data: [notDueItem] })
+      }
+      if (/\/revision\/sets\/\d+\/study$/.test(url)) return Promise.resolve({ data: [] })
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+
+    await findButtonByText(wrapper, 'Réviser quand même')!.trigger('click')
+    await flushPromises()
+
+    expect(api.get).toHaveBeenCalledWith('/revision/sets/7/study?include_not_due=true')
+    expect(wrapper.text()).toContain('Deja revisee.')
+  })
+
+  it('?type=qcm : pas de bouton "Reviser quand meme" (le message qcm redirige deja ailleurs)', async () => {
+    const items = [item(3, 'qcm', { question: 'Capitale de la France ?' })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study?type=qcm', HETEROGENEOUS_SET, items)
+    expect(findButtonByText(wrapper, 'Réviser quand même')).toBeUndefined()
+  })
 })
 
 function findButtonByText(wrapper: ReturnType<typeof mount>, text: string) {
