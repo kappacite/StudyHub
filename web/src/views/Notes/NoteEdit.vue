@@ -499,15 +499,6 @@
               </div>
 
               <div class="flex items-center gap-3">
-                <!-- Réviser avec l'IA (regroupe Page blanche / QCM / Évaluation) -->
-                <button
-                  class="inline-flex items-center gap-2 px-4 py-2 border border-primary dark:border-primary rounded-xl text-sm font-semibold text-primary dark:text-primary hover:bg-primary-soft dark:hover:bg-primary-soft active:scale-95 transition-all"
-                  @click="showAiModal = true"
-                >
-                  <Sparkles class="w-4 h-4 text-primary" />
-                  Réviser avec l'IA
-                </button>
-
                 <!-- View Mode Toggler -->
                 <button
                   class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink dark:text-ink-subtle"
@@ -538,193 +529,218 @@
               </div>
             </div>
 
-            <!-- Cohesive Paper Sheet -->
-            <div
-              class="max-w-4xl mx-auto bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 lg:p-12 shadow-xl shadow-soft-lg dark:shadow-soft-lg space-y-6 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black"
-            >
-              <!-- PRINT-ONLY DEDICATED HEADER -->
+            <!-- Fiche + sidebar Assistant IA / Métadonnées (mode lecture uniquement) -->
+            <div class="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 lg:items-start">
+              <!-- Cohesive Paper Sheet -->
               <div
-                v-if="pdfExportOptions.includeHeader"
-                class="hidden print:block print-header-banner mb-6 pb-4 border-b-2 border-slate-900"
+                class="flex-1 min-w-0 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 lg:p-12 shadow-xl shadow-soft-lg dark:shadow-soft-lg space-y-6 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black"
               >
-                <div class="flex items-center justify-between mb-3 text-xs text-slate-500">
-                  <div
-                    v-if="getBinderName(binderId)"
-                    class="font-bold text-slate-900 uppercase tracking-wider"
-                  >
-                    {{ getBinderName(binderId) }}
-                  </div>
-                  <div class="text-[11px] font-medium text-slate-500">
-                    {{ currentExportDateFormatted }}
-                  </div>
-                </div>
-
-                <h1
-                  class="text-3xl font-extrabold text-slate-950 tracking-tight leading-tight mb-2"
-                >
-                  {{ title || 'Note sans titre' }}
-                </h1>
-
-                <div v-if="noteTags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
-                  <span
-                    v-for="tag in noteTags"
-                    :key="tag.id"
-                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300"
-                  >
-                    #{{ tag.name }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Screen Note Title (Hidden in print if print header banner is enabled) -->
-              <div
-                :class="[
-                  'border-b border-line dark:border-line pb-6 print:mb-4',
-                  pdfExportOptions.includeHeader ? 'print:hidden' : '',
-                ]"
-              >
-                <h1 class="text-3xl font-extrabold text-ink dark:text-white print:text-black">
-                  {{ title || 'Note sans titre' }}
-                </h1>
-                <div class="flex items-center gap-3 mt-3 no-print">
-                  <span class="text-xs font-semibold text-ink-subtle uppercase tracking-wider"
-                    >Classeur :</span
-                  >
-                  <span
-                    class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary uppercase tracking-wider"
-                  >
-                    {{ getBinderName(binderId) }}
-                  </span>
-                  <TagBadge v-for="tag in noteTags" :key="tag.id" :tag="tag" />
-                </div>
-              </div>
-
-              <!-- PRINT-ONLY TABLE OF CONTENTS -->
-              <div
-                v-if="pdfExportOptions.includeToc && extractedHeadings.length > 0"
-                class="hidden print:block print-toc-block bg-slate-50 border border-slate-300 rounded-xl p-5 mb-6 break-inside-avoid"
-              >
+                <!-- PRINT-ONLY DEDICATED HEADER -->
                 <div
-                  class="text-xs font-black uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2 border-b border-slate-200 pb-2"
+                  v-if="pdfExportOptions.includeHeader"
+                  class="hidden print:block print-header-banner mb-6 pb-4 border-b-2 border-slate-900"
                 >
-                  <span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span>
-                  Sommaire de la note
-                </div>
-                <div class="space-y-1 text-xs">
-                  <div
-                    v-for="(h, idx) in extractedHeadings"
-                    :key="idx"
-                    :class="[
-                      'flex items-center justify-between',
-                      h.level === 1 ? 'font-bold text-slate-900 pt-1' : '',
-                      h.level === 2 ? 'font-semibold text-slate-800 pl-4' : '',
-                      h.level === 3 ? 'text-slate-600 pl-8 text-[11px]' : '',
-                    ]"
-                  >
-                    <span>• {{ h.text }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 1. Context Block -->
-              <div
-                v-if="noteContext && pdfExportOptions.includeContext"
-                class="bg-warning-soft border-l-4 border-warning rounded-r-2xl p-5 dark:bg-warning-soft dark:border-warning print:bg-[#fffbeb] print:border-warning print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
-              >
-                <h3
-                  class="text-xs font-bold text-warning dark:text-warning flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-amber-900"
-                >
-                  <Compass class="w-4 h-4" />
-                  Contexte de la note
-                </h3>
-                <div
-                  v-dompurify-html="renderMarkup(noteContext)"
-                  class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
-                ></div>
-              </div>
-
-              <!-- Legacy Definitions Block -->
-              <div
-                v-if="noteDefinition"
-                class="bg-success-soft border-l-4 border-success rounded-r-2xl p-5 dark:bg-success-soft dark:border-success print:bg-[#ecfdf5] print:border-success print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
-              >
-                <h3
-                  class="text-xs font-bold text-success dark:text-success flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-emerald-900"
-                >
-                  <BookOpen class="w-4 h-4" />
-                  Définitions clés (Legacy)
-                </h3>
-                <div
-                  v-dompurify-html="renderMarkup(noteDefinition)"
-                  class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
-                ></div>
-              </div>
-
-              <!-- 2. Main Note Content Block -->
-              <div
-                class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-ink-subtle print:text-black markdown-body"
-                @click="handleMarkdownClick"
-              >
-                <div v-dompurify-html="renderMarkup(noteBody)"></div>
-              </div>
-
-              <!-- PRINT-ONLY DEFINITIONS GLOSSARY -->
-              <div
-                v-if="pdfExportOptions.includeGlossary && extractedDefinitions.length > 0"
-                class="hidden print:block print-glossary-block border-t-2 border-slate-900 pt-6 mt-8 break-inside-avoid"
-              >
-                <h3
-                  class="text-sm font-extrabold uppercase tracking-wider text-slate-950 mb-3 flex items-center gap-2"
-                >
-                  <BookOpen class="w-4.5 h-4.5 text-emerald-600 inline-block" />
-                  Index des Définitions Clés
-                </h3>
-                <div class="grid grid-cols-2 gap-3 text-xs">
-                  <div
-                    v-for="item in extractedDefinitions"
-                    :key="item.term"
-                    class="p-3 bg-slate-50 border border-slate-300 rounded-lg"
-                  >
-                    <div class="font-bold text-slate-950 border-b border-slate-200 pb-1 mb-1">
-                      {{ item.term }}
+                  <div class="flex items-center justify-between mb-3 text-xs text-slate-500">
+                    <div
+                      v-if="getBinderName(binderId)"
+                      class="font-bold text-slate-900 uppercase tracking-wider"
+                    >
+                      {{ getBinderName(binderId) }}
                     </div>
-                    <div class="text-slate-800 text-[11px] leading-relaxed">{{ item.def }}</div>
+                    <div class="text-[11px] font-medium text-slate-500">
+                      {{ currentExportDateFormatted }}
+                    </div>
+                  </div>
+
+                  <h1
+                    class="text-3xl font-extrabold text-slate-950 tracking-tight leading-tight mb-2"
+                  >
+                    {{ title || 'Note sans titre' }}
+                  </h1>
+
+                  <div v-if="noteTags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                    <span
+                      v-for="tag in noteTags"
+                      :key="tag.id"
+                      class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300"
+                    >
+                      #{{ tag.name }}
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              <!-- 3. Linked Notes Block -->
-              <div
-                v-if="noteLinks.length > 0"
-                class="border-t border-line dark:border-line pt-6 no-print"
-              >
-                <h3
-                  class="text-xs font-bold text-ink-subtle uppercase tracking-wider flex items-center gap-1.5 mb-3"
+                <!-- Screen Note Title (Hidden in print if print header banner is enabled) -->
+                <div
+                  :class="[
+                    'border-b border-line dark:border-line pb-6 print:mb-4',
+                    pdfExportOptions.includeHeader ? 'print:hidden' : '',
+                  ]"
                 >
-                  <LinkIcon class="w-4.5 h-4.5 text-primary" />
-                  Notes liées
-                </h3>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="linkedId in noteLinks"
-                    :key="linkedId"
-                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl transition-all text-xs font-semibold"
-                    @click="navigateToNote(linkedId)"
+                  <div class="flex items-start justify-between gap-4">
+                    <h1 class="text-3xl font-extrabold text-ink dark:text-white print:text-black">
+                      {{ title || 'Note sans titre' }}
+                    </h1>
+
+                    <!-- Notation : désactivé, en attente du backend de notation IA (flux 2). -->
+                    <button
+                      type="button"
+                      class="no-print shrink-0 inline-flex items-center gap-2 px-4 py-2 border border-accent dark:border-accent rounded-xl text-sm font-semibold text-accent dark:text-accent opacity-60 cursor-not-allowed"
+                      disabled
+                      title="Bientôt disponible : nécessite le backend de notation IA (non encore livré)."
+                    >
+                      <Star class="w-4 h-4" />
+                      Notation
+                    </button>
+                  </div>
+                  <div class="flex items-center gap-3 mt-3 no-print">
+                    <span class="text-xs font-semibold text-ink-subtle uppercase tracking-wider"
+                      >Classeur :</span
+                    >
+                    <span
+                      class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary uppercase tracking-wider"
+                    >
+                      {{ getBinderName(binderId) }}
+                    </span>
+                    <TagBadge v-for="tag in noteTags" :key="tag.id" :tag="tag" />
+                  </div>
+                </div>
+
+                <!-- PRINT-ONLY TABLE OF CONTENTS -->
+                <div
+                  v-if="pdfExportOptions.includeToc && extractedHeadings.length > 0"
+                  class="hidden print:block print-toc-block bg-slate-50 border border-slate-300 rounded-xl p-5 mb-6 break-inside-avoid"
+                >
+                  <div
+                    class="text-xs font-black uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2 border-b border-slate-200 pb-2"
                   >
-                    <span>{{ getNoteTitle(linkedId) }}</span>
-                    <ChevronRight class="w-3.5 h-3.5 text-ink-subtle" />
-                  </button>
+                    <span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span>
+                    Sommaire de la note
+                  </div>
+                  <div class="space-y-1 text-xs">
+                    <div
+                      v-for="(h, idx) in extractedHeadings"
+                      :key="idx"
+                      :class="[
+                        'flex items-center justify-between',
+                        h.level === 1 ? 'font-bold text-slate-900 pt-1' : '',
+                        h.level === 2 ? 'font-semibold text-slate-800 pl-4' : '',
+                        h.level === 3 ? 'text-slate-600 pl-8 text-[11px]' : '',
+                      ]"
+                    >
+                      <span>• {{ h.text }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 1. Context Block -->
+                <div
+                  v-if="noteContext && pdfExportOptions.includeContext"
+                  class="bg-warning-soft border-l-4 border-warning rounded-r-2xl p-5 dark:bg-warning-soft dark:border-warning print:bg-[#fffbeb] print:border-warning print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
+                >
+                  <h3
+                    class="text-xs font-bold text-warning dark:text-warning flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-amber-900"
+                  >
+                    <Compass class="w-4 h-4" />
+                    Contexte de la note
+                  </h3>
+                  <div
+                    v-dompurify-html="renderMarkup(noteContext)"
+                    class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
+                  ></div>
+                </div>
+
+                <!-- Legacy Definitions Block -->
+                <div
+                  v-if="noteDefinition"
+                  class="bg-success-soft border-l-4 border-success rounded-r-2xl p-5 dark:bg-success-soft dark:border-success print:bg-[#ecfdf5] print:border-success print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
+                >
+                  <h3
+                    class="text-xs font-bold text-success dark:text-success flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-emerald-900"
+                  >
+                    <BookOpen class="w-4 h-4" />
+                    Définitions clés (Legacy)
+                  </h3>
+                  <div
+                    v-dompurify-html="renderMarkup(noteDefinition)"
+                    class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
+                  ></div>
+                </div>
+
+                <!-- 2. Main Note Content Block -->
+                <div
+                  class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-ink-subtle print:text-black markdown-body"
+                  @click="handleMarkdownClick"
+                >
+                  <div v-dompurify-html="renderMarkup(noteBody)"></div>
+                </div>
+
+                <!-- PRINT-ONLY DEFINITIONS GLOSSARY -->
+                <div
+                  v-if="pdfExportOptions.includeGlossary && extractedDefinitions.length > 0"
+                  class="hidden print:block print-glossary-block border-t-2 border-slate-900 pt-6 mt-8 break-inside-avoid"
+                >
+                  <h3
+                    class="text-sm font-extrabold uppercase tracking-wider text-slate-950 mb-3 flex items-center gap-2"
+                  >
+                    <BookOpen class="w-4.5 h-4.5 text-emerald-600 inline-block" />
+                    Index des Définitions Clés
+                  </h3>
+                  <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div
+                      v-for="item in extractedDefinitions"
+                      :key="item.term"
+                      class="p-3 bg-slate-50 border border-slate-300 rounded-lg"
+                    >
+                      <div class="font-bold text-slate-950 border-b border-slate-200 pb-1 mb-1">
+                        {{ item.term }}
+                      </div>
+                      <div class="text-slate-800 text-[11px] leading-relaxed">{{ item.def }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. Linked Notes Block -->
+                <div
+                  v-if="noteLinks.length > 0"
+                  class="border-t border-line dark:border-line pt-6 no-print"
+                >
+                  <h3
+                    class="text-xs font-bold text-ink-subtle uppercase tracking-wider flex items-center gap-1.5 mb-3"
+                  >
+                    <LinkIcon class="w-4.5 h-4.5 text-primary" />
+                    Notes liées
+                  </h3>
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      v-for="linkedId in noteLinks"
+                      :key="linkedId"
+                      class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl transition-all text-xs font-semibold"
+                      @click="navigateToNote(linkedId)"
+                    >
+                      <span>{{ getNoteTitle(linkedId) }}</span>
+                      <ChevronRight class="w-3.5 h-3.5 text-ink-subtle" />
+                    </button>
+                  </div>
+                </div>
+
+                <!-- PRINT-ONLY FOOTER -->
+                <div
+                  v-if="pdfExportOptions.includeFooter"
+                  class="hidden print:flex print-footer-banner pt-6 mt-8 border-t border-slate-300 text-[10px] text-slate-500 justify-between items-center"
+                >
+                  <span>StudyHub • Document d'étude exporté en haute définition</span>
+                  <span>Fiche d'apprentissage</span>
                 </div>
               </div>
 
-              <!-- PRINT-ONLY FOOTER -->
-              <div
-                v-if="pdfExportOptions.includeFooter"
-                class="hidden print:flex print-footer-banner pt-6 mt-8 border-t border-slate-300 text-[10px] text-slate-500 justify-between items-center"
-              >
-                <span>StudyHub • Document d'étude exporté en haute définition</span>
-                <span>Fiche d'apprentissage</span>
-              </div>
+              <!-- Sidebar Assistant IA / Métadonnées (canevas Direction A) -->
+              <NoteSidebar
+                class="w-full lg:w-72 shrink-0 no-print"
+                :binder-name="getBinderName(binderId)"
+                :tags="noteTags"
+                :updated-at="noteUpdatedAt"
+                @start-activity="startAiActivity"
+              />
             </div>
           </div>
         </div>
@@ -732,59 +748,6 @@
 
       <!-- Help Modal (Guide for Placeholders & Split Screen) -->
       <NoteEditHelpModal v-if="showHelpModal" @close="showHelpModal = false" />
-
-      <!-- AI Review Modal (choix de l'activité de révision IA) -->
-      <transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 scale-95"
-        enter-to-class="opacity-100 scale-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100 scale-100"
-        leave-to-class="opacity-0 scale-95"
-      >
-        <div
-          v-if="showAiModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
-          @click.self="showAiModal = false"
-        >
-          <div
-            class="bg-surface dark:bg-[#111827] border border-line dark:border-line rounded-3xl max-w-2xl w-full p-6 shadow-2xl"
-          >
-            <!-- Header -->
-            <div
-              class="flex items-center justify-between border-b border-line dark:border-line pb-3 mb-5"
-            >
-              <div class="flex items-center gap-2">
-                <Sparkles class="w-5 h-5 text-primary" />
-                <h3 class="font-extrabold text-base text-ink dark:text-white">Réviser avec l'IA</h3>
-              </div>
-              <button
-                class="p-1.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded-xl text-ink-subtle dark:text-ink-muted transition-colors"
-                @click="showAiModal = false"
-              >
-                <X class="w-5 h-5" />
-              </button>
-            </div>
-
-            <!-- Activity cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                v-for="activity in aiActivities"
-                :key="activity.type"
-                class="flex flex-col items-start text-left gap-2 p-4 border rounded-2xl transition-all active:scale-95"
-                :class="activity.cardClass"
-                @click="startAiActivity(activity.type)"
-              >
-                <component :is="activity.icon" class="w-6 h-6" :class="activity.iconClass" />
-                <span class="font-bold text-sm text-ink dark:text-white">{{ activity.label }}</span>
-                <span class="text-xs text-ink-muted dark:text-ink-subtle leading-relaxed">{{
-                  activity.description
-                }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </transition>
 
       <!-- ============================================================ -->
       <!-- INPUT MODAL (remplace les prompt/confirm/alert natifs)       -->
@@ -995,6 +958,7 @@ import NotePdfExportModal, {
 import NoteEditHelpModal from '../../components/notes/NoteEditHelpModal.vue'
 import NoteInputModal, { type ModalField } from '../../components/notes/NoteInputModal.vue'
 import NoteEvaluationModal from '../../components/notes/NoteEvaluationModal.vue'
+import NoteSidebar from '../../components/notes/NoteSidebar.vue'
 import {
   ChevronLeft,
   Menu,
@@ -1017,7 +981,7 @@ import {
   Sparkles,
   Sigma,
   Image,
-  Lightbulb,
+  Star,
 } from '@lucide/vue'
 import { marked } from 'marked'
 import katex from 'katex'
@@ -1067,7 +1031,6 @@ const isEditMode = computed({
 })
 const showSettings = ref(false)
 const showHelpModal = ref(false)
-const showAiModal = ref(false)
 const showPdfModal = ref(false)
 
 const pdfExportOptions = ref<PdfExportOptions>({
@@ -1112,47 +1075,9 @@ const currentExportDateFormatted = computed(() => {
   })
 })
 
-// Activités de révision IA proposées dans la modale de choix.
-const aiActivities = [
-  {
-    type: 'blurting',
-    label: 'Page blanche',
-    description: "Restituez le cours de mémoire, puis laissez l'IA évaluer votre restitution.",
-    icon: Brain,
-    iconClass: 'text-emerald-500',
-    cardClass:
-      'border-emerald-250 dark:border-emerald-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/20',
-  },
-  {
-    type: 'quiz',
-    label: 'QCM',
-    description: 'Générez un questionnaire à choix multiples à partir de cette fiche.',
-    icon: HelpCircle,
-    iconClass: 'text-indigo-500',
-    cardClass:
-      'border-indigo-250 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/20',
-  },
-  {
-    type: 'evaluation',
-    label: 'Évaluation',
-    description: "Obtenez une feuille d'exercices corrigée pour vous tester en profondeur.",
-    icon: Sparkles,
-    iconClass: 'text-amber-500',
-    cardClass:
-      'border-amber-250 dark:border-amber-900 hover:bg-amber-50 dark:hover:bg-amber-950/20',
-  },
-  {
-    type: 'feynman',
-    label: 'Méthode Feynman',
-    description: "Expliquez le concept avec vos propres mots, l'IA repère jargon et lacunes.",
-    icon: Lightbulb,
-    iconClass: 'text-sky-500',
-    cardClass: 'border-sky-250 dark:border-sky-900 hover:bg-sky-50 dark:hover:bg-sky-950/20',
-  },
-] as const
-
+// Handler unique appelé depuis l'emit `start-activity` de NoteSidebar (Assistant IA :
+// Évaluation mixte / Méthode de la feuille blanche / Méthode Feynman).
 function startAiActivity(type: string) {
-  showAiModal.value = false
   router.push(`/notes/${noteId.value}/${type}`)
 }
 const isLivePreviewActive = ref(false)
@@ -1257,6 +1182,7 @@ function openModal(
 const title = ref('')
 const binderId = ref<string | null>(null)
 const noteTags = ref<Tag[]>([])
+const noteUpdatedAt = ref('')
 const isPublic = ref(false)
 const shareToken = ref<string | null>(null)
 const sharePopupVisible = ref(false)
@@ -1380,6 +1306,7 @@ async function loadNoteDetails() {
     shareToken.value = (note as any).share_token || null
     noteFlashcards.value = (note as any).flashcards || []
     noteTags.value = (note as any).tags || []
+    noteUpdatedAt.value = note.updated_at || ''
 
     // Parse structured divisions
     const parsed = parseStructuredNote(note.content)
