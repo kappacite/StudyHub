@@ -1,9 +1,10 @@
 # Constat — Bibliothèque : les vraies maquettes Direction A n'ont jamais été consultées
 
-Date : 2026-08-30. Statut : investigation faite en chat à la demande explicite de
-l'utilisateur ("il semblerait que pour cette section aussi tu n'as pas vérifié le canvas").
-**Ce document ne déclenche aucune implémentation** — il sert de base à un futur chantier
-(`workflow/bibliotheque-redesign/`, `Statut : planifie`).
+Date : 2026-08-30. Investigation faite en chat à la demande explicite de l'utilisateur
+("il semblerait que pour cette section aussi tu n'as pas vérifié le canvas"). Les décisions
+produit nécessaires ont été actées en chat (§ « Décisions actées en chat » ci-dessous) —
+le chantier `bibliotheque-redesign` passe donc de `Statut : planifie` à `ouvert` et son
+plan détaillé (`docs/superpowers/plans/2026-08-30-bibliotheque-redesign.md`) est exécuté.
 
 ## Méthode
 
@@ -201,38 +202,27 @@ maquette validée pour l'écran de résultat — `NoteEvaluation.dc.html` — qu
 manquer. Note ajoutée à son `CONTEXT.md` dans ce même commit pour ne pas perdre cette
 information avant que ce chantier soit ouvert.
 
-## Ce qui n'est PAS tranché ici (décisions pour le futur chantier)
+## Décisions actées en chat (2026-08-30) — remplace « Ce qui n'était pas tranché »
 
-- **Portée du PDF** : construire un vrai lecteur/annotateur (investissement significatif,
-  fonctionnalité entièrement nouvelle) ou accepter la grille actuelle comme simplification
-  assumée et mettre à jour la maquette de référence en conséquence ? C'est un choix produit,
-  pas un simple alignement visuel — à trancher explicitement avec l'utilisateur avant
-  d'écrire le plan détaillé (brainstorming).
-- **Sort de l'arbre de sous-dossiers** : le retirer pour coller à la maquette (impact : plus
-  aucune navigation visuelle dans une hiérarchie de classeurs imbriqués, à remplacer par
-  quoi ?) ou le garder comme fonctionnalité réelle ajoutée après coup (comme les liens
-  « Mes decks »/« Examen blanc » conservés dans `reviser-hub`) ?
-- **Sort du contenu "non rangé" à la racine** : la maquette ne montre jamais cet état ; il
-  faut décider où il vit si la racine devient une simple grille de classeurs.
-- **Onglet "Autres" (Diagrammes+PDF)** : décision déjà tracée et assumée par
-  `bibliotheque-ensembles` — a priori à conserver telle quelle, sauf si le futur chantier
-  trouve une meilleure option compatible avec la grille/galerie des maquettes respectives.
+- **Arbre de sous-dossiers : retiré.** Remplacé par une grille récursive : à n'importe quel
+  niveau, les sous-classeurs du niveau courant s'affichent comme des cartes (même style que
+  la maquette) au-dessus du contenu du classeur courant. Naviguer dans la hiérarchie se fait
+  par clic sur une carte + fil d'ariane pour remonter — pas de colonne latérale permanente.
+- **Contenu non rangé (`binder_id === null`) : classeur virtuel « Non classé ».** Une carte
+  supplémentaire sur la grille racine (comptage agrégé de ses propres notes/decks/ensembles).
+  Cliquer dessus ouvre la même vue Notes/Révision/Autres que n'importe quel classeur réel,
+  filtrée sur `binder_id === null` — mais sans sa propre grille de sous-classeurs (ce n'est
+  pas un vrai nœud de la hiérarchie).
+- **Onglet « Autres » (Diagrammes+PDF) : conservé tel quel** (décision déjà tracée et assumée
+  par `bibliotheque-ensembles`, pas de raison nouvelle de la revoir ici).
+- **Portée du PDF/Diagrammes/Blurting** : hors périmètre de ce chantier (voir plus haut),
+  cadrée séparément dans `ecrans-peripheriques-visuels`.
 
-## Recommandation (pour amorcer le brainstorming du futur chantier)
+## Décision de conception découlant du choix ci-dessus : comptage par niveau, pas agrégé
 
-**Périmètre de `bibliotheque-redesign` : `Binders.vue` uniquement** (racine + contenu d'un
-classeur). PDFs/Diagrams restent le territoire de `ecrans-peripheriques-visuels`, et les 5
-écrans d'une note (`NoteEdit`/Blurting/NoteQuiz/NoteEvaluation/NoteFeynman) sont soit déjà
-pris en charge (`editeur-notes-notation-ia`, `reviser-hub`), soit signalés dans le
-`CONTEXT.md` du chantier concerné pour ne pas se perdre (Blurting → `ecrans-peripheriques-visuels`,
-Notation/`NoteEvaluation.dc.html` → `editeur-notes-notation-ia`) — pas dupliqués ici, notes
-ajoutées dans ce même commit.
-
-Traiter `bibliotheque-redesign` comme `reviser-hub-redesign` : ouvrir avec
-`superpowers:brainstorming` pour trancher les points ci-dessus avec l'utilisateur (arbre de
-sous-dossiers, contenu non rangé, sort de l'onglet Autres), puis `superpowers:writing-plans`
-pour le détail TDD tâche par tâche. Le plan `docs/superpowers/plans/2026-08-30-bibliotheque-redesign.md`
-esquisse une décomposition possible mais **ne doit pas être exécuté sans ce brainstorming**.
-Contrairement à `reviser-hub-redesign` (déviations presque toutes visuelles, tranchées
-unilatéralement avec raisonnement écrit), l'arbre de sous-dossiers et le contenu non rangé
-touchent à la navigation même de l'app — pas de simples choix de mise en page.
+La maquette ne montre qu'un seul niveau de classeurs (pas de nesting visible), donc le
+comptage `N decks · M notes` sur une carte n'a pas de précédent visuel pour un classeur avec
+des sous-classeurs. Décision : compter uniquement le contenu **directement** attaché à ce
+classeur (pas récursif sur ses sous-classeurs) — plus simple, cohérent avec le principe déjà
+établi ailleurs dans l'app (agrégation client-side depuis les stores déjà chargés, aucune
+requête serveur supplémentaire).
