@@ -56,15 +56,16 @@ def _qcm_with_item(client, auth_headers):
 
 def test_item_stats_after_reviews(client, auth_headers):
     set_id, item = _qcm_with_item(client, auth_headers)
-    # 2 passages : 1 réussi, 1 raté.
+    # 2 passages : 1 réussi, 1 raté (score reflétant la correction, cf.
+    # ancien run_qcm : réussi -> 5, raté -> 1).
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
         headers=auth_headers,
     )
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["a"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["a"], "score": 1},
         headers=auth_headers,
     )
 
@@ -82,8 +83,8 @@ def test_item_stats_after_reviews(client, auth_headers):
 def test_set_stats_aggregates_and_verdicts(client, auth_headers):
     set_id, item = _qcm_with_item(client, auth_headers)
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
         headers=auth_headers,
     )
 
@@ -224,14 +225,14 @@ def test_item_stats_scoped_to_requesting_user_on_shared_set(client, auth_headers
 
     # Le proprietaire reussit (grade eleve).
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
         headers=auth_headers,
     )
     # L'eleve rate (grade bas) -- meme item, meme ensemble partage.
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["a"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["a"], "score": 1},
         headers=student_headers,
     )
 
@@ -253,13 +254,13 @@ def test_set_stats_scoped_to_requesting_user_on_shared_set(client, auth_headers)
     set_id, item, student_headers = _share_set_with_new_user(client, auth_headers)
 
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
         headers=auth_headers,
     )
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["a"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["a"], "score": 1},
         headers=student_headers,
     )
 

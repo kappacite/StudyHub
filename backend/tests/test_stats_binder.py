@@ -39,8 +39,8 @@ def test_binder_stats_aggregates_multiple_sets_and_types(client, auth_headers):
     set_id, item = _qcm_set(client, auth_headers, binder_id, "QCM Maths")
     # Un passage réussi pour alimenter les stats.
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
         headers=auth_headers,
     )
     # Un second ensemble d'un autre type (sans révision).
@@ -218,19 +218,13 @@ def test_binder_stats_total_duration_scoped_to_requesting_user_on_shared_binder(
 
     # Le proprietaire etudie 15s ; l'eleve etudie 3600s sur le MEME item partage.
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={
-            "duration_seconds": 15,
-            "answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}],
-        },
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5, "duration_seconds": 15},
         headers=auth_headers,
     )
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={
-            "duration_seconds": 3600,
-            "answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}],
-        },
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5, "duration_seconds": 3600},
         headers=student_headers,
     )
 
@@ -248,11 +242,8 @@ def test_binder_stats_total_duration_seconds_sums_across_sets(client, auth_heade
     binder_id = _binder(client, auth_headers, "Révisions")
     set_id, item = _qcm_set(client, auth_headers, binder_id, "QCM Maths")
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={
-            "duration_seconds": 30,
-            "answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}],
-        },
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5, "duration_seconds": 30},
         headers=auth_headers,
     )
     vf_id = client.post(

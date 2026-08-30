@@ -100,35 +100,36 @@ class RevisionItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# --- Passage scoré (QCM — A2/D6) --------------------------------------------
+# --- QCM par question (check/commit — A2/D6, Task 2 revision-flexibilite) ---
+# Remplace l'ancien passage scoré en lot (RevisionRunRequest/RevisionRunResult) :
+# meme principe de scission check/commit que RevisionCheckRequest/RevisionGradeRequest
+# (Task 1), applique question par question plutot qu'en un seul lot.
 
 
-class RevisionRunAnswer(BaseModel):
-    item_id: int
+class RevisionQcmAnswerRequest(BaseModel):
     selected_option_ids: list[str] = []
 
 
-class RevisionRunRequest(BaseModel):
-    answers: list[RevisionRunAnswer]
-    # Duree totale du passage (Task 9), repartie par question via divmod
-    # dans le service -- optionnelle, defaut 0, jamais estimee/inventee.
+class RevisionQcmCommitRequest(BaseModel):
+    selected_option_ids: list[str] = []
+    # Note SM-2 (1-5) choisie par l'utilisateur apres avoir vu la correction
+    # (cf. RevisionQcmCheckResult) -- requise, jamais deduite cote serveur.
+    score: int = Field(..., ge=1, le=5)
+    # Duree reelle ecoulee sur CETTE question -- optionnelle, defaut 0, jamais
+    # estimee/inventee. Remplace la repartition divmod du lot (Task 9) : chaque
+    # question a desormais sa propre duree mesuree cote frontend.
     duration_seconds: int = Field(0, ge=0)
 
 
-class RevisionRunQuestionResult(BaseModel):
-    item_id: int
+class RevisionQcmCheckResult(BaseModel):
     correct: bool
     earned: int
     points: int
     correct_option_ids: list[str]
-    selected_option_ids: list[str]
 
 
-class RevisionRunResult(BaseModel):
-    score: int
-    max_score: int
-    percentage: float
-    results: list[RevisionRunQuestionResult]
+class RevisionQcmAnswerResult(RevisionQcmCheckResult):
+    item: RevisionItemResponse
 
 
 # --- Correction d'un item à l'étude (A3/A4/A6 : vf, association, ordre) -------

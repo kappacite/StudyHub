@@ -2,8 +2,8 @@
 
 Détail complet : `docs/superpowers/plans/2026-08-30-revision-flexibilite.md`.
 
-- [ ] Task 1 : backend — notation manuelle pour vf/association/ordre (scission check/commit)
-- [ ] Task 2 : backend — QCM par question (check/commit) + suppression du passage groupé
+- [x] Task 1 : backend — notation manuelle pour vf/association/ordre (scission check/commit)
+- [x] Task 2 : backend — QCM par question (check/commit) + suppression du passage groupé
 - [ ] Task 3 : backend — réviser même si rien n'est dû (`include_not_due`)
 - [ ] Task 4 : backend — prochaine date de révision optimale dans les stats
 - [ ] Task 5 : frontend — notation manuelle vf/association/ordre dans `RevisionStudy.vue`
