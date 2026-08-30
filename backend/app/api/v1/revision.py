@@ -8,11 +8,14 @@ from app.dao.revision_dao import RevisionItemDAO, RevisionSetDAO
 from app.extensions import db
 from app.middlewares.auth_middleware import jwt_required_middleware
 from app.schemas.revision_schema import (
+    RevisionCheckRequest,
+    RevisionCheckResult,
     RevisionGradeRequest,
     RevisionItemAnswer,
     RevisionItemCreate,
     RevisionItemUpdate,
-    RevisionRunRequest,
+    RevisionQcmAnswerRequest,
+    RevisionQcmCommitRequest,
     RevisionSetCreate,
     RevisionSetUpdate,
 )
@@ -127,7 +130,8 @@ def delete_item(set_id, item_id):
 @jwt_required_middleware
 def study_set(set_id):
     user_id = int(get_jwt_identity())
-    items = revision_service.get_study_items(user_id, set_id)
+    include_not_due = request.args.get("include_not_due", "false").lower() == "true"
+    items = revision_service.get_study_items(user_id, set_id, include_not_due=include_not_due)
     return jsonify([i.model_dump() for i in items]), 200
 
 
@@ -142,13 +146,33 @@ def answer_item(set_id, item_id):
     return jsonify(result.model_dump()), 200
 
 
-@revision_bp.route("/sets/<int:set_id>/run", methods=["POST"])
+@revision_bp.route("/sets/<int:set_id>/study/qcm-check/<int:item_id>", methods=["POST"])
 @jwt_required_middleware
-def run_qcm(set_id):
+def check_qcm_answer(set_id, item_id):
     user_id = int(get_jwt_identity())
-    data = RevisionRunRequest.model_validate(request.get_json() or {})
-    result = revision_service.run_qcm(user_id, set_id, data)
+    data = RevisionQcmAnswerRequest.model_validate(request.get_json() or {})
+    result = revision_service.check_qcm_answer(user_id, set_id, item_id, data.selected_option_ids)
     return jsonify(result.model_dump()), 200
+
+
+@revision_bp.route("/sets/<int:set_id>/study/qcm-answer/<int:item_id>", methods=["POST"])
+@jwt_required_middleware
+def answer_qcm_item(set_id, item_id):
+    user_id = int(get_jwt_identity())
+    data = RevisionQcmCommitRequest.model_validate(request.get_json() or {})
+    result = revision_service.answer_qcm_item(
+        user_id, set_id, item_id, data.selected_option_ids, data.score, data.duration_seconds
+    )
+    return jsonify(result.model_dump()), 200
+
+
+@revision_bp.route("/sets/<int:set_id>/study/check/<int:item_id>", methods=["POST"])
+@jwt_required_middleware
+def check_item_answer(set_id, item_id):
+    user_id = int(get_jwt_identity())
+    data = RevisionCheckRequest.model_validate(request.get_json() or {})
+    is_correct = revision_service.check_item_answer(user_id, set_id, item_id, data.answer)
+    return jsonify(RevisionCheckResult(correct=is_correct).model_dump()), 200
 
 
 @revision_bp.route("/sets/<int:set_id>/study/grade/<int:item_id>", methods=["POST"])
@@ -157,6 +181,6 @@ def grade_item(set_id, item_id):
     user_id = int(get_jwt_identity())
     data = RevisionGradeRequest.model_validate(request.get_json() or {})
     result = revision_service.grade_item(
-        user_id, set_id, item_id, data.answer, data.duration_seconds
+        user_id, set_id, item_id, data.answer, data.score, data.duration_seconds
     )
     return jsonify(result.model_dump()), 200

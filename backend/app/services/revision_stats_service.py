@@ -168,6 +168,7 @@ class _SetAggregate:
     success_rates: list = field(default_factory=list)  # par item révisé
     difficulties: list = field(default_factory=list)  # par item
     item_summaries: list = field(default_factory=list)
+    next_review_at: datetime | None = None
     graded_sessions: list = field(
         default_factory=list
     )  # toutes les StudySession notées, tous items confondus
@@ -293,6 +294,10 @@ class RevisionStatsService:
             is_leech = lapses >= LEECH_LAPSES
             is_due = bool(item.next_review and item.next_review <= now)
             last_reviewed = graded[-1].created_at if graded else None
+            if item.next_review is not None and (
+                agg.next_review_at is None or item.next_review < agg.next_review_at
+            ):
+                agg.next_review_at = item.next_review
 
             if reviews:
                 agg.reviewed_items += 1
@@ -368,6 +373,7 @@ class RevisionStatsService:
             weekly_progression=weekly_progression(agg.graded_sessions, now),
             session_history=session_history(agg.graded_sessions),
             total_duration_seconds=agg.total_duration_seconds,
+            next_review_at=agg.next_review_at,
         )
 
     def _build_verdicts(

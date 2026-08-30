@@ -7,9 +7,8 @@ from app.schemas.revision_schema import (
     RevisionItemCreate,
     RevisionItemResponse,
     RevisionItemUpdate,
-    RevisionRunQuestionResult,
-    RevisionRunRequest,
-    RevisionRunResult,
+    RevisionQcmAnswerResult,
+    RevisionQcmCheckResult,
     RevisionSetCreate,
     RevisionSetResponse,
     RevisionSetUpdate,
@@ -294,14 +293,17 @@ class RevisionService:
 
     # --- Étude (SM-2) --------------------------------------------------------
 
-    def get_study_items(self, user_id: int, set_id: int) -> list[RevisionItemResponse]:
+    def get_study_items(
+        self, user_id: int, set_id: int, include_not_due: bool = False
+    ) -> list[RevisionItemResponse]:
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
         if rset.user_id == user_id:
-            items = self._item_dao.get_items_to_study(set_id)
+            items = self._item_dao.get_items_to_study(set_id, include_not_due=include_not_due)
         else:
             # Ensemble partagé (cours) : l'état SM-2 par item (next_review) appartient
             # au propriétaire. L'élève révise donc TOUS les items ; sa progression est
             # suivie séparément via StudySession (par utilisateur).
+            # include_not_due est un no-op silencieux pour la branche élève (jamais d'erreur).
             items = self._item_dao.get_by_set(set_id)
         return [RevisionItemResponse.model_validate(i) for i in items]
 
@@ -355,90 +357,124 @@ class RevisionService:
 
         return RevisionItemResponse.model_validate(updated)
 
-    def run_qcm(self, user_id: int, set_id: int, data: RevisionRunRequest) -> RevisionRunResult:
-        """Passage scoré d'un QCM (D6) : correction pondérée par points, tout-ou-rien
-        sur les réponses multiples, et mise à jour SM-2 par question."""
+    def _score_qcm_answer(
+        self, item: RevisionItem, selected_option_ids: list[str]
+    ) -> tuple[bool, int, int, list[str]]:
+        """Correction pure d'une reponse a une question de QCM : pondération par
+        points, tout-ou-rien sur les réponses multiples. Sans effet de bord --
+        reutilisee par check_qcm_answer (lecture seule) et answer_qcm_item
+        (defense-in-depth, recalculee independamment du score fourni)."""
+        payload = item.payload or {}
+        options = payload.get("options", [])
+        points = payload.get("points", 1)
+        correct_ids = sorted(o["id"] for o in options if o.get("correct"))
+        selected_ids = sorted(set(selected_option_ids))
+        is_correct = selected_ids == correct_ids
+        earned = points if is_correct else 0
+        return is_correct, earned, points, correct_ids
+
+    def check_qcm_answer(
+        self, user_id: int, set_id: int, item_id: int, selected_option_ids: list[str]
+    ) -> RevisionQcmCheckResult:
+        """Corrige une réponse à une question de QCM SANS aucun effet de bord
+        (pas d'écriture DB) -- permet au client d'afficher la correction avant
+        que l'utilisateur choisisse sa note SM-2 via answer_qcm_item (scission
+        check/commit, Task 2 revision-flexibilite -- même principe que
+        check_item_answer/grade_item pour vf/association/ordre, Task 1)."""
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
         if rset.type != "qcm":
             raise ValidationError("Le passage scoré n'est disponible que pour les QCM.")
+        item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
+        if item.type != "qcm":
+            raise ValidationError("Le passage scoré n'est disponible que pour les QCM.")
 
-        items = {i.id: i for i in self._item_dao.get_by_set(set_id)}
-        tuning = rset.tuning_default or 1.0
-        score = 0
-        max_score = 0
-        results = []
-
-        # Une seule duree totale est postee pour tout le passage (Task 9) --
-        # repartie egalement entre les questions via divmod pour que la somme
-        # des lignes StudySession retombe exactement sur le total poste, sans
-        # inventer de precision par question. Le reste de la division est
-        # distribue aux premieres questions du lot (ordre de data.answers).
-        batch_size = len(data.answers)
-        base_duration, remainder = (
-            divmod(data.duration_seconds, batch_size) if batch_size else (0, 0)
+        is_correct, earned, points, correct_ids = self._score_qcm_answer(item, selected_option_ids)
+        return RevisionQcmCheckResult(
+            correct=is_correct, earned=earned, points=points, correct_option_ids=correct_ids
         )
 
-        for index, answer in enumerate(data.answers):
-            item = items.get(answer.item_id)
-            if item is None:
-                raise ValidationError("Une réponse cible une question hors de cet ensemble.")
+    def answer_qcm_item(
+        self,
+        user_id: int,
+        set_id: int,
+        item_id: int,
+        selected_option_ids: list[str],
+        score: int,
+        duration_seconds: int = 0,
+    ) -> RevisionQcmAnswerResult:
+        """Valide la note SM-2 choisie par l'utilisateur pour une question de
+        QCM après qu'il a vu la correction (cf. check_qcm_answer). `score` est
+        fourni par l'appelant -- plus jamais déduit binairement de la
+        correction (réussi → 5, raté → 1, cf. ancien run_qcm). La correction
+        réelle (is_correct/earned/points) est recalculée ici (defense-in-depth),
+        indépendamment de `score`."""
+        rset = self._get_set_or_404(set_id, user_id, write_required=False)
+        if rset.type != "qcm":
+            raise ValidationError("Le passage scoré n'est disponible que pour les QCM.")
+        item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
+        if item.type != "qcm":
+            raise ValidationError("Le passage scoré n'est disponible que pour les QCM.")
 
-            payload = item.payload or {}
-            options = payload.get("options", [])
-            points = payload.get("points", 1)
-            correct_ids = sorted(o["id"] for o in options if o.get("correct"))
-            selected_ids = sorted(set(answer.selected_option_ids))
-            is_correct = selected_ids == correct_ids
-            earned = points if is_correct else 0
+        is_correct, earned, points, correct_ids = self._score_qcm_answer(item, selected_option_ids)
 
-            score += earned
-            max_score += points
-            results.append(
-                RevisionRunQuestionResult(
-                    item_id=item.id,
-                    correct=is_correct,
-                    earned=earned,
-                    points=points,
-                    correct_option_ids=correct_ids,
-                    selected_option_ids=selected_ids,
-                )
+        # L'état SM-2 par item n'est planifié que pour le propriétaire de l'ensemble.
+        # Un élève qui révise un ensemble partagé (cours) ne doit pas modifier
+        # l'échéancier du prof — seule sa StudySession est enregistrée.
+        if rset.user_id == user_id:
+            tuning = (rset.tuning_default or 1.0) * (item.tuning or 1.0)
+            ease_factor, interval, repetitions, next_review = calculate_sm2(
+                score=score,
+                ease_factor=item.ease_factor,
+                interval=item.interval,
+                repetitions=item.repetitions,
+                tuning=tuning,
             )
+            item.ease_factor = ease_factor
+            item.interval = interval
+            item.repetitions = repetitions
+            item.next_review = next_review
+            updated = self._item_dao.update(item)
+        else:
+            updated = item
 
-            # Mise à jour SM-2 par question (réussi → 5, raté → 1) — uniquement pour
-            # le propriétaire ; un élève sur un QCM partagé ne touche pas l'échéancier.
-            grade = 5 if is_correct else 1
-            if rset.user_id == user_id:
-                ease_factor, interval, repetitions, next_review = calculate_sm2(
-                    score=grade,
-                    ease_factor=item.ease_factor,
-                    interval=item.interval,
-                    repetitions=item.repetitions,
-                    tuning=tuning * (item.tuning or 1.0),
-                )
-                item.ease_factor = ease_factor
-                item.interval = interval
-                item.repetitions = repetitions
-                item.next_review = next_review
-            item_duration = base_duration + 1 if index < remainder else base_duration
-            self._item_dao.db.add(
-                StudySession(
-                    user_id=user_id,
-                    module=rset.type,
-                    duration_seconds=item_duration,
-                    cards_reviewed=1,
-                    cards_correct=1 if is_correct else 0,
-                    item_id=item.id,
-                    item_type=item.type,
-                    grade=grade,
-                )
+        self._item_dao.db.add(
+            StudySession(
+                user_id=user_id,
+                module=rset.type or item.type,
+                duration_seconds=duration_seconds,
+                cards_reviewed=1,
+                cards_correct=1 if is_correct else 0,
+                item_id=item.id,
+                item_type=item.type,
+                grade=score,
             )
-
+        )
         self._item_dao.db.commit()
 
-        percentage = round(score / max_score * 100, 1) if max_score else 0.0
-        return RevisionRunResult(
-            score=score, max_score=max_score, percentage=percentage, results=results
+        return RevisionQcmAnswerResult(
+            correct=is_correct,
+            earned=earned,
+            points=points,
+            correct_option_ids=correct_ids,
+            item=RevisionItemResponse.model_validate(updated),
         )
+
+    def check_item_answer(
+        self,
+        user_id: int,
+        set_id: int,
+        item_id: int,
+        answer: dict,
+    ) -> bool:
+        """Corrige une réponse à un item auto-corrigeable (vf/association/ordre)
+        SANS aucun effet de bord (pas d'écriture DB) -- permet au client
+        d'afficher la correction avant que l'utilisateur choisisse sa note
+        SM-2 via grade_item (scission check/commit, Task 1 revision-flexibilite)."""
+        item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
+        if item.type not in GRADABLE_TYPES:
+            raise ValidationError("Ce type d'item n'est pas corrigé automatiquement.")
+
+        return check_answer(item.type, item.payload or {}, answer or {})
 
     def grade_item(
         self,
@@ -446,24 +482,28 @@ class RevisionService:
         set_id: int,
         item_id: int,
         answer: dict,
+        score: int,
         duration_seconds: int = 0,
     ) -> RevisionGradeResult:
-        """Corrige une réponse à un item auto-corrigeable (vf/association/ordre) et
-        met à jour SM-2 (réussi → 5, raté → 2). La définition reste en self-eval."""
+        """Valide la note SM-2 choisie par l'utilisateur pour un item auto-
+        corrigeable (vf/association/ordre) après qu'il a vu la correction
+        (cf. check_item_answer). `score` est fourni par l'appelant -- plus
+        jamais déduit binairement de la correction. La correction réelle est
+        recalculée ici (defense-in-depth) pour `correct`/`cards_correct`,
+        indépendamment de `score`. La définition reste en self-eval."""
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
         item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
         if item.type not in GRADABLE_TYPES:
             raise ValidationError("Ce type d'item n'est pas corrigé automatiquement.")
 
         is_correct = check_answer(item.type, item.payload or {}, answer or {})
-        grade = 5 if is_correct else 2
 
         # L'état SM-2 par item n'est planifié que pour le propriétaire de l'ensemble.
         # Un élève qui révise un ensemble partagé (cours) ne doit pas modifier
         # l'échéancier du prof — seule sa StudySession est enregistrée.
         if rset.user_id == user_id:
             ease_factor, interval, repetitions, next_review = calculate_sm2(
-                score=grade,
+                score=score,
                 ease_factor=item.ease_factor,
                 interval=item.interval,
                 repetitions=item.repetitions,
@@ -487,7 +527,7 @@ class RevisionService:
                 cards_correct=1 if is_correct else 0,
                 item_id=item.id,
                 item_type=item.type,
-                grade=grade,
+                grade=score,
             )
         )
         self._item_dao.db.commit()

@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : revision-flexibilite
 
 ## Chantiers ouverts
 
@@ -13,8 +13,47 @@ Chantier actif : aucun
   levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
   le même jour)
 - `classes-examens-planning` — pas commencé, indépendant
+- `revision-flexibilite` — **ouvert**, en cours (`RevisionSet`/`RevisionItem`, branche
+  `feature/revision-flexibilite`, worktree `.worktrees/revision-flexibilite`) — voir
+  `workflow/revision-flexibilite/CONTEXT.md`
 
 ## Historique
+
+- 2026-08-30 — [revision-flexibilite] **Chantier clos (code).** Revue finale de branche
+  (opus) : « avec corrections » — 3 Important (garde anti double-soumission manquante dans la
+  réécriture QCM/notation manuelle, asymétrie de garde QCM sur `item.type` vs `rset.type`
+  permettant une correction fabriquée, sélecteurs d'association modifiables pendant la
+  correction) + 2 Minor retenus. Tour de correction : l'agent a échoué en fin de tâche (limite
+  de session API) après avoir déjà tout écrit — vérifié directement par le contrôleur (chaque
+  diff relu, 2 suites complètes ré-exécutées indépendamment : 435/435 frontend, 336/341
+  backend), tout confirmé correct. Commit `d474ce8`. Détail complet :
+  `workflow/revision-flexibilite/JOURNAL.md`. Prochaine action : demander à l'utilisateur de
+  pousser `feature/revision-flexibilite`, puis ouvrir la PR.
+- 2026-08-30 — [revision-flexibilite] **8 tâches exécutées, vérification visuelle faite,
+  chantier prêt à clôturer.** Backend : scission check/commit pour la notation manuelle
+  vf/association/ordre (Task 1) et QCM par question (Task 2, suppression du passage groupé
+  devenu mort), `include_not_due` pour réviser hors échéancier (Task 3, 2 tours de correction —
+  tous deux sur un test de non-régression, jamais sur le code de production), agrégat
+  `next_review_at` dans les stats (Task 4). Frontend : notation manuelle vf/association/ordre
+  (Task 5), réécriture complète de `QcmRun.vue` en navigation question par question + révision
+  libre (Task 6, tâche la plus grosse du chantier), bouton « Réviser quand même » sur
+  `RevisionStudy.vue` + date optimale dans les stats (Task 7). Vérification visuelle réelle
+  (Task 8) : les 4 demandes confirmées fonctionnelles en direct (captures d'écran, desktop +
+  mobile 375px + mode sombre), 424/424 tests frontend + 335/340 backend (5 échecs pré-existants
+  sans rapport). Détail complet : `workflow/revision-flexibilite/JOURNAL.md`. Prochaine action :
+  revue finale de branche, puis demander à l'utilisateur de pousser
+  `feature/revision-flexibilite` et ouvrir la PR.
+- 2026-08-30 — [revision-flexibilite] **Chantier ouvert.** 4 demandes utilisateur sur le
+  système SM-2 : notation manuelle généralisée (vf/association/ordre/qcm, actuellement déduite
+  automatiquement), QCM révisable librement (3 axes confirmés en chat : filtre d'échéance,
+  navigation question par question, rejeu d'une question déjà répondue), révision possible hors
+  échéancier (« rien à réviser aujourd'hui »), prochaine date de révision optimale dans les
+  stats d'ensemble. Investigation complète en fork avant plan. 2 clarifications tranchées en
+  chat (`AskUserQuestion`) : périmètre exact du blocage QCM (les 3 axes retenus), impact SM-2
+  normal pour la révision libre (pas de mode entraînement séparé). Plan détaillé (8 tâches TDD) :
+  `docs/superpowers/plans/2026-08-30-revision-flexibilite.md`. Périmètre : `RevisionSet`/
+  `RevisionItem` uniquement, decks de flashcards hors scope (non mentionnés, déjà dotés d'une
+  notation manuelle). Exécution démarrée en `subagent-driven-development`.
 
 - 2026-08-30 — [bibliotheque-redesign] **PR #132 mergée dans `main`** (squash, `c222b23`), CI
   verte (6/6 checks). Chantier `clos`. Prochaine action : choisir le prochain chantier à ouvrir

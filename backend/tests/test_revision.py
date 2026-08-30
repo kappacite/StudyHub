@@ -382,7 +382,7 @@ def test_grade_item_rejects_flashcard_item_even_in_gradable_set(client, auth_hea
 
     graded = client.post(
         f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
-        json={"answer": {"value": True}},
+        json={"answer": {"value": True}, "score": 5},
         headers=auth_headers,
     )
     assert graded.status_code == 400
@@ -513,7 +513,7 @@ def test_grade_item_records_real_duration_seconds(client, auth_headers, app):
 
     client.post(
         f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
-        json={"answer": {"value": True}, "duration_seconds": 17},
+        json={"answer": {"value": True}, "score": 5, "duration_seconds": 17},
         headers=auth_headers,
     )
     with app.app_context():
@@ -537,7 +537,7 @@ def test_grade_item_omitted_duration_defaults_to_zero(client, auth_headers, app)
 
     client.post(
         f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
-        json={"answer": {"value": True}},
+        json={"answer": {"value": True}, "score": 5},
         headers=auth_headers,
     )
     with app.app_context():
@@ -562,7 +562,238 @@ def test_grade_item_on_heterogeneous_set_does_not_crash(client, auth_headers):
 
     response = client.post(
         f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
-        json={"answer": {"value": True}},
+        json={"answer": {"value": True}, "score": 5},
         headers=auth_headers,
     )
     assert response.status_code == 200
+
+
+# --- Flexibility: include_not_due (Task 3, revision-flexibilite) ---------------
+
+
+def test_get_items_to_study_default_filters_by_next_review(client, auth_headers, app):
+    """Comportement par défaut (include_not_due=False) : ne retourne que les items
+    dont next_review <= maintenant."""
+    from datetime import datetime, timedelta
+
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+
+    # Créer deux items
+    due_item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "La Terre est ronde.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    future_item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "Le ciel est bleu.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    # Manipuler directement la DB pour mettre un item dans le futur
+    with app.app_context():
+        from app.models.revision import RevisionItem
+
+        # due_item a déjà next_review <= now (créé neuf)
+        # future_item : pousser next_review dans le futur
+        item = RevisionItem.query.filter_by(id=future_item["id"]).first()
+        item.next_review = datetime.utcnow() + timedelta(days=7)
+        from app.extensions import db
+
+        db.session.commit()
+
+    # GET /study sans paramètre : doit retourner seulement due_item
+    study = client.get(f"/api/v1/revision/sets/{set_id}/study", headers=auth_headers)
+    assert study.status_code == 200
+    returned_ids = [i["id"] for i in study.json]
+    assert due_item["id"] in returned_ids
+    assert future_item["id"] not in returned_ids
+
+
+def test_get_items_to_study_with_include_not_due_returns_all_items(client, auth_headers, app):
+    """Avec include_not_due=True : retourne tous les items, même ceux pas
+    encore dus."""
+    from datetime import datetime, timedelta
+
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+
+    # Créer deux items
+    due_item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "La Terre est ronde.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    future_item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "Le ciel est bleu.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    # Manipuler directement la DB pour mettre un item dans le futur
+    with app.app_context():
+        from app.models.revision import RevisionItem
+
+        item = RevisionItem.query.filter_by(id=future_item["id"]).first()
+        item.next_review = datetime.utcnow() + timedelta(days=7)
+        from app.extensions import db
+
+        db.session.commit()
+
+    # GET /study?include_not_due=true : doit retourner les deux
+    study = client.get(
+        f"/api/v1/revision/sets/{set_id}/study?include_not_due=true", headers=auth_headers
+    )
+    assert study.status_code == 200
+    returned_ids = [i["id"] for i in study.json]
+    assert due_item["id"] in returned_ids
+    assert future_item["id"] in returned_ids
+
+
+def test_get_items_to_study_include_not_due_false_explicit(client, auth_headers, app):
+    """Non-régression : include_not_due=false (explicit) doit filtrer comme avant."""
+    from datetime import datetime, timedelta
+
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF", "type": "vf"},
+        headers=auth_headers,
+    ).json["id"]
+
+    due_item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "La Terre est ronde.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    future_item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "Le ciel est bleu.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    with app.app_context():
+        from app.extensions import db
+        from app.models.revision import RevisionItem
+
+        item = RevisionItem.query.filter_by(id=future_item["id"]).first()
+        item.next_review = datetime.utcnow() + timedelta(days=7)
+        db.session.commit()
+
+    # GET /study?include_not_due=false : doit filtrer comme avant
+    study = client.get(
+        f"/api/v1/revision/sets/{set_id}/study?include_not_due=false", headers=auth_headers
+    )
+    assert study.status_code == 200
+    returned_ids = [i["id"] for i in study.json]
+    assert due_item["id"] in returned_ids
+    assert future_item["id"] not in returned_ids
+
+
+def test_study_items_on_shared_set_with_include_not_due_silent_noop(
+    client, auth_headers, test_user, app
+):
+    """Sur une branche élève (ensemble partagé) : include_not_due est un
+    no-op silencieux (jamais d'erreur). L'élève voit TOUS les items, y compris
+    ceux dont le next_review du prof est dans le futur."""
+    from datetime import datetime, timedelta
+
+    from app.extensions import db
+    from app.models.binder import Binder
+    from app.models.revision import RevisionItem
+
+    # Créer une classe et un élève qui la rejoint
+    class_resp = client.post("/api/v1/classes", json={"name": "Classe Test"}, headers=auth_headers)
+    class_id = class_resp.json["id"]
+    invite_code = class_resp.json["invite_code"]
+
+    # Créer un élève et le faire rejoindre la classe
+    student_email = "eleve_include@test.com"
+    client.post(
+        "/api/v1/auth/register",
+        json={"email": student_email, "username": "eleveinclude", "password": "password123"},
+    )
+    student_token = client.post(
+        "/api/v1/auth/login",
+        json={"email": student_email, "password": "password123"},
+    ).json["access_token"]
+    student_headers = {"Authorization": f"Bearer {student_token}"}
+    client.post("/api/v1/groups/join", json={"invite_code": invite_code}, headers=student_headers)
+
+    # Le prof crée un classeur et un ensemble dedans
+    with app.app_context():
+        binder = Binder(user_id=test_user["id"], name="Cours Partagé")
+        db.session.add(binder)
+        db.session.commit()
+        binder_uuid = binder.id
+
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "VF Partagé", "type": "vf", "binder_id": binder_uuid},
+        headers=auth_headers,
+    ).json["id"]
+
+    # Le prof crée deux items : un dû, un pas encore dû
+    due_item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "La Terre est ronde.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    future_item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"assertion": "Le ciel est bleu.", "correct": True}},
+        headers=auth_headers,
+    ).json
+
+    # Le prof planifie le second item au futur
+    with app.app_context():
+        item = db.session.get(RevisionItem, future_item["id"])
+        item.next_review = datetime.utcnow() + timedelta(days=7)
+        db.session.commit()
+        future_next_review = item.next_review
+
+    # Le prof partage le classeur avec la classe
+    share_resp = client.post(
+        f"/api/v1/groups/{class_id}/binders",
+        json={"binder_id": binder_uuid, "permission": "read"},
+        headers=auth_headers,
+    )
+    assert share_resp.status_code == 200
+
+    # L'élève appelle /study sans include_not_due : voit TOUS les items (branche élève = no-op)
+    study_baseline = client.get(f"/api/v1/revision/sets/{set_id}/study", headers=student_headers)
+    assert study_baseline.status_code == 200
+    baseline_ids = [i["id"] for i in study_baseline.json]
+    assert due_item["id"] in baseline_ids, "l'élève devrait voir l'item dû"
+    assert future_item["id"] in baseline_ids, (
+        "l'élève devrait aussi voir l'item pas dû (ensemble partagé, include_not_due est no-op)"
+    )
+
+    # L'élève appelle /study?include_not_due=true : doit voir TOUS les items (comme sur un ensemble partagé)
+    study_with_flag = client.get(
+        f"/api/v1/revision/sets/{set_id}/study?include_not_due=true",
+        headers=student_headers,
+    )
+    assert study_with_flag.status_code == 200
+    returned_ids = [i["id"] for i in study_with_flag.json]
+    assert due_item["id"] in returned_ids, "l'élève devrait voir l'item dû"
+    assert future_item["id"] in returned_ids, (
+        "l'élève devrait voir l'item pas dû aussi (ensemble partagé)"
+    )
+
+    # Vérifier que l'échéancier du prof n'a pas changé (GET ne doit rien modifier)
+    with app.app_context():
+        item_check = db.session.get(RevisionItem, future_item["id"])
+        assert item_check.next_review == future_next_review, (
+            "l'échéancier du prof ne doit pas être modifié"
+        )

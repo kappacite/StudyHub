@@ -68,25 +68,19 @@ export interface RevisionItem {
   updated_at: string
 }
 
-export interface RunAnswer {
-  item_id: number
-  selected_option_ids: string[]
-}
-
-export interface RunQuestionResult {
-  item_id: number
+// QCM question par question (check/commit — Task 2/Task 6 revision-flexibilite) :
+// remplace l'ancien passage scoré en lot (RunAnswer/RunResult, route /run
+// supprimee cote backend) par le meme principe check (sans effet de bord) puis
+// commit que vf/association/ordre (cf. checkItemAnswer/gradeItem plus bas).
+export interface QcmCheckResult {
   correct: boolean
   earned: number
   points: number
   correct_option_ids: string[]
-  selected_option_ids: string[]
 }
 
-export interface RunResult {
-  score: number
-  max_score: number
-  percentage: number
-  results: RunQuestionResult[]
+export interface QcmAnswerResult extends QcmCheckResult {
+  item: RevisionItem
 }
 
 export interface HistoryPoint {
@@ -165,6 +159,7 @@ export interface SetStats {
   weekly_progression: WeeklyProgressionPoint[]
   session_history: SessionHistoryDay[]
   total_duration_seconds: number
+  next_review_at: string | null
 }
 
 export interface SetSummary {
@@ -318,8 +313,9 @@ export const useRevisionStore = defineStore('revision', () => {
     if (set && set.item_count > 0) set.item_count--
   }
 
-  async function fetchStudyItems(setId: number) {
-    const response = await api.get<RevisionItem[]>(`/revision/sets/${setId}/study`)
+  async function fetchStudyItems(setId: number, includeNotDue = false) {
+    const suffix = includeNotDue ? '?include_not_due=true' : ''
+    const response = await api.get<RevisionItem[]>(`/revision/sets/${setId}/study${suffix}`)
     return response.data
   }
 
@@ -331,11 +327,42 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
-  async function runQcm(setId: number, answers: RunAnswer[], durationSeconds = 0) {
-    const response = await api.post<RunResult>(`/revision/sets/${setId}/run`, {
-      answers,
-      duration_seconds: durationSeconds,
-    })
+  // Verification sans effet de bord (Task 6) : correction d'une question qcm
+  // (earned/points/correct_option_ids) sans appliquer de note SM-2, sur le
+  // meme principe que checkItemAnswer ci-dessous.
+  async function checkQcmAnswer(setId: number, itemId: number, selectedOptionIds: string[]) {
+    const response = await api.post<QcmCheckResult>(
+      `/revision/sets/${setId}/study/qcm-check/${itemId}`,
+      { selected_option_ids: selectedOptionIds },
+    )
+    return response.data
+  }
+
+  // Applique la note SM-2 choisie par l'utilisateur apres avoir vu la
+  // correction (cf. checkQcmAnswer) -- meme principe que gradeItem, mais pour
+  // une question qcm (reponse deja typee en selected_option_ids).
+  async function answerQcmItem(
+    setId: number,
+    itemId: number,
+    selectedOptionIds: string[],
+    score: number,
+    durationSeconds = 0,
+  ) {
+    const response = await api.post<QcmAnswerResult>(
+      `/revision/sets/${setId}/study/qcm-answer/${itemId}`,
+      { selected_option_ids: selectedOptionIds, score, duration_seconds: durationSeconds },
+    )
+    return response.data
+  }
+
+  // Verification sans effet de bord (Task 5) : permet d'afficher la correction
+  // d'un item vf/association/ordre avant de demander une auto-evaluation
+  // manuelle, sans encore appliquer de note SM-2 (contrairement a gradeItem).
+  async function checkItemAnswer(setId: number, itemId: number, answer: Record<string, unknown>) {
+    const response = await api.post<{ correct: boolean }>(
+      `/revision/sets/${setId}/study/check/${itemId}`,
+      { answer },
+    )
     return response.data
   }
 
@@ -343,11 +370,12 @@ export const useRevisionStore = defineStore('revision', () => {
     setId: number,
     itemId: number,
     answer: Record<string, unknown>,
+    score: number,
     durationSeconds = 0,
   ) {
     const response = await api.post<{ correct: boolean; item: RevisionItem }>(
       `/revision/sets/${setId}/study/grade/${itemId}`,
-      { answer, duration_seconds: durationSeconds },
+      { answer, score, duration_seconds: durationSeconds },
     )
     return response.data
   }
@@ -382,7 +410,9 @@ export const useRevisionStore = defineStore('revision', () => {
     deleteItem,
     fetchStudyItems,
     answerItem,
-    runQcm,
+    checkQcmAnswer,
+    answerQcmItem,
+    checkItemAnswer,
     gradeItem,
     fetchSetStats,
     fetchItemStats,

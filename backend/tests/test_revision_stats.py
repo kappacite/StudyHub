@@ -56,15 +56,16 @@ def _qcm_with_item(client, auth_headers):
 
 def test_item_stats_after_reviews(client, auth_headers):
     set_id, item = _qcm_with_item(client, auth_headers)
-    # 2 passages : 1 réussi, 1 raté.
+    # 2 passages : 1 réussi, 1 raté (score reflétant la correction, cf.
+    # ancien run_qcm : réussi -> 5, raté -> 1).
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
         headers=auth_headers,
     )
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["a"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["a"], "score": 1},
         headers=auth_headers,
     )
 
@@ -82,8 +83,8 @@ def test_item_stats_after_reviews(client, auth_headers):
 def test_set_stats_aggregates_and_verdicts(client, auth_headers):
     set_id, item = _qcm_with_item(client, auth_headers)
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
         headers=auth_headers,
     )
 
@@ -224,14 +225,14 @@ def test_item_stats_scoped_to_requesting_user_on_shared_set(client, auth_headers
 
     # Le proprietaire reussit (grade eleve).
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
         headers=auth_headers,
     )
     # L'eleve rate (grade bas) -- meme item, meme ensemble partage.
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["a"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["a"], "score": 1},
         headers=student_headers,
     )
 
@@ -253,13 +254,13 @@ def test_set_stats_scoped_to_requesting_user_on_shared_set(client, auth_headers)
     set_id, item, student_headers = _share_set_with_new_user(client, auth_headers)
 
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["b"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
         headers=auth_headers,
     )
     client.post(
-        f"/api/v1/revision/sets/{set_id}/run",
-        json={"answers": [{"item_id": item["id"], "selected_option_ids": ["a"]}]},
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["a"], "score": 1},
         headers=student_headers,
     )
 
@@ -558,7 +559,7 @@ def test_set_stats_on_heterogeneous_set_counts_all_item_types(client, auth_heade
     )
     client.post(
         f"/api/v1/revision/sets/{set_id}/study/grade/{vf['id']}",
-        json={"answer": {"value": True}},
+        json={"answer": {"value": True}, "score": 5},
         headers=auth_headers,
     )
 
@@ -570,3 +571,72 @@ def test_set_stats_on_heterogeneous_set_counts_all_item_types(client, auth_heade
     assert body["reviewed_items"] == 2
     types = {it["type"] for it in body["items"]}
     assert types == {"flashcard", "vf"}
+
+
+# --- Prochaine echeance agregee (Task 4, revision-flexibilite) --------------
+
+
+def test_set_stats_next_review_at_is_earliest_across_items(client, auth_headers, app):
+    """next_review_at doit etre le minimum des next_review de tous les items de
+    l'ensemble -- la prochaine echeance SM-2 reelle, pas une moyenne ni le
+    premier item cree."""
+    set_id, item1 = _definition_with_item(client, auth_headers)
+    item2 = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"term": "T2", "definition": "D2"}},
+        headers=auth_headers,
+    ).json
+    item3 = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"payload": {"term": "T3", "definition": "D3"}},
+        headers=auth_headers,
+    ).json
+
+    now = datetime.utcnow()
+    nearest = now + timedelta(days=2)
+    with app.app_context():
+        from app.extensions import db
+        from app.models.revision import RevisionItem
+
+        RevisionItem.query.filter_by(id=item1["id"]).first().next_review = now + timedelta(days=10)
+        RevisionItem.query.filter_by(id=item2["id"]).first().next_review = nearest
+        RevisionItem.query.filter_by(id=item3["id"]).first().next_review = now + timedelta(days=5)
+        db.session.commit()
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    returned = datetime.fromisoformat(stats.json["next_review_at"])
+    assert abs((returned - nearest).total_seconds()) < 1
+
+
+def test_set_stats_next_review_at_none_when_set_has_no_items(client, auth_headers):
+    """Ensemble vide (items_count == 0) : next_review_at doit etre None -- pas
+    d'exception sur un min() de sequence vide."""
+    set_id = client.post(
+        "/api/v1/revision/sets", json={"name": "Vide", "type": "qcm"}, headers=auth_headers
+    ).json["id"]
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    assert stats.json["items_count"] == 0
+    assert stats.json["next_review_at"] is None
+
+
+def test_set_stats_next_review_at_stays_in_the_past_when_overdue(client, auth_headers, app):
+    """Ensemble entierement en retard : next_review_at doit rester une date
+    passee (pas de filtre > now, pas de nullification) -- c'est une
+    information reelle sur le retard de l'ensemble."""
+    set_id, item = _definition_with_item(client, auth_headers)
+    overdue = datetime.utcnow() - timedelta(days=3)
+    with app.app_context():
+        from app.extensions import db
+        from app.models.revision import RevisionItem
+
+        RevisionItem.query.filter_by(id=item["id"]).first().next_review = overdue
+        db.session.commit()
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    returned = datetime.fromisoformat(stats.json["next_review_at"])
+    assert returned < datetime.utcnow()
+    assert abs((returned - overdue).total_seconds()) < 1

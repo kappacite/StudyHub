@@ -32,12 +32,21 @@
             : "Rien à réviser pour l'instant. 🎉"
         }}
       </p>
-      <button
-        class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
-        @click="goBack"
-      >
-        Retour
-      </button>
+      <div class="flex items-center justify-center gap-3">
+        <button
+          class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
+          @click="goBack"
+        >
+          Retour
+        </button>
+        <button
+          v-if="filterType !== 'qcm'"
+          class="px-4 py-2 text-sm font-bold text-primary border border-primary hover:bg-primary-soft dark:hover:bg-primary-soft rounded-xl"
+          @click="reviewAnyway"
+        >
+          Réviser quand même
+        </button>
+      </div>
     </div>
 
     <template v-else>
@@ -67,13 +76,15 @@
           </p>
           <div v-if="phase === 'answer'" class="grid grid-cols-2 gap-3">
             <button
-              class="py-3 rounded-xl text-sm font-bold border border-line dark:border-line hover:bg-success-soft dark:hover:bg-success-soft"
+              class="py-3 rounded-xl text-sm font-bold border border-line dark:border-line hover:bg-success-soft dark:hover:bg-success-soft disabled:opacity-50"
+              :disabled="busy"
               @click="submitVf(true)"
             >
               Vrai
             </button>
             <button
-              class="py-3 rounded-xl text-sm font-bold border border-line dark:border-line hover:bg-danger-soft dark:hover:bg-danger-soft"
+              class="py-3 rounded-xl text-sm font-bold border border-line dark:border-line hover:bg-danger-soft dark:hover:bg-danger-soft disabled:opacity-50"
+              :disabled="busy"
               @click="submitVf(false)"
             >
               Faux
@@ -90,6 +101,14 @@
             >
               {{ current.payload.justification }}
             </p>
+            <template v-if="phase === 'self-eval'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
+              >
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons :disabled="busy" @select="selfEvalGraded" />
+            </template>
           </div>
         </template>
 
@@ -113,32 +132,14 @@
             >
               {{ current.payload.back }}
             </p>
-            <p class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest">
-              Votre auto-évaluation
-            </p>
-            <div class="grid grid-cols-3 gap-2">
-              <button
-                data-test="self-eval-a-revoir"
-                class="py-2.5 rounded-xl text-xs font-bold border border-danger text-danger hover:bg-danger-soft dark:border-danger dark:bg-danger-soft"
-                @click="selfEval(1)"
+            <template v-if="phase === 'reveal'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
               >
-                À revoir
-              </button>
-              <button
-                data-test="self-eval-moyen"
-                class="py-2.5 rounded-xl text-xs font-bold border border-warning text-warning hover:bg-warning-soft dark:border-warning dark:bg-warning-soft"
-                @click="selfEval(3)"
-              >
-                Moyen
-              </button>
-              <button
-                data-test="self-eval-acquis"
-                class="py-2.5 rounded-xl text-xs font-bold border border-success text-success hover:bg-success-soft dark:border-success dark:bg-success-soft"
-                @click="selfEval(5)"
-              >
-                Acquis
-              </button>
-            </div>
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons :disabled="busy" @select="selfEval" />
+            </template>
           </template>
         </template>
 
@@ -159,29 +160,14 @@
             >
               {{ current.payload.definition }}
             </p>
-            <p class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest">
-              Votre auto-évaluation
-            </p>
-            <div class="grid grid-cols-3 gap-2">
-              <button
-                class="py-2.5 rounded-xl text-xs font-bold border border-danger text-danger hover:bg-danger-soft dark:border-danger dark:bg-danger-soft"
-                @click="selfEval(1)"
+            <template v-if="phase === 'reveal'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
               >
-                À revoir
-              </button>
-              <button
-                class="py-2.5 rounded-xl text-xs font-bold border border-warning text-warning hover:bg-warning-soft dark:border-warning dark:bg-warning-soft"
-                @click="selfEval(3)"
-              >
-                Moyen
-              </button>
-              <button
-                class="py-2.5 rounded-xl text-xs font-bold border border-success text-success hover:bg-success-soft dark:border-success dark:bg-success-soft"
-                @click="selfEval(5)"
-              >
-                Acquis
-              </button>
-            </div>
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons :disabled="busy" @select="selfEval" />
+            </template>
           </template>
         </template>
 
@@ -198,7 +184,7 @@
               <span class="text-ink-subtle">→</span>
               <select
                 v-model="matches[left]"
-                :disabled="phase === 'feedback'"
+                :disabled="phase !== 'answer'"
                 class="flex-1 px-3 py-2 text-sm rounded-xl border border-line dark:border-line bg-surface dark:bg-surface-soft"
               >
                 <option value="">—</option>
@@ -208,15 +194,25 @@
           </div>
           <button
             v-if="phase === 'answer'"
-            :disabled="!allMatched"
+            :disabled="!allMatched || busy"
             class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50"
             @click="submitAssoc"
           >
-            Valider
+            {{ busy ? 'Correction…' : 'Valider' }}
           </button>
-          <p v-else class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
-            {{ lastCorrect ? 'Tout est correct !' : 'Des associations sont erronées.' }}
-          </p>
+          <template v-else>
+            <p class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
+              {{ lastCorrect ? 'Tout est correct !' : 'Des associations sont erronées.' }}
+            </p>
+            <template v-if="phase === 'self-eval'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
+              >
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons :disabled="busy" @select="selfEvalGraded" />
+            </template>
+          </template>
         </template>
 
         <!-- ORDRE -->
@@ -259,14 +255,25 @@
           </ul>
           <button
             v-if="phase === 'answer'"
-            class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong"
+            :disabled="busy"
+            class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50"
             @click="submitOrdre"
           >
-            Valider
+            {{ busy ? 'Correction…' : 'Valider' }}
           </button>
-          <p v-else class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
-            {{ lastCorrect ? 'Ordre correct !' : 'Ordre incorrect.' }}
-          </p>
+          <template v-else>
+            <p class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
+              {{ lastCorrect ? 'Ordre correct !' : 'Ordre incorrect.' }}
+            </p>
+            <template v-if="phase === 'self-eval'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
+              >
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons :disabled="busy" @select="selfEvalGraded" />
+            </template>
+          </template>
         </template>
 
         <!-- Bouton suivant (après correction / révélation auto-corrigée) -->
@@ -288,6 +295,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useRevisionStore } from '../../stores/revision'
 import type { RevisionItem, RevisionItemType } from '../../stores/revision'
 import { ChevronLeft } from 'lucide-vue-next'
+import SelfEvalButtons from '../../components/revision/SelfEvalButtons.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -300,8 +308,17 @@ const loading = ref(true)
 const items = ref<RevisionItem[]>([])
 const index = ref(0)
 const correctCount = ref(0)
-const phase = ref<'answer' | 'reveal' | 'feedback'>('answer')
+const phase = ref<'answer' | 'reveal' | 'self-eval' | 'feedback'>('answer')
 const lastCorrect = ref(false)
+// Reponse soumise au check (Task 5) : reutilisee telle quelle au moment du
+// grade (l'auto-evaluation ne fait que choisir le score, pas re-saisir une
+// reponse), reassignee a chaque soumission vf/association/ordre.
+const lastAnswer = ref<Record<string, unknown>>({})
+// Garde anti double-soumission (regression finale) : empeche un double-clic
+// pendant l'appel reseau en cours d'appliquer SM-2 deux fois ou d'ecrire deux
+// StudySession -- desactive aussi les boutons "Valider"/Vrai/Faux et
+// SelfEvalButtons a chaque emplacement ou ils sont montes.
+const busy = ref(false)
 
 const TYPE_LABELS: Record<string, string> = {
   vf: 'Vrai / Faux',
@@ -358,6 +375,13 @@ function setupItem() {
   }
 }
 
+// Filtrage commun a l'onMounted et a reviewAnyway (Task 7) : exclut les qcm
+// (cf. commentaire ci-dessous) puis applique le filtre ?type= eventuel.
+function applyItemFilter(studyItems: RevisionItem[]) {
+  const nonQcmItems = studyItems.filter((i) => i.type !== 'qcm')
+  return filterType.value ? nonQcmItems.filter((i) => i.type === filterType.value) : nonQcmItems
+}
+
 onMounted(async () => {
   filterType.value = (route.query.type as RevisionItemType) || null
   try {
@@ -379,10 +403,7 @@ onMounted(async () => {
     // (risque deja accepte dans le spec backend) -- exclus de la revision par
     // item plutot que de rendre une carte vide ou de rediriger vers un flux
     // lui-meme casse pour un ensemble heterogene.
-    const nonQcmItems = studyItems.filter((i) => i.type !== 'qcm')
-    items.value = filterType.value
-      ? nonQcmItems.filter((i) => i.type === filterType.value)
-      : nonQcmItems
+    items.value = applyItemFilter(studyItems)
     if (items.value.length) setupItem()
   } catch (e) {
     console.error('Erreur de chargement de la session', e)
@@ -391,34 +412,87 @@ onMounted(async () => {
   }
 })
 
+// Revision libre (Task 7, meme principe que QcmRun.vue en Task 6) : sur
+// l'etat vide generique, relance le chargement en incluant les items non dus.
+async function reviewAnyway() {
+  try {
+    const studyItems = await revisionStore.fetchStudyItems(setId, true)
+    items.value = applyItemFilter(studyItems)
+    if (items.value.length) setupItem()
+  } catch (e) {
+    console.error('Erreur de chargement de la session', e)
+  }
+}
+
 async function submitVf(value: boolean) {
-  const res = await revisionStore.gradeItem(setId, current.value.id, { value }, elapsedSeconds())
-  applyResult(res.correct)
+  await checkAndAwaitSelfEval({ value })
 }
 
 async function submitAssoc() {
-  const res = await revisionStore.gradeItem(
-    setId,
-    current.value.id,
-    { matches: { ...matches } },
-    elapsedSeconds(),
-  )
-  applyResult(res.correct)
+  await checkAndAwaitSelfEval({ matches: { ...matches } })
 }
 
 async function submitOrdre() {
-  const res = await revisionStore.gradeItem(
-    setId,
-    current.value.id,
-    { order: [...ordering.value] },
-    elapsedSeconds(),
-  )
-  applyResult(res.correct)
+  await checkAndAwaitSelfEval({ order: [...ordering.value] })
 }
 
+// vf/association/ordre (Task 5) : la reponse a une correction objective, mais
+// n'applique plus directement la note SM-2 -- on verifie d'abord (sans effet
+// de bord) puis on affiche la correction et on attend une auto-evaluation
+// manuelle (phase 'self-eval'), comme flashcard/definition.
+async function checkAndAwaitSelfEval(answer: Record<string, unknown>) {
+  if (busy.value) return
+  busy.value = true
+  try {
+    lastAnswer.value = answer
+    const res = await revisionStore.checkItemAnswer(setId, current.value.id, answer)
+    lastCorrect.value = res.correct
+    phase.value = 'self-eval'
+  } catch (e) {
+    console.error('Erreur de correction de la reponse', e)
+  } finally {
+    busy.value = false
+  }
+}
+
+// flashcard/definition (inchange) : pas de correction objective, l'auto-
+// evaluation applique directement la note SM-2 via answerItem().
 async function selfEval(score: number) {
-  await revisionStore.answerItem(setId, current.value.id, score, elapsedSeconds())
-  applyResult(score >= 3)
+  if (busy.value) return
+  busy.value = true
+  try {
+    await revisionStore.answerItem(setId, current.value.id, score, elapsedSeconds())
+    applyResult(score >= 3)
+  } catch (e) {
+    console.error("Erreur d'enregistrement de l'auto-evaluation", e)
+  } finally {
+    busy.value = false
+  }
+}
+
+// vf/association/ordre en phase 'self-eval' (Task 5) : applique la note SM-2
+// choisie manuellement, avec la reponse deja verifiee par checkItemAnswer.
+// correctCount reste base sur la correction reelle (lastCorrect, issue du
+// check) et non sur le score choisi ensuite -- les deux sont volontairement
+// independants (le score reflete la confiance/memorisation, pas l'exactitude).
+async function selfEvalGraded(score: number) {
+  if (busy.value) return
+  busy.value = true
+  try {
+    await revisionStore.gradeItem(
+      setId,
+      current.value.id,
+      lastAnswer.value,
+      score,
+      elapsedSeconds(),
+    )
+    if (lastCorrect.value) correctCount.value++
+    phase.value = 'feedback'
+  } catch (e) {
+    console.error("Erreur d'enregistrement de la notation", e)
+  } finally {
+    busy.value = false
+  }
 }
 
 function applyResult(correct: boolean) {
