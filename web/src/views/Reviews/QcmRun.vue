@@ -29,34 +29,42 @@
       <p class="text-sm text-ink-muted dark:text-ink-subtle">
         Aucune question à réviser pour l'instant.
       </p>
-      <button
-        class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
-        @click="goBack"
-      >
-        Retour
-      </button>
+      <div class="flex items-center justify-center gap-3">
+        <button
+          class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
+          @click="goBack"
+        >
+          Retour
+        </button>
+        <button
+          class="px-4 py-2 text-sm font-bold text-primary border border-primary hover:bg-primary-soft dark:hover:bg-primary-soft rounded-xl"
+          @click="reviewAnyway"
+        >
+          Réviser quand même
+        </button>
+      </div>
     </div>
 
     <!-- Result -->
-    <div v-else-if="result" class="space-y-6">
+    <div v-else-if="done" class="space-y-6">
       <div
         class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 text-center space-y-3"
       >
         <h2 class="text-2xl font-bold text-ink dark:text-white">
-          {{ result.score }} / {{ result.max_score }} points
+          {{ finalScore.score }} / {{ finalScore.maxScore }} points
         </h2>
         <div class="w-full bg-surface-soft dark:bg-surface-soft rounded-full h-3 overflow-hidden">
           <div
             class="h-full rounded-full transition-all"
-            :class="result.percentage >= 50 ? 'bg-success' : 'bg-danger'"
-            :style="{ width: `${result.percentage}%` }"
+            :class="finalScore.percentage >= 50 ? 'bg-success' : 'bg-danger'"
+            :style="{ width: `${finalScore.percentage}%` }"
           ></div>
         </div>
         <p
           class="text-sm font-bold"
-          :class="result.percentage >= 50 ? 'text-success' : 'text-danger'"
+          :class="finalScore.percentage >= 50 ? 'text-success' : 'text-danger'"
         >
-          {{ result.percentage }} %
+          {{ finalScore.percentage }} %
         </p>
       </div>
 
@@ -89,7 +97,7 @@
           >
             <span class="w-4 shrink-0 text-center">
               <span v-if="opt.correct" class="text-success">✓</span>
-              <span v-else-if="answers[q.id]?.includes(opt.id)" class="text-danger">✕</span>
+              <span v-else-if="selections[q.id]?.includes(opt.id)" class="text-danger">✕</span>
             </span>
             <span
               :class="
@@ -111,59 +119,124 @@
       </button>
     </div>
 
-    <!-- Quiz -->
-    <div v-else class="space-y-5">
-      <div
-        v-for="(q, i) in questions"
-        :key="q.id"
-        class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-5"
-      >
-        <p class="text-sm font-bold text-ink dark:text-ink-subtle mb-1">
-          {{ i + 1 }}. {{ q.payload.question }}
-        </p>
-        <p class="text-[10px] text-ink-subtle mb-3">
-          {{ q.payload.points || 1 }} point{{ (q.payload.points || 1) > 1 ? 's' : '' }} · cochez
-          la/les bonne(s) réponse(s)
-        </p>
-        <div class="space-y-2">
-          <label
-            v-for="opt in q.payload.options || []"
-            :key="opt.id"
-            class="flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-colors"
-            :class="
-              answers[q.id]?.includes(opt.id)
-                ? 'border-primary bg-primary-soft dark:bg-primary-soft'
-                : 'border-line dark:border-line'
-            "
-          >
-            <input
-              v-model="answers[q.id]"
-              type="checkbox"
-              :value="opt.id"
-              class="accent-primary shrink-0"
-            />
-            <span class="text-sm text-ink dark:text-ink-subtle">{{ opt.text }}</span>
-          </label>
+    <!-- Question courante -->
+    <template v-else>
+      <div class="space-y-2">
+        <div
+          class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-ink-subtle"
+        >
+          <span>{{ index + 1 }} / {{ questions.length }}</span>
+        </div>
+        <div class="w-full bg-surface-soft dark:bg-surface-soft rounded-full h-2 overflow-hidden">
+          <div
+            class="bg-primary h-full rounded-full transition-all"
+            :style="{ width: `${(index / questions.length) * 100}%` }"
+          ></div>
         </div>
       </div>
 
-      <button
-        :disabled="submitting"
-        class="w-full px-4 py-3 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl disabled:opacity-50"
-        @click="submit"
+      <div
+        class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl p-5 space-y-4"
       >
-        {{ submitting ? 'Correction…' : 'Valider mes réponses' }}
-      </button>
-    </div>
+        <div>
+          <p class="text-sm font-bold text-ink dark:text-ink-subtle mb-1">
+            {{ current.payload.question }}
+          </p>
+          <p class="text-[10px] text-ink-subtle">
+            {{ current.payload.points || 1 }} point{{
+              (current.payload.points || 1) > 1 ? 's' : ''
+            }}
+            · cochez la/les bonne(s) réponse(s)
+          </p>
+        </div>
+
+        <!-- Phase answer : selection des options -->
+        <template v-if="phase === 'answer'">
+          <div class="space-y-2">
+            <label
+              v-for="opt in current.payload.options || []"
+              :key="opt.id"
+              class="flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-colors"
+              :class="
+                selected.includes(opt.id)
+                  ? 'border-primary bg-primary-soft dark:bg-primary-soft'
+                  : 'border-line dark:border-line'
+              "
+            >
+              <input
+                v-model="selected"
+                type="checkbox"
+                :value="opt.id"
+                class="accent-primary shrink-0"
+              />
+              <span class="text-sm text-ink dark:text-ink-subtle">{{ opt.text }}</span>
+            </label>
+          </div>
+          <button
+            class="w-full px-4 py-3 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
+            @click="checkCurrent"
+          >
+            Valider
+          </button>
+        </template>
+
+        <!-- Phase self-eval / feedback : correction de CETTE question -->
+        <template v-else>
+          <p
+            class="text-sm font-bold"
+            :class="checkResult?.correct ? 'text-success' : 'text-danger'"
+          >
+            {{ checkResult?.correct ? 'Correct !' : 'Incorrect.' }}
+            {{ checkResult?.earned }}/{{ checkResult?.points }} point(s)
+          </p>
+          <ul class="space-y-1.5">
+            <li
+              v-for="opt in current.payload.options || []"
+              :key="opt.id"
+              class="flex items-center gap-2 text-sm"
+            >
+              <span class="w-4 shrink-0 text-center">
+                <span v-if="opt.correct" class="text-success">✓</span>
+                <span v-else-if="selected.includes(opt.id)" class="text-danger">✕</span>
+              </span>
+              <span
+                :class="
+                  opt.correct
+                    ? 'text-success dark:text-success font-semibold'
+                    : 'text-ink-muted dark:text-ink-subtle'
+                "
+                >{{ opt.text }}</span
+              >
+            </li>
+          </ul>
+
+          <template v-if="phase === 'self-eval'">
+            <p class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest">
+              Votre auto-évaluation
+            </p>
+            <SelfEvalButtons @select="chooseScore" />
+          </template>
+
+          <button
+            v-else
+            class="w-full px-4 py-3 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
+            @click="next"
+          >
+            {{ index + 1 < questions.length ? 'Suivant' : 'Terminer' }}
+          </button>
+        </template>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useRevisionStore } from '../../stores/revision'
-import type { RevisionItem, RunResult } from '../../stores/revision'
+import type { RevisionItem, QcmCheckResult, QcmAnswerResult } from '../../stores/revision'
 import { ChevronLeft } from 'lucide-vue-next'
+import SelfEvalButtons from '../../components/revision/SelfEvalButtons.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -172,57 +245,108 @@ const revisionStore = useRevisionStore()
 const setId = Number(route.params.id)
 const setName = ref('')
 const loading = ref(true)
-const submitting = ref(false)
 const questions = ref<RevisionItem[]>([])
-const answers = reactive<Record<number, string[]>>({})
-const result = ref<RunResult | null>(null)
+const index = ref(0)
+const phase = ref<'answer' | 'self-eval' | 'feedback'>('answer')
+const selected = ref<string[]>([])
+const checkResult = ref<QcmCheckResult | null>(null)
+// Resultats accumules localement, question par question (Task 6) : plus de
+// reponse batch a consommer depuis le backend (route /run supprimee) --
+// score/max_score/percentage finaux reconstruits a partir de cette liste.
+const results = ref<QcmAnswerResult[]>([])
+// Options selectionnees par question deja repondue, conservees a part de
+// `results` (qui reflete tel quel le contrat backend QcmAnswerResult, sans
+// selected_option_ids) -- uniquement pour reafficher les croix rouges sur les
+// mauvaises reponses cochees dans le recap final.
+const selections = reactive<Record<number, string[]>>({})
 
-// Duree de revision reelle (Task 9) : chrono demarre a l'ouverture du
-// passage, duree totale du batch calculee a la soumission (repartie ensuite
-// par question cote backend via divmod).
-const startedAt = ref(Date.now())
+const current = computed(
+  () => questions.value[index.value] || ({ type: 'qcm', payload: {} } as RevisionItem),
+)
+const done = computed(() => questions.value.length > 0 && index.value >= questions.value.length)
 
-onMounted(async () => {
+const finalScore = computed(() => {
+  const score = results.value.reduce((sum, r) => sum + r.earned, 0)
+  const maxScore = results.value.reduce((sum, r) => sum + r.points, 0)
+  const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0
+  return { score, maxScore, percentage }
+})
+
+function resultFor(itemId: number) {
+  return results.value.find((r) => r.item.id === itemId)
+}
+
+// Duree de revision reelle (Task 9, reprise Task 6) : chrono redemarre a
+// chaque setupItem() (premier item comme suivants) -- elapsedSeconds() donne
+// la duree ecoulee sur la question courante au moment de la soumission.
+const itemStartedAt = ref(Date.now())
+
+function elapsedSeconds(): number {
+  return Math.max(0, Math.round((Date.now() - itemStartedAt.value) / 1000))
+}
+
+function setupItem() {
+  itemStartedAt.value = Date.now()
+  phase.value = 'answer'
+  selected.value = []
+  checkResult.value = null
+}
+
+async function loadQuestions(includeNotDue = false) {
+  loading.value = true
   try {
-    const [set, items] = await Promise.all([
-      revisionStore.fetchSet(setId),
-      revisionStore.fetchStudyItems(setId),
-    ])
-    setName.value = set.name
-    questions.value = items
-    items.forEach((q) => {
-      answers[q.id] = []
-    })
-    // Le chrono ne doit mesurer que le temps de reponse reel, pas la latence
-    // reseau/chargement precedente (cf. revue de branche, finding #11) : on le
-    // demarre juste avant que les questions ne soient effectivement affichees.
-    startedAt.value = Date.now()
+    questions.value = await revisionStore.fetchStudyItems(setId, includeNotDue)
+    index.value = 0
+    results.value = []
+    Object.keys(selections).forEach((k) => delete selections[Number(k)])
+    if (questions.value.length) setupItem()
   } catch (e) {
     console.error('Erreur de chargement du QCM', e)
   } finally {
     loading.value = false
   }
-})
-
-function resultFor(itemId: number) {
-  return result.value?.results.find((r) => r.item_id === itemId)
 }
 
-async function submit() {
-  if (submitting.value) return
-  submitting.value = true
+onMounted(async () => {
   try {
-    const durationSeconds = Math.max(0, Math.round((Date.now() - startedAt.value) / 1000))
-    result.value = await revisionStore.runQcm(
-      setId,
-      questions.value.map((q) => ({ item_id: q.id, selected_option_ids: answers[q.id] || [] })),
-      durationSeconds,
-    )
+    const set = await revisionStore.fetchSet(setId)
+    setName.value = set.name
+    await loadQuestions()
   } catch (e) {
-    console.error('Erreur de correction', e)
-  } finally {
-    submitting.value = false
+    console.error('Erreur de chargement du QCM', e)
+    loading.value = false
   }
+})
+
+// Revision libre (Task 6) : sur liste vide, relance le chargement en incluant
+// les questions non dues (couvre aussi le rejeu d'une question deja repondue,
+// get_by_set ne filtrant deja plus par echeance -- Task 3).
+async function reviewAnyway() {
+  await loadQuestions(true)
+}
+
+async function checkCurrent() {
+  const res = await revisionStore.checkQcmAnswer(setId, current.value.id, [...selected.value])
+  checkResult.value = res
+  phase.value = 'self-eval'
+}
+
+async function chooseScore(score: number) {
+  const res = await revisionStore.answerQcmItem(
+    setId,
+    current.value.id,
+    [...selected.value],
+    score,
+    elapsedSeconds(),
+  )
+  results.value.push(res)
+  selections[current.value.id] = [...selected.value]
+  phase.value = 'feedback'
+}
+
+function next() {
+  index.value++
+  if (index.value < questions.value.length) setupItem()
 }
 
 function goBack() {

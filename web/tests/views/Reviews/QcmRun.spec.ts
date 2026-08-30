@@ -26,6 +26,7 @@ function question(id: number, overrides: Record<string, unknown> = {}) {
     type: 'qcm',
     payload: {
       question: 'Capitale de la France ?',
+      points: 2,
       options: [
         { id: 'a', text: 'Lyon', correct: false },
         { id: 'b', text: 'Paris', correct: true },
@@ -56,7 +57,7 @@ async function mountQcmRun(items: unknown[]) {
   setActivePinia(pinia)
   api.get.mockImplementation((url: string) => {
     if (/\/revision\/sets\/\d+$/.test(url)) return Promise.resolve({ data: SET })
-    if (/\/revision\/sets\/\d+\/study$/.test(url)) return Promise.resolve({ data: items })
+    if (/\/revision\/sets\/\d+\/study(\?.*)?$/.test(url)) return Promise.resolve({ data: items })
     return Promise.reject(new Error(`non mocké: ${url}`))
   })
   const router = createTestRouter()
@@ -67,85 +68,236 @@ async function mountQcmRun(items: unknown[]) {
   return wrapper
 }
 
-describe('QcmRun — duree de revision reelle (Task 9)', () => {
+function findButtonByText(wrapper: ReturnType<typeof mount>, text: string) {
+  return wrapper.findAll('button').find((b) => b.text() === text)
+}
+
+describe('QcmRun — navigation question par question (Task 6)', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('inclut la duree reelle ecoulee (Date.now) dans le payload de /run', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
-    try {
-      api.post.mockResolvedValue({
-        data: { score: 1, max_score: 1, percentage: 100, results: [] },
-      })
-      const wrapper = await mountQcmRun([question(1)])
+  it('affiche une seule question a la fois en phase answer, pas tout le lot', async () => {
+    const items = [
+      question(1, {
+        payload: { question: 'Q1 ?', points: 1, options: [{ id: 'a', text: 'A', correct: true }] },
+      }),
+      question(2, {
+        payload: { question: 'Q2 ?', points: 1, options: [{ id: 'a', text: 'A', correct: true }] },
+      }),
+    ]
+    const wrapper = await mountQcmRun(items)
 
-      // Le chrono demarre a onMounted -- on avance le temps de 12s avant de
-      // repondre et valider.
-      vi.setSystemTime(new Date('2026-01-01T00:00:12.000Z'))
-      const checkboxes = wrapper.findAll('input[type="checkbox"]')
-      await checkboxes[1].setValue(true) // option "b", correcte
-      const submitButton = wrapper.findAll('button').find((b) => b.text().includes('Valider'))
-      await submitButton?.trigger('click')
-      await flushPromises()
-
-      expect(api.post).toHaveBeenCalledWith('/revision/sets/7/run', {
-        answers: [{ item_id: 1, selected_option_ids: ['b'] }],
-        duration_seconds: 12,
-      })
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(wrapper.text()).toContain('Q1 ?')
+    expect(wrapper.text()).not.toContain('Q2 ?')
   })
 
-  // Finding #11 (revue de branche reviser-hub) : le chrono demarrait avant l'appel
-  // reseau (fetchSet + fetchStudyItems), facturant la latence de chargement comme
-  // temps d'etude. Il doit demarrer juste avant que les questions ne soient
-  // effectivement affichees.
-  it('ne facture pas la latence reseau/chargement dans la duree mesuree', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
-    try {
-      let resolveStudyItems!: (v: unknown) => void
-      const pendingStudyItems = new Promise((resolve) => {
-        resolveStudyItems = resolve
-      })
-      api.get.mockImplementation((url: string) => {
-        if (/\/revision\/sets\/\d+$/.test(url)) return Promise.resolve({ data: SET })
-        if (/\/revision\/sets\/\d+\/study$/.test(url)) return pendingStudyItems
-        return Promise.reject(new Error(`non mocké: ${url}`))
-      })
-      api.post.mockResolvedValue({
-        data: { score: 1, max_score: 1, percentage: 100, results: [] },
-      })
+  it('valider une question appelle checkQcmAnswer (qcm-check) et affiche la correction + boutons de notation, pas encore Suivant', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/qcm-check/1') {
+        return Promise.resolve({
+          data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'] },
+        })
+      }
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const wrapper = await mountQcmRun([question(1)])
 
-      const pinia = createPinia()
-      setActivePinia(pinia)
-      const router = createTestRouter()
-      await router.push('/revision/sets/7/run')
-      await router.isReady()
-      const wrapper = mount(QcmRun, { global: { plugins: [pinia, router] } })
-      await flushPromises()
+    const checkboxes = wrapper.findAll('input[type="checkbox"]')
+    await checkboxes[1].setValue(true) // option "b", correcte
+    await findButtonByText(wrapper, 'Valider')!.trigger('click')
+    await flushPromises()
 
-      // 5s de latence reseau/chargement avant que les questions n'arrivent :
-      // ce temps ne doit pas etre compte dans la duree d'etude.
-      vi.setSystemTime(new Date('2026-01-01T00:00:05.000Z'))
-      resolveStudyItems({ data: [question(1)] })
-      await flushPromises()
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/qcm-check/1', {
+      selected_option_ids: ['b'],
+    })
+    expect(wrapper.find('[data-test="self-eval-a-revoir"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-moyen"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+    expect(findButtonByText(wrapper, 'Suivant')).toBeUndefined()
+    expect(findButtonByText(wrapper, 'Terminer')).toBeUndefined()
+  })
 
-      // 12s de temps de reponse reel, une fois les questions affichees.
-      vi.setSystemTime(new Date('2026-01-01T00:00:17.000Z'))
-      const checkboxes = wrapper.findAll('input[type="checkbox"]')
-      await checkboxes[1].setValue(true)
-      const submitButton = wrapper.findAll('button').find((b) => b.text().includes('Valider'))
-      await submitButton?.trigger('click')
-      await flushPromises()
+  it('choisir une note appelle answerQcmItem (qcm-answer) avec le score choisi, puis affiche Suivant', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/qcm-check/1') {
+        return Promise.resolve({
+          data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'] },
+        })
+      }
+      if (url === '/revision/sets/7/study/qcm-answer/1') {
+        return Promise.resolve({
+          data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'], item: { id: 1 } },
+        })
+      }
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [question(1), question(2)]
+    const wrapper = await mountQcmRun(items)
 
-      expect(api.post).toHaveBeenCalledWith('/revision/sets/7/run', {
-        answers: [{ item_id: 1, selected_option_ids: ['b'] }],
-        duration_seconds: 12,
-      })
-    } finally {
-      vi.useRealTimers()
-    }
+    const checkboxes = wrapper.findAll('input[type="checkbox"]')
+    await checkboxes[1].setValue(true)
+    await findButtonByText(wrapper, 'Valider')!.trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/qcm-answer/1', {
+      selected_option_ids: ['b'],
+      score: 5,
+      duration_seconds: expect.any(Number),
+    })
+    expect(findButtonByText(wrapper, 'Suivant')).toBeDefined()
+  })
+
+  it('cliquer Suivant avance a la question suivante, encore en phase answer', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/qcm-check/1') {
+        return Promise.resolve({
+          data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'] },
+        })
+      }
+      if (url === '/revision/sets/7/study/qcm-answer/1') {
+        return Promise.resolve({
+          data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'], item: { id: 1 } },
+        })
+      }
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [
+      question(1, {
+        payload: {
+          question: 'Q1 ?',
+          points: 2,
+          options: [
+            { id: 'a', text: 'Lyon', correct: false },
+            { id: 'b', text: 'Paris', correct: true },
+          ],
+        },
+      }),
+      question(2, {
+        payload: { question: 'Q2 ?', points: 1, options: [{ id: 'a', text: 'A', correct: true }] },
+      }),
+    ]
+    const wrapper = await mountQcmRun(items)
+
+    const checkboxes = wrapper.findAll('input[type="checkbox"]')
+    await checkboxes[1].setValue(true)
+    await findButtonByText(wrapper, 'Valider')!.trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await flushPromises()
+    await findButtonByText(wrapper, 'Suivant')!.trigger('click')
+
+    expect(wrapper.text()).toContain('Q2 ?')
+    expect(wrapper.text()).not.toContain('Q1 ?')
+    expect(findButtonByText(wrapper, 'Valider')).toBeDefined()
+  })
+
+  it('agrege correctement le score final sur plusieurs questions avec des points differents', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/qcm-check/1') {
+        return Promise.resolve({
+          data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'] },
+        })
+      }
+      if (url === '/revision/sets/7/study/qcm-answer/1') {
+        return Promise.resolve({
+          data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'], item: { id: 1 } },
+        })
+      }
+      if (url === '/revision/sets/7/study/qcm-check/2') {
+        return Promise.resolve({
+          data: { correct: false, earned: 0, points: 3, correct_option_ids: ['x'] },
+        })
+      }
+      if (url === '/revision/sets/7/study/qcm-answer/2') {
+        return Promise.resolve({
+          data: {
+            correct: false,
+            earned: 0,
+            points: 3,
+            correct_option_ids: ['x'],
+            item: { id: 2 },
+          },
+        })
+      }
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [
+      question(1, {
+        payload: {
+          question: 'Q1 ?',
+          points: 2,
+          options: [
+            { id: 'a', text: 'Lyon', correct: false },
+            { id: 'b', text: 'Paris', correct: true },
+          ],
+        },
+      }),
+      question(2, {
+        payload: {
+          question: 'Q2 ?',
+          points: 3,
+          options: [
+            { id: 'x', text: 'X', correct: true },
+            { id: 'y', text: 'Y', correct: false },
+          ],
+        },
+      }),
+    ]
+    const wrapper = await mountQcmRun(items)
+
+    // Q1 : reponse correcte
+    let checkboxes = wrapper.findAll('input[type="checkbox"]')
+    await checkboxes[1].setValue(true)
+    await findButtonByText(wrapper, 'Valider')!.trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await flushPromises()
+    await findButtonByText(wrapper, 'Suivant')!.trigger('click')
+
+    // Q2 : reponse incorrecte (case "y" cochee)
+    checkboxes = wrapper.findAll('input[type="checkbox"]')
+    await checkboxes[1].setValue(true)
+    await findButtonByText(wrapper, 'Valider')!.trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-test="self-eval-a-revoir"]').trigger('click')
+    await flushPromises()
+    await findButtonByText(wrapper, 'Terminer')!.trigger('click')
+
+    expect(wrapper.text()).toContain('2 / 5 points')
+    expect(wrapper.text()).toContain('40 %')
+  })
+})
+
+describe('QcmRun — revision libre sur liste vide (Task 6)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('etat vide : bouton "Reviser quand meme" relance fetchStudyItems avec include_not_due=true et affiche les questions', async () => {
+    const wrapper = await mountQcmRun([])
+    expect(wrapper.text()).toContain("Aucune question à réviser pour l'instant")
+
+    const alreadyAnswered = question(9, {
+      next_review: '2099-01-01T00:00:00Z',
+      payload: {
+        question: 'Deja repondue ?',
+        points: 1,
+        options: [{ id: 'a', text: 'A', correct: true }],
+      },
+    })
+    api.get.mockImplementation((url: string) => {
+      if (/\/revision\/sets\/\d+$/.test(url)) return Promise.resolve({ data: SET })
+      if (url === '/revision/sets/7/study?include_not_due=true') {
+        return Promise.resolve({ data: [alreadyAnswered] })
+      }
+      if (/\/revision\/sets\/\d+\/study$/.test(url)) return Promise.resolve({ data: [] })
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+
+    await findButtonByText(wrapper, 'Réviser quand même')!.trigger('click')
+    await flushPromises()
+
+    expect(api.get).toHaveBeenCalledWith('/revision/sets/7/study?include_not_due=true')
+    expect(wrapper.text()).toContain('Deja repondue ?')
   })
 })
