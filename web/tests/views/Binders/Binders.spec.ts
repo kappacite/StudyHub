@@ -14,7 +14,7 @@ import { useRevisionStore } from '../../../src/stores/revision'
 import { useTagsStore } from '../../../src/stores/tags'
 import { useAuthStore } from '../../../src/stores/auth'
 
-const BINDER = { id: 'b1', name: 'Chimie organique', parent_id: null, is_public: false, user_id: 1, tags: [] }
+const BINDER = { id: 'b1', name: 'Chimie organique', parent_id: null, is_public: false, user_id: 1, tags: [{ id: 5, name: 'Urgent', color: '#4F46E5', created_at: '' }] }
 const SUBBINDER = { id: 'b1-sub', name: 'Sous-classeur B1', parent_id: 'b1', is_public: false, user_id: 1, tags: [] }
 const DECK = { id: 1, binder_id: 'b1', name: 'Deck classique', description: '', reversed: false, tuning_default: 1, card_count: 5, created_at: '', tags: [] }
 const HETEROGENEOUS_SET = { id: 7, name: 'Mixte', description: null, type: null, binder_id: 'b1', tuning_default: 1, is_public: false, item_count: 3 }
@@ -125,6 +125,15 @@ describe('Binders — racine : grille de classeurs uniquement', () => {
     expect(wrapper.findAll('button').some((b) => b.text().trim() === 'Notes')).toBe(false)
     expect(wrapper.findAll('button').some((b) => b.text().trim() === 'Révision')).toBe(false)
     expect(text).not.toContain('Sous-classeur B1')
+  })
+
+  // Régression revue finale (item 1) : BinderCard n'affichait plus du tout les tags
+  // du classeur (TagBadge retiré lors de la refonte SplitView -> grille). BINDER
+  // porte un tag ('Urgent') précisément pour ce test.
+  it('affiche les tags du classeur sur sa carte', async () => {
+    const { wrapper } = await mountBinders(null)
+
+    expect(wrapper.text()).toContain('Urgent')
   })
 
   it('clic sur une carte de classeur navigue vers /bibliotheque/:id', async () => {

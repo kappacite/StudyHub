@@ -209,6 +209,7 @@
             :deck-count="cardAggregate(child).deckCount"
             :note-count="cardAggregate(child).noteCount"
             :last-activity-label="cardAggregate(child).lastActivityLabel"
+            :tags="cardBinderProps(child).tags"
             @click="goTo(child.id)"
           />
         </div>
@@ -1078,7 +1079,7 @@ const childrenAtCurrentLevel = computed<(Binder | VirtualBinderEntry)[]>(() => {
 
 function cardBinderProps(entry: Binder | VirtualBinderEntry): BinderCardBinder {
   if (isVirtualEntry(entry)) return { id: entry.id, name: entry.name }
-  return { id: entry.id, name: entry.name, readOnly: entry.read_only }
+  return { id: entry.id, name: entry.name, readOnly: entry.read_only, tags: entry.tags }
 }
 
 // binderAggregate() attend un vrai id de classeur OU null (pour agréger le contenu
