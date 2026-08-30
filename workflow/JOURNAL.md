@@ -1,14 +1,78 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : bibliotheque-redesign
 
 ## Chantiers ouverts
 
-- `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution pas démarrée)
-- `ecrans-peripheriques-visuels` — pas commencé, indépendant
+- `editeur-notes-notation-ia` — pas commencé (volet frontend déjà planifié en détail, exécution
+  pas démarrée ; voir sa note du 2026-08-30 : Tâche 5 déjà livrée ailleurs, `NoteEvaluation.dc.html`
+  correspond à la future fonctionnalité « Notation », pas à `NoteEvaluation.vue` existant ;
+  tâches détaillées le même jour)
+- `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
+  `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; dépendance Blurting→Feynman déjà
+  levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
+  le même jour)
 - `classes-examens-planning` — pas commencé, indépendant
+- `bibliotheque-redesign` — **ouvert**, en cours (`Binders.vue`, branche
+  `feature/bibliotheque-redesign`, worktree `.worktrees/bibliotheque-redesign`) — voir
+  `workflow/bibliotheque-redesign/CONTEXT.md`
 
 ## Historique
+
+- 2026-08-30 — [bibliotheque-redesign] **Chantier clos (code).** Revue finale de branche
+  (opus) : « avec corrections » — 3 Important (tags de classeur disparus de partout, invariant
+  de masquage sur « Non classé » sous-testé à 1/8, section « Sous-classeurs » vide affichée en
+  permanence) + 4 Minor bon marché retenus. Tour de correction 1/5 : 6/7 corrigés proprement ;
+  la re-revue ciblée a trouvé une régression réelle introduite par la correction du 3e constat
+  (titre « Sous-classeurs » apparaissant en permanence à la racine), corrigée directement par
+  le contrôleur (une ligne, RED→GREEN vérifié), commit `1257b8a`. Détail complet :
+  `workflow/bibliotheque-redesign/JOURNAL.md`. Prochaine action : demander à l'utilisateur de
+  pousser `feature/bibliotheque-redesign`, puis ouvrir la PR.
+- 2026-08-30 — [bibliotheque-redesign] **4 tâches exécutées, vérification visuelle faite,
+  chantier prêt à clôturer.** `subagent-driven-development` : Task 1 (`BinderCard.vue` +
+  agrégats, commit `df54090`), Task 2 (grille récursive remplaçant `SplitView`, commit
+  `850665e` — bug réel trouvé et volontairement différé : « Retirer du classeur » restait actif
+  sur « Non classé »), Task 3 (bug de Task 2 corrigé + non-régression sur 11 fonctionnalités
+  liées aux classeurs, commit `b21d1d3`), Task 4 (vérification visuelle native contre les
+  vraies maquettes, conforme ; nouveau défaut trouvé et corrigé — `PageHeader.vue`, composant
+  partagé, ne passait pas ses actions à la ligne à 375px, commit `0ddfaf1`). Détail complet :
+  `workflow/bibliotheque-redesign/JOURNAL.md`. Prochaine action : revue finale de branche, puis
+  demander à l'utilisateur de pousser `feature/bibliotheque-redesign` et ouvrir la PR.
+- 2026-08-30 — [bibliotheque-redesign] **Chantier ouvert**, décisions produit tranchées en chat
+  (arbre de sous-dossiers → grille récursive ; contenu non rangé → classeur virtuel « Non
+  classé » ; onglet « Autres » conservé). Tâches détaillées aussi pour
+  `ecrans-peripheriques-visuels` et `editeur-notes-notation-ia` (toujours pas exécutées).
+  Branche `feature/bibliotheque-redesign` créée depuis `main` à jour. Plan détaillé (4 tâches
+  TDD) : `docs/superpowers/plans/2026-08-30-bibliotheque-redesign.md`. Exécution démarrée en
+  `subagent-driven-development`.
+
+- 2026-08-30 — [bibliotheque-redesign] **Deuxième passe** (demande explicite de l'utilisateur :
+  "intègre bien tous les écrans de la partie bibliothèque - notes sur le canvas") : extension
+  de l'investigation aux 5 écrans atteints depuis une note. `NoteEdit.vue` déjà pris en charge
+  correctement par `editeur-notes-notation-ia` (maquette citée dès la 1ère ligne de son plan) ;
+  `NoteFeynman.vue` déjà vérifié correct (`reviser-hub`) ; `Blurting.vue` montre un écart réel
+  (concepts+flashcards+rétention absents de la maquette) sous-estimé par le "retonation
+  seulement" de `ecrans-peripheriques-visuels` (note ajoutée là-bas) ; `NoteQuiz.vue`
+  globalement aligné, orphelin, risque faible ; **découverte principale** — `NoteEvaluation.dc.html`
+  correspond en réalité à la future fonctionnalité « Notation » de `editeur-notes-notation-ia`
+  (note de la fiche sur 100), pas à l'écran `NoteEvaluation.vue` existant (qui implémente
+  l'Évaluation mixte, une fonctionnalité différente) — collision de nom, note ajoutée au
+  `CONTEXT.md` de ce chantier pour ne pas la perdre avant qu'il soit ouvert. Spec mise à jour :
+  `docs/superpowers/specs/2026-08-30-bibliotheque-redesign-design.md` (§ « Écrans d'une note »).
+  Toujours aucune implémentation lancée.
+
+- 2026-08-30 — [bibliotheque-redesign] Chantier créé en `Statut : planifie` (investigation
+  demandée en chat, sur le modèle de la correction `reviser-hub`) : `Binders.vue` n'a jamais
+  été comparé aux vraies maquettes Direction A (confirmé depuis son commit fondateur,
+  `77ff833`, 2026-06-21). `RevisionSetDetail.vue`/`RevisionSetModal.vue` déjà vérifiés
+  (`bibliotheque-ensembles`), hors scope. `PDFs.vue`/`Diagrams.vue` montrent le même écart
+  mais restent le territoire de `ecrans-peripheriques-visuels` (déjà planifié, note ajoutée
+  là-bas) — pas dupliqués ici. Spec :
+  `docs/superpowers/specs/2026-08-30-bibliotheque-redesign-design.md`. Plan brouillon (pas
+  prêt à exécuter, requiert `superpowers:brainstorming` sur l'arbre de sous-dossiers et le
+  contenu non rangé à la racine) : `docs/superpowers/plans/2026-08-30-bibliotheque-redesign.md`.
+  Aucune implémentation lancée, sur demande explicite de l'utilisateur. Prochaine action :
+  brainstorming avec l'utilisateur pour ouvrir ce chantier, ou choisir un autre chantier.
 
 - 2026-08-30 — [reviser-hub] **PR #130 mergée dans `main`** (squash, `358e5b0`), CI verte (6/6
   checks — le job E2E Playwright avait cassé sur le 1ᵉʳ run sur un test jamais migré après le

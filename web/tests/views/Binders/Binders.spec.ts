@@ -6,7 +6,7 @@ import { createRouter, createMemoryHistory, type Router } from 'vue-router'
 const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() }))
 vi.mock('../../../src/services/api', () => ({ default: api }))
 
-import Binders from '../../../src/views/Binders/Binders.vue'
+import Binders, { binderAggregate } from '../../../src/views/Binders/Binders.vue'
 import { useBindersStore } from '../../../src/stores/binders'
 import { useNotesStore } from '../../../src/stores/notes'
 import { useDecksStore } from '../../../src/stores/decks'
@@ -14,9 +14,16 @@ import { useRevisionStore } from '../../../src/stores/revision'
 import { useTagsStore } from '../../../src/stores/tags'
 import { useAuthStore } from '../../../src/stores/auth'
 
-const BINDER = { id: 'b1', name: 'Chimie organique', parent_id: null, is_public: false, user_id: 1, tags: [] }
+const BINDER = { id: 'b1', name: 'Chimie organique', parent_id: null, is_public: false, user_id: 1, tags: [{ id: 5, name: 'Urgent', color: '#4F46E5', created_at: '' }] }
+const SUBBINDER = { id: 'b1-sub', name: 'Sous-classeur B1', parent_id: 'b1', is_public: false, user_id: 1, tags: [] }
 const DECK = { id: 1, binder_id: 'b1', name: 'Deck classique', description: '', reversed: false, tuning_default: 1, card_count: 5, created_at: '', tags: [] }
 const HETEROGENEOUS_SET = { id: 7, name: 'Mixte', description: null, type: null, binder_id: 'b1', tuning_default: 1, is_public: false, item_count: 3 }
+// Note NON classée (binder_id: null) et note bien classée (binder_id: 'b1') --
+// nécessaires pour tester la subtilité filterBinderId ('Non classé' doit filtrer sur
+// binder_id === null, jamais sur la chaîne littérale 'non-classe').
+const NOW = new Date().toISOString()
+const NOTE_UNCLASSIFIED = { id: 'n-libre', binder_id: null, title: 'Note libre', content: '', created_at: NOW, updated_at: NOW, tags: [] }
+const NOTE_B1 = { id: 'n-b1', binder_id: 'b1', title: 'Note du classeur b1', content: '', created_at: NOW, updated_at: NOW, tags: [] }
 
 const stub = { template: '<div />' }
 function createTestRouter(): Router {
@@ -38,15 +45,21 @@ function clickTab(wrapper: ReturnType<typeof mount>, label: string) {
   return wrapper.findAll('button').find((b) => b.text().trim() === label)!.trigger('click')
 }
 
-const NOW = new Date().toISOString()
-const OVERDUE = new Date(Date.now() - 86400000).toISOString()
+// Localise une carte de classeur (BinderCard, Task 1) par son nom affiché --
+// BinderCard.vue n'expose pas de data-test dédié (composant présentationnel pur,
+// hors périmètre de cette tâche), donc on cherche par texte comme clickTab().
+function findCard(wrapper: ReturnType<typeof mount>, name: string) {
+  return wrapper.findAll('button').find((b) => b.text().includes(name))
+}
+
+const OVERDUE_TS = new Date(Date.now() - 86400000).toISOString()
 // Item "pas encore du" : programme dans un jour, pour eviter toute course
 // avec le seuil de comparaison (next_review <= Date.now()) evalue quelques
 // microsecondes/secondes plus tard -- une valeur "maintenant" serait fragile
 // (flaky) vis-a-vis de ce <=.
 const NOT_DUE = new Date(Date.now() + 86400000).toISOString()
 const SET_7_ITEMS = [
-  { id: 101, set_id: 7, type: 'flashcard', payload: {}, tuning: 1, position: 0, interval: 1, ease_factor: 2.5, repetitions: 1, next_review: OVERDUE, created_at: NOW, updated_at: NOW },
+  { id: 101, set_id: 7, type: 'flashcard', payload: {}, tuning: 1, position: 0, interval: 1, ease_factor: 2.5, repetitions: 1, next_review: OVERDUE_TS, created_at: NOW, updated_at: NOW },
   { id: 102, set_id: 7, type: 'qcm', payload: {}, tuning: 1, position: 0, interval: 5, ease_factor: 2.5, repetitions: 1, next_review: NOT_DUE, created_at: NOW, updated_at: NOW },
 ]
 
@@ -57,11 +70,11 @@ const SET_7_ITEMS = [
 // avant le mount serait silencieusement efface des que ces appels resolvent.
 function makeGetImpl() {
   return (url: string) => {
-    if (/^\/binders\?/.test(url)) return Promise.resolve({ data: { data: [BINDER] } })
+    if (/^\/binders\?/.test(url)) return Promise.resolve({ data: { data: [BINDER, SUBBINDER] } })
     if (/^\/binders\/[^/?]+$/.test(url)) return Promise.resolve({ data: BINDER }) // fetchMissingBinder — currentBinderId watcher tourne avant que fetchBinders() ait resolu
 
     if (/^\/decks\?/.test(url)) return Promise.resolve({ data: { data: [DECK] } })
-    if (/^\/notes\?/.test(url)) return Promise.resolve({ data: { data: [] } })
+    if (/^\/notes\?/.test(url)) return Promise.resolve({ data: { data: [NOTE_UNCLASSIFIED, NOTE_B1] } })
     if (/^\/revision\/sets\?/.test(url)) return Promise.resolve({ data: { data: [HETEROGENEOUS_SET] } })
     if (url === '/revision/sets/7/items') return Promise.resolve({ data: { data: SET_7_ITEMS } })
     if (url === '/tags') return Promise.resolve({ data: { data: [] } })
@@ -71,7 +84,7 @@ function makeGetImpl() {
   }
 }
 
-async function mountBinders(binderId = 'b1') {
+async function mountBinders(binderId: string | null = 'b1') {
   const pinia = createPinia()
   setActivePinia(pinia)
   const bindersStore = useBindersStore()
@@ -87,12 +100,202 @@ async function mountBinders(binderId = 'b1') {
   api.get.mockImplementation(makeGetImpl())
 
   const router = createTestRouter()
-  await router.push(`/bibliotheque/${binderId}`)
+  await router.push(binderId ? `/bibliotheque/${binderId}` : '/bibliotheque')
   await router.isReady()
   const wrapper = mount(Binders, { global: { plugins: [pinia, router] } })
   await flushPromises()
   return { wrapper, router, bindersStore, notesStore, decksStore, revisionStore, tagsStore }
 }
+
+describe('Binders — racine : grille de classeurs uniquement', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('affiche la grille (classeurs de premier niveau + carte "Non classé") et aucun contenu d\'onglet', async () => {
+    const { wrapper } = await mountBinders(null)
+    const text = wrapper.text()
+
+    expect(text).toContain('Chimie organique')
+    expect(text).toContain('Non classé')
+    // b1 : 1 deck (DECK), 1 note (NOTE_B1)
+    expect(text).toContain('1 decks · 1 notes')
+    // Non classé : agrégat sur binder_id === null -> 0 deck, 1 note (NOTE_UNCLASSIFIED)
+    expect(text).toContain('0 decks · 1 notes')
+
+    // Ni onglets, ni contenu type, ni sous-classeur (SUBBINDER, enfant de b1) a la racine
+    expect(wrapper.findAll('button').some((b) => b.text().trim() === 'Notes')).toBe(false)
+    expect(wrapper.findAll('button').some((b) => b.text().trim() === 'Révision')).toBe(false)
+    expect(text).not.toContain('Sous-classeur B1')
+    // Régression fix-round revue finale : childrenAtCurrentLevel contient toujours
+    // la carte virtuelle "Non classé" à la racine, donc son .length > 0 ne doit pas
+    // suffire à afficher le titre "Sous-classeurs" ici -- la grille racine n'est pas
+    // une liste de sous-classeurs.
+    expect(text).not.toContain('Sous-classeurs')
+  })
+
+  // Régression revue finale (item 1) : BinderCard n'affichait plus du tout les tags
+  // du classeur (TagBadge retiré lors de la refonte SplitView -> grille). BINDER
+  // porte un tag ('Urgent') précisément pour ce test.
+  it('affiche les tags du classeur sur sa carte', async () => {
+    const { wrapper } = await mountBinders(null)
+
+    expect(wrapper.text()).toContain('Urgent')
+  })
+
+  it('clic sur une carte de classeur navigue vers /bibliotheque/:id', async () => {
+    const { wrapper, router } = await mountBinders(null)
+    const card = findCard(wrapper, 'Chimie organique')
+    expect(card).toBeTruthy()
+
+    await card!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/bibliotheque/b1')
+  })
+
+  it('clic sur la carte virtuelle "Non classé" navigue vers /bibliotheque/non-classe', async () => {
+    const { wrapper, router } = await mountBinders(null)
+    const card = findCard(wrapper, 'Non classé')
+    expect(card).toBeTruthy()
+
+    await card!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/bibliotheque/non-classe')
+  })
+})
+
+describe('Binders — à l\'intérieur d\'un classeur réel', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('affiche à la fois la grille des sous-classeurs ET le contenu d\'onglet', async () => {
+    const { wrapper } = await mountBinders('b1')
+    const text = wrapper.text()
+
+    // b1 a un sous-classeur (SUBBINDER) -> la section "Sous-classeurs" doit
+    // apparaître (cf. test miroir ci-dessous pour le cas "0 enfant").
+    expect(text).toContain('Sous-classeurs')
+    expect(text).toContain('Sous-classeur B1')
+    expect(text).toContain('Notes (')
+    expect(text).toContain('Note du classeur b1')
+    // filterBinderId === currentBinderId pour un vrai classeur : la note non classée
+    // ne doit pas fuiter dans le contenu de b1.
+    expect(text).not.toContain('Note libre')
+  })
+
+  // Régression revue finale (item 3) : la section "Sous-classeurs" (titre + grille
+  // ou placeholder "Aucun sous-classeur") restait affichée en permanence dès qu'on
+  // ouvrait un classeur réel, même sans aucun sous-classeur — bloc vide non présent
+  // dans le mockup. b1-sub (SUBBINDER) est un classeur réel sans enfant propre.
+  it('masque entièrement la section "Sous-classeurs" quand le classeur n\'a aucun enfant', async () => {
+    const { wrapper } = await mountBinders('b1-sub')
+    const text = wrapper.text()
+
+    expect(text).not.toContain('Sous-classeurs')
+    expect(text).not.toContain('Aucun sous-classeur')
+  })
+})
+
+describe('Binders — pseudo-classeur "Non classé"', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("affiche le contenu filtré sur binder_id === null (pas sur la chaîne 'non-classe'), sans grille de sous-classeurs", async () => {
+    const { wrapper } = await mountBinders('non-classe')
+    const text = wrapper.text()
+
+    // Subtilité critique (filterBinderId) : le contenu réellement non classé doit
+    // apparaître. Si la distinction navigation/filtrage était perdue (comparaison
+    // sur la chaîne littérale 'non-classe' au lieu de null), cette liste serait
+    // vide malgré la présence de NOTE_UNCLASSIFIED dans le store.
+    expect(text).toContain('Note libre')
+    expect(text).not.toContain('Note du classeur b1')
+
+    // Aucune grille de sous-classeurs : 'non-classe' n'est pas un nœud de hiérarchie.
+    expect(text).not.toContain('Aucun sous-classeur')
+    expect(text).not.toContain('Sous-classeurs')
+    expect(findCard(wrapper, 'Chimie organique')).toBeFalsy()
+  })
+
+  it('fil d\'Ariane : "Racine / Non classé" sans planter', async () => {
+    const { wrapper } = await mountBinders('non-classe')
+    const nav = wrapper.find('nav')
+
+    expect(nav.exists()).toBe(true)
+    expect(nav.text()).toContain('Racine')
+    expect(nav.text()).toContain('Non classé')
+  })
+
+  // Bug confirmé par la revue de Task 2 : detachItem() n'était gardé que par
+  // `!currentBinderId.value`, qui ne filtre pas la chaîne (tronquée) 'non-classe'
+  // (vérité). Le bouton "Retirer du classeur" ne doit pas être rendu du tout ici :
+  // il n'y a pas de vrai classeur d'où détacher un contenu déjà non classé.
+  it('ligne note : le bouton "Retirer du classeur" n\'est PAS rendu sur le pseudo-classeur Non classé', async () => {
+    const { wrapper } = await mountBinders('non-classe')
+
+    expect(wrapper.text()).toContain('Note libre')
+    const detachButton = wrapper
+      .findAll('button')
+      .find((b) => b.attributes('title') === 'Retirer du classeur')
+    expect(detachButton).toBeFalsy()
+  })
+
+  // Le plan de Task 2 exigeait ce masquage pour TOUTE action portant sur un vrai
+  // classeur (isRealBinderId/addMenu), pas seulement le detach ci-dessus — revue
+  // finale : couverture manquante pour Stats/Partager/Classe/Réviser ce dossier/
+  // Supprimer/Sous-dossier/Élément existant. Le code (isRealBinderId, addMenu)
+  // était déjà correct ; ce test comble seulement le trou de couverture.
+  it('aucune action réservée à un vrai classeur (Stats/Partager/Classe/Réviser/Supprimer/Sous-dossier/Élément existant) ne s\'affiche sur le pseudo-classeur Non classé', async () => {
+    const { wrapper } = await mountBinders('non-classe')
+
+    const buttonLabel = (label: string) =>
+      wrapper.findAll('button').find((b) => b.text().trim() === label)
+
+    expect(buttonLabel('Stats')).toBeFalsy()
+    expect(buttonLabel('Partager')).toBeFalsy()
+    expect(buttonLabel('Classe')).toBeFalsy()
+    expect(buttonLabel('Réviser ce dossier')).toBeFalsy()
+    expect(buttonLabel('Supprimer')).toBeFalsy()
+
+    // Menu "Ajouter" : Sous-dossier et Élément existant nécessitent un vrai
+    // classeur parent (createBinder/attachItems attendent un id réel côté
+    // backend) — seuls Note/Diagramme restent proposés depuis 'Non classé'.
+    const addMenuButton = buttonLabel('Ajouter')
+    expect(addMenuButton).toBeTruthy()
+    await addMenuButton!.trigger('click')
+    await flushPromises()
+
+    expect(buttonLabel('Sous-dossier')).toBeFalsy()
+    expect(buttonLabel('Élément existant')).toBeFalsy()
+    expect(buttonLabel('Note')).toBeTruthy()
+    expect(buttonLabel('Diagramme')).toBeTruthy()
+  })
+
+  // Miroir du test ci-dessus sur un vrai classeur ('b1') : toutes ces actions
+  // doivent au contraire être présentes.
+  it('toutes les actions réservées à un vrai classeur s\'affichent sur un classeur réel', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    const buttonLabel = (label: string) =>
+      wrapper.findAll('button').find((b) => b.text().trim() === label)
+
+    expect(buttonLabel('Stats')).toBeTruthy()
+    expect(buttonLabel('Partager')).toBeTruthy()
+    expect(buttonLabel('Classe')).toBeTruthy()
+    // b1 a un deck (DECK) : "Réviser ce dossier" nécessite isRealBinderId ET
+    // currentDecks.length > 0.
+    expect(buttonLabel('Réviser ce dossier')).toBeTruthy()
+    expect(buttonLabel('Supprimer')).toBeTruthy()
+
+    const addMenuButton = buttonLabel('Ajouter')
+    expect(addMenuButton).toBeTruthy()
+    await addMenuButton!.trigger('click')
+    await flushPromises()
+
+    expect(buttonLabel('Sous-dossier')).toBeTruthy()
+    expect(buttonLabel('Élément existant')).toBeTruthy()
+    expect(buttonLabel('Note')).toBeTruthy()
+    expect(buttonLabel('Diagramme')).toBeTruthy()
+  })
+})
 
 describe('Binders — bascule Notes/Revision/Autres', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -219,12 +422,60 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/stats')
   })
 
-  it("non-regression : colonne Dossiers et filtre par tag restent visibles quel que soit l'onglet", async () => {
+  it("non-regression : le filtre par tag reste visible quel que soit l'onglet", async () => {
     const { wrapper } = await mountBinders()
-    expect(wrapper.text()).toContain('Dossiers')
     expect(wrapper.text()).toContain('Filtrer')
     await clickTab(wrapper, 'Révision')
     await flushPromises()
-    expect(wrapper.text()).toContain('Dossiers')
+    expect(wrapper.text()).toContain('Filtrer')
+  })
+})
+
+// binderAggregate() est une fonction pure exportée par Binders.vue (bloc <script>
+// normal, cf. Task 1 bibliotheque-redesign) : elle ne lit aucun store, donc ces tests
+// n'ont pas besoin de monter le composant ni d'activer Pinia.
+describe('binderAggregate', () => {
+  // "il y a environ 25h" -> floor(25/24) = 1 jour -> "hier". Volontairement pas 24h
+  // pile pour ne pas dépendre de l'arrondi exact au moment où le test tourne.
+  const YESTERDAY_ISO = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString()
+  // Un peu plus de 3 jours pour ne pas flirter avec la frontière de floor().
+  const THREE_DAYS_AGO_ISO = new Date(Date.now() - (3 * 86400000 + 60000)).toISOString()
+  const NOW_ISO = new Date().toISOString()
+
+  const decks = [
+    { binder_id: 'b1', created_at: THREE_DAYS_AGO_ISO },
+    { binder_id: 'b1', created_at: THREE_DAYS_AGO_ISO },
+    { binder_id: 'b-old', created_at: THREE_DAYS_AGO_ISO },
+  ]
+  const notes = [
+    { binder_id: 'b1', updated_at: NOW_ISO },
+    { binder_id: 'b1', updated_at: NOW_ISO },
+    { binder_id: 'b1', updated_at: NOW_ISO },
+  ]
+  const sets = [{ binder_id: 'b-yesterday', updated_at: YESTERDAY_ISO }]
+
+  it('compte les decks et notes du classeur et retient l\'activité la plus récente ("aujourd\'hui")', () => {
+    const result = binderAggregate('b1', decks, notes, sets)
+    expect(result.deckCount).toBe(2)
+    expect(result.noteCount).toBe(3)
+    expect(result.lastActivityLabel).toBe("aujourd'hui")
+  })
+
+  it('formate "hier" pour un ensemble de révision mis à jour il y a environ 25h', () => {
+    const result = binderAggregate('b-yesterday', decks, notes, sets)
+    expect(result.lastActivityLabel).toBe('hier')
+    expect(result.deckCount).toBe(0)
+    expect(result.noteCount).toBe(0)
+  })
+
+  it("formate \"il y a N jours\" à partir de created_at des decks (pas d'updated_at)", () => {
+    const result = binderAggregate('b-old', decks, notes, sets)
+    expect(result.lastActivityLabel).toBe('il y a 3 jours')
+    expect(result.deckCount).toBe(1)
+  })
+
+  it('retourne un libellé null (pas de date fabriquée) pour un classeur sans aucun enfant', () => {
+    const result = binderAggregate('b-empty', decks, notes, sets)
+    expect(result).toEqual({ deckCount: 0, noteCount: 0, lastActivityLabel: null })
   })
 })

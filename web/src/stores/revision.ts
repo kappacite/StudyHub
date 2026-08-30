@@ -46,6 +46,11 @@ export interface RevisionSet {
   is_public: boolean
   item_count: number
   read_only?: boolean
+  // Toujours renvoyé par le backend (RevisionSetResponse) ; optionnel ici pour ne
+  // pas casser les littéraux de test existants qui ne le renseignent pas encore
+  // (même convention que read_only ci-dessus). Utilisé par binderAggregate()
+  // (Binders.vue, Task 1 bibliotheque-redesign) pour le libellé de dernière activité.
+  updated_at?: string
 }
 
 export interface RevisionItem {
