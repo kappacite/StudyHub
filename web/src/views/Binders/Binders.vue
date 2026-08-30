@@ -652,10 +652,62 @@
   </PageContainer>
 </template>
 
+<script lang="ts">
+// Formatage relatif partagé "aujourd'hui / hier / il y a N jours" -- utilisé par
+// setAggregate() (onglet Révision, ci-dessous) et binderAggregate() (Bibliothèque,
+// Task 1 bibliotheque-redesign) pour ne pas dupliquer la logique de day-diff.
+// Placé dans ce bloc <script> normal (plutôt que <script setup>) pour rester
+// exportable et testable directement, sans monter le composant.
+export function formatDayDiffLabel(mostRecentIso: string): string {
+  const days = Math.floor((Date.now() - new Date(mostRecentIso).getTime()) / 86400000)
+  if (days <= 0) return "aujourd'hui"
+  if (days === 1) return 'hier'
+  return `il y a ${days} jours`
+}
+
+export interface BinderAggregateResult {
+  deckCount: number
+  noteCount: number
+  lastActivityLabel: string | null
+}
+
+// Agrégat client-side pour une carte de classeur (Bibliothèque, Task 1) : nombre de
+// decks/notes rattachés à ce classeur, et libellé de dernière activité. L'activité la
+// plus récente est le max de : updated_at des notes, updated_at des ensembles de
+// révision, et created_at des decks (un Deck n'a pas d'updated_at -- cf.
+// stores/decks.ts, ne pas fabriquer de valeur). Pas d'endpoint serveur dédié -- même
+// principe client-side que setAggregate() ci-dessous. Types de paramètres structurels
+// (pas d'import de Deck/Note/RevisionSet ici) pour rester dans ce bloc <script> sans
+// entrer en collision avec les imports déjà faits dans <script setup> ci-dessous.
+export function binderAggregate(
+  binderId: string | null,
+  decks: { binder_id: string | null; created_at: string }[],
+  notes: { binder_id: string | null; updated_at: string }[],
+  sets: { binder_id: string | null; updated_at?: string }[],
+): BinderAggregateResult {
+  const binderDecks = decks.filter((d) => d.binder_id === binderId)
+  const binderNotes = notes.filter((n) => n.binder_id === binderId)
+  const binderSets = sets.filter((s) => s.binder_id === binderId)
+
+  const dates = [
+    ...binderNotes.map((n) => n.updated_at),
+    ...binderSets.map((s) => s.updated_at),
+    ...binderDecks.map((d) => d.created_at),
+  ].filter((d): d is string => Boolean(d))
+
+  return {
+    deckCount: binderDecks.length,
+    noteCount: binderNotes.length,
+    lastActivityLabel: dates.length ? formatDayDiffLabel(dates.sort().reverse()[0]) : null,
+  }
+}
+</script>
+
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../../services/api'
+import { useAuthStore } from '../../stores/auth'
 import { useBindersStore } from '../../stores/binders'
 import type { Binder } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
@@ -802,16 +854,9 @@ function setAggregate(setId: number) {
     .filter(Boolean)
     .sort()
     .reverse()
-  let lastPassageLabel = 'jamais passé'
-  if (dates.length) {
-    const days = Math.floor((Date.now() - new Date(dates[0]).getTime()) / 86400000)
-    lastPassageLabel =
-      days <= 0
-        ? "dernier passage aujourd'hui"
-        : days === 1
-          ? 'dernier passage hier'
-          : `dernier passage il y a ${days} jours`
-  }
+  const lastPassageLabel = dates.length
+    ? `dernier passage ${formatDayDiffLabel(dates[0])}`
+    : 'jamais passé'
   return { typesPresent, dueCount, lastPassageLabel }
 }
 
@@ -1150,7 +1195,6 @@ const currentBinder = computed(() => {
   return bindersStore.binders.find((b) => b.id === currentBinderId.value) || null
 })
 
-import { useAuthStore } from '../../stores/auth'
 const authStore = useAuthStore()
 const currentUserId = computed(() => authStore.user?.id)
 

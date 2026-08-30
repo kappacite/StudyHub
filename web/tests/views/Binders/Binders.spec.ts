@@ -6,7 +6,7 @@ import { createRouter, createMemoryHistory, type Router } from 'vue-router'
 const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() }))
 vi.mock('../../../src/services/api', () => ({ default: api }))
 
-import Binders from '../../../src/views/Binders/Binders.vue'
+import Binders, { binderAggregate } from '../../../src/views/Binders/Binders.vue'
 import { useBindersStore } from '../../../src/stores/binders'
 import { useNotesStore } from '../../../src/stores/notes'
 import { useDecksStore } from '../../../src/stores/decks'
@@ -226,5 +226,54 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     await clickTab(wrapper, 'Révision')
     await flushPromises()
     expect(wrapper.text()).toContain('Dossiers')
+  })
+})
+
+// binderAggregate() est une fonction pure exportée par Binders.vue (bloc <script>
+// normal, cf. Task 1 bibliotheque-redesign) : elle ne lit aucun store, donc ces tests
+// n'ont pas besoin de monter le composant ni d'activer Pinia.
+describe('binderAggregate', () => {
+  // "il y a environ 25h" -> floor(25/24) = 1 jour -> "hier". Volontairement pas 24h
+  // pile pour ne pas dépendre de l'arrondi exact au moment où le test tourne.
+  const YESTERDAY_ISO = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString()
+  // Un peu plus de 3 jours pour ne pas flirter avec la frontière de floor().
+  const THREE_DAYS_AGO_ISO = new Date(Date.now() - (3 * 86400000 + 60000)).toISOString()
+  const NOW_ISO = new Date().toISOString()
+
+  const decks = [
+    { binder_id: 'b1', created_at: THREE_DAYS_AGO_ISO },
+    { binder_id: 'b1', created_at: THREE_DAYS_AGO_ISO },
+    { binder_id: 'b-old', created_at: THREE_DAYS_AGO_ISO },
+  ]
+  const notes = [
+    { binder_id: 'b1', updated_at: NOW_ISO },
+    { binder_id: 'b1', updated_at: NOW_ISO },
+    { binder_id: 'b1', updated_at: NOW_ISO },
+  ]
+  const sets = [{ binder_id: 'b-yesterday', updated_at: YESTERDAY_ISO }]
+
+  it('compte les decks et notes du classeur et retient l\'activité la plus récente ("aujourd\'hui")', () => {
+    const result = binderAggregate('b1', decks, notes, sets)
+    expect(result.deckCount).toBe(2)
+    expect(result.noteCount).toBe(3)
+    expect(result.lastActivityLabel).toBe("aujourd'hui")
+  })
+
+  it('formate "hier" pour un ensemble de révision mis à jour il y a environ 25h', () => {
+    const result = binderAggregate('b-yesterday', decks, notes, sets)
+    expect(result.lastActivityLabel).toBe('hier')
+    expect(result.deckCount).toBe(0)
+    expect(result.noteCount).toBe(0)
+  })
+
+  it("formate \"il y a N jours\" à partir de created_at des decks (pas d'updated_at)", () => {
+    const result = binderAggregate('b-old', decks, notes, sets)
+    expect(result.lastActivityLabel).toBe('il y a 3 jours')
+    expect(result.deckCount).toBe(1)
+  })
+
+  it('retourne un libellé null (pas de date fabriquée) pour un classeur sans aucun enfant', () => {
+    const result = binderAggregate('b-empty', decks, notes, sets)
+    expect(result).toEqual({ deckCount: 0, noteCount: 0, lastActivityLabel: null })
   })
 })
