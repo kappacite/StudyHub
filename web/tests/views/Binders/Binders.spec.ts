@@ -194,6 +194,20 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
     expect(nav.text()).toContain('Racine')
     expect(nav.text()).toContain('Non classé')
   })
+
+  // Bug confirmé par la revue de Task 2 : detachItem() n'était gardé que par
+  // `!currentBinderId.value`, qui ne filtre pas la chaîne (tronquée) 'non-classe'
+  // (vérité). Le bouton "Retirer du classeur" ne doit pas être rendu du tout ici :
+  // il n'y a pas de vrai classeur d'où détacher un contenu déjà non classé.
+  it('ligne note : le bouton "Retirer du classeur" n\'est PAS rendu sur le pseudo-classeur Non classé', async () => {
+    const { wrapper } = await mountBinders('non-classe')
+
+    expect(wrapper.text()).toContain('Note libre')
+    const detachButton = wrapper
+      .findAll('button')
+      .find((b) => b.attributes('title') === 'Retirer du classeur')
+    expect(detachButton).toBeFalsy()
+  })
 })
 
 describe('Binders — bascule Notes/Revision/Autres', () => {

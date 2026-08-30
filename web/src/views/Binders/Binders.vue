@@ -253,7 +253,7 @@
                     >Cours</span
                   >
                   <button
-                    v-if="isOwner"
+                    v-if="canDetach"
                     class="opacity-0 group-hover:opacity-100 p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all"
                     title="Retirer du classeur"
                     @click.stop="detachItem('note', note.id)"
@@ -296,7 +296,7 @@
                 ></template>
                 <template #trailing>
                   <button
-                    v-if="isOwner"
+                    v-if="canDetach"
                     class="p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all"
                     title="Retirer du classeur"
                     @click.stop="detachItem('deck', deck.id)"
@@ -356,7 +356,7 @@
                     <BarChart3 class="w-4 h-4" />
                   </button>
                   <button
-                    v-if="isOwner"
+                    v-if="canDetach"
                     class="p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all"
                     title="Retirer du classeur"
                     @click.stop="detachItem('set', set.id)"
@@ -429,7 +429,7 @@
                 ></template>
                 <template #trailing>
                   <button
-                    v-if="isOwner"
+                    v-if="canDetach"
                     class="opacity-0 group-hover:opacity-100 p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all"
                     title="Retirer du classeur"
                     @click.stop="detachItem('diagram', diagram.id)"
@@ -471,7 +471,7 @@
                 ></template>
                 <template #trailing>
                   <button
-                    v-if="isOwner && !pdf.read_only"
+                    v-if="canDetach && !pdf.read_only"
                     class="opacity-0 group-hover:opacity-100 p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all"
                     title="Retirer du classeur"
                     @click.stop="detachItem('pdf', pdf.id)"
@@ -1208,10 +1208,18 @@ async function refreshContentStores() {
 }
 
 async function confirmAttach() {
-  if (!currentBinderId.value || selectedCount.value === 0) return
+  // isRealBinderId (pas !currentBinderId, même raison que detachItem ci-dessous) :
+  // le déclencheur de cette modale (menu "Élément existant") est déjà masqué hors
+  // d'un vrai classeur (cf. addMenu), mais cette garde reste une défense en
+  // profondeur si la modale restait ouverte pendant une navigation vers 'non-classe'.
+  // Vérification directe (binderId === null) : même rétrécissement TS que
+  // toggleClassShare ci-dessous — isRealBinderId seul ne rétrécit pas le type de
+  // currentBinderId.value (deux computed distincts).
+  const binderId = currentBinderId.value
+  if (!isRealBinderId.value || binderId === null || selectedCount.value === 0) return
   attaching.value = true
   try {
-    await bindersStore.attachItems(currentBinderId.value, Object.values(selected.value))
+    await bindersStore.attachItems(binderId, Object.values(selected.value))
     await refreshContentStores()
     showAttachModal.value = false
   } catch (e) {
@@ -1222,9 +1230,16 @@ async function confirmAttach() {
 }
 
 async function detachItem(type: BinderItemType, id: number | string) {
-  if (!currentBinderId.value) return
+  // isRealBinderId (pas !currentBinderId) : cette dernière vérité ne filtre pas
+  // la chaîne 'non-classe' (vérité tronquée) — c'était le bug (cf. canDetach
+  // ci-dessus, qui masque déjà le bouton, cette garde est une défense en
+  // profondeur cohérente avec cloneBinder/reviseBinder/toggleClassShare). Capture
+  // locale : isRealBinderId seul ne rétrécit pas currentBinderId.value (deux
+  // computed distincts, même remarque que confirmAttach/toggleClassShare).
+  const binderId = currentBinderId.value
+  if (!isRealBinderId.value || binderId === null) return
   try {
-    await bindersStore.detachItems(currentBinderId.value, [{ type, id }])
+    await bindersStore.detachItems(binderId, [{ type, id }])
     await refreshContentStores()
   } catch (e) {
     console.error("Erreur lors du retrait de l'élément", e)
@@ -1307,6 +1322,13 @@ const isOwner = computed(() => {
   if (currentBinderId.value === null) return true
   return !currentBinder.value || currentBinder.value.user_id === currentUserId.value
 })
+
+// Détacher un élément suppose un vrai classeur duquel le détacher — 'Non classé'
+// n'en est pas un (le contenu y est déjà non rangé). isOwner seul ne suffit pas :
+// il vaut toujours true sur 'non-classe' (currentBinder y est null, cf. isOwner
+// ci-dessus), ce qui laissait le bouton "Retirer du classeur" s'afficher et
+// appeler detachItems('non-classe', ...) — bug relevé par la revue de Task 2.
+const canDetach = computed(() => isOwner.value && isRealBinderId.value)
 
 const cloning = ref(false)
 async function cloneBinder() {
