@@ -3,9 +3,10 @@ Régressions prof/élève :
 - un ensemble de révision d'un classeur partagé est visible (lecture seule) de l'élève (#5) ;
 - un devoir ciblant un ensemble VIDE n'est pas marqué « fait » (#4).
 """
+
 from app.extensions import db
-from app.models.user import User
 from app.models.binder import Binder
+from app.models.user import User
 
 
 def _create_user(app, email, username):
@@ -43,16 +44,34 @@ def test_shared_revision_set_visible_to_student_read_only(client, auth_headers, 
         db.session.commit()
         binder_uuid = binder.id
 
-    set_id = client.post("/api/v1/revision/sets", json={
-        "name": "QCM partagé", "type": "qcm", "binder_id": binder_uuid,
-    }, headers=auth_headers).json["id"]
-    client.post(f"/api/v1/revision/sets/{set_id}/items", json={"payload": {
-        "question": "ADN ?",
-        "options": [{"id": "a", "text": "Acide", "correct": True}, {"id": "b", "text": "Base", "correct": False}],
-    }}, headers=auth_headers)
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={
+            "name": "QCM partagé",
+            "type": "qcm",
+            "binder_id": binder_uuid,
+        },
+        headers=auth_headers,
+    ).json["id"]
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={
+            "payload": {
+                "question": "ADN ?",
+                "options": [
+                    {"id": "a", "text": "Acide", "correct": True},
+                    {"id": "b", "text": "Base", "correct": False},
+                ],
+            }
+        },
+        headers=auth_headers,
+    )
 
-    share = client.post(f"/api/v1/groups/{class_id}/binders",
-                        json={"binder_id": binder_uuid, "permission": "read"}, headers=auth_headers)
+    share = client.post(
+        f"/api/v1/groups/{class_id}/binders",
+        json={"binder_id": binder_uuid, "permission": "read"},
+        headers=auth_headers,
+    )
     assert share.status_code == 200
 
     # L'élève voit l'ensemble dans son listing, en lecture seule.
@@ -85,18 +104,37 @@ def test_student_can_study_all_items_of_shared_set(client, auth_headers, test_us
         db.session.commit()
         binder_uuid = binder.id
 
-    set_id = client.post("/api/v1/revision/sets", json={
-        "name": "Vrai/Faux Histoire", "type": "vf", "binder_id": binder_uuid,
-    }, headers=auth_headers).json["id"]
-    item = client.post(f"/api/v1/revision/sets/{set_id}/items", json={"payload": {
-        "assertion": "La Révolution française a commencé en 1789.", "correct": True,
-    }}, headers=auth_headers).json
-    client.post(f"/api/v1/groups/{class_id}/binders",
-                json={"binder_id": binder_uuid, "permission": "read"}, headers=auth_headers)
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={
+            "name": "Vrai/Faux Histoire",
+            "type": "vf",
+            "binder_id": binder_uuid,
+        },
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={
+            "payload": {
+                "assertion": "La Révolution française a commencé en 1789.",
+                "correct": True,
+            }
+        },
+        headers=auth_headers,
+    ).json
+    client.post(
+        f"/api/v1/groups/{class_id}/binders",
+        json={"binder_id": binder_uuid, "permission": "read"},
+        headers=auth_headers,
+    )
 
     # Le prof révise son item (bonne réponse) → next_review poussé au futur.
-    client.post(f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
-                json={"answer": {"value": True}}, headers=auth_headers)
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
+        json={"answer": {"value": True}, "score": 5},
+        headers=auth_headers,
+    )
 
     # L'élève voit quand même l'item à étudier (état SM-2 du prof ignoré).
     to_study = client.get(f"/api/v1/revision/sets/{set_id}/study", headers=sh)
@@ -105,12 +143,16 @@ def test_student_can_study_all_items_of_shared_set(client, auth_headers, test_us
 
     # Échéancier du prof avant notation élève.
     from app.models.revision import RevisionItem
+
     with app.app_context():
         before = db.session.get(RevisionItem, item["id"]).next_review
 
     # L'élève note l'item : sa StudySession est créée, l'item du prof est inchangé.
-    graded = client.post(f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
-                         json={"answer": {"value": False}}, headers=sh)
+    graded = client.post(
+        f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
+        json={"answer": {"value": False}, "score": 2},
+        headers=sh,
+    )
     assert graded.status_code == 200
 
     with app.app_context():
@@ -123,12 +165,18 @@ def test_assignment_on_empty_revision_set_is_todo(client, auth_headers, app):
     class_id, _sid, sh = _class_with_student(client, auth_headers, app, "eleve_empty@test.com")
 
     # Ensemble créé sans aucun item.
-    set_id = client.post("/api/v1/revision/sets", json={"name": "Vide", "type": "qcm"}, headers=auth_headers).json["id"]
+    set_id = client.post(
+        "/api/v1/revision/sets", json={"name": "Vide", "type": "qcm"}, headers=auth_headers
+    ).json["id"]
 
-    asgn = client.post(f"/api/v1/classes/{class_id}/assignments", json={
-        "title": "Réviser (vide)",
-        "tasks": [{"task_type": "revision", "ref": str(set_id)}],
-    }, headers=auth_headers).json
+    asgn = client.post(
+        f"/api/v1/classes/{class_id}/assignments",
+        json={
+            "title": "Réviser (vide)",
+            "tasks": [{"task_type": "revision", "ref": str(set_id)}],
+        },
+        headers=auth_headers,
+    ).json
 
     mine = client.get("/api/v1/assignments/mine", headers=sh).json
     task = next(a for a in mine if a["id"] == asgn["id"])["tasks"][0]

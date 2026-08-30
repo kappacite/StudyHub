@@ -8,6 +8,8 @@ from app.dao.revision_dao import RevisionItemDAO, RevisionSetDAO
 from app.extensions import db
 from app.middlewares.auth_middleware import jwt_required_middleware
 from app.schemas.revision_schema import (
+    RevisionCheckRequest,
+    RevisionCheckResult,
     RevisionGradeRequest,
     RevisionItemAnswer,
     RevisionItemCreate,
@@ -151,12 +153,21 @@ def run_qcm(set_id):
     return jsonify(result.model_dump()), 200
 
 
+@revision_bp.route("/sets/<int:set_id>/study/check/<int:item_id>", methods=["POST"])
+@jwt_required_middleware
+def check_item_answer(set_id, item_id):
+    user_id = int(get_jwt_identity())
+    data = RevisionCheckRequest.model_validate(request.get_json() or {})
+    is_correct = revision_service.check_item_answer(user_id, set_id, item_id, data.answer)
+    return jsonify(RevisionCheckResult(correct=is_correct).model_dump()), 200
+
+
 @revision_bp.route("/sets/<int:set_id>/study/grade/<int:item_id>", methods=["POST"])
 @jwt_required_middleware
 def grade_item(set_id, item_id):
     user_id = int(get_jwt_identity())
     data = RevisionGradeRequest.model_validate(request.get_json() or {})
     result = revision_service.grade_item(
-        user_id, set_id, item_id, data.answer, data.duration_seconds
+        user_id, set_id, item_id, data.answer, data.score, data.duration_seconds
     )
     return jsonify(result.model_dump()), 200

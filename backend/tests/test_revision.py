@@ -382,7 +382,7 @@ def test_grade_item_rejects_flashcard_item_even_in_gradable_set(client, auth_hea
 
     graded = client.post(
         f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
-        json={"answer": {"value": True}},
+        json={"answer": {"value": True}, "score": 5},
         headers=auth_headers,
     )
     assert graded.status_code == 400
@@ -513,7 +513,7 @@ def test_grade_item_records_real_duration_seconds(client, auth_headers, app):
 
     client.post(
         f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
-        json={"answer": {"value": True}, "duration_seconds": 17},
+        json={"answer": {"value": True}, "score": 5, "duration_seconds": 17},
         headers=auth_headers,
     )
     with app.app_context():
@@ -537,7 +537,7 @@ def test_grade_item_omitted_duration_defaults_to_zero(client, auth_headers, app)
 
     client.post(
         f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
-        json={"answer": {"value": True}},
+        json={"answer": {"value": True}, "score": 5},
         headers=auth_headers,
     )
     with app.app_context():
@@ -562,7 +562,7 @@ def test_grade_item_on_heterogeneous_set_does_not_crash(client, auth_headers):
 
     response = client.post(
         f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
-        json={"answer": {"value": True}},
+        json={"answer": {"value": True}, "score": 5},
         headers=auth_headers,
     )
     assert response.status_code == 200

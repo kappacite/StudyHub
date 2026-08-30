@@ -440,30 +440,51 @@ class RevisionService:
             score=score, max_score=max_score, percentage=percentage, results=results
         )
 
+    def check_item_answer(
+        self,
+        user_id: int,
+        set_id: int,
+        item_id: int,
+        answer: dict,
+    ) -> bool:
+        """Corrige une réponse à un item auto-corrigeable (vf/association/ordre)
+        SANS aucun effet de bord (pas d'écriture DB) -- permet au client
+        d'afficher la correction avant que l'utilisateur choisisse sa note
+        SM-2 via grade_item (scission check/commit, Task 1 revision-flexibilite)."""
+        item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
+        if item.type not in GRADABLE_TYPES:
+            raise ValidationError("Ce type d'item n'est pas corrigé automatiquement.")
+
+        return check_answer(item.type, item.payload or {}, answer or {})
+
     def grade_item(
         self,
         user_id: int,
         set_id: int,
         item_id: int,
         answer: dict,
+        score: int,
         duration_seconds: int = 0,
     ) -> RevisionGradeResult:
-        """Corrige une réponse à un item auto-corrigeable (vf/association/ordre) et
-        met à jour SM-2 (réussi → 5, raté → 2). La définition reste en self-eval."""
+        """Valide la note SM-2 choisie par l'utilisateur pour un item auto-
+        corrigeable (vf/association/ordre) après qu'il a vu la correction
+        (cf. check_item_answer). `score` est fourni par l'appelant -- plus
+        jamais déduit binairement de la correction. La correction réelle est
+        recalculée ici (defense-in-depth) pour `correct`/`cards_correct`,
+        indépendamment de `score`. La définition reste en self-eval."""
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
         item = self._get_item_or_404(item_id, set_id, user_id, write_required=False)
         if item.type not in GRADABLE_TYPES:
             raise ValidationError("Ce type d'item n'est pas corrigé automatiquement.")
 
         is_correct = check_answer(item.type, item.payload or {}, answer or {})
-        grade = 5 if is_correct else 2
 
         # L'état SM-2 par item n'est planifié que pour le propriétaire de l'ensemble.
         # Un élève qui révise un ensemble partagé (cours) ne doit pas modifier
         # l'échéancier du prof — seule sa StudySession est enregistrée.
         if rset.user_id == user_id:
             ease_factor, interval, repetitions, next_review = calculate_sm2(
-                score=grade,
+                score=score,
                 ease_factor=item.ease_factor,
                 interval=item.interval,
                 repetitions=item.repetitions,
@@ -487,7 +508,7 @@ class RevisionService:
                 cards_correct=1 if is_correct else 0,
                 item_id=item.id,
                 item_type=item.type,
-                grade=grade,
+                grade=score,
             )
         )
         self._item_dao.db.commit()

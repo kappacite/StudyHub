@@ -558,7 +558,7 @@ def test_set_stats_on_heterogeneous_set_counts_all_item_types(client, auth_heade
     )
     client.post(
         f"/api/v1/revision/sets/{set_id}/study/grade/{vf['id']}",
-        json={"answer": {"value": True}},
+        json={"answer": {"value": True}, "score": 5},
         headers=auth_headers,
     )
 

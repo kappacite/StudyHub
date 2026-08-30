@@ -134,12 +134,28 @@ class RevisionRunResult(BaseModel):
 # --- Correction d'un item à l'étude (A3/A4/A6 : vf, association, ordre) -------
 
 
+class RevisionCheckRequest(BaseModel):
+    # Réponse spécifique au type :
+    #   vf          -> {"value": bool}
+    #   association -> {"matches": {left: right}}
+    #   ordre       -> {"order": [str, ...]}
+    answer: dict[str, Any]
+
+
+class RevisionCheckResult(BaseModel):
+    correct: bool
+
+
 class RevisionGradeRequest(BaseModel):
     # Réponse spécifique au type :
     #   vf          -> {"value": bool}
     #   association -> {"matches": {left: right}}
     #   ordre       -> {"order": [str, ...]}
     answer: dict[str, Any]
+    # Note SM-2 (1-5) choisie par l'utilisateur après avoir vu la correction
+    # (scission check/grade, Task 1 revision-flexibilite) -- requise, jamais
+    # déduite côté serveur.
+    score: int = Field(..., ge=1, le=5)
     # Duree reelle ecoulee sur cet item (Task 9) -- optionnelle, defaut 0.
     duration_seconds: int = Field(0, ge=0)
 
