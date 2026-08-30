@@ -90,6 +90,14 @@
             >
               {{ current.payload.justification }}
             </p>
+            <template v-if="phase === 'self-eval'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
+              >
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons @select="selfEvalGraded" />
+            </template>
           </div>
         </template>
 
@@ -116,29 +124,7 @@
             <p class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest">
               Votre auto-évaluation
             </p>
-            <div class="grid grid-cols-3 gap-2">
-              <button
-                data-test="self-eval-a-revoir"
-                class="py-2.5 rounded-xl text-xs font-bold border border-danger text-danger hover:bg-danger-soft dark:border-danger dark:bg-danger-soft"
-                @click="selfEval(1)"
-              >
-                À revoir
-              </button>
-              <button
-                data-test="self-eval-moyen"
-                class="py-2.5 rounded-xl text-xs font-bold border border-warning text-warning hover:bg-warning-soft dark:border-warning dark:bg-warning-soft"
-                @click="selfEval(3)"
-              >
-                Moyen
-              </button>
-              <button
-                data-test="self-eval-acquis"
-                class="py-2.5 rounded-xl text-xs font-bold border border-success text-success hover:bg-success-soft dark:border-success dark:bg-success-soft"
-                @click="selfEval(5)"
-              >
-                Acquis
-              </button>
-            </div>
+            <SelfEvalButtons @select="selfEval" />
           </template>
         </template>
 
@@ -162,26 +148,7 @@
             <p class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest">
               Votre auto-évaluation
             </p>
-            <div class="grid grid-cols-3 gap-2">
-              <button
-                class="py-2.5 rounded-xl text-xs font-bold border border-danger text-danger hover:bg-danger-soft dark:border-danger dark:bg-danger-soft"
-                @click="selfEval(1)"
-              >
-                À revoir
-              </button>
-              <button
-                class="py-2.5 rounded-xl text-xs font-bold border border-warning text-warning hover:bg-warning-soft dark:border-warning dark:bg-warning-soft"
-                @click="selfEval(3)"
-              >
-                Moyen
-              </button>
-              <button
-                class="py-2.5 rounded-xl text-xs font-bold border border-success text-success hover:bg-success-soft dark:border-success dark:bg-success-soft"
-                @click="selfEval(5)"
-              >
-                Acquis
-              </button>
-            </div>
+            <SelfEvalButtons @select="selfEval" />
           </template>
         </template>
 
@@ -214,9 +181,19 @@
           >
             Valider
           </button>
-          <p v-else class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
-            {{ lastCorrect ? 'Tout est correct !' : 'Des associations sont erronées.' }}
-          </p>
+          <template v-else>
+            <p class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
+              {{ lastCorrect ? 'Tout est correct !' : 'Des associations sont erronées.' }}
+            </p>
+            <template v-if="phase === 'self-eval'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
+              >
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons @select="selfEvalGraded" />
+            </template>
+          </template>
         </template>
 
         <!-- ORDRE -->
@@ -264,9 +241,19 @@
           >
             Valider
           </button>
-          <p v-else class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
-            {{ lastCorrect ? 'Ordre correct !' : 'Ordre incorrect.' }}
-          </p>
+          <template v-else>
+            <p class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
+              {{ lastCorrect ? 'Ordre correct !' : 'Ordre incorrect.' }}
+            </p>
+            <template v-if="phase === 'self-eval'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
+              >
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons @select="selfEvalGraded" />
+            </template>
+          </template>
         </template>
 
         <!-- Bouton suivant (après correction / révélation auto-corrigée) -->
@@ -288,6 +275,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useRevisionStore } from '../../stores/revision'
 import type { RevisionItem, RevisionItemType } from '../../stores/revision'
 import { ChevronLeft } from 'lucide-vue-next'
+import SelfEvalButtons from '../../components/revision/SelfEvalButtons.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -300,8 +288,12 @@ const loading = ref(true)
 const items = ref<RevisionItem[]>([])
 const index = ref(0)
 const correctCount = ref(0)
-const phase = ref<'answer' | 'reveal' | 'feedback'>('answer')
+const phase = ref<'answer' | 'reveal' | 'self-eval' | 'feedback'>('answer')
 const lastCorrect = ref(false)
+// Reponse soumise au check (Task 5) : reutilisee telle quelle au moment du
+// grade (l'auto-evaluation ne fait que choisir le score, pas re-saisir une
+// reponse), reassignee a chaque soumission vf/association/ordre.
+const lastAnswer = ref<Record<string, unknown>>({})
 
 const TYPE_LABELS: Record<string, string> = {
   vf: 'Vrai / Faux',
@@ -392,33 +384,44 @@ onMounted(async () => {
 })
 
 async function submitVf(value: boolean) {
-  const res = await revisionStore.gradeItem(setId, current.value.id, { value }, elapsedSeconds())
-  applyResult(res.correct)
+  await checkAndAwaitSelfEval({ value })
 }
 
 async function submitAssoc() {
-  const res = await revisionStore.gradeItem(
-    setId,
-    current.value.id,
-    { matches: { ...matches } },
-    elapsedSeconds(),
-  )
-  applyResult(res.correct)
+  await checkAndAwaitSelfEval({ matches: { ...matches } })
 }
 
 async function submitOrdre() {
-  const res = await revisionStore.gradeItem(
-    setId,
-    current.value.id,
-    { order: [...ordering.value] },
-    elapsedSeconds(),
-  )
-  applyResult(res.correct)
+  await checkAndAwaitSelfEval({ order: [...ordering.value] })
 }
 
+// vf/association/ordre (Task 5) : la reponse a une correction objective, mais
+// n'applique plus directement la note SM-2 -- on verifie d'abord (sans effet
+// de bord) puis on affiche la correction et on attend une auto-evaluation
+// manuelle (phase 'self-eval'), comme flashcard/definition.
+async function checkAndAwaitSelfEval(answer: Record<string, unknown>) {
+  lastAnswer.value = answer
+  const res = await revisionStore.checkItemAnswer(setId, current.value.id, answer)
+  lastCorrect.value = res.correct
+  phase.value = 'self-eval'
+}
+
+// flashcard/definition (inchange) : pas de correction objective, l'auto-
+// evaluation applique directement la note SM-2 via answerItem().
 async function selfEval(score: number) {
   await revisionStore.answerItem(setId, current.value.id, score, elapsedSeconds())
   applyResult(score >= 3)
+}
+
+// vf/association/ordre en phase 'self-eval' (Task 5) : applique la note SM-2
+// choisie manuellement, avec la reponse deja verifiee par checkItemAnswer.
+// correctCount reste base sur la correction reelle (lastCorrect, issue du
+// check) et non sur le score choisi ensuite -- les deux sont volontairement
+// independants (le score reflete la confiance/memorisation, pas l'exactitude).
+async function selfEvalGraded(score: number) {
+  await revisionStore.gradeItem(setId, current.value.id, lastAnswer.value, score, elapsedSeconds())
+  if (lastCorrect.value) correctCount.value++
+  phase.value = 'feedback'
 }
 
 function applyResult(correct: boolean) {

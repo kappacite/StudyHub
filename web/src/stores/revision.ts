@@ -339,15 +339,27 @@ export const useRevisionStore = defineStore('revision', () => {
     return response.data
   }
 
+  // Verification sans effet de bord (Task 5) : permet d'afficher la correction
+  // d'un item vf/association/ordre avant de demander une auto-evaluation
+  // manuelle, sans encore appliquer de note SM-2 (contrairement a gradeItem).
+  async function checkItemAnswer(setId: number, itemId: number, answer: Record<string, unknown>) {
+    const response = await api.post<{ correct: boolean }>(
+      `/revision/sets/${setId}/study/check/${itemId}`,
+      { answer },
+    )
+    return response.data
+  }
+
   async function gradeItem(
     setId: number,
     itemId: number,
     answer: Record<string, unknown>,
+    score: number,
     durationSeconds = 0,
   ) {
     const response = await api.post<{ correct: boolean; item: RevisionItem }>(
       `/revision/sets/${setId}/study/grade/${itemId}`,
-      { answer, duration_seconds: durationSeconds },
+      { answer, score, duration_seconds: durationSeconds },
     )
     return response.data
   }
@@ -383,6 +395,7 @@ export const useRevisionStore = defineStore('revision', () => {
     fetchStudyItems,
     answerItem,
     runQcm,
+    checkItemAnswer,
     gradeItem,
     fetchSetStats,
     fetchItemStats,

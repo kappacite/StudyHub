@@ -115,14 +115,27 @@ describe('revision store — ensembles typés (D3c)', () => {
     })
   })
 
-  it('gradeItem poste la réponse typée et renvoie la correction', async () => {
+  it('checkItemAnswer poste la réponse et renvoie uniquement la correction, sans effet de bord (Task 5)', async () => {
+    api.post.mockResolvedValue({ data: { correct: true } })
+    const store = useRevisionStore()
+
+    const res = await store.checkItemAnswer(5, 9, { value: false })
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/5/study/check/9', {
+      answer: { value: false },
+    })
+    expect(res).toEqual({ correct: true })
+  })
+
+  it('gradeItem poste la réponse typée et le score choisi (obligatoire), et renvoie la correction (Task 5)', async () => {
     api.post.mockResolvedValue({ data: { correct: true, item: { id: 9 } } })
     const store = useRevisionStore()
 
-    const res = await store.gradeItem(5, 9, { value: false })
+    const res = await store.gradeItem(5, 9, { value: false }, 4)
 
     expect(api.post).toHaveBeenCalledWith('/revision/sets/5/study/grade/9', {
       answer: { value: false },
+      score: 4,
       duration_seconds: 0,
     })
     expect(res.correct).toBe(true)
@@ -132,10 +145,11 @@ describe('revision store — ensembles typés (D3c)', () => {
     api.post.mockResolvedValue({ data: { correct: true, item: { id: 9 } } })
     const store = useRevisionStore()
 
-    await store.gradeItem(5, 9, { value: false }, 17)
+    await store.gradeItem(5, 9, { value: false }, 4, 17)
 
     expect(api.post).toHaveBeenCalledWith('/revision/sets/5/study/grade/9', {
       answer: { value: false },
+      score: 4,
       duration_seconds: 17,
     })
   })

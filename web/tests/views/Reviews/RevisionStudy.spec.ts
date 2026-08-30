@@ -148,3 +148,133 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
     expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/run')
   })
 })
+
+function findButtonByText(wrapper: ReturnType<typeof mount>, text: string) {
+  return wrapper.findAll('button').find((b) => b.text() === text)
+}
+
+describe('RevisionStudy — notation manuelle vf/association/ordre apres check (Task 5)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('vf : soumettre une reponse appelle check (pas grade), affiche la correction et les boutons de notation, pas le bouton Suivant', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/check/1') return Promise.resolve({ data: { correct: true } })
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    await findButtonByText(wrapper, 'Vrai')!.trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/check/1', { answer: { value: true } })
+    expect(api.post).not.toHaveBeenCalledWith(expect.stringContaining('/grade/'), expect.anything())
+    expect(wrapper.text()).toContain('Correct !')
+    expect(wrapper.find('[data-test="self-eval-a-revoir"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-moyen"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+    expect(findButtonByText(wrapper, 'Terminer')).toBeUndefined()
+    expect(findButtonByText(wrapper, 'Suivant')).toBeUndefined()
+  })
+
+  it('vf : cliquer un bouton de notation appelle gradeItem avec le score choisi ET la reponse initialement soumise, puis affiche Suivant', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/check/1') return Promise.resolve({ data: { correct: true } })
+      if (url === '/revision/sets/7/study/grade/1') return Promise.resolve({ data: { correct: true, item: { id: 1 } } })
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [
+      item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true }),
+      item(2, 'vf', { assertion: 'Autre.', correct: true }),
+    ]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    await findButtonByText(wrapper, 'Faux')!.trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-test="self-eval-moyen"]').trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/grade/1', {
+      answer: { value: false },
+      score: 3,
+      duration_seconds: expect.any(Number),
+    })
+    expect(findButtonByText(wrapper, 'Suivant')).toBeDefined()
+  })
+
+  it('vf : correctCount reflete la correction reelle du check, independamment du score choisi ensuite', async () => {
+    api.post.mockImplementation((url: string) => {
+      // Reponse "value: false" jugee incorrecte par le backend, meme si
+      // l'utilisateur se note ensuite "Acquis" (score 5) par erreur/exces de confiance.
+      if (url === '/revision/sets/7/study/check/1') return Promise.resolve({ data: { correct: false } })
+      if (url === '/revision/sets/7/study/grade/1') return Promise.resolve({ data: { correct: false, item: { id: 1 } } })
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    await findButtonByText(wrapper, 'Faux')!.trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('0 bonne(s)')
+  })
+
+  it('association : check puis notation manuelle avant Suivant', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/check/4') return Promise.resolve({ data: { correct: true } })
+      if (url === '/revision/sets/7/study/grade/4') return Promise.resolve({ data: { correct: true, item: { id: 4 } } })
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [item(4, 'association', { pairs: [{ left: 'Chat', right: 'Cat' }] })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    await wrapper.find('select').setValue('Cat')
+    await findButtonByText(wrapper, 'Valider')!.trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/check/4', {
+      answer: { matches: { Chat: 'Cat' } },
+    })
+    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/grade/4', {
+      answer: { matches: { Chat: 'Cat' } },
+      score: 5,
+      duration_seconds: expect.any(Number),
+    })
+    expect(findButtonByText(wrapper, 'Terminer')).toBeDefined()
+  })
+
+  it('ordre : check puis notation manuelle avant Suivant', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/check/6') return Promise.resolve({ data: { correct: false } })
+      if (url === '/revision/sets/7/study/grade/6') return Promise.resolve({ data: { correct: false, item: { id: 6 } } })
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [item(6, 'ordre', { steps: ['un', 'deux'] })]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    await findButtonByText(wrapper, 'Valider')!.trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith(
+      '/revision/sets/7/study/check/6',
+      expect.objectContaining({ answer: expect.objectContaining({ order: expect.any(Array) }) }),
+    )
+    expect(wrapper.find('[data-test="self-eval-a-revoir"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="self-eval-a-revoir"]').trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith(
+      '/revision/sets/7/study/grade/6',
+      expect.objectContaining({ score: 1 }),
+    )
+    expect(findButtonByText(wrapper, 'Terminer')).toBeDefined()
+  })
+})
