@@ -118,4 +118,16 @@ describe('NoteEdit — sidebar Assistant IA & bouton Notation (canevas Direction
 
     expect(push).toHaveBeenCalledWith('/notes/42/evaluation')
   })
+
+  it("navigue vers /notes/:id/feynman au clic sur la carte Méthode Feynman de la sidebar", async () => {
+    const { wrapper, router } = await mountNoteEdit()
+    const push = vi.spyOn(router, 'push')
+
+    const feynmanButton = wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Méthode Feynman')!
+    await feynmanButton.trigger('click')
+
+    expect(push).toHaveBeenCalledWith('/notes/42/feynman')
+  })
 })
