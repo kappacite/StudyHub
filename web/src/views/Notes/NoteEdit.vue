@@ -789,135 +789,19 @@
       <!-- ============================================================ -->
       <!-- INPUT MODAL (remplace les prompt/confirm/alert natifs)       -->
       <!-- ============================================================ -->
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="inputModal.visible"
-          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm no-print"
-          @click.self="inputModal.onCancel()"
-        >
-          <Transition
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="opacity-0 scale-95 translate-y-2"
-            enter-to-class="opacity-100 scale-100 translate-y-0"
-          >
-            <div
-              v-if="inputModal.visible"
-              class="w-full max-w-md bg-surface dark:bg-surface-soft rounded-3xl shadow-2xl border border-line dark:border-line overflow-hidden custom-input-modal"
-            >
-              <!-- Header -->
-              <div class="px-6 pt-6 pb-4 flex items-start gap-4 input-modal-header">
-                <div
-                  class="flex items-center justify-center w-11 h-11 rounded-2xl flex-shrink-0 text-white shadow-lg"
-                  :class="inputModal.iconBg || 'bg-primary'"
-                >
-                  <component :is="inputModal.icon" class="w-5 h-5" />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <h3 class="font-bold text-ink dark:text-white text-base input-modal-title">
-                    {{ inputModal.title }}
-                  </h3>
-                  <p
-                    v-if="inputModal.description"
-                    class="text-xs text-ink-muted dark:text-ink-subtle input-modal-desc"
-                  >
-                    {{ inputModal.description }}
-                  </p>
-                </div>
-                <button
-                  class="text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle transition-colors mt-0.5"
-                  @click="inputModal.onCancel()"
-                >
-                  <X class="w-5 h-5" />
-                </button>
-              </div>
-
-              <!-- Fields -->
-              <div class="px-6 pb-2 space-y-3">
-                <div v-for="(field, i) in inputModal.fields" :key="i">
-                  <label
-                    class="block text-xs font-bold text-ink-muted dark:text-ink-subtle mb-1.5 uppercase tracking-wider"
-                    >{{ field.label }}</label
-                  >
-
-                  <!-- Texte -->
-                  <input
-                    v-if="field.type === 'text' || field.type === 'textarea'"
-                    :ref="i === 0 ? 'modalFirstInput' : undefined"
-                    v-model="field.value"
-                    :placeholder="field.placeholder || ''"
-                    class="w-full px-4 py-2.5 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                    @keydown.enter.prevent="inputModal.onConfirm()"
-                    @keydown.escape.prevent="inputModal.onCancel()"
-                  />
-
-                  <!-- Booléen (Vrai / Faux) -->
-                  <div v-else-if="field.type === 'bool'" class="flex gap-3">
-                    <button
-                      class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
-                      :class="
-                        field.value === true
-                          ? 'border-success bg-success-soft dark:bg-success-soft text-success dark:text-success'
-                          : 'border-line dark:border-line text-ink-muted hover:border-success'
-                      "
-                      @click="field.value = true"
-                    >
-                      ✓ Vrai
-                    </button>
-                    <button
-                      class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
-                      :class="
-                        field.value === false
-                          ? 'border-danger bg-danger-soft dark:bg-danger-soft text-danger dark:text-danger'
-                          : 'border-line dark:border-line text-ink-muted hover:border-danger'
-                      "
-                      @click="field.value = false"
-                    >
-                      ✗ Faux
-                    </button>
-                  </div>
-
-                  <!-- Select diagramme -->
-                  <select
-                    v-else-if="field.type === 'select'"
-                    v-model="field.value"
-                    class="w-full px-4 py-2.5 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                  >
-                    <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Actions -->
-              <div class="flex gap-3 px-6 py-5">
-                <button
-                  class="flex-1 py-2.5 border border-line dark:border-line rounded-xl text-sm font-semibold text-ink-muted dark:text-ink-subtle hover:bg-surface-soft dark:hover:bg-surface-soft transition-all"
-                  @click="inputModal.onCancel()"
-                >
-                  Annuler
-                </button>
-                <button
-                  class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95 shadow-md"
-                  :class="
-                    inputModal.confirmBg || 'bg-primary hover:bg-primary-strong shadow-elev-primary'
-                  "
-                  @click="inputModal.onConfirm()"
-                >
-                  {{ inputModal.confirmLabel || 'Confirmer' }}
-                </button>
-              </div>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
+      <NoteInputModal
+        :visible="inputModal.visible"
+        :title="inputModal.title"
+        :description="inputModal.description"
+        :icon="inputModal.icon"
+        :icon-bg="inputModal.iconBg"
+        :confirm-bg="inputModal.confirmBg"
+        :confirm-label="inputModal.confirmLabel"
+        :fields="inputModal.fields"
+        @update:fields="inputModal.fields = $event"
+        @confirm="inputModal.onConfirm()"
+        @cancel="inputModal.onCancel()"
+      />
 
       <!-- SM-2 Evaluation Modal -->
       <Transition
@@ -1155,7 +1039,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../../services/api'
 import { useNotesStore } from '../../stores/notes'
@@ -1167,6 +1051,7 @@ import NotePdfExportModal, {
   type PdfExportOptions,
 } from '../../components/notes/NotePdfExportModal.vue'
 import NoteEditHelpModal from '../../components/notes/NoteEditHelpModal.vue'
+import NoteInputModal, { type ModalField } from '../../components/notes/NoteInputModal.vue'
 import {
   ChevronLeft,
   Menu,
@@ -1416,20 +1301,15 @@ const showSelectionMenu = ref(false)
 const selectionMenuPos = ref({ top: 0, left: 0 })
 
 // ---------------------------------------------------------------
-// Modal stylisé (remplace prompt / confirm / alert)
+// Modal stylisé (remplace prompt / confirm / alert) — rendu délégué à
+// NoteInputModal.vue (composant purement présentationnel) ; la logique de
+// transformation par type d'insertion reste ici, dans applySelectionTransform.
 // ---------------------------------------------------------------
-interface ModalField {
-  label: string
-  type: 'text' | 'bool' | 'select' | 'textarea'
-  value: any
-  placeholder?: string
-  options?: { value: any; label: string }[]
-}
 interface ModalConfig {
   visible: boolean
   title: string
   description?: string
-  icon: any
+  icon: Component
   iconBg?: string
   confirmBg?: string
   confirmLabel?: string
@@ -1441,7 +1321,7 @@ interface ModalConfig {
 const inputModal = ref<ModalConfig>({
   visible: false,
   title: '',
-  icon: null,
+  icon: BookOpen,
   fields: [],
   onConfirm: () => {},
   onCancel: () => {},
@@ -1463,11 +1343,6 @@ function openModal(
         resolve(null)
       },
     }
-    // Focus le premier champ après rendu
-    setTimeout(() => {
-      const el = document.querySelector<HTMLElement>('.modal-first-input')
-      el?.focus()
-    }, 50)
   })
 }
 
@@ -2497,7 +2372,7 @@ async function applySelectionTransform(
       ],
     })
     if (!result) return
-    replaced = `[${selected}]{def:${result[0].value.trim() || 'Définition...'}}`
+    replaced = `[${selected}]{def:${String(result[0].value).trim() || 'Définition...'}}`
   } else if (type === 'qcm') {
     const result = await openModal({
       title: 'Créer un QCM',
@@ -2885,9 +2760,9 @@ async function insertDefinitionTooltip() {
       },
     ],
   })
-  if (!result || !result[0].value.trim()) return
+  if (!result || !String(result[0].value).trim()) return
 
-  const replacement = `[${selected}]{def:${result[0].value.trim()}}`
+  const replacement = `[${selected}]{def:${String(result[0].value).trim()}}`
   noteBody.value = text.substring(0, start) + replacement + text.substring(end)
 
   setTimeout(() => {
