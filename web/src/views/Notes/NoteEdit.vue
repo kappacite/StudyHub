@@ -1442,7 +1442,7 @@ function renderSm2Buttons(cardId: number | null, rawTag: string): string {
     // En révision active, on n'affiche pas le rappel « En attente de sauvegarde… »
     // (bruit visuel pendant la révision) : seul le mode Lecture/édition l'indique.
     if (notesStore.isReviewModeActive) return ''
-    return `<span class="text-[10px] text-slate-450 italic font-semibold align-middle">En attente de sauvegarde...</span>`
+    return `<span class="text-tiny text-ink-subtle italic font-semibold align-middle">En attente de sauvegarde...</span>`
   }
   const state = placeholderStates.value[rawTag]
   if (!state || state.score === undefined) return ''
@@ -1455,7 +1455,7 @@ function renderSm2Buttons(cardId: number | null, rawTag: string): string {
   ]
 
   const b = buttons.find((x) => x.val === state.score)
-  return `<button type="button" data-action="sm2-re-evaluate" data-card-id="${cardId}" data-tag="${encodeURIComponent(rawTag)}" class="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-[9px] font-bold text-indigo-650 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 align-middle transition-all cursor-pointer">★ ${b ? b.label : state.score}</button>`
+  return `<button type="button" data-action="sm2-re-evaluate" data-card-id="${cardId}" data-tag="${encodeURIComponent(rawTag)}" class="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-soft hover:bg-primary-soft dark:bg-primary-soft dark:hover:bg-primary-soft text-tiny font-bold text-primary dark:text-primary border border-primary dark:border-primary align-middle transition-all cursor-pointer">★ ${b ? b.label : state.score}</button>`
 }
 
 // Rendering marked + LaTeX + Definition tooltips + Active Reading Placeholders
@@ -1475,7 +1475,7 @@ function renderMarkup(text: string): string {
       placeholders.push(html)
       return key
     } catch (e) {
-      return `<span class="text-rose-500 font-bold border border-rose-200 p-1 rounded">LaTeX Block Error: ${formula}</span>`
+      return `<span class="text-danger font-bold border border-danger p-1 rounded">LaTeX Block Error: ${formula}</span>`
     }
   })
 
@@ -1487,13 +1487,13 @@ function renderMarkup(text: string): string {
       placeholders.push(html)
       return key
     } catch (e) {
-      return `<span class="text-rose-500 font-bold">LaTeX Inline Error: ${formula}</span>`
+      return `<span class="text-danger font-bold">LaTeX Inline Error: ${formula}</span>`
     }
   })
 
   // 3. Definition Tooltips [term]{def:definition}
   temp = temp.replace(/\[([^\]]+)\]\{def:([^\}]+)\}/g, (_match, term, definition) => {
-    const html = `<span class="group relative inline-block underline decoration-emerald-500 decoration-dashed cursor-help bg-emerald-50/30 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded transition-all duration-200" def-term="${term}">${term}<span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded-xl bg-slate-900 dark:bg-slate-950 p-3 text-xs font-medium text-slate-100 dark:text-slate-200 shadow-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100 leading-normal normal-case text-center">${definition}</span><span class="hidden print:inline text-[11px] text-emerald-800 dark:text-emerald-300 font-normal italic"> (${definition})</span></span>`
+    const html = `<span class="group relative inline-block underline decoration-success decoration-dashed cursor-help bg-success-soft/30 dark:bg-success-soft/20 px-1.5 py-0.5 rounded transition-all duration-200" def-term="${term}">${term}<span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded-xl bg-ink dark:bg-ink p-3 text-xs font-medium text-app dark:text-app shadow-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100 leading-normal normal-case text-center">${definition}</span><span class="hidden print:inline text-xs text-success dark:text-success font-normal italic"> (${definition})</span></span>`
     const key = `DEFPLACEHOLDER${placeholders.length}`
     placeholders.push(html)
     return key
@@ -1507,8 +1507,8 @@ function renderMarkup(text: string): string {
     let html = ''
     if (diag === undefined) {
       html = `
-        <div class="flex items-center gap-2 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/20 text-xs font-semibold text-slate-400 my-4 select-none">
-          <svg class="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <div class="flex items-center gap-2 p-4 border border-line dark:border-line rounded-2xl bg-surface-soft/20 text-xs font-semibold text-ink-subtle my-4 select-none">
+          <svg class="animate-spin h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -1537,7 +1537,7 @@ function renderMarkup(text: string): string {
     const cardId = card ? card.id : null
 
     if (!isReview) {
-      const displayHtml = `<span class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-semibold border-b border-indigo-500">${word}</span>`
+      const displayHtml = `<span class="bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary px-1.5 py-0.5 rounded font-semibold border-b border-primary">${word}</span>`
       const key = `REVISIONPLACEHOLDER${placeholders.length}`
       placeholders.push(displayHtml)
       return key
@@ -1547,9 +1547,9 @@ function renderMarkup(text: string): string {
 
       let elementHtml = ''
       if (!state.revealed) {
-        elementHtml = `<span class="px-2.5 py-0.5 bg-slate-200 dark:bg-slate-750 text-transparent rounded-lg cursor-pointer border border-slate-300 dark:border-slate-600 select-none hover:bg-slate-300 hover:text-slate-500/10 active:scale-95 transition-all inline-block align-middle font-mono font-bold" data-action="reveal" data-tag="${encodeURIComponent(rawTag)}">???</span>`
+        elementHtml = `<span class="px-2.5 py-0.5 bg-surface-soft dark:bg-surface-soft text-transparent rounded-lg cursor-pointer border border-line dark:border-line select-none hover:bg-surface-soft hover:text-ink-subtle/10 active:scale-95 transition-all inline-block align-middle font-mono font-bold" data-action="reveal" data-tag="${encodeURIComponent(rawTag)}">???</span>`
       } else {
-        elementHtml = `<span class="bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-lg font-bold border-b border-indigo-400 inline-flex items-center align-middle select-all transition-all">${word}${renderSm2Buttons(cardId, rawTag)}</span>`
+        elementHtml = `<span class="bg-primary-soft/80 dark:bg-primary-soft text-primary dark:text-primary px-2 py-0.5 rounded-lg font-bold border-b border-primary inline-flex items-center align-middle select-all transition-all">${word}${renderSm2Buttons(cardId, rawTag)}</span>`
       }
       const key = `REVISIONPLACEHOLDER${placeholders.length}`
       placeholders.push(elementHtml)
@@ -1569,16 +1569,16 @@ function renderMarkup(text: string): string {
           const isCorrect = opt.startsWith('*') && opt.endsWith('*')
           const cleanOpt = opt.replace(/\*/g, '')
           return isCorrect
-            ? `<li class="font-extrabold text-emerald-600 dark:text-emerald-400">✓ ${cleanOpt} (Correct)</li>`
+            ? `<li class="font-extrabold text-success dark:text-success">✓ ${cleanOpt} (Correct)</li>`
             : `<li>${cleanOpt}</li>`
         })
         .join('')
 
       const displayHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold block mb-1">QCM</strong>
-          <p class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-2">${question}</p>
-          <ul class="list-none pl-0 mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-400">${listItems}</ul>
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold block mb-1">QCM</strong>
+          <p class="font-bold text-sm text-ink dark:text-ink-subtle mb-2">${question}</p>
+          <ul class="list-none pl-0 mt-2 space-y-1 text-xs text-ink-muted dark:text-ink-subtle">${listItems}</ul>
         </div>
       `
       const key = `REVISIONPLACEHOLDER${placeholders.length}`
@@ -1596,18 +1596,18 @@ function renderMarkup(text: string): string {
           const isCorrect = opt.startsWith('*') && opt.endsWith('*')
           const cleanOpt = opt.replace(/\*/g, '')
           let btnClass =
-            'px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 text-xs font-semibold transition-all active:scale-95'
+            'px-3 py-1.5 border border-line dark:border-line rounded-xl hover:bg-surface-soft dark:hover:bg-surface-soft text-xs font-semibold transition-all active:scale-95'
 
           if (state.answered) {
             if (isCorrect) {
               btnClass =
-                'px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold'
+                'px-3 py-1.5 bg-success-soft dark:bg-success-soft border border-success dark:border-success text-success dark:text-success rounded-xl text-xs font-bold'
             } else if (state.selectedOption === cleanOpt) {
               btnClass =
-                'px-3 py-1.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold'
+                'px-3 py-1.5 bg-danger-soft dark:bg-danger-soft border border-danger dark:border-danger text-danger dark:text-danger rounded-xl text-xs font-bold'
             } else {
               btnClass =
-                'px-3 py-1.5 border border-slate-100 dark:border-slate-850 opacity-40 rounded-xl text-xs font-semibold'
+                'px-3 py-1.5 border border-line dark:border-line opacity-40 rounded-xl text-xs font-semibold'
             }
           }
           return `<button type="button" class="${btnClass}" data-action="qcm-select" data-tag="${encodeURIComponent(rawTag)}" data-option="${encodeURIComponent(cleanOpt)}" ${state.answered ? 'disabled' : ''}>${cleanOpt}</button>`
@@ -1615,12 +1615,12 @@ function renderMarkup(text: string): string {
         .join(' ')
 
       const elementHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
-            <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold">QCM</strong>
+            <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold">QCM</strong>
             ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
           </div>
-          <p class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-3">${question}</p>
+          <p class="font-bold text-sm text-ink dark:text-ink-subtle mb-3">${question}</p>
           <div class="flex flex-wrap gap-2">${buttonsHtml}</div>
         </div>
       `
@@ -1640,11 +1640,11 @@ function renderMarkup(text: string): string {
 
       if (!isReview) {
         const displayHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold block mb-1">Vrai ou Faux</strong>
-          <p class="font-semibold text-sm text-slate-800 dark:text-slate-100">${assertion}</p>
-          <div class="mt-2 text-xs font-bold">Réponse : <span class="${isVrai ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${answer}</span></div>
-          <div class="text-xs text-slate-500 dark:text-slate-400 italic mt-1">${justification}</div>
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold block mb-1">Vrai ou Faux</strong>
+          <p class="font-semibold text-sm text-ink dark:text-ink-subtle">${assertion}</p>
+          <div class="mt-2 text-xs font-bold">Réponse : <span class="${isVrai ? 'text-success dark:text-success' : 'text-danger dark:text-danger'}">${answer}</span></div>
+          <div class="text-xs text-ink-muted dark:text-ink-subtle italic mt-1">${justification}</div>
         </div>
       `
         const key = `REVISIONPLACEHOLDER${placeholders.length}`
@@ -1660,19 +1660,19 @@ function renderMarkup(text: string): string {
         const btns = ['Vrai', 'Faux']
           .map((btnVal) => {
             let btnClass =
-              'px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all active:scale-95'
+              'px-4 py-2 border border-line dark:border-line rounded-xl hover:bg-surface-soft dark:hover:bg-surface-soft text-xs font-bold transition-all active:scale-95'
             const isThisCorrect = btnVal.toLowerCase() === answer.trim().toLowerCase()
 
             if (state.answered) {
               if (isThisCorrect) {
                 btnClass =
-                  'px-4 py-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold'
+                  'px-4 py-2 bg-success-soft dark:bg-success-soft border border-success dark:border-success text-success dark:text-success rounded-xl text-xs font-bold'
               } else if (state.selectedAnswer === btnVal) {
                 btnClass =
-                  'px-4 py-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-600 dark:text-rose-455 rounded-xl text-xs font-bold'
+                  'px-4 py-2 bg-danger-soft dark:bg-danger-soft border border-danger dark:border-danger text-danger dark:text-danger rounded-xl text-xs font-bold'
               } else {
                 btnClass =
-                  'px-4 py-2 border border-slate-100 dark:border-slate-850 opacity-40 rounded-xl text-xs font-bold'
+                  'px-4 py-2 border border-line dark:border-line opacity-40 rounded-xl text-xs font-bold'
               }
             }
             return `<button type="button" class="${btnClass}" data-action="vf-select" data-tag="${encodeURIComponent(rawTag)}" data-value="${btnVal}" ${state.answered ? 'disabled' : ''}>${btnVal}</button>`
@@ -1680,19 +1680,19 @@ function renderMarkup(text: string): string {
           .join(' ')
 
         const elementHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
-            <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold">Vrai ou Faux</strong>
+            <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold">Vrai ou Faux</strong>
             ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
           </div>
-          <p class="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-3">${assertion}</p>
+          <p class="font-semibold text-sm text-ink dark:text-ink-subtle mb-3">${assertion}</p>
           <div class="flex gap-3 mb-3">${btns}</div>
           ${
             state.answered
               ? `
-            <div class="bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs mt-3">
-              <div class="font-bold text-slate-700 dark:text-slate-300 mb-1">Justification :</div>
-              <div class="italic text-slate-500 dark:text-slate-400">${justification}</div>
+            <div class="bg-surface-soft/40 dark:bg-surface-soft/40 p-3 rounded-xl text-xs mt-3">
+              <div class="font-bold text-ink dark:text-ink-subtle mb-1">Justification :</div>
+              <div class="italic text-ink-muted dark:text-ink-subtle">${justification}</div>
             </div>
           `
               : ''
@@ -1720,8 +1720,8 @@ function renderMarkup(text: string): string {
     if (!isReview) {
       const stepItems = steps.map((s: string) => `<li class="mb-1">${cleanStep(s)}</li>`).join('')
       const displayHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl my-2 max-w-2xl shadow-sm not-prose">
-          <strong class="text-[9px] uppercase tracking-wider text-slate-455 font-bold block mb-0.5">Séquence : ${title}</strong>
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-2.5 border border-line dark:border-line rounded-xl my-2 max-w-2xl shadow-sm not-prose">
+          <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold block mb-0.5">Séquence : ${title}</strong>
           <ol class="list-decimal mt-1.5 space-y-0.5 text-xs" style="margin-left: 1rem !important; padding-left: 1rem !important;">${stepItems}</ol>
         </div>
       `
@@ -1738,14 +1738,14 @@ function renderMarkup(text: string): string {
       const stepButtons = state.order
         .map((step: string, idx: number) => {
           return `
-          <div class="flex items-center justify-between p-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold mb-1.5 shadow-sm">
+          <div class="flex items-center justify-between p-2.5 bg-surface dark:bg-surface border border-line dark:border-line rounded-xl text-xs font-semibold mb-1.5 shadow-sm">
             <span>${cleanStep(step)}</span>
             ${
               !state.answered
                 ? `
               <div class="flex gap-1 no-print">
-                <button type="button" class="px-1.5 py-0.5 hover:bg-slate-100 dark:hover:bg-slate-850 rounded text-slate-400 hover:text-indigo-650" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="up">▲</button>
-                <button type="button" class="px-1.5 py-0.5 hover:bg-slate-100 dark:hover:bg-slate-850 rounded text-slate-400 hover:text-indigo-650" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="down">▼</button>
+                <button type="button" class="px-1.5 py-0.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded text-ink-subtle hover:text-primary" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="up">▲</button>
+                <button type="button" class="px-1.5 py-0.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded text-ink-subtle hover:text-primary" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="down">▼</button>
               </div>
             `
                 : ''
@@ -1756,9 +1756,9 @@ function renderMarkup(text: string): string {
         .join('')
 
       const elementHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
-            <strong class="text-[10px] uppercase tracking-wider text-slate-455 font-bold">Séquence : ${title}</strong>
+            <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold">Séquence : ${title}</strong>
             ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
           </div>
           <div class="mt-3">${stepButtons}</div>
@@ -1766,15 +1766,15 @@ function renderMarkup(text: string): string {
           ${
             !state.answered
               ? `
-            <button type="button" class="w-full mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent" data-action="order-validate" data-tag="${encodeURIComponent(rawTag)}">
+            <button type="button" class="w-full mt-3 px-4 py-2 bg-primary hover:bg-primary-strong text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent" data-action="order-validate" data-tag="${encodeURIComponent(rawTag)}">
               Valider l'ordre
             </button>
           `
               : `
-            <div class="mt-3 bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
-              <div class="font-bold text-slate-700 dark:text-slate-350">Ordre attendu :</div>
+            <div class="mt-3 bg-surface-soft/40 dark:bg-surface-soft/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
+              <div class="font-bold text-ink dark:text-ink-subtle">Ordre attendu :</div>
               <div class="flex flex-wrap items-center gap-1">
-                ${steps.map((s: string) => `<span class="bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200/50 text-[10px] font-semibold">${cleanStep(s)}</span>`).join(' ➜ ')}
+                ${steps.map((s: string) => `<span class="bg-surface dark:bg-surface-soft px-2 py-1 rounded-lg border border-line/50 dark:border-line/50 text-tiny font-semibold">${cleanStep(s)}</span>`).join(' ➜ ')}
               </div>
             </div>
           `
@@ -1802,17 +1802,17 @@ function renderMarkup(text: string): string {
       const rows = pairs
         .map(
           (p: { key: string; value: string }) =>
-            `<tr><td class="border border-slate-200 dark:border-slate-800 p-2 font-semibold text-slate-700 dark:text-slate-300">${p.key}</td><td class="border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-400">${p.value}</td></tr>`,
+            `<tr><td class="border border-line dark:border-line p-2 font-semibold text-ink dark:text-ink-subtle">${p.key}</td><td class="border border-line dark:border-line p-2 text-ink-muted dark:text-ink-subtle">${p.value}</td></tr>`,
         )
         .join('')
       const displayHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Associations : ${title}</strong>
-          <table class="table-auto text-xs mt-3 w-full border-collapse border border-slate-200 dark:border-slate-800">
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold block mb-1">Associations : ${title}</strong>
+          <table class="table-auto text-xs mt-3 w-full border-collapse border border-line dark:border-line">
             <thead>
-              <tr class="bg-slate-150 dark:bg-slate-800 font-bold">
-                <th class="border border-slate-200 dark:border-slate-800 p-2 text-left">Clé</th>
-                <th class="border border-slate-200 dark:border-slate-800 p-2 text-left">Liaison</th>
+              <tr class="bg-surface-soft dark:bg-surface-soft font-bold">
+                <th class="border border-line dark:border-line p-2 text-left">Clé</th>
+                <th class="border border-line dark:border-line p-2 text-left">Liaison</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -1843,13 +1843,13 @@ function renderMarkup(text: string): string {
             'p-2 border text-left rounded-xl text-xs font-semibold shadow-sm transition-all'
           if (state.selectedKey === k) {
             btnClass +=
-              ' border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/10'
+              ' border-primary bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary ring-2 ring-primary/10'
           } else if (isMatched) {
             btnClass +=
-              ' border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-850 text-slate-400 cursor-not-allowed opacity-60'
+              ' border-line dark:border-line bg-surface-soft dark:bg-surface-soft text-ink-subtle cursor-not-allowed opacity-60'
           } else {
             btnClass +=
-              ' border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer'
+              ' border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft cursor-pointer'
           }
 
           return `<button type="button" class="${btnClass}" data-action="assoc-key-select" data-tag="${encodeURIComponent(rawTag)}" data-key="${encodeURIComponent(k)}" ${isMatched || state.answered ? 'disabled' : ''}>${k}</button>`
@@ -1863,10 +1863,10 @@ function renderMarkup(text: string): string {
             'p-2 border text-left rounded-xl text-xs font-semibold shadow-sm transition-all'
           if (isMatched) {
             btnClass +=
-              ' border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-850 text-slate-400 cursor-not-allowed opacity-60'
+              ' border-line dark:border-line bg-surface-soft dark:bg-surface-soft text-ink-subtle cursor-not-allowed opacity-60'
           } else {
             btnClass +=
-              ' border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer'
+              ' border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft cursor-pointer'
           }
 
           return `<button type="button" class="${btnClass}" data-action="assoc-value-select" data-tag="${encodeURIComponent(rawTag)}" data-value="${encodeURIComponent(v)}" ${isMatched || state.answered || !state.selectedKey ? 'disabled' : ''}>${v}</button>`
@@ -1875,35 +1875,35 @@ function renderMarkup(text: string): string {
 
       const matchesHtml = Object.entries(state.matches)
         .map(([k, v]) => {
-          return `<div class="flex items-center justify-between p-2 bg-indigo-50/50 dark:bg-slate-850 border border-indigo-100 dark:border-slate-800 rounded-xl text-[11px] font-semibold">${k} ➜ ${v} ${!state.answered ? `<button type="button" class="text-rose-500 hover:text-rose-700 ml-2" data-action="assoc-remove" data-tag="${encodeURIComponent(rawTag)}" data-key="${encodeURIComponent(k)}">✕</button>` : ''}</div>`
+          return `<div class="flex items-center justify-between p-2 bg-primary-soft/50 dark:bg-primary-soft border border-primary dark:border-primary rounded-xl text-xs font-semibold">${k} ➜ ${v} ${!state.answered ? `<button type="button" class="text-danger hover:text-danger ml-2" data-action="assoc-remove" data-tag="${encodeURIComponent(rawTag)}" data-key="${encodeURIComponent(k)}">✕</button>` : ''}</div>`
         })
         .join('')
 
       const elementHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
-            <strong class="text-[10px] uppercase tracking-wider text-slate-455 font-bold">Associations : ${title}</strong>
+            <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold">Associations : ${title}</strong>
             ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
           </div>
           <div class="grid grid-cols-2 gap-4 mt-3">
-            <div class="flex flex-col gap-1.5"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Clés</div>${keysHtml}</div>
-            <div class="flex flex-col gap-1.5"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Valeurs</div>${valuesHtml}</div>
+            <div class="flex flex-col gap-1.5"><div class="text-tiny font-bold text-ink-subtle uppercase tracking-wider mb-1">Clés</div>${keysHtml}</div>
+            <div class="flex flex-col gap-1.5"><div class="text-tiny font-bold text-ink-subtle uppercase tracking-wider mb-1">Valeurs</div>${valuesHtml}</div>
           </div>
-          
-          ${Object.keys(state.matches).length > 0 ? `<div class="mt-4 border-t border-slate-200 dark:border-slate-800 pt-3"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2">Liaisons créées :</div><div class="flex flex-col gap-1.5">${matchesHtml}</div></div>` : ''}
+
+          ${Object.keys(state.matches).length > 0 ? `<div class="mt-4 border-t border-line dark:border-line pt-3"><div class="text-tiny font-bold text-ink-subtle uppercase tracking-wider mb-2">Liaisons créées :</div><div class="flex flex-col gap-1.5">${matchesHtml}</div></div>` : ''}
           
           ${
             !state.answered
               ? `
-            <button type="button" class="w-full mt-4 px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent disabled:opacity-40" data-action="assoc-validate" data-tag="${encodeURIComponent(rawTag)}" ${Object.keys(state.matches).length !== keysList.length ? 'disabled' : ''}>
+            <button type="button" class="w-full mt-4 px-4 py-2 bg-primary hover:bg-primary-strong text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent disabled:opacity-40" data-action="assoc-validate" data-tag="${encodeURIComponent(rawTag)}" ${Object.keys(state.matches).length !== keysList.length ? 'disabled' : ''}>
               Valider les liaisons
             </button>
           `
               : `
-            <div class="mt-4 bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
-              <div class="font-bold text-slate-700 dark:text-slate-350">Associations attendues :</div>
+            <div class="mt-4 bg-surface-soft/40 dark:bg-surface-soft/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
+              <div class="font-bold text-ink dark:text-ink-subtle">Associations attendues :</div>
               <div class="grid grid-cols-1 gap-1.5">
-                ${pairs.map((p: any) => `<div class="text-[11px] font-semibold text-slate-500"><span class="text-indigo-600 dark:text-indigo-400 font-bold">${p.key}</span> ➜ ${p.value}</div>`).join('')}
+                ${pairs.map((p: any) => `<div class="text-xs font-semibold text-ink-muted"><span class="text-primary dark:text-primary font-bold">${p.key}</span> ➜ ${p.value}</div>`).join('')}
               </div>
             </div>
           `
@@ -1947,7 +1947,7 @@ function renderMarkup(text: string): string {
 
 function renderDiagramHtml(diagram: any): string {
   if (!diagram)
-    return '<div class="text-xs text-slate-450 italic my-2">Diagramme introuvable.</div>'
+    return '<div class="text-xs text-ink-subtle italic my-2">Diagramme introuvable.</div>'
 
   try {
     const data = JSON.parse(diagram.code)
@@ -1975,7 +1975,7 @@ function renderDiagramHtml(diagram: any): string {
         const fromNode = nodesList.find((n: any) => n.id === conn.from)
         const toNode = nodesList.find((n: any) => n.id === conn.to)
         if (fromNode && toNode) {
-          linesSvg += `<line x1="${fromNode.x}" y1="${fromNode.y}" x2="${toNode.x}" y2="${toNode.y}" stroke="#6366f1" stroke-width="2" marker-end="url(#arrow-preview)" />`
+          linesSvg += `<line x1="${fromNode.x}" y1="${fromNode.y}" x2="${toNode.x}" y2="${toNode.y}" stroke="rgb(var(--sh-primary))" stroke-width="2" marker-end="url(#arrow-preview)" />`
         }
       })
 
@@ -1999,12 +1999,12 @@ function renderDiagramHtml(diagram: any): string {
           nodesHtml += `
             <div class="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center" style="top: ${node.y}px; left: ${node.x}px; width: 45px; height: 45px;">
               <div style="${shapeStyle} background-color: ${colorHex}; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 3px rgba(0,0,0,0.05);"></div>
-              <span class="absolute z-10 text-[8px] font-extrabold text-white px-1 leading-tight select-none">${node.label}</span>
+              <span class="absolute z-10 text-tiny font-extrabold text-white px-1 leading-tight select-none">${node.label}</span>
             </div>
           `
         } else {
           nodesHtml += `
-            <div class="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center px-1 text-[8px] font-bold text-white shadow-sm border border-black/5" style="top: ${node.y}px; left: ${node.x}px; ${shapeStyle} background-color: ${colorHex};">
+            <div class="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center px-1 text-tiny font-bold text-white shadow-sm border border-black/5" style="top: ${node.y}px; left: ${node.x}px; ${shapeStyle} background-color: ${colorHex};">
               <span class="select-none leading-tight">${node.label}</span>
             </div>
           `
@@ -2030,8 +2030,8 @@ function renderDiagramHtml(diagram: any): string {
         if (isReview) {
           const isRevealed = state.revealed
           const fillClass = isRevealed
-            ? 'fill-transparent stroke-rose-500/20'
-            : 'fill-slate-800 dark:fill-slate-700 opacity-100 cursor-pointer'
+            ? 'fill-transparent stroke-danger/20'
+            : 'fill-ink dark:fill-ink opacity-100 cursor-pointer'
           const pointerEvents = isRevealed ? 'pointer-events-none' : 'pointer-events-auto'
 
           masksSvg += `
@@ -2040,7 +2040,7 @@ function renderDiagramHtml(diagram: any): string {
               y="${mask.y}" 
               width="${mask.width}" 
               height="${mask.height}" 
-              class="${fillClass} stroke-rose-600 stroke-2"
+              class="${fillClass} stroke-danger stroke-2"
               style="${pointerEvents}"
               data-action="reveal" 
               data-tag="${encodeURIComponent(rawTag)}"
@@ -2051,8 +2051,8 @@ function renderDiagramHtml(diagram: any): string {
             const card = noteFlashcards.value.find((c) => c.original_text === rawTag)
             const cardId = card ? card.id : null
             activeReviewHtml += `
-              <div class="mt-2 p-2.5 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900 flex flex-col items-center gap-2">
-                <span class="text-[10px] font-bold text-slate-500">Zone : <span class="text-rose-500 font-extrabold">${mask.label}</span></span>
+              <div class="mt-2 p-2.5 border border-line dark:border-line rounded-xl bg-surface-soft/50 dark:bg-surface-soft flex flex-col items-center gap-2">
+                <span class="text-tiny font-bold text-ink-muted">Zone : <span class="text-danger font-extrabold">${mask.label}</span></span>
                 ${renderSm2Buttons(cardId, rawTag)}
               </div>
             `
@@ -2065,26 +2065,26 @@ function renderDiagramHtml(diagram: any): string {
               y="${mask.y}" 
               width="${mask.width}" 
               height="${mask.height}" 
-              class="fill-rose-500/20 stroke-rose-600 stroke-2"
+              class="fill-danger/20 stroke-danger stroke-2"
               title="Zone cachée : ${mask.label}"
             />
-            <text x="${mask.x + 4}" y="${mask.y + 12}" fill="#e11d48" font-size="8px" font-weight="bold" class="select-none pointer-events-none">${mask.label}</text>
+            <text x="${mask.x + 4}" y="${mask.y + 12}" fill="rgb(var(--sh-danger))" font-size="8px" font-weight="bold" class="select-none pointer-events-none">${mask.label}</text>
           `
         }
       })
 
       return `
-        <div class="relative w-full border border-slate-150 dark:border-slate-800 rounded-2xl bg-slate-50/20 dark:bg-slate-950/15 p-2 overflow-hidden my-4 no-print select-none" style="height: ${Math.min(500, maxY + 120)}px;">
-          <div class="absolute inset-x-0 top-0 px-4 py-1 flex items-center justify-between text-[8px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50/80 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800/60 z-10">
+        <div class="relative w-full border border-line dark:border-line rounded-2xl bg-surface-soft/20 dark:bg-surface-soft/15 p-2 overflow-hidden my-4 no-print select-none" style="height: ${Math.min(500, maxY + 120)}px;">
+          <div class="absolute inset-x-0 top-0 px-4 py-1 flex items-center justify-between text-tiny text-ink-subtle font-bold uppercase tracking-wider bg-surface-soft/80 dark:bg-surface-soft border-b border-line dark:border-line/60 z-10">
             <span>Schéma visuel : ${diagram.title}</span>
-            ${isReview ? '<span class="text-rose-500 animate-pulse font-extrabold">Mode Révision - Cliquez sur les zones grises</span>' : ''}
+            ${isReview ? '<span class="text-danger animate-pulse font-extrabold">Mode Révision - Cliquez sur les zones grises</span>' : ''}
           </div>
           <div class="w-full h-full overflow-auto pt-6 pb-24">
             <div class="relative" style="width: ${maxX}px; height: ${maxY}px;">
               <svg class="absolute inset-0 w-full h-full">
                 <defs>
                   <marker id="arrow-preview" viewBox="0 0 10 10" refX="20" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#6366f1" />
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgb(var(--sh-primary))" />
                   </marker>
                 </defs>
                 ${bgImgHtml}
@@ -2094,24 +2094,24 @@ function renderDiagramHtml(diagram: any): string {
               ${nodesHtml}
             </div>
           </div>
-          <div class="absolute inset-x-0 bottom-0 p-2 bg-white/95 dark:bg-slate-900/95 border-t border-slate-100 dark:border-slate-800/80 z-20 flex flex-col gap-1.5 max-h-36 overflow-y-auto">
-            ${activeReviewHtml || `<div class="text-[9px] text-slate-400 italic text-center py-1">${isReview ? "Aucun masque d'occlusion révélé." : "Légende : masques d'occlusion affichés."}</div>`}
+          <div class="absolute inset-x-0 bottom-0 p-2 bg-surface/95 dark:bg-surface-soft/95 border-t border-line dark:border-line/80 z-20 flex flex-col gap-1.5 max-h-36 overflow-y-auto">
+            ${activeReviewHtml || `<div class="text-tiny text-ink-subtle italic text-center py-1">${isReview ? "Aucun masque d'occlusion révélé." : "Légende : masques d'occlusion affichés."}</div>`}
           </div>
         </div>
       `
     } else {
       return `
-        <div class="border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/30 dark:bg-slate-950/15 p-4 my-4">
-          <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-2">Schéma Mermaid : ${diagram.title}</div>
-          <pre class="text-[10px] text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto select-all">${diagram.code}</pre>
+        <div class="border border-line dark:border-line rounded-2xl bg-surface-soft/30 dark:bg-surface-soft/15 p-4 my-4">
+          <div class="text-tiny text-ink-subtle font-bold uppercase tracking-wider mb-2">Schéma Mermaid : ${diagram.title}</div>
+          <pre class="text-tiny text-ink-muted font-mono bg-surface-soft dark:bg-surface-soft p-3 rounded-lg overflow-x-auto select-all">${diagram.code}</pre>
         </div>
       `
     }
   } catch {
     return `
-      <div class="border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/30 dark:bg-slate-950/15 p-4 my-4">
-        <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-2">Schéma Mermaid : ${diagram.title}</div>
-        <pre class="text-[10px] text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto select-all">${diagram.code}</pre>
+      <div class="border border-line dark:border-line rounded-2xl bg-surface-soft/30 dark:bg-surface-soft/15 p-4 my-4">
+        <div class="text-tiny text-ink-subtle font-bold uppercase tracking-wider mb-2">Schéma Mermaid : ${diagram.title}</div>
+        <pre class="text-tiny text-ink-muted font-mono bg-surface-soft dark:bg-surface-soft p-3 rounded-lg overflow-x-auto select-all">${diagram.code}</pre>
       </div>
     `
   }
