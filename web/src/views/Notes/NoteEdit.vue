@@ -804,70 +804,12 @@
       />
 
       <!-- SM-2 Evaluation Modal -->
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="evaluationModal.visible"
-          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
-          @click.self="evaluationModal.visible = false"
-        >
-          <Transition
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="opacity-0 scale-95 translate-y-2"
-            enter-to-class="opacity-100 scale-100 translate-y-0"
-          >
-            <div
-              v-if="evaluationModal.visible"
-              class="w-full max-w-sm bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl shadow-2xl p-6 text-center sm2-modal-container"
-            >
-              <!-- Icon/Header -->
-              <div class="flex flex-col items-center mb-3">
-                <div
-                  class="w-10 h-10 bg-primary-soft dark:bg-primary-soft rounded-2xl flex items-center justify-center text-primary dark:text-primary mb-2 border border-primary dark:border-primary"
-                >
-                  <Sparkles class="w-5 h-5 animate-pulse" />
-                </div>
-                <h3 class="font-extrabold text-ink dark:text-white text-base sm2-modal-title">
-                  C'était facile ?
-                </h3>
-                <p class="text-xs text-ink-muted dark:text-ink-subtle sm2-modal-desc">
-                  Évaluez votre niveau de rappel pour l'algorithme d'apprentissage.
-                </p>
-              </div>
-
-              <!-- Buttons Grid -->
-              <div class="grid grid-cols-2 gap-2.5 mb-4">
-                <button
-                  v-for="btn in evaluationButtons"
-                  :key="btn.val"
-                  :disabled="isEvaluating"
-                  class="flex flex-col items-center border-2 rounded-2xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none sm2-modal-btn"
-                  :class="btn.class"
-                  @click="submitSm2Evaluation(btn.val)"
-                >
-                  <span class="text-2xl sm2-btn-emoji">{{ btn.emoji }}</span>
-                  <span class="text-xs font-bold sm2-btn-label">{{ btn.label }}</span>
-                  <span class="text-[9px] opacity-60 sm2-btn-desc">{{ btn.desc }}</span>
-                </button>
-              </div>
-
-              <!-- Actions -->
-              <button
-                class="w-full py-2 border border-line dark:border-line rounded-xl text-xs font-bold text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft transition-all sm2-modal-cancel"
-                @click="evaluationModal.visible = false"
-              >
-                Passer sans évaluer
-              </button>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
+      <NoteEvaluationModal
+        :visible="evaluationModal.visible"
+        :is-evaluating="isEvaluating"
+        @evaluate="submitSm2Evaluation($event)"
+        @cancel="evaluationModal.visible = false"
+      />
 
       <!-- Floating Selection Action Bar -->
       <transition
@@ -1052,6 +994,7 @@ import NotePdfExportModal, {
 } from '../../components/notes/NotePdfExportModal.vue'
 import NoteEditHelpModal from '../../components/notes/NoteEditHelpModal.vue'
 import NoteInputModal, { type ModalField } from '../../components/notes/NoteInputModal.vue'
+import NoteEvaluationModal from '../../components/notes/NoteEvaluationModal.vue'
 import {
   ChevronLeft,
   Menu,
@@ -1224,41 +1167,6 @@ const evaluationModal = ref({
   cardId: null as number | null,
   rawTag: '',
 })
-
-const evaluationButtons = [
-  {
-    val: 1,
-    label: 'À revoir',
-    emoji: '🔁',
-    desc: 'Pas retenu',
-    class:
-      'border-rose-100 dark:border-rose-950/40 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:border-rose-350',
-  },
-  {
-    val: 2,
-    label: 'Difficile',
-    emoji: '😕',
-    desc: 'Gros effort',
-    class:
-      'border-amber-100 dark:border-amber-950/40 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 hover:border-amber-350',
-  },
-  {
-    val: 3,
-    label: 'Correct',
-    emoji: '🙂',
-    desc: 'Rappel normal',
-    class:
-      'border-emerald-100 dark:border-emerald-950/40 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 hover:border-emerald-350',
-  },
-  {
-    val: 5,
-    label: 'Facile',
-    emoji: '😎',
-    desc: 'Aucun effort',
-    class:
-      'border-blue-100 dark:border-blue-950/40 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:border-blue-350',
-  },
-]
 
 const isEvaluating = ref(false)
 
@@ -3091,55 +2999,6 @@ async function saveNoteTags(tags: Tag[]) {
 .popup-leave-to {
   opacity: 0;
   transform: translateY(-6px) scale(0.97);
-}
-
-/* Spacing & Margin resets for Modals */
-.sm2-modal-container {
-  padding: 1.5rem !important;
-}
-.sm2-modal-container .sm2-modal-title {
-  margin: 0 !important;
-  padding: 0 !important;
-  margin-bottom: 4px !important;
-  line-height: 1.1 !important;
-  font-size: 1.125rem !important;
-}
-.sm2-modal-container .sm2-modal-desc {
-  margin: 0 !important;
-  padding: 0 !important;
-  margin-top: 4px !important;
-  line-height: 1.25 !important;
-  font-size: 0.75rem !important;
-}
-.sm2-modal-container .sm2-modal-btn {
-  margin: 0 !important;
-  padding: 0.625rem 0.5rem !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  line-height: 1 !important;
-}
-.sm2-modal-container .sm2-modal-btn .sm2-btn-emoji {
-  margin: 0 0 2px 0 !important;
-  padding: 0 !important;
-  line-height: 1 !important;
-  font-size: 1.5rem !important;
-}
-.sm2-modal-container .sm2-modal-btn .sm2-btn-label {
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 1 !important;
-  font-size: 0.75rem !important;
-}
-.sm2-modal-container .sm2-modal-btn .sm2-btn-desc {
-  margin: 2px 0 0 0 !important;
-  padding: 0 !important;
-  line-height: 1 !important;
-  font-size: 9px !important;
-}
-.sm2-modal-container .sm2-modal-cancel {
-  margin-top: 0.75rem !important;
 }
 
 /* Input modal spacing reset */
