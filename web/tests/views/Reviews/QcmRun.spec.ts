@@ -109,9 +109,9 @@ describe('QcmRun — navigation question par question (Task 6)', () => {
     expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/qcm-check/1', {
       selected_option_ids: ['b'],
     })
-    expect(wrapper.find('[data-test="self-eval-a-revoir"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="self-eval-moyen"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-encore"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-bien"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-facile"]').exists()).toBe(true)
     expect(findButtonByText(wrapper, 'Suivant')).toBeUndefined()
     expect(findButtonByText(wrapper, 'Terminer')).toBeUndefined()
   })
@@ -138,7 +138,7 @@ describe('QcmRun — navigation question par question (Task 6)', () => {
     await findButtonByText(wrapper, 'Valider')!.trigger('click')
     await flushPromises()
 
-    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-facile"]').trigger('click')
     await flushPromises()
 
     expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/qcm-answer/1', {
@@ -184,7 +184,7 @@ describe('QcmRun — navigation question par question (Task 6)', () => {
     await checkboxes[1].setValue(true)
     await findButtonByText(wrapper, 'Valider')!.trigger('click')
     await flushPromises()
-    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-facile"]').trigger('click')
     await flushPromises()
     await findButtonByText(wrapper, 'Suivant')!.trigger('click')
 
@@ -252,7 +252,7 @@ describe('QcmRun — navigation question par question (Task 6)', () => {
     await checkboxes[1].setValue(true)
     await findButtonByText(wrapper, 'Valider')!.trigger('click')
     await flushPromises()
-    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-facile"]').trigger('click')
     await flushPromises()
     await findButtonByText(wrapper, 'Suivant')!.trigger('click')
 
@@ -261,7 +261,7 @@ describe('QcmRun — navigation question par question (Task 6)', () => {
     await checkboxes[1].setValue(true)
     await findButtonByText(wrapper, 'Valider')!.trigger('click')
     await flushPromises()
-    await wrapper.find('[data-test="self-eval-a-revoir"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-encore"]').trigger('click')
     await flushPromises()
     await findButtonByText(wrapper, 'Terminer')!.trigger('click')
 
@@ -316,9 +316,9 @@ describe('QcmRun — garde anti double-soumission (revue finale de branche)', ()
     await findButtonByText(wrapper, 'Valider')!.trigger('click')
     await flushPromises()
 
-    const acquisBtn = wrapper.find('[data-test="self-eval-acquis"]')
-    await acquisBtn.trigger('click')
-    await acquisBtn.trigger('click')
+    const facileBtn = wrapper.find('[data-test="self-eval-facile"]')
+    await facileBtn.trigger('click')
+    await facileBtn.trigger('click')
     resolveAnswer({
       data: { correct: true, earned: 2, points: 2, correct_option_ids: ['b'], item: { id: 1 } },
     })

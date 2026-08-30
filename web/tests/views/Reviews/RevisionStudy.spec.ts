@@ -77,7 +77,7 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
     expect(wrapper.text()).not.toContain('Chat')
   })
 
-  it('branche flashcard : recto, revele le verso, auto-evaluation 1/3/5', async () => {
+  it('branche flashcard : recto, revele le verso, auto-evaluation (4 paliers SM-2)', async () => {
     api.post.mockResolvedValue({ data: { id: 2, set_id: 7 } })
     const items = [item(2, 'flashcard', { front: 'Chat', back: 'Cat' })]
     const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
@@ -87,7 +87,7 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
     await wrapper.find('[data-test="reveal-flashcard-button"]').trigger('click')
     expect(wrapper.text()).toContain('Cat')
 
-    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-facile"]').trigger('click')
     await flushPromises()
     expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/answer/2', {
       score: 5,
@@ -107,7 +107,7 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
       // temps de 7s avant de reveler puis de soumettre l'auto-evaluation.
       vi.setSystemTime(new Date('2026-01-01T00:00:07.000Z'))
       await wrapper.find('[data-test="reveal-flashcard-button"]').trigger('click')
-      await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+      await wrapper.find('[data-test="self-eval-facile"]').trigger('click')
       await flushPromises()
 
       expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/answer/2', {
@@ -241,9 +241,9 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
     })
     expect(api.post).not.toHaveBeenCalledWith(expect.stringContaining('/grade/'), expect.anything())
     expect(wrapper.text()).toContain('Correct !')
-    expect(wrapper.find('[data-test="self-eval-a-revoir"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="self-eval-moyen"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-encore"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-bien"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-facile"]').exists()).toBe(true)
     expect(findButtonByText(wrapper, 'Terminer')).toBeUndefined()
     expect(findButtonByText(wrapper, 'Suivant')).toBeUndefined()
   })
@@ -264,12 +264,12 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
 
     await findButtonByText(wrapper, 'Faux')!.trigger('click')
     await flushPromises()
-    await wrapper.find('[data-test="self-eval-moyen"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-bien"]').trigger('click')
     await flushPromises()
 
     expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/grade/1', {
       answer: { value: false },
-      score: 3,
+      score: 4,
       duration_seconds: expect.any(Number),
     })
     expect(findButtonByText(wrapper, 'Suivant')).toBeDefined()
@@ -278,7 +278,7 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
   it('vf : correctCount reflete la correction reelle du check, independamment du score choisi ensuite', async () => {
     api.post.mockImplementation((url: string) => {
       // Reponse "value: false" jugee incorrecte par le backend, meme si
-      // l'utilisateur se note ensuite "Acquis" (score 5) par erreur/exces de confiance.
+      // l'utilisateur se note ensuite "Facile" (score 5) par erreur/exces de confiance.
       if (url === '/revision/sets/7/study/check/1')
         return Promise.resolve({ data: { correct: false } })
       if (url === '/revision/sets/7/study/grade/1')
@@ -290,7 +290,7 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
 
     await findButtonByText(wrapper, 'Faux')!.trigger('click')
     await flushPromises()
-    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-facile"]').trigger('click')
     await flushPromises()
 
     expect(wrapper.text()).toContain('0 bonne(s)')
@@ -314,9 +314,9 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
     expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/check/4', {
       answer: { matches: { Chat: 'Cat' } },
     })
-    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-facile"]').exists()).toBe(true)
 
-    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-facile"]').trigger('click')
     await flushPromises()
 
     expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/grade/4', {
@@ -345,9 +345,9 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
       '/revision/sets/7/study/check/6',
       expect.objectContaining({ answer: expect.objectContaining({ order: expect.any(Array) }) }),
     )
-    expect(wrapper.find('[data-test="self-eval-a-revoir"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-encore"]').exists()).toBe(true)
 
-    await wrapper.find('[data-test="self-eval-a-revoir"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-encore"]').trigger('click')
     await flushPromises()
 
     expect(api.post).toHaveBeenCalledWith(
@@ -399,9 +399,9 @@ describe('RevisionStudy — garde anti double-soumission (revue finale de branch
     await findButtonByText(wrapper, 'Vrai')!.trigger('click')
     await flushPromises()
 
-    const acquisBtn = wrapper.find('[data-test="self-eval-acquis"]')
-    await acquisBtn.trigger('click')
-    await acquisBtn.trigger('click')
+    const facileBtn = wrapper.find('[data-test="self-eval-facile"]')
+    await facileBtn.trigger('click')
+    await facileBtn.trigger('click')
     resolveGrade({ data: { correct: true, item: { id: 1 } } })
     await flushPromises()
 
@@ -421,9 +421,9 @@ describe('RevisionStudy — garde anti double-soumission (revue finale de branch
     const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
 
     await wrapper.find('[data-test="reveal-flashcard-button"]').trigger('click')
-    const acquisBtn = wrapper.find('[data-test="self-eval-acquis"]')
-    await acquisBtn.trigger('click')
-    await acquisBtn.trigger('click')
+    const facileBtn = wrapper.find('[data-test="self-eval-facile"]')
+    await facileBtn.trigger('click')
+    await facileBtn.trigger('click')
     resolveAnswer({ data: { id: 2, set_id: 7 } })
     await flushPromises()
 
@@ -450,7 +450,7 @@ describe('RevisionStudy — association : selects verrouilles pendant la notatio
     await findButtonByText(wrapper, 'Valider')!.trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-facile"]').exists()).toBe(true)
     expect(wrapper.find('select').attributes('disabled')).toBeDefined()
   })
 })
@@ -464,14 +464,14 @@ describe('RevisionStudy — boutons de notation flashcard/definition masques apr
     const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
 
     await wrapper.find('[data-test="reveal-flashcard-button"]').trigger('click')
-    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-facile"]').exists()).toBe(true)
 
-    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-facile"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="self-eval-moyen"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="self-eval-a-revoir"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="self-eval-facile"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="self-eval-bien"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="self-eval-encore"]').exists()).toBe(false)
   })
 
   it('definition : les boutons de notation disparaissent du DOM une fois la note appliquee', async () => {
@@ -480,11 +480,11 @@ describe('RevisionStudy — boutons de notation flashcard/definition masques apr
     const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
 
     await findButtonByText(wrapper, 'Révéler la définition')!.trigger('click')
-    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="self-eval-facile"]').exists()).toBe(true)
 
-    await wrapper.find('[data-test="self-eval-acquis"]').trigger('click')
+    await wrapper.find('[data-test="self-eval-facile"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[data-test="self-eval-acquis"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="self-eval-facile"]').exists()).toBe(false)
   })
 })

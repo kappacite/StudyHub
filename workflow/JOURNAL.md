@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : notation-sm2-4-paliers
 
 ## Chantiers ouverts
 
@@ -13,6 +13,18 @@ Chantier actif : aucun
   levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
   le même jour)
 - `classes-examens-planning` — pas commencé, indépendant
+- `notation-sm2-4-paliers` — **ouvert**, en cours (`SelfEvalButtons.vue`, branche
+  `feature/notation-sm2-4-paliers`, worktree `.worktrees/notation-sm2-4-paliers`) — voir
+  `workflow/notation-sm2-4-paliers/CONTEXT.md`
+
+## Historique
+
+- 2026-08-30 — [notation-sm2-4-paliers] **Chantier ouvert et exécuté.** Demande utilisateur
+  suite aux captures du chantier `revision-flexibilite` : boutons de notation manuelle passés
+  de 3 (À revoir/Moyen/Acquis, 1/3/5) à 4 paliers alignés sur le graphique de stats existant
+  (Encore/Difficile/Bien/Facile, 1/2/4/5 — choix du score « Bien » tranché en chat,
+  `AskUserQuestion`). TDD, 436/436 tests frontend, `vue-tsc -b` propre. Prochaine action :
+  revue et clôture.
 
 ## Historique
 
