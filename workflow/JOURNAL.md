@@ -19,6 +19,20 @@ Chantier actif : revision-flexibilite
 
 ## Historique
 
+- 2026-08-30 — [revision-flexibilite] **8 tâches exécutées, vérification visuelle faite,
+  chantier prêt à clôturer.** Backend : scission check/commit pour la notation manuelle
+  vf/association/ordre (Task 1) et QCM par question (Task 2, suppression du passage groupé
+  devenu mort), `include_not_due` pour réviser hors échéancier (Task 3, 2 tours de correction —
+  tous deux sur un test de non-régression, jamais sur le code de production), agrégat
+  `next_review_at` dans les stats (Task 4). Frontend : notation manuelle vf/association/ordre
+  (Task 5), réécriture complète de `QcmRun.vue` en navigation question par question + révision
+  libre (Task 6, tâche la plus grosse du chantier), bouton « Réviser quand même » sur
+  `RevisionStudy.vue` + date optimale dans les stats (Task 7). Vérification visuelle réelle
+  (Task 8) : les 4 demandes confirmées fonctionnelles en direct (captures d'écran, desktop +
+  mobile 375px + mode sombre), 424/424 tests frontend + 335/340 backend (5 échecs pré-existants
+  sans rapport). Détail complet : `workflow/revision-flexibilite/JOURNAL.md`. Prochaine action :
+  revue finale de branche, puis demander à l'utilisateur de pousser
+  `feature/revision-flexibilite` et ouvrir la PR.
 - 2026-08-30 — [revision-flexibilite] **Chantier ouvert.** 4 demandes utilisateur sur le
   système SM-2 : notation manuelle généralisée (vf/association/ordre/qcm, actuellement déduite
   automatiquement), QCM révisable librement (3 axes confirmés en chat : filtre d'échéance,
