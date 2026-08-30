@@ -1,9 +1,10 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
-from app.models.revision import RevisionSet, RevisionItem
+
 from app.dao.base_dao import BaseDAO
+from app.models.revision import RevisionItem, RevisionSet
 
 
 class RevisionSetDAO(BaseDAO[RevisionSet]):
@@ -13,12 +14,12 @@ class RevisionSetDAO(BaseDAO[RevisionSet]):
     def search_sets(
         self,
         user_id: int,
-        set_type: Optional[str] = None,
-        binder_id: Optional[int] = None,
-        search_query: Optional[str] = None,
+        set_type: str | None = None,
+        binder_id: int | None = None,
+        search_query: str | None = None,
         limit: int = 20,
         offset: int = 0,
-    ) -> List[RevisionSet]:
+    ) -> list[RevisionSet]:
         query = self.db.query(self.model).filter_by(user_id=user_id)
         if set_type is not None:
             query = query.filter(self.model.type == set_type)
@@ -42,9 +43,9 @@ class RevisionSetDAO(BaseDAO[RevisionSet]):
     def count_sets(
         self,
         user_id: int,
-        set_type: Optional[str] = None,
-        binder_id: Optional[int] = None,
-        search_query: Optional[str] = None,
+        set_type: str | None = None,
+        binder_id: int | None = None,
+        search_query: str | None = None,
     ) -> int:
         query = self.db.query(self.model).filter_by(user_id=user_id)
         if set_type is not None:
@@ -60,7 +61,7 @@ class RevisionSetDAO(BaseDAO[RevisionSet]):
             )
         return query.count()
 
-    def get_by_binders(self, binder_ids: List[int]) -> List[RevisionSet]:
+    def get_by_binders(self, binder_ids: list[int]) -> list[RevisionSet]:
         """Tous les ensembles rattachés à l'un des classeurs donnés (PK internes).
 
         L'accès au classeur (et donc à son sous-arbre) est vérifié en amont par le
@@ -75,7 +76,7 @@ class RevisionSetDAO(BaseDAO[RevisionSet]):
             .all()
         )
 
-    def count_items_by_sets(self, set_ids: List[int]) -> Dict[int, int]:
+    def count_items_by_sets(self, set_ids: list[int]) -> dict[int, int]:
         """Compte les items par ensemble en UNE requête (évite l'over-fetch ORM)."""
         if not set_ids:
             return {}
@@ -92,7 +93,7 @@ class RevisionItemDAO(BaseDAO[RevisionItem]):
     def __init__(self, db: Session):
         super().__init__(RevisionItem, db)
 
-    def get_by_set(self, set_id: int, limit: int = 1000, offset: int = 0) -> List[RevisionItem]:
+    def get_by_set(self, set_id: int, limit: int = 1000, offset: int = 0) -> list[RevisionItem]:
         return (
             self.db.query(self.model)
             .filter_by(set_id=set_id)
@@ -105,7 +106,7 @@ class RevisionItemDAO(BaseDAO[RevisionItem]):
     def count_by_set(self, set_id: int) -> int:
         return self.db.query(self.model).filter_by(set_id=set_id).count()
 
-    def get_by_sets(self, set_ids: List[int]) -> List[RevisionItem]:
+    def get_by_sets(self, set_ids: list[int]) -> list[RevisionItem]:
         """Tous les items de plusieurs ensembles en UNE requête (anti-N+1, stats classeur)."""
         if not set_ids:
             return []
@@ -116,13 +117,8 @@ class RevisionItemDAO(BaseDAO[RevisionItem]):
             .all()
         )
 
-    def get_items_to_study(self, set_id: int) -> List[RevisionItem]:
-        return (
-            self.db.query(self.model)
-            .filter(
-                self.model.set_id == set_id,
-                self.model.next_review <= datetime.utcnow(),
-            )
-            .order_by(self.model.position, self.model.id)
-            .all()
-        )
+    def get_items_to_study(self, set_id: int, include_not_due: bool = False) -> list[RevisionItem]:
+        query = self.db.query(self.model).filter_by(set_id=set_id)
+        if not include_not_due:
+            query = query.filter(self.model.next_review <= datetime.utcnow())
+        return query.order_by(self.model.position, self.model.id).all()

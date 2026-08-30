@@ -130,7 +130,8 @@ def delete_item(set_id, item_id):
 @jwt_required_middleware
 def study_set(set_id):
     user_id = int(get_jwt_identity())
-    items = revision_service.get_study_items(user_id, set_id)
+    include_not_due = request.args.get("include_not_due", "false").lower() == "true"
+    items = revision_service.get_study_items(user_id, set_id, include_not_due=include_not_due)
     return jsonify([i.model_dump() for i in items]), 200
 
 

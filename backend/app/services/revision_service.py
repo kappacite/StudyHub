@@ -293,14 +293,17 @@ class RevisionService:
 
     # --- Étude (SM-2) --------------------------------------------------------
 
-    def get_study_items(self, user_id: int, set_id: int) -> list[RevisionItemResponse]:
+    def get_study_items(
+        self, user_id: int, set_id: int, include_not_due: bool = False
+    ) -> list[RevisionItemResponse]:
         rset = self._get_set_or_404(set_id, user_id, write_required=False)
         if rset.user_id == user_id:
-            items = self._item_dao.get_items_to_study(set_id)
+            items = self._item_dao.get_items_to_study(set_id, include_not_due=include_not_due)
         else:
             # Ensemble partagé (cours) : l'état SM-2 par item (next_review) appartient
             # au propriétaire. L'élève révise donc TOUS les items ; sa progression est
             # suivie séparément via StudySession (par utilisateur).
+            # include_not_due est un no-op silencieux pour la branche élève (jamais d'erreur).
             items = self._item_dao.get_by_set(set_id)
         return [RevisionItemResponse.model_validate(i) for i in items]
 
