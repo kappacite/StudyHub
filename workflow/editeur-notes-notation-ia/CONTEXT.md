@@ -1,8 +1,8 @@
 # Éditeur de notes, mode Zen, Assistant IA & Notation de la note
 
-Statut : pr-ouverte
+Statut : clos
 Branche : feature/editeur-notes-notation-ia
-PR : #138
+PR : #138 (mergée)
 
 ## Pourquoi
 
