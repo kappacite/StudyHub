@@ -15,6 +15,7 @@ const api = vi.hoisted(() => ({
 vi.mock('../../../src/services/api', () => ({ default: api }))
 
 import NoteEdit from '../../../src/views/Notes/NoteEdit.vue'
+import { BaseEmptyState, BaseButton } from '../../../src/components/ui/base'
 
 const NOTE = {
   id: '42',
@@ -28,6 +29,7 @@ const NOTE = {
 
 interface ApiOverrides {
   note?: () => Promise<unknown>
+  binders?: () => Promise<unknown>
 }
 
 function makeGetImpl(over: ApiOverrides = {}) {
@@ -36,7 +38,9 @@ function makeGetImpl(over: ApiOverrides = {}) {
       return (over.note ?? (() => Promise.resolve({ data: NOTE })))()
     }
     if (url.startsWith('/notes?')) return Promise.resolve({ data: { data: [] } })
-    if (url.startsWith('/binders?')) return Promise.resolve({ data: { data: [] } })
+    if (url.startsWith('/binders?')) {
+      return (over.binders ?? (() => Promise.resolve({ data: { data: [] } })))()
+    }
     if (url === '/tags') return Promise.resolve({ data: { data: [] } })
     if (url.startsWith('/diagrams?')) return Promise.resolve({ data: { data: [] } })
     return Promise.reject(new Error(`URL GET non mockée dans le test: ${url}`))
@@ -129,5 +133,82 @@ describe('NoteEdit — sidebar Assistant IA & bouton Notation (canevas Direction
     await feynmanButton.trigger('click')
 
     expect(push).toHaveBeenCalledWith('/notes/42/feynman')
+  })
+})
+
+describe('NoteEdit — fil d\'ariane du mode lecture (Task 8, écart canevas)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+  })
+
+  it('affiche Bibliothèque / <classeur réel> / Notes quand la note est classée', async () => {
+    api.get.mockImplementation(
+      makeGetImpl({
+        note: () => Promise.resolve({ data: { ...NOTE, binder_id: 'b1' } }),
+        binders: () =>
+          Promise.resolve({
+            data: { data: [{ id: 'b1', name: 'Chimie Organique', parent_id: null, created_at: '' }] },
+          }),
+      }),
+    )
+    const { wrapper } = await mountNoteEdit()
+    await flushPromises()
+
+    const breadcrumb = wrapper.find('[aria-label="Fil d\'ariane"]')
+    expect(breadcrumb.exists()).toBe(true)
+    expect(breadcrumb.text()).toContain('Bibliothèque')
+    expect(breadcrumb.text()).toContain('Chimie Organique')
+    expect(breadcrumb.text()).toContain('Notes')
+  })
+
+  it('affiche un segment de repli ("Général (Aucun)") quand la note n\'est pas classée', async () => {
+    api.get.mockImplementation(makeGetImpl())
+    const { wrapper } = await mountNoteEdit()
+
+    const breadcrumb = wrapper.find('[aria-label="Fil d\'ariane"]')
+    expect(breadcrumb.exists()).toBe(true)
+    expect(breadcrumb.text()).toContain('Général (Aucun)')
+  })
+})
+
+describe("NoteEdit — état d'erreur de chargement (Task 8, échec silencieux corrigé)", () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+  })
+
+  it('remplace le contenu par un BaseEmptyState + "Réessayer" quand le chargement de la note échoue', async () => {
+    api.get.mockImplementation(
+      makeGetImpl({ note: () => Promise.reject(new Error('network down')) }),
+    )
+    const { wrapper } = await mountNoteEdit()
+
+    const empty = wrapper.findComponent(BaseEmptyState)
+    expect(empty.exists()).toBe(true)
+    expect(empty.props('title')).toBe('Le chargement a échoué')
+    expect(wrapper.text()).not.toContain('Ma note de chimie')
+  })
+
+  it('le bouton "Réessayer" relance loadNoteDetails et affiche la note en cas de succès', async () => {
+    api.get.mockImplementation(
+      makeGetImpl({ note: () => Promise.reject(new Error('network down')) }),
+    )
+    const { wrapper } = await mountNoteEdit()
+    expect(wrapper.findComponent(BaseEmptyState).props('title')).toBe('Le chargement a échoué')
+
+    api.get.mockImplementation(makeGetImpl())
+    const retryButton = wrapper.findComponent(BaseEmptyState).findComponent(BaseButton)
+    await retryButton.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findComponent(BaseEmptyState).exists()).toBe(false)
+    expect(wrapper.text()).toContain('Ma note de chimie')
   })
 })

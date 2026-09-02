@@ -30,6 +30,26 @@
       >
     </div>
 
+    <!-- Error State — échec du chargement initial -->
+    <div
+      v-else-if="loadError"
+      class="flex-1 flex items-center justify-center py-20 px-4 no-print h-full w-full"
+    >
+      <div class="w-full max-w-md">
+        <BaseCard padding="none">
+          <BaseEmptyState
+            title="Le chargement a échoué"
+            description="Cette note n'a pas pu être récupérée. Vérifiez votre connexion et réessayez."
+          >
+            <template #icon><AlertCircle class="w-8 h-8 text-danger" /></template>
+            <template #actions>
+              <BaseButton @click="loadNoteDetails">Réessayer</BaseButton>
+            </template>
+          </BaseEmptyState>
+        </BaseCard>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <div
       v-else
@@ -535,6 +555,18 @@
               <div
                 class="flex-1 min-w-0 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 lg:p-12 shadow-xl shadow-soft-lg dark:shadow-soft-lg space-y-6 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black"
               >
+                <!-- Fil d'ariane (canevas Direction A) -->
+                <nav
+                  class="flex items-center gap-1.5 font-mono text-tiny tracking-wide text-ink-muted uppercase no-print"
+                  aria-label="Fil d'ariane"
+                >
+                  <span>Bibliothèque</span>
+                  <span aria-hidden="true">/</span>
+                  <span>{{ getBinderName(binderId) }}</span>
+                  <span aria-hidden="true">/</span>
+                  <span>Notes</span>
+                </nav>
+
                 <!-- PRINT-ONLY DEDICATED HEADER -->
                 <div
                   v-if="pdfExportOptions.includeHeader"
@@ -577,7 +609,7 @@
                   ]"
                 >
                   <div class="flex items-start justify-between gap-4">
-                    <h1 class="text-3xl font-extrabold text-ink dark:text-white print:text-black">
+                    <h1 class="text-3xl font-extrabold text-ink print:text-black">
                       {{ title || 'Note sans titre' }}
                     </h1>
 
@@ -950,6 +982,7 @@ import api from '../../services/api'
 import { useNotesStore } from '../../stores/notes'
 import { useBindersStore } from '../../stores/binders'
 import { useTagsStore, type Tag } from '../../stores/tags'
+import { BaseCard, BaseEmptyState, BaseButton } from '../../components/ui/base'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
 import NotePdfExportModal, {
@@ -982,6 +1015,7 @@ import {
   Sigma,
   Image,
   Star,
+  AlertCircle,
 } from '@lucide/vue'
 import { marked } from 'marked'
 import katex from 'katex'
@@ -1017,6 +1051,7 @@ const noteId = ref(route.params.id as string)
 const allUserDiagrams = ref<any[]>([])
 const loadedDiagrams = ref<Record<number, any>>({})
 const loading = ref(true)
+const loadError = ref(false)
 const isSaving = ref(false)
 const saveStatus = ref('Enregistré')
 // Note partagée par un cours (lecture seule) : aucune édition possible.
@@ -1294,11 +1329,20 @@ function insertDiagramTag(event: Event) {
 
 async function loadNoteDetails() {
   loading.value = true
+  loadError.value = false
   isSaving.value = false
   saveStatus.value = 'Enregistré'
 
-  const note = await notesStore.fetchNoteById(noteId.value)
-  if (note) {
+  try {
+    // notesStore.fetchNoteById capture déjà ses propres erreurs réseau et
+    // retombe sur un `find` local (donc ne rejette jamais) : un échec se
+    // traduit par une note absente (`undefined`), pas par une exception.
+    const note = await notesStore.fetchNoteById(noteId.value)
+    if (!note) {
+      loadError.value = true
+      return
+    }
+
     title.value = note.title
     binderId.value = note.binder_id
     isReadOnly.value = !!(note as any).read_only
@@ -1324,8 +1368,12 @@ async function loadNoteDetails() {
     } else {
       isEditMode.value = false
     }
+  } catch (error) {
+    console.error(`Erreur lors du chargement de la note ${noteId.value}`, error)
+    loadError.value = true
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 
 async function togglePublic() {
