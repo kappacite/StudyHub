@@ -4,7 +4,7 @@ Une case = une tâche atomique. TDD (skill `cycle-tdd`) : le test précède le c
 Ordre choisi : du plus structurant (en-tête/onglets, qui conditionne la silhouette) vers le
 plus local (lignes), puis vérification visuelle réelle.
 
-- [ ] Task 1 — `Tabs.vue` : variante « bascule » (conteneur surélevé, thumb) sans casser la
+- [x] Task 1 — `Tabs.vue` : variante « bascule » (conteneur surélevé, thumb) sans casser la
   variante pastilles utilisée par les autres écrans. Prop `variant` avec défaut = existant.
 - [ ] Task 2 — `Binders.vue` en-tête : titre dynamique « Notes » / « Révision » selon
   l'onglet dans un classeur (« Bibliothèque » à la racine), sur-titre mono majuscule à la

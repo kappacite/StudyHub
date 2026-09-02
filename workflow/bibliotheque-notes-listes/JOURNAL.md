@@ -24,3 +24,31 @@ machine — environnement local monté de zéro (venv Python 3.14 malgré la cib
 committé.
 
 Prochaine action : Task 1 (variante bascule de `Tabs.vue`).
+
+## 2026-09-02 — Task 1 : variante « segmented » de `Tabs.vue`
+
+`Tabs.vue` gagne une prop `variant` (`'pills'` par défaut, `'segmented'` nouveau). La forme
+historique est strictement inchangée — `Tabs` est partagé par `ClassesLanding`,
+`TeacherDashboard`, `GroupDetail` et `DesignSystemDemo`, dont aucun ne passe la prop.
+
+Choix techniques :
+- Le conteneur porte le fond et l'ombre en `segmented` (`bg-surface shadow-elev-1
+  rounded-btn-primary`, soit le rayon 10px de la maquette) ; il reste nu en `pills`. Les
+  classes sont calculées dans le `<script setup>` plutôt qu'en ternaires imbriqués dans le
+  template — trois axes (conteneur, forme d'onglet, état actif/inactif) rendaient le template
+  illisible.
+- **Écart assumé avec la maquette** : elle dessine une bascule d'environ 35px de haut
+  (padding 9px, police 13px). `components/CLAUDE.md` exige des cibles tactiles ≥ 44px, donc
+  la variante pose `min-h-11` ; le padding horizontal et le rayon de la maquette sont gardés.
+  La hauteur est le seul point où la règle d'accessibilité l'emporte sur le pixel de la
+  maquette, et c'est un choix, pas un oubli.
+- `rounded-lg` (8px) pour le thumb là où la maquette écrit 7px : pas de token à 7px et
+  `web/CLAUDE.md` interdit les valeurs brutes/classes arbitraires.
+
+TDD : 5 tests ajoutés (conteneur surélevé, forme non-pilule, thumb actif, émission,
+cible tactile) + 1 test de non-régression sur le conteneur nu de la variante par défaut.
+Rouge vérifié sur les deux tests structurants (conteneur et forme) avant implémentation.
+Suite complète verte : 514/514, `vue-tsc -b` propre.
+
+Commit : (ce commit). Prochain : Task 2 (en-tête — titre dynamique, sur-titre mono, un seul
+bouton primaire, reste replié dans un menu).

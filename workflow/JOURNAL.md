@@ -12,6 +12,9 @@ Chantier actif : bibliotheque-notes-listes
 
 ## Historique
 
+- 2026-09-02 — [bibliotheque-notes-listes] Task 1 (variante « segmented » de `Tabs.vue`)
+  terminée. 514/514 tests, `vue-tsc` propre. Prochain : Task 2 (en-tête de `Binders.vue`).
+
 - 2026-09-02 — [bibliotheque-notes-listes] chantier ouvert. Vue liste de la Bibliothèque
   (dans un classeur) recomparée à `Notes.dc.html` par lecture des sources ET comparaison
   visuelle réelle via Claude in Chrome. `bibliotheque-redesign` (#132) avait traité
