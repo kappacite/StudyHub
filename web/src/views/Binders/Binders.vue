@@ -1,6 +1,6 @@
 <template>
   <PageContainer size="wide">
-    <PageHeader title="Bibliothèque" :breadcrumbs="breadcrumbItems">
+    <PageHeader :title="pageTitle" :breadcrumbs="breadcrumbItems">
       <template #actions>
         <!-- Racine (currentBinderId === null) : aucun onglet/contenu typé n'a de
              sens ici (rien de typé ne peut s'attacher a binder_id === null tant
@@ -14,50 +14,18 @@
           </BaseButton>
         </template>
         <template v-else-if="isOwner">
-          <BaseButton
-            v-if="isRealBinderId"
-            variant="secondary"
-            size="sm"
-            @click="router.push(`/revision/binders/${currentBinderId}/stats`)"
-          >
-            <template #icon><BarChart3 class="w-4 h-4" /></template>
-            Stats
-          </BaseButton>
-          <BaseButton
-            v-if="isRealBinderId"
-            :variant="currentBinder?.is_public ? 'soft' : 'secondary'"
-            size="sm"
-            @click="openShareModal"
-          >
-            <template #icon><Globe class="w-4 h-4" /></template>
-            {{ currentBinder?.is_public ? 'Public' : 'Partager' }}
-          </BaseButton>
-          <BaseButton
-            v-if="isRealBinderId"
-            :variant="isSharedToClass ? 'soft' : 'secondary'"
-            size="sm"
-            @click="openClassShareModal"
-          >
-            <template #icon><GraduationCap class="w-4 h-4" /></template>
-            {{ isSharedToClass ? `Partagé (${sharedClasses.length})` : 'Classe' }}
-          </BaseButton>
-
-          <BaseButton
-            v-if="isRealBinderId && currentDecks.length > 0"
-            size="sm"
-            @click="reviseBinder"
-          >
-            <template #icon><Brain class="w-4 h-4" /></template>
-            Réviser ce dossier
-          </BaseButton>
-
           <BaseButton data-test="primary-action-button" size="sm" @click="primaryAction">
             <template #icon><component :is="primaryActionIcon" class="w-4 h-4" /></template>
             {{ primaryActionLabel }}
           </BaseButton>
 
           <div class="relative">
-            <BaseButton variant="secondary" size="sm" @click="showAddMenu = !showAddMenu">
+            <BaseButton
+              data-test="add-menu-button"
+              variant="secondary"
+              size="sm"
+              @click="showAddMenu = !showAddMenu"
+            >
               <template #icon><Plus class="w-4 h-4" /></template>
               Ajouter
               <ChevronDown class="w-4 h-4" />
@@ -80,15 +48,43 @@
             </template>
           </div>
 
-          <BaseButton
-            v-if="isRealBinderId"
-            variant="danger"
-            size="sm"
-            @click="confirmDeleteCurrentBinder"
-          >
-            <template #icon><Trash2 class="w-4 h-4" /></template>
-            Supprimer
-          </BaseButton>
+          <!-- Menu "…" (Task 2, bibliotheque-notes-listes) : replie Stats / Partager /
+               Classe / Réviser ce dossier / Supprimer -- toutes des actions de gestion
+               du classeur, distinctes de "Ajouter" (création de contenu, laissé visible,
+               brainstorming 2026-09-03). N'a de sens que sur un vrai classeur. -->
+          <div v-if="isRealBinderId" class="relative">
+            <BaseButton
+              data-test="more-actions-button"
+              variant="secondary"
+              size="sm"
+              title="Plus d'actions"
+              @click="showMoreMenu = !showMoreMenu"
+            >
+              <MoreHorizontal class="w-4 h-4" />
+            </BaseButton>
+            <template v-if="showMoreMenu">
+              <div class="fixed inset-0 z-10" @click="showMoreMenu = false"></div>
+              <div
+                class="absolute right-0 mt-2 w-60 bg-surface border border-line rounded-2xl shadow-elev-3 z-20 p-1.5 animate-pop-in"
+              >
+                <template v-for="item in moreMenu" :key="item.label">
+                  <div v-if="item.danger" class="my-1 h-px bg-line"></div>
+                  <button
+                    class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold hover:bg-surface-soft transition-colors text-left"
+                    :class="item.danger ? 'text-danger' : 'text-ink'"
+                    @click="item.action"
+                  >
+                    <component
+                      :is="item.icon"
+                      class="w-4 h-4 shrink-0"
+                      :class="item.danger ? 'text-danger' : 'text-primary'"
+                    />
+                    {{ item.label }}
+                  </button>
+                </template>
+              </div>
+            </template>
+          </div>
         </template>
         <template v-else>
           <BaseButton :loading="cloning" @click="cloneBinder">
@@ -108,7 +104,7 @@
       </template>
 
       <template v-if="currentBinderId !== null" #tabs>
-        <Tabs v-model="activeType" :tabs="contentTabs" />
+        <Tabs v-model="activeType" :tabs="contentTabs" variant="segmented" />
       </template>
     </PageHeader>
 
@@ -708,6 +704,7 @@ export function binderAggregate(
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import type { Component } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
@@ -738,6 +735,7 @@ import {
   Plus,
   ChevronRight,
   ChevronDown,
+  MoreHorizontal,
   FileText,
   Layers,
   Trash2,
@@ -791,6 +789,15 @@ const contentTabs = computed<TabItem[]>(() => [
   { key: 'revision', label: 'Révision' },
   { key: 'other', label: 'Autres' },
 ])
+
+// Titre de page (Task 2, bibliotheque-notes-listes) : suit Notes.dc.html -- "Bibliothèque"
+// à la racine, sinon le libellé de l'onglet actif (le sur-titre mono du fil d'Ariane porte
+// déjà le nom du classeur, cf. breadcrumbItems ci-dessous).
+const pageTitle = computed(() => {
+  if (currentBinderId.value === null) return 'Bibliothèque'
+  const tab = contentTabs.value.find((t) => t.key === activeType.value)
+  return tab?.label ?? 'Bibliothèque'
+})
 
 const primaryActionLabel = computed(() => {
   if (activeType.value === 'notes') return 'Nouvelle note'
@@ -952,6 +959,52 @@ const addMenu = computed(() => {
 
 function closeMenuThen(fn: () => void) {
   showAddMenu.value = false
+  fn()
+}
+
+const showMoreMenu = ref(false)
+
+// Menu "…" (Task 2, bibliotheque-notes-listes) : actions de gestion du classeur qui
+// n'ont de sens que sur un vrai classeur (gardé par isRealBinderId côté template,
+// donc pas revalidé ici). Labels dynamiques identiques à l'ancien affichage en
+// boutons directs (Public/Partager, Partagé (N)/Classe).
+const moreMenu = computed(() => {
+  const items: { label: string; icon: Component; action: () => void; danger?: boolean }[] = [
+    {
+      label: 'Stats',
+      icon: BarChart3,
+      action: () =>
+        closeMoreThen(() => router.push(`/revision/binders/${currentBinderId.value}/stats`)),
+    },
+    {
+      label: currentBinder.value?.is_public ? 'Public' : 'Partager',
+      icon: Globe,
+      action: () => closeMoreThen(openShareModal),
+    },
+    {
+      label: isSharedToClass.value ? `Partagé (${sharedClasses.value.length})` : 'Classe',
+      icon: GraduationCap,
+      action: () => closeMoreThen(openClassShareModal),
+    },
+  ]
+  if (currentDecks.value.length > 0) {
+    items.push({
+      label: 'Réviser ce dossier',
+      icon: Brain,
+      action: () => closeMoreThen(reviseBinder),
+    })
+  }
+  items.push({
+    label: 'Supprimer',
+    icon: Trash2,
+    action: () => closeMoreThen(confirmDeleteCurrentBinder),
+    danger: true,
+  })
+  return items
+})
+
+function closeMoreThen(fn: () => void) {
+  showMoreMenu.value = false
   fn()
 }
 
@@ -1243,9 +1296,13 @@ async function detachItem(type: BinderItemType, id: number | string) {
 }
 
 // Fil d'Ariane (PageHeader) — navigation par URL.
+// Sur-titre mono uppercase (Task 2, bibliotheque-notes-listes) : "BIBLIOTHÈQUE / CHIMIE
+// ORGANIQUE" dans Notes.dc.html -- pas de ligne du tout à la racine (aucune maquette ne
+// montre de fil d'Ariane sur l'écran Bibliotheque.dc.html), d'où le tableau vide ci-dessous
+// plutôt que le "Racine" auto-référent que le code affichait avant cette tâche.
 const breadcrumbItems = computed(() => {
-  const items: { label: string; to?: string }[] = [{ label: 'Racine', to: '/bibliotheque' }]
-  if (currentBinderId.value === null) return items
+  const items: { label: string; to?: string }[] = [{ label: 'Bibliothèque', to: '/bibliotheque' }]
+  if (currentBinderId.value === null) return []
   // Cas spécial explicite AVANT la boucle bindersStore.binders.find(...) : 'non-classe'
   // n'est pas un id de classeur réel, cette boucle ne le trouverait jamais et
   // produirait silencieusement un fil d'Ariane vide/faux (cf. brief Task 2).

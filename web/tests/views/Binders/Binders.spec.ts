@@ -215,12 +215,12 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
     expect(findCard(wrapper, 'Chimie organique')).toBeFalsy()
   })
 
-  it('fil d\'Ariane : "Racine / Non classé" sans planter', async () => {
+  it('fil d\'Ariane : "Bibliothèque / Non classé" sans planter', async () => {
     const { wrapper } = await mountBinders('non-classe')
     const nav = wrapper.find('nav')
 
     expect(nav.exists()).toBe(true)
-    expect(nav.text()).toContain('Racine')
+    expect(nav.text()).toContain('Bibliothèque')
     expect(nav.text()).toContain('Non classé')
   })
 
@@ -243,17 +243,16 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
   // finale : couverture manquante pour Stats/Partager/Classe/Réviser ce dossier/
   // Supprimer/Sous-dossier/Élément existant. Le code (isRealBinderId, addMenu)
   // était déjà correct ; ce test comble seulement le trou de couverture.
-  it('aucune action réservée à un vrai classeur (Stats/Partager/Classe/Réviser/Supprimer/Sous-dossier/Élément existant) ne s\'affiche sur le pseudo-classeur Non classé', async () => {
+  it('aucune action réservée à un vrai classeur (bouton "…", Sous-dossier/Élément existant) ne s\'affiche sur le pseudo-classeur Non classé', async () => {
     const { wrapper } = await mountBinders('non-classe')
 
     const buttonLabel = (label: string) =>
       wrapper.findAll('button').find((b) => b.text().trim() === label)
 
-    expect(buttonLabel('Stats')).toBeFalsy()
-    expect(buttonLabel('Partager')).toBeFalsy()
-    expect(buttonLabel('Classe')).toBeFalsy()
-    expect(buttonLabel('Réviser ce dossier')).toBeFalsy()
-    expect(buttonLabel('Supprimer')).toBeFalsy()
+    // Le bouton "…" (Stats/Partager/Classe/Réviser ce dossier/Supprimer) ne rend
+    // pas du tout sur le pseudo-classeur -- rien à y trouver, même caché dans un
+    // menu fermé.
+    expect(wrapper.find('[data-test="more-actions-button"]').exists()).toBe(false)
 
     // Menu "Ajouter" : Sous-dossier et Élément existant nécessitent un vrai
     // classeur parent (createBinder/attachItems attendent un id réel côté
@@ -277,6 +276,13 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
     const buttonLabel = (label: string) =>
       wrapper.findAll('button').find((b) => b.text().trim() === label)
 
+    // Repliées dans le menu "…" (Task 2, bibliotheque-notes-listes) : pas de
+    // recherche directe par label avant ouverture du menu.
+    const moreButton = wrapper.find('[data-test="more-actions-button"]')
+    expect(moreButton.exists()).toBe(true)
+    await moreButton.trigger('click')
+    await flushPromises()
+
     expect(buttonLabel('Stats')).toBeTruthy()
     expect(buttonLabel('Partager')).toBeTruthy()
     expect(buttonLabel('Classe')).toBeTruthy()
@@ -294,6 +300,57 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
     expect(buttonLabel('Élément existant')).toBeTruthy()
     expect(buttonLabel('Note')).toBeTruthy()
     expect(buttonLabel('Diagramme')).toBeTruthy()
+  })
+})
+
+describe('Binders — en-tête (Task 2, bibliotheque-notes-listes)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('titre "Bibliothèque" et aucun fil d\'Ariane à la racine', async () => {
+    const { wrapper } = await mountBinders(null)
+
+    expect(wrapper.find('h1').text()).toBe('Bibliothèque')
+    // Notes.dc.html/Bibliotheque.dc.html : aucune ligne de fil d'Ariane à la racine
+    // (elle n'apparaît qu'une fois "dans" un classeur).
+    expect(wrapper.find('nav').exists()).toBe(false)
+  })
+
+  it('titre suit l\'onglet actif à l\'intérieur d\'un classeur : "Notes", puis "Révision"', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    expect(wrapper.find('h1').text()).toBe('Notes')
+
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+    expect(wrapper.find('h1').text()).toBe('Révision')
+
+    await clickTab(wrapper, 'Autres')
+    await flushPromises()
+    expect(wrapper.find('h1').text()).toBe('Autres')
+  })
+
+  it('en-tête réduite à 3 contrôles visibles (primaire, Ajouter, …) au lieu de 7', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    const topLevelLabels = wrapper
+      .findAll('[data-test="primary-action-button"], [data-test="add-menu-button"], [data-test="more-actions-button"]')
+      .map((b) => b.text().trim())
+
+    expect(topLevelLabels).toHaveLength(3)
+    // Les 5 actions repliées ne doivent PAS être trouvables par leur libellé tant
+    // que le menu "…" n'a pas été ouvert (non-régression du repli lui-même).
+    const visibleButtonLabels = wrapper.findAll('button').map((b) => b.text().trim())
+    expect(visibleButtonLabels).not.toContain('Stats')
+    expect(visibleButtonLabels).not.toContain('Supprimer')
+  })
+
+  it('le menu "…" sépare visuellement Supprimer (dangereux) du reste', async () => {
+    const { wrapper } = await mountBinders('b1')
+    await wrapper.find('[data-test="more-actions-button"]').trigger('click')
+    await flushPromises()
+
+    const supprimer = wrapper.findAll('button').find((b) => b.text().trim() === 'Supprimer')!
+    expect(supprimer.classes()).toContain('text-danger')
   })
 })
 

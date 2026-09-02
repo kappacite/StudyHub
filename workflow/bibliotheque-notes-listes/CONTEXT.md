@@ -46,9 +46,12 @@ Dans un classeur (`Notes.dc.html`) — écart réel :
 Trois points touchent des décisions déjà tracées ailleurs. Défauts appliqués — à inverser sur
 simple demande de l'utilisateur, avant que la tâche concernée soit faite :
 
-1. **En-tête** : on garde le seul bouton primaire visible (« Nouvelle note » / « Nouvel
-   ensemble ») comme la maquette, et Stats / Partager / Classe / Réviser ce dossier / Ajouter /
-   Supprimer passent dans un menu « … ». Aucune fonctionnalité perdue, silhouette respectée.
+1. **En-tête** (affiné en brainstorming avant Task 2, 2026-09-03) : « Ajouter ▾ » reste
+   visible à côté du bouton primaire — c'est de la création de contenu, pas de la gestion du
+   classeur, il a déjà son propre sous-menu et l'imbriquer dans un second menu aurait été une
+   mauvaise UX. Stats / Partager / Classe / Réviser ce dossier / Supprimer passent dans un
+   nouveau bouton « … ». Résultat : 3 contrôles visibles (primaire, Ajouter▾, …) au lieu de 7,
+   pas 1 comme la maquette au pixel près — écart assumé, aucune fonctionnalité perdue.
 2. **Decks dans l'onglet Révision** : fusion **conservée**. La maquette ne montre que des
    ensembles, mais la fusion est une décision explicite et assumée du chantier
    `bibliotheque-ensembles` ; la maquette lui est antérieure. Pas de raison nouvelle de la revoir.

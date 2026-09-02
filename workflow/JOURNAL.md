@@ -12,6 +12,10 @@ Chantier actif : bibliotheque-notes-listes
 
 ## Historique
 
+- 2026-09-03 — [bibliotheque-notes-listes] Task 2 (en-tête de `Binders.vue` : titre dynamique,
+  sur-titre mono, menu « … ») terminée. 519/519 tests, `vue-tsc` propre, vérifié visuellement.
+  Prochain : Task 3 (sous-titre agrégé sur la grille racine).
+
 - 2026-09-02 — [bibliotheque-notes-listes] Task 1 (variante « segmented » de `Tabs.vue`)
   terminée. 514/514 tests, `vue-tsc` propre. Prochain : Task 2 (en-tête de `Binders.vue`).
 

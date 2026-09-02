@@ -38,6 +38,29 @@ describe('PageHeader', () => {
     expect(wrapper.find('.tabz').exists()).toBe(true)
   })
 
+
+  // Sur-titre mono uppercase (Task 2, bibliotheque-notes-listes) : le fil d'Ariane de
+  // `Notes.dc.html` ("BIBLIOTHÈQUE / CHIMIE ORGANIQUE") est mono, majuscule, séparé par
+  // "/" -- pas le fil d'Ariane texte historique ("›"). Seul `Binders.vue` passe la prop
+  // `breadcrumbs`, donc ce restyle ne touche aucun des 8 autres écrans utilisant PageHeader.
+  it('rend le fil d’Ariane en mono uppercase séparé par "/"', () => {
+    const wrapper = mount(PageHeader, {
+      props: {
+        title: 'Sous-dossier',
+        breadcrumbs: [
+          { label: 'Bibliothèque', to: '/bibliotheque' },
+          { label: 'Sciences' },
+        ],
+      },
+      global,
+    })
+    const nav = wrapper.find('nav')
+    expect(nav.classes()).toContain('font-mono')
+    expect(nav.classes()).toContain('uppercase')
+    expect(nav.text()).toContain('/')
+    expect(nav.text()).not.toContain('›')
+  })
+
   it('permet aux actions de passer à la ligne sur mobile plutôt que de déborder', () => {
     const wrapper = mount(PageHeader, {
       props: { title: 'Classeur' },
