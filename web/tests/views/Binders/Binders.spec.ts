@@ -45,6 +45,7 @@ function createTestRouter(): Router {
       { path: '/bibliotheque/:id?', name: 'Bibliotheque', component: stub },
       { path: '/revision/sets/:id', name: 'RevisionSetDetail', component: stub },
       { path: '/revision/sets/:id/stats', name: 'RevisionSetStats', component: stub },
+      { path: '/revision/sets/:id/study', name: 'RevisionSetStudy', component: stub },
       { path: '/decks/:id/study', name: 'StudyDeck', component: stub },
     ],
   })
@@ -491,6 +492,59 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     expect(row.text()).toContain("dernier passage aujourd'hui")
   })
 
+  // Task 6 (bibliotheque-notes-listes) : RevisionSetDetail.dc.html met le bouton ▶ Réviser
+  // en première position -- distinct du clic sur la ligne (qui ouvre le détail de
+  // l'ensemble, cf. test "clic sur un ensemble hétérogène" ci-dessus). @click.stop pour ne
+  // pas déclencher les deux navigations à la fois.
+  it("ligne d'ensemble : bouton Réviser (première position) navigue vers la session d'étude, sans ouvrir le détail", async () => {
+    const { wrapper, router } = await mountBinders()
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+
+    const row = wrapper.find('[data-test="revision-row-set-7"]')
+    const reviserButton = row.findAll('button').find((b) => b.attributes('title') === "Réviser l'ensemble")
+    expect(reviserButton).toBeTruthy()
+    await reviserButton!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/study')
+  })
+
+  // Stats/Détacher/Supprimer repliés dans un menu "…" par ligne -- Éditer reste visible
+  // directement (maquette : réviser/éditer/supprimer visibles, seuls stats et détacher
+  // n'ont pas d'équivalent dans la maquette et rejoignent le menu avec Supprimer).
+  it('ligne d\'ensemble : Stats/Détacher/Supprimer repliés dans un menu "…", Éditer reste visible', async () => {
+    const { wrapper } = await mountBinders()
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+
+    const row = wrapper.find('[data-test="revision-row-set-7"]')
+    const buttonTitle = (title: string) => row.findAll('button').find((b) => b.attributes('title') === title)
+
+    expect(buttonTitle("Éditer l'ensemble")).toBeTruthy()
+    expect(buttonTitle('Statistiques')).toBeFalsy()
+    expect(buttonTitle('Retirer du classeur')).toBeFalsy()
+    expect(buttonTitle("Supprimer l'ensemble")).toBeFalsy()
+
+    const moreButton = buttonTitle("Plus d'actions")
+    expect(moreButton).toBeTruthy()
+    await moreButton!.trigger('click')
+    await flushPromises()
+
+    expect(buttonTitle('Statistiques')).toBeTruthy()
+    expect(buttonTitle('Retirer du classeur')).toBeTruthy()
+    expect(buttonTitle("Supprimer l'ensemble")).toBeTruthy()
+  })
+
+  it("phrase d'explication affichée au-dessus de la liste Révision, titre interne \"Révision (N)\" disparu", async () => {
+    const { wrapper } = await mountBinders()
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('ensembles de révision')
+    expect(wrapper.text()).not.toContain('Révision (')
+  })
+
   it('bouton primaire contextuel : "Nouvelle note" sur Notes, "Nouvel ensemble" sur Révision', async () => {
     const { wrapper } = await mountBinders()
     expect(wrapper.find('[data-test="primary-action-button"]').text()).toContain('Nouvelle note')
@@ -545,6 +599,9 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     await flushPromises()
 
     const setRow = wrapper.find('[data-test="revision-row-set-7"]')
+    // Repliée dans le menu "…" par ligne (Task 6) : ouvrir avant de chercher le bouton.
+    await setRow.findAll('button').find((b) => b.attributes('title') === "Plus d'actions")!.trigger('click')
+    await flushPromises()
     const detachButton = setRow.findAll('button').find((b) => b.attributes('title') === 'Retirer du classeur')
     expect(detachButton).toBeTruthy()
     await detachButton!.trigger('click')
@@ -561,6 +618,9 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     await flushPromises()
 
     const setRow = wrapper.find('[data-test="revision-row-set-7"]')
+    // Repliée dans le menu "…" par ligne (Task 6) : ouvrir avant de chercher le bouton.
+    await setRow.findAll('button').find((b) => b.attributes('title') === "Plus d'actions")!.trigger('click')
+    await flushPromises()
     const statsButton = setRow.findAll('button').find((b) => b.attributes('title') === 'Statistiques')
     expect(statsButton).toBeTruthy()
     await statsButton!.trigger('click')

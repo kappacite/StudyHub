@@ -188,5 +188,31 @@ complète : 530/530, `vue-tsc -b` propre. Vérifié visuellement en local (extra
 filets pointillés conformes ; tag/globe non visibles sur les données de seed actuelles, qui
 n'ont ni tag ni note publique -- couverts par les tests unitaires avec données mockées).
 
-Commit : (ce commit). Prochain : Task 6 (lignes d'ensemble de révision -- bouton Réviser,
-menu par ligne, phrase d'explication).
+Commit : `ce0f1b5`.
+
+## 2026-09-03 — Task 6 : lignes d'ensemble de révision (bouton Réviser, menu, phrase)
+
+- Bouton ▶ Réviser en première position (icône `Play`, route `/revision/sets/:id/study`,
+  `@click.stop` pour ne pas déclencher aussi la navigation de la ligne vers le détail).
+- Stats/Retirer du classeur/Supprimer repliés dans un nouveau menu « … » par ligne
+  (`openSetMenuId` -- un seul ouvert à la fois, indexé par id de set, même idiome que
+  `showAddMenu`/`showMoreMenu` de Task 2 mais par ligne plutôt que par écran). Éditer reste
+  visible directement à côté de Réviser -- ni l'un ni l'autre n'a d'équivalent maquette pour
+  Stats/Détacher, qui rejoignent Supprimer dans le menu.
+- Phrase d'explication (« Un classeur regroupe des ensembles de révision... ») au-dessus de
+  la liste, titre interne « Révision (N) » supprimé (même raisonnement que Task 5).
+- Lignes decks + ensembles : `padding="cozy"` (Task 5) et séparateur `divide-y
+  divide-dashed` partagé entre les deux types de lignes fusionnées.
+
+Écart assumé avec la maquette, documenté dans `CONTEXT.md` avant la tâche (pas de nouvelle
+question posée) : 3 contrôles visibles (Réviser, Éditer, …) au lieu de 3 *fixes* de la
+maquette (réviser/éditer/supprimer) -- Stats et Détacher n'existent pas dans
+`RevisionSetDetail.dc.html`, ils rejoignent Supprimer dans le menu plutôt que d'être ajoutés
+comme boutons visibles séparés.
+
+TDD complet (nouvelle route de test `RevisionSetStudy`, bouton Réviser, contenu du menu,
+non-régression des 2 tests existants Statistiques/Détacher qui ouvrent désormais le menu
+d'abord, phrase + disparition du titre interne). Rouge vérifié. Suite complète : 533/533,
+`vue-tsc -b` propre. Vérifié visuellement en local, conforme.
+
+Commit : (ce commit). Prochain : Task 7 (largeur 920px dans un classeur).

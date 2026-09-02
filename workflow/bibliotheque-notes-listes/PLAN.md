@@ -17,7 +17,7 @@ plus local (lignes), puis vérification visuelle réelle.
   date relative alignée à droite (réutiliser `formatDayDiffLabel` déjà dans `Binders.vue`),
   icône globe si `is_public`. Séparateurs pointillés, suppression du second titre interne.
   Ajouter `is_public` au type `Note` du store s'il manque côté front.
-- [ ] Task 6 — Lignes d'ensemble : bouton ▶ Réviser en première position, stats/détacher/
+- [x] Task 6 — Lignes d'ensemble : bouton ▶ Réviser en première position, stats/détacher/
   supprimer repliés dans un menu par ligne, phrase d'explication au-dessus de la liste.
 - [ ] Task 7 — Largeur : 920px pour la liste de contenu dans un classeur, grille racine
   inchangée (`wide`). Vérifier qu'aucun autre consommateur de `PageContainer` ne change.

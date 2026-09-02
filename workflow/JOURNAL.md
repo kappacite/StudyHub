@@ -12,6 +12,10 @@ Chantier actif : bibliotheque-notes-listes
 
 ## Historique
 
+- 2026-09-03 — [bibliotheque-notes-listes] Task 6 (lignes d'ensemble -- bouton Réviser, menu
+  par ligne, phrase d'explication) terminée. 533/533 tests, `vue-tsc` propre, vérifié
+  visuellement. Prochain : Task 7 (largeur 920px dans un classeur).
+
 - 2026-09-03 — [bibliotheque-notes-listes] Task 5 (lignes de notes -- extrait, tag, date,
   globe, séparateurs pointillés) terminée. 530/530 tests, `vue-tsc` propre, vérifié
   visuellement. Prochain : Task 6 (lignes d'ensemble de révision).

@@ -280,15 +280,19 @@
 
           <!-- Révision : fusion visuelle Decks + Ensembles -->
           <BaseCard v-if="activeType === 'revision'">
-            <h3 class="font-bold text-sm text-ink flex items-center gap-2 mb-3">
-              <FileQuestion class="w-4 h-4 text-cat-set" />
-              Révision ({{ currentDecks.length + currentSets.length }})
-            </h3>
-            <div class="space-y-1">
+            <!-- Pas de titre interne "Révision (N)" (Task 6, bibliotheque-notes-listes) :
+                 le H1 (Task 2) porte déjà ce rôle -- Notes.dc.html n'en a pas non plus.
+                 Phrase d'explication à la place (identique à la maquette). -->
+            <p class="mb-3 text-xs text-ink-subtle">
+              Un classeur regroupe des <strong>ensembles de révision</strong> ; chaque ensemble
+              regroupe des <strong>éléments</strong> (flashcards, QCM, vrai/faux...).
+            </p>
+            <div class="divide-y divide-dashed divide-line">
               <ListRow
                 v-for="deck in currentDecks"
                 :key="`deck:${deck.id}`"
                 interactive
+                padding="cozy"
                 class="group"
                 :title="deck.name"
                 :subtitle="`${deck.card_count} carte(s)`"
@@ -317,6 +321,7 @@
                 :key="`set:${set.id}`"
                 :data-test="`revision-row-set-${set.id}`"
                 interactive
+                padding="cozy"
                 class="group"
                 :title="set.name"
                 @click="router.push(`/revision/sets/${set.id}`)"
@@ -356,18 +361,10 @@
                   >
                   <button
                     class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft"
-                    title="Statistiques"
-                    @click.stop="router.push(`/revision/sets/${set.id}/stats`)"
+                    title="Réviser l'ensemble"
+                    @click.stop="router.push(`/revision/sets/${set.id}/study`)"
                   >
-                    <BarChart3 class="w-4 h-4" />
-                  </button>
-                  <button
-                    v-if="canDetach"
-                    class="p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all"
-                    title="Retirer du classeur"
-                    @click.stop="detachItem('set', set.id)"
-                  >
-                    <FolderMinus class="w-4 h-4" />
+                    <Play class="w-4 h-4" />
                   </button>
                   <button
                     class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft"
@@ -376,14 +373,55 @@
                   >
                     <Pencil class="w-4 h-4" />
                   </button>
-                  <button
-                    v-if="isOwner"
-                    class="p-1.5 text-ink-subtle hover:text-danger rounded-lg hover:bg-danger-soft"
-                    title="Supprimer l'ensemble"
-                    @click.stop="confirmDeleteSet(set)"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
+                  <!-- Menu "…" par ligne (Task 6) : Statistiques/Retirer du classeur/
+                       Supprimer -- aucune des deux premières n'a d'équivalent dans la
+                       maquette (RevisionSetDetail.dc.html montre réviser/éditer/supprimer
+                       uniquement), Réviser et Éditer restent donc seuls visibles. -->
+                  <div class="relative">
+                    <button
+                      class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft"
+                      title="Plus d'actions"
+                      @click.stop="openSetMenuId = openSetMenuId === set.id ? null : set.id"
+                    >
+                      <MoreHorizontal class="w-4 h-4" />
+                    </button>
+                    <template v-if="openSetMenuId === set.id">
+                      <div class="fixed inset-0 z-10" @click.stop="openSetMenuId = null"></div>
+                      <div
+                        class="absolute right-0 mt-2 w-52 bg-surface border border-line rounded-2xl shadow-elev-3 z-20 p-1.5 animate-pop-in"
+                      >
+                        <button
+                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-ink hover:bg-surface-soft transition-colors text-left"
+                          title="Statistiques"
+                          @click.stop="
+                            closeSetMenuThen(() => router.push(`/revision/sets/${set.id}/stats`))
+                          "
+                        >
+                          <BarChart3 class="w-4 h-4 text-primary shrink-0" />
+                          Statistiques
+                        </button>
+                        <button
+                          v-if="canDetach"
+                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-ink hover:bg-surface-soft transition-colors text-left"
+                          title="Retirer du classeur"
+                          @click.stop="closeSetMenuThen(() => detachItem('set', set.id))"
+                        >
+                          <FolderMinus class="w-4 h-4 text-primary shrink-0" />
+                          Retirer du classeur
+                        </button>
+                        <div v-if="isOwner" class="my-1 h-px bg-line"></div>
+                        <button
+                          v-if="isOwner"
+                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-danger hover:bg-surface-soft transition-colors text-left"
+                          title="Supprimer l'ensemble"
+                          @click.stop="closeSetMenuThen(() => confirmDeleteSet(set))"
+                        >
+                          <Trash2 class="w-4 h-4 text-danger shrink-0" />
+                          Supprimer l'ensemble
+                        </button>
+                      </div>
+                    </template>
+                  </div>
                   <ChevronRight class="w-4 h-4 text-ink-subtle" />
                 </template>
               </ListRow>
@@ -759,6 +797,7 @@ import {
   ChevronRight,
   ChevronDown,
   MoreHorizontal,
+  Play,
   FileText,
   Layers,
   Trash2,
@@ -887,6 +926,14 @@ const TYPE_ICONS: Record<RevisionItemType, unknown> = {
   association: Shuffle,
 }
 const setItemsById = ref<Record<number, RevisionItem[]>>({})
+// Menu "…" par ligne d'ensemble (Task 6, bibliotheque-notes-listes) : un seul ouvert à la
+// fois, identifié par l'id du set concerné (pas un booléen par ligne -- même idiome que
+// showAddMenu/showMoreMenu, mais indexé puisqu'il y a plusieurs lignes).
+const openSetMenuId = ref<number | null>(null)
+function closeSetMenuThen(fn: () => void) {
+  openSetMenuId.value = null
+  fn()
+}
 
 function setAggregate(setId: number) {
   const items = setItemsById.value[setId] ?? []
