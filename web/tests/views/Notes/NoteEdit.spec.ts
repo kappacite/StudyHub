@@ -1146,3 +1146,255 @@ describe('NoteEdit — révision active : trou révélé et évaluation SM-2 (Ta
     expect(wrapper.findComponent(NoteEvaluationModal).props('visible')).toBe(false)
   })
 })
+
+// Fix round 1 (revue Task 9) : le "trou révélé" ci-dessus n'exerçait que la branche `reveal` de
+// `handlePlaceholderInteraction` — partagée par toutes les variantes uniquement pour le
+// déclenchement différé de la modale d'évaluation SM-2 (NoteEdit.vue:2474-2489). La logique de
+// mutation d'état propre à chaque variante (qcm-select/vf-select/order-move/order-validate/
+// assoc-key-select/assoc-value-select/assoc-remove/assoc-validate, NoteEdit.vue:2413-2451) n'était
+// couverte nulle part. Aucune de ces notes n'a de flashcard associée (`flashcards` omis dans la
+// réponse `/notes/:id` mockée) : `noteFlashcards` reste vide, donc `cardId` est `null` pour ces
+// placeholders et la modale d'évaluation ne se déclenche jamais (NoteEdit.vue:2482-2489,
+// `isActionRequiringEvaluation && cardId && ...`) — pas besoin de la danse des timers factices
+// pour ces tests, qui portent uniquement sur la mutation d'état/le nouveau rendu.
+describe('NoteEdit — révision active : variantes de handlePlaceholderInteraction (Fix round 1)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+  })
+
+  async function enterReviewMode(wrapper: VueWrapper) {
+    const revisionBtn = wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('Révision Active'))!
+    await revisionBtn.trigger('click')
+    await flushPromises()
+  }
+
+  // Lit le texte de l'étape affichée à l'index `idx` de la séquence "ordre" en passant par le
+  // bouton "monter" de cette rangée (toujours présent tant que la séquence n'est pas validée) :
+  // NoteEdit.vue:1786-1804, structure `<div><span>{{step}}</span><div>▲▼</div></div>`.
+  function stepTextAt(wrapper: VueWrapper, idx: number): string {
+    const upBtn = wrapper.get(`[data-action="order-move"][data-dir="up"][data-index="${idx}"]`)
+    const row = (upBtn.element as HTMLElement).parentElement!.parentElement!
+    return row.querySelector('span')?.textContent?.trim() ?? ''
+  }
+
+  it('qcm-select : choisir la bonne option la marque correcte et désactive/estompe les autres (NoteEdit.vue:1642-1661)', async () => {
+    api.get.mockImplementation(
+      makeGetImpl({
+        note: () =>
+          Promise.resolve({
+            data: {
+              ...NOTE,
+              content:
+                '<!-- SECTION_BODY -->\n{{qcm::La capitale de la France ?::Lyon|*Paris*|Marseille}}\n<!-- END_SECTION_BODY -->',
+            },
+          }),
+      }),
+    )
+
+    const { wrapper } = await mountNoteEdit('/notes/42')
+    await enterReviewMode(wrapper)
+
+    const correctBefore = wrapper.get('[data-action="qcm-select"][data-option="Paris"]')
+    expect(correctBefore.attributes('disabled')).toBeUndefined()
+
+    await correctBefore.trigger('click')
+    await flushPromises()
+
+    const correctAfter = wrapper.get('[data-action="qcm-select"][data-option="Paris"]')
+    expect(correctAfter.attributes('disabled')).toBeDefined()
+    expect(correctAfter.classes()).toContain('bg-success-soft')
+
+    const wrongAfter = wrapper.get('[data-action="qcm-select"][data-option="Lyon"]')
+    expect(wrongAfter.attributes('disabled')).toBeDefined()
+    expect(wrongAfter.classes()).toContain('opacity-40')
+
+    const otherWrongAfter = wrapper.get('[data-action="qcm-select"][data-option="Marseille"]')
+    expect(otherWrongAfter.attributes('disabled')).toBeDefined()
+    expect(otherWrongAfter.classes()).toContain('opacity-40')
+  })
+
+  it('vf-select : choisir la mauvaise réponse la marque en échec, révèle la bonne réponse et la justification (NoteEdit.vue:1708-1749)', async () => {
+    api.get.mockImplementation(
+      makeGetImpl({
+        note: () =>
+          Promise.resolve({
+            data: {
+              ...NOTE,
+              content:
+                '<!-- SECTION_BODY -->\n{{vf::Le soleil est une étoile::Vrai::Le soleil est une naine jaune.}}\n<!-- END_SECTION_BODY -->',
+            },
+          }),
+      }),
+    )
+
+    const { wrapper } = await mountNoteEdit('/notes/42')
+    await enterReviewMode(wrapper)
+
+    const fauxBefore = wrapper.get('[data-action="vf-select"][data-value="Faux"]')
+    expect(fauxBefore.attributes('disabled')).toBeUndefined()
+    expect(wrapper.text()).not.toContain('Le soleil est une naine jaune.')
+
+    await fauxBefore.trigger('click')
+    await flushPromises()
+
+    const fauxAfter = wrapper.get('[data-action="vf-select"][data-value="Faux"]')
+    const vraiAfter = wrapper.get('[data-action="vf-select"][data-value="Vrai"]')
+    expect(fauxAfter.classes()).toContain('bg-danger-soft')
+    expect(fauxAfter.attributes('disabled')).toBeDefined()
+    expect(vraiAfter.classes()).toContain('bg-success-soft')
+    expect(vraiAfter.attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('Le soleil est une naine jaune.')
+  })
+
+  it("order-move : aucun effet en butée (haut du 1er, bas du dernier), permutation réelle sur un mouvement valide ; order-validate verrouille l'ordre (NoteEdit.vue:2421-2437)", async () => {
+    api.get.mockImplementation(
+      makeGetImpl({
+        note: () =>
+          Promise.resolve({
+            data: {
+              ...NOTE,
+              content:
+                "<!-- SECTION_BODY -->\n{{ordre::Étapes de la photosynthèse::Absorption de lumière > Production de glucose > Libération d'oxygène}}\n<!-- END_SECTION_BODY -->",
+            },
+          }),
+      }),
+    )
+
+    const { wrapper } = await mountNoteEdit('/notes/42')
+    await enterReviewMode(wrapper)
+
+    const before = [0, 1, 2].map((i) => stepTextAt(wrapper, i))
+    expect(new Set(before).size).toBe(3) // les 3 étapes sont bien distinctes
+
+    // Butée haute : monter le premier élément est un no-op (NoteEdit.vue:2426, `idx > 0`).
+    await wrapper
+      .get('[data-action="order-move"][data-dir="up"][data-index="0"]')
+      .trigger('click')
+    await flushPromises()
+    expect([0, 1, 2].map((i) => stepTextAt(wrapper, i))).toEqual(before)
+
+    // Butée basse : descendre le dernier élément est un no-op (NoteEdit.vue:2430, `idx < length-1`).
+    await wrapper
+      .get('[data-action="order-move"][data-dir="down"][data-index="2"]')
+      .trigger('click')
+    await flushPromises()
+    expect([0, 1, 2].map((i) => stepTextAt(wrapper, i))).toEqual(before)
+
+    // Mouvement valide : monter l'élément d'index 1 permute réellement les positions 0 et 1.
+    await wrapper
+      .get('[data-action="order-move"][data-dir="up"][data-index="1"]')
+      .trigger('click')
+    await flushPromises()
+    const after = [0, 1, 2].map((i) => stepTextAt(wrapper, i))
+    expect(after[0]).toBe(before[1])
+    expect(after[1]).toBe(before[0])
+    expect(after[2]).toBe(before[2])
+
+    // order-validate : verrouille l'ordre (state.answered = true), les boutons ▲▼ disparaissent
+    // et l'ordre attendu est révélé.
+    await wrapper.get('[data-action="order-validate"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-action="order-move"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Ordre attendu')
+  })
+
+  it('association : assoc-key-select puis assoc-value-select créent une liaison, assoc-remove l’efface, assoc-validate verrouille (NoteEdit.vue:1874-1963, 2438-2451)', async () => {
+    api.get.mockImplementation(
+      makeGetImpl({
+        note: () =>
+          Promise.resolve({
+            data: {
+              ...NOTE,
+              content:
+                '<!-- SECTION_BODY -->\n{{assoc::Capitales::France=Paris | Espagne=Madrid | Italie=Rome}}\n<!-- END_SECTION_BODY -->',
+            },
+          }),
+      }),
+    )
+
+    const { wrapper } = await mountNoteEdit('/notes/42')
+    await enterReviewMode(wrapper)
+
+    // Avant toute sélection de clé, tous les boutons "valeur" sont désactivés
+    // (NoteEdit.vue:1920, `!state.selectedKey`).
+    for (const btn of wrapper.findAll('[data-action="assoc-value-select"]')) {
+      expect(btn.attributes('disabled')).toBeDefined()
+    }
+
+    // assoc-key-select : sélectionner "France" l'active visuellement et déverrouille les valeurs.
+    await wrapper
+      .get('[data-action="assoc-key-select"][data-key="France"]')
+      .trigger('click')
+    await flushPromises()
+
+    expect(
+      wrapper.get('[data-action="assoc-key-select"][data-key="France"]').classes(),
+    ).toContain('border-primary')
+    expect(
+      wrapper.get('[data-action="assoc-value-select"][data-value="Paris"]').attributes('disabled'),
+    ).toBeUndefined()
+
+    // assoc-value-select : choisir "Paris" enregistre la liaison France -> Paris et réinitialise
+    // la clé sélectionnée (NoteEdit.vue:2441-2446).
+    await wrapper
+      .get('[data-action="assoc-value-select"][data-value="Paris"]')
+      .trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Liaisons créées')
+    expect(wrapper.text()).toContain('France')
+    expect(wrapper.text()).toContain('Paris')
+    expect(
+      wrapper.get('[data-action="assoc-key-select"][data-key="France"]').attributes('disabled'),
+    ).toBeDefined()
+    expect(
+      wrapper.get('[data-action="assoc-value-select"][data-value="Paris"]').attributes('disabled'),
+    ).toBeDefined()
+
+    // assoc-remove : retirer la liaison France -> Paris la fait disparaître et réactive la clé
+    // (NoteEdit.vue:2447-2449). Le bouton "valeur" reste désactivé : aucune clé n'est sélectionnée
+    // à ce stade (`!state.selectedKey`, NoteEdit.vue:1920) — il ne se réactive qu'après un nouveau
+    // assoc-key-select, vérifié juste après.
+    await wrapper.get('[data-action="assoc-remove"][data-key="France"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Liaisons créées')
+    expect(
+      wrapper.get('[data-action="assoc-key-select"][data-key="France"]').attributes('disabled'),
+    ).toBeUndefined()
+    expect(
+      wrapper.get('[data-action="assoc-value-select"][data-value="Paris"]').attributes('disabled'),
+    ).toBeDefined()
+
+    // Reconstitue les 3 liaisons pour débloquer assoc-validate (désactivé tant que
+    // Object.keys(matches).length !== keysList.length, NoteEdit.vue:1946).
+    const pairs: Array<[string, string]> = [
+      ['France', 'Paris'],
+      ['Espagne', 'Madrid'],
+      ['Italie', 'Rome'],
+    ]
+    for (const [key, value] of pairs) {
+      await wrapper.get(`[data-action="assoc-key-select"][data-key="${key}"]`).trigger('click')
+      await flushPromises()
+      await wrapper
+        .get(`[data-action="assoc-value-select"][data-value="${value}"]`)
+        .trigger('click')
+      await flushPromises()
+    }
+
+    const validateBtn = wrapper.get('[data-action="assoc-validate"]')
+    expect(validateBtn.attributes('disabled')).toBeUndefined()
+
+    await validateBtn.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-action="assoc-validate"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Associations attendues')
+  })
+})
