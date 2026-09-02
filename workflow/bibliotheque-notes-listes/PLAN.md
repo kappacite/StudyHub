@@ -24,5 +24,5 @@ plus local (lignes), puis vérification visuelle réelle.
 - [x] Task 8 — Barre de filtre par tags : la sortir de la bande pleine largeur (absente de la
   maquette) sans perdre la fonctionnalité — décider entre repli dans l'en-tête et affichage
   conditionnel (uniquement si des tags existent).
-- [ ] Task 9 — Vérification visuelle réelle contre les maquettes (racine / classeur Notes /
+- [x] Task 9 — Vérification visuelle réelle contre les maquettes (racine / classeur Notes /
   classeur Révision × clair-sombre × 375-1440px) + non-régression de la suite de tests.

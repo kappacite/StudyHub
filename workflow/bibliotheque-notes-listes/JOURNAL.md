@@ -258,5 +258,42 @@ Tags injectés directement sur `tagsStore.tags` dans le test (mock `/tags` toujo
 dans les fixtures partagées, plus simple que de dupliquer `makeGetImpl` pour ce seul cas).
 Rouge vérifié. Suite complète : 537/537, `vue-tsc -b` propre.
 
-Commit : (ce commit). Prochain, dernière tâche : Task 9 (vérification visuelle complète +
-non-régression finale).
+Commit : `8812769`.
+
+## 2026-09-03 — Task 9 : vérification visuelle finale (dernière tâche)
+
+Données réelles enrichies via l'API (pas seulement les fixtures de test) pour couvrir tout
+ce que les tâches précédentes touchent : tag « Ch. 4 » créé et attaché à la fois à une note
+et au classeur « Chimie organique », une note passée en `is_public` -- pour voir réellement
+la pastille de tag, le liseré accent (Task 4), la barre de filtre (Task 8) et l'icône globe
+(Task 5), pas seulement leur couverture par tests unitaires mockés.
+
+Balayage réel (Claude in Chrome, application locale) :
+- **Racine, clair, 1440px** : sous-titre agrégé (Task 3), liseré accent orange sur la carte
+  la plus récemment active (Task 4), barre « Filtrer » avec le tag réel (Task 8) --
+  conforme à `Bibliotheque.dc.html`.
+- **Classeur → Notes, clair puis sombre, 1440px** : sur-titre mono, H1 dynamique, bascule
+  segmentée, 3 contrôles d'en-tête (Task 2), colonne étroite (Task 7), extrait + pastille +
+  globe + date sur la première ligne, séparateurs pointillés (Task 5) -- conforme à
+  `Notes.dc.html` dans les deux thèmes.
+- **Classeur → Révision, sombre, 1440px** : phrase d'explication, ▶ Réviser + ✎ Éditer +
+  menu « … » (Task 6) -- conforme.
+
+**Limite d'outillage rencontrée et non contournée** : `resize_window` ne redimensionne pas
+réellement la fenêtre dans cet environnement -- `window.innerWidth` restait à 1699px après
+deux tentatives à des tailles différentes (confirmé par `javascript_tool`, pas une
+supposition). Le viewport 375px n'a donc pas pu être vérifié par capture réelle. Analyse
+structurelle de substitution : aucune classe responsive (`sm:`/`md:`/`lg:`) touchée par ce
+chantier ne casse à l'étroit -- l'en-tête (`PageHeader`) a déjà `flex-wrap` sur ses actions,
+les titres de ligne restent `truncate`/`min-w-0` (schéma préexistant, juste étendu), et le
+nombre d'icônes de fin de ligne a *diminué* aux Task 2 (7→3 boutons d'en-tête) et Task 6
+(6→5 icônes de ligne) plutôt qu'augmenté. Risque de régression mobile jugé faible mais non
+vérifié par capture -- à confirmer par l'utilisateur ou une session avec un outillage de
+redimensionnement fonctionnel s'il le juge nécessaire.
+
+Non-régression : 537/537 tests (aucun changement de code depuis Task 8, seulement de la
+vérification), `vue-tsc -b` propre.
+
+**Chantier clos (code).** 9 tâches, toutes en TDD, rouge vérifié avant chaque
+implémentation. Prochaine action : demander à l'utilisateur de pousser
+`feature/bibliotheque-notes-listes`, puis ouvrir la PR.
