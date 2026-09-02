@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : editeur-notes-notation-ia
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
@@ -9,14 +9,17 @@ Chantier actif : editeur-notes-notation-ia
   levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
   le même jour)
 - `classes-examens-planning` — pas commencé, indépendant
-- `editeur-notes-notation-ia` — **ouvert**, en cours (`NoteEdit.vue`, branche
-  `feature/editeur-notes-notation-ia`, worktree `.worktrees/editeur-notes-notation-ia`) — voir
-  `workflow/editeur-notes-notation-ia/CONTEXT.md`. Ancienne branche
-  `feature/noteedit-migration` (worktree `.worktrees/noteedit-migration`) abandonnée comme base
-  de merge (conflit majeur avec `reviser-hub`) mais laissée intacte comme référence — voir le
-  ruling du 2026-08-30 dans le `CONTEXT.md` de ce chantier.
 
 ## Historique
+
+- 2026-09-02 — [editeur-notes-notation-ia] **PR #138 mergée dans `main`** (squash, `770cffe`),
+  CI verte (6/6 checks, après correctif d'un test E2E cassé par la refonte sidebar — voir le
+  journal du chantier). Chantier `clos`. Volet backend « Notation de la note » (flux 2) reste
+  hors périmètre, à planifier séparément. Ancienne branche `feature/noteedit-migration`
+  (référence de conception, non fusionnée) toujours locale uniquement — pas encore poussée sur
+  `origin`, à faire si une reprise depuis une autre machine en a besoin. Prochaine
+  action : choisir le prochain chantier à ouvrir (`ecrans-peripheriques-visuels`,
+  `classes-examens-planning`, ou planifier le volet backend Notation).
 
 - 2026-08-30 — [editeur-notes-notation-ia] **Chantier ouvert, ancienne branche réconciliée.**
   Demande utilisateur : "commence le chantier sur la refonte de l'éditeur, assure-toi de
