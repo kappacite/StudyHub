@@ -1,6 +1,6 @@
 <template>
-  <PageContainer size="wide">
-    <PageHeader title="Bibliothèque" :breadcrumbs="breadcrumbItems">
+  <PageContainer :size="pageContainerSize">
+    <PageHeader :title="pageTitle" :subtitle="rootSubtitle" :breadcrumbs="breadcrumbItems">
       <template #actions>
         <!-- Racine (currentBinderId === null) : aucun onglet/contenu typé n'a de
              sens ici (rien de typé ne peut s'attacher a binder_id === null tant
@@ -14,50 +14,18 @@
           </BaseButton>
         </template>
         <template v-else-if="isOwner">
-          <BaseButton
-            v-if="isRealBinderId"
-            variant="secondary"
-            size="sm"
-            @click="router.push(`/revision/binders/${currentBinderId}/stats`)"
-          >
-            <template #icon><BarChart3 class="w-4 h-4" /></template>
-            Stats
-          </BaseButton>
-          <BaseButton
-            v-if="isRealBinderId"
-            :variant="currentBinder?.is_public ? 'soft' : 'secondary'"
-            size="sm"
-            @click="openShareModal"
-          >
-            <template #icon><Globe class="w-4 h-4" /></template>
-            {{ currentBinder?.is_public ? 'Public' : 'Partager' }}
-          </BaseButton>
-          <BaseButton
-            v-if="isRealBinderId"
-            :variant="isSharedToClass ? 'soft' : 'secondary'"
-            size="sm"
-            @click="openClassShareModal"
-          >
-            <template #icon><GraduationCap class="w-4 h-4" /></template>
-            {{ isSharedToClass ? `Partagé (${sharedClasses.length})` : 'Classe' }}
-          </BaseButton>
-
-          <BaseButton
-            v-if="isRealBinderId && currentDecks.length > 0"
-            size="sm"
-            @click="reviseBinder"
-          >
-            <template #icon><Brain class="w-4 h-4" /></template>
-            Réviser ce dossier
-          </BaseButton>
-
           <BaseButton data-test="primary-action-button" size="sm" @click="primaryAction">
             <template #icon><component :is="primaryActionIcon" class="w-4 h-4" /></template>
             {{ primaryActionLabel }}
           </BaseButton>
 
           <div class="relative">
-            <BaseButton variant="secondary" size="sm" @click="showAddMenu = !showAddMenu">
+            <BaseButton
+              data-test="add-menu-button"
+              variant="secondary"
+              size="sm"
+              @click="showAddMenu = !showAddMenu"
+            >
               <template #icon><Plus class="w-4 h-4" /></template>
               Ajouter
               <ChevronDown class="w-4 h-4" />
@@ -80,15 +48,43 @@
             </template>
           </div>
 
-          <BaseButton
-            v-if="isRealBinderId"
-            variant="danger"
-            size="sm"
-            @click="confirmDeleteCurrentBinder"
-          >
-            <template #icon><Trash2 class="w-4 h-4" /></template>
-            Supprimer
-          </BaseButton>
+          <!-- Menu "…" (Task 2, bibliotheque-notes-listes) : replie Stats / Partager /
+               Classe / Réviser ce dossier / Supprimer -- toutes des actions de gestion
+               du classeur, distinctes de "Ajouter" (création de contenu, laissé visible,
+               brainstorming 2026-09-03). N'a de sens que sur un vrai classeur. -->
+          <div v-if="isRealBinderId" class="relative">
+            <BaseButton
+              data-test="more-actions-button"
+              variant="secondary"
+              size="sm"
+              title="Plus d'actions"
+              @click="showMoreMenu = !showMoreMenu"
+            >
+              <MoreHorizontal class="w-4 h-4" />
+            </BaseButton>
+            <template v-if="showMoreMenu">
+              <div class="fixed inset-0 z-10" @click="showMoreMenu = false"></div>
+              <div
+                class="absolute right-0 mt-2 w-60 bg-surface border border-line rounded-2xl shadow-elev-3 z-20 p-1.5 animate-pop-in"
+              >
+                <template v-for="item in moreMenu" :key="item.label">
+                  <div v-if="item.danger" class="my-1 h-px bg-line"></div>
+                  <button
+                    class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold hover:bg-surface-soft transition-colors text-left"
+                    :class="item.danger ? 'text-danger' : 'text-ink'"
+                    @click="item.action"
+                  >
+                    <component
+                      :is="item.icon"
+                      class="w-4 h-4 shrink-0"
+                      :class="item.danger ? 'text-danger' : 'text-primary'"
+                    />
+                    {{ item.label }}
+                  </button>
+                </template>
+              </div>
+            </template>
+          </div>
         </template>
         <template v-else>
           <BaseButton :loading="cloning" @click="cloneBinder">
@@ -108,12 +104,20 @@
       </template>
 
       <template v-if="currentBinderId !== null" #tabs>
-        <Tabs v-model="activeType" :tabs="contentTabs" />
+        <Tabs v-model="activeType" :tabs="contentTabs" variant="segmented" />
       </template>
     </PageHeader>
 
-    <!-- Filtre par tags -->
-    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface p-3">
+    <!-- Filtre par tags (Task 8, bibliotheque-notes-listes) : uniquement sur la grille
+         racine, là où filterByTag() a un effet visible (bindersStore.fetchBinders(tagId)
+         ne filtre que la liste des classeurs, jamais le contenu affiché à l'intérieur d'un
+         classeur) -- l'afficher aussi à l'intérieur d'un classeur était un bug latent (barre
+         sans effet), pas une fonctionnalité, cf. commentaire du test associé. Conditionné
+         en plus sur la présence d'au moins un tag (rien à filtrer sinon). -->
+    <div
+      v-if="currentBinderId === null && tagsStore.tags.length > 0"
+      class="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface p-3"
+    >
       <span class="text-xs font-bold uppercase tracking-wider text-ink-subtle">Filtrer</span>
       <button
         type="button"
@@ -211,6 +215,7 @@
             :note-count="cardAggregate(child).noteCount"
             :last-activity-label="cardAggregate(child).lastActivityLabel"
             :tags="cardBinderProps(child).tags"
+            :accent="child.id === mostRecentEntryId"
             @click="goTo(child.id)"
           />
         </div>
@@ -223,26 +228,39 @@
         <div class="space-y-6">
           <!-- Notes -->
           <BaseCard v-if="activeType === 'notes'">
-            <h3 class="font-bold text-sm text-ink flex items-center gap-2 mb-3">
-              <FileText class="w-4 h-4 text-cat-note" />
-              Notes ({{ currentNotes.length }})
-            </h3>
-            <div class="space-y-1">
+            <!-- Pas de titre interne "Notes (N)" (Task 5, bibliotheque-notes-listes) : le
+                 H1 (Task 2) porte déjà ce rôle -- Notes.dc.html n'a pas non plus de titre
+                 de section ici. -->
+            <div data-test="notes-list" class="divide-y divide-dashed divide-line">
               <ListRow
                 v-for="note in currentNotes"
                 :key="note.id"
                 interactive
+                padding="cozy"
                 class="group"
-                :title="note.title"
                 @click="router.push(`/notes/${note.id}`)"
               >
-                <template #leading
-                  ><div
-                    class="w-9 h-9 rounded-xl bg-cat-note-soft text-cat-note flex items-center justify-center"
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <p class="text-sm font-bold text-ink truncate">{{ note.title }}</p>
+                    <Globe
+                      v-if="note.is_public"
+                      class="w-3.5 h-3.5 text-primary shrink-0"
+                      aria-label="Note partagée publiquement"
+                    />
+                  </div>
+                  <p
+                    v-if="noteExcerpt(note)"
+                    class="text-xs text-ink-subtle truncate mt-1 max-w-xl"
                   >
-                    <FileText class="w-4.5 h-4.5" /></div
-                ></template>
+                    {{ noteExcerpt(note) }}
+                  </p>
+                </div>
                 <template #trailing>
+                  <TagBadge v-if="note.tags[0]" :tag="note.tags[0]" />
+                  <span class="font-mono text-xs text-ink-subtle w-20 text-right shrink-0">{{
+                    formatDayDiffLabel(note.updated_at)
+                  }}</span>
                   <span
                     v-if="note.read_only"
                     class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-warning-soft text-warning"
@@ -270,15 +288,19 @@
 
           <!-- Révision : fusion visuelle Decks + Ensembles -->
           <BaseCard v-if="activeType === 'revision'">
-            <h3 class="font-bold text-sm text-ink flex items-center gap-2 mb-3">
-              <FileQuestion class="w-4 h-4 text-cat-set" />
-              Révision ({{ currentDecks.length + currentSets.length }})
-            </h3>
-            <div class="space-y-1">
+            <!-- Pas de titre interne "Révision (N)" (Task 6, bibliotheque-notes-listes) :
+                 le H1 (Task 2) porte déjà ce rôle -- Notes.dc.html n'en a pas non plus.
+                 Phrase d'explication à la place (identique à la maquette). -->
+            <p class="mb-3 text-xs text-ink-subtle">
+              Un classeur regroupe des <strong>ensembles de révision</strong> ; chaque ensemble
+              regroupe des <strong>éléments</strong> (flashcards, QCM, vrai/faux...).
+            </p>
+            <div class="divide-y divide-dashed divide-line">
               <ListRow
                 v-for="deck in currentDecks"
                 :key="`deck:${deck.id}`"
                 interactive
+                padding="cozy"
                 class="group"
                 :title="deck.name"
                 :subtitle="`${deck.card_count} carte(s)`"
@@ -307,6 +329,7 @@
                 :key="`set:${set.id}`"
                 :data-test="`revision-row-set-${set.id}`"
                 interactive
+                padding="cozy"
                 class="group"
                 :title="set.name"
                 @click="router.push(`/revision/sets/${set.id}`)"
@@ -346,18 +369,10 @@
                   >
                   <button
                     class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft"
-                    title="Statistiques"
-                    @click.stop="router.push(`/revision/sets/${set.id}/stats`)"
+                    title="Réviser l'ensemble"
+                    @click.stop="router.push(`/revision/sets/${set.id}/study`)"
                   >
-                    <BarChart3 class="w-4 h-4" />
-                  </button>
-                  <button
-                    v-if="canDetach"
-                    class="p-1.5 text-ink-subtle hover:text-warning rounded-lg hover:bg-warning-soft transition-all"
-                    title="Retirer du classeur"
-                    @click.stop="detachItem('set', set.id)"
-                  >
-                    <FolderMinus class="w-4 h-4" />
+                    <Play class="w-4 h-4" />
                   </button>
                   <button
                     class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft"
@@ -366,14 +381,55 @@
                   >
                     <Pencil class="w-4 h-4" />
                   </button>
-                  <button
-                    v-if="isOwner"
-                    class="p-1.5 text-ink-subtle hover:text-danger rounded-lg hover:bg-danger-soft"
-                    title="Supprimer l'ensemble"
-                    @click.stop="confirmDeleteSet(set)"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
+                  <!-- Menu "…" par ligne (Task 6) : Statistiques/Retirer du classeur/
+                       Supprimer -- aucune des deux premières n'a d'équivalent dans la
+                       maquette (RevisionSetDetail.dc.html montre réviser/éditer/supprimer
+                       uniquement), Réviser et Éditer restent donc seuls visibles. -->
+                  <div class="relative">
+                    <button
+                      class="p-1.5 text-ink-subtle hover:text-primary rounded-lg hover:bg-primary-soft"
+                      title="Plus d'actions"
+                      @click.stop="openSetMenuId = openSetMenuId === set.id ? null : set.id"
+                    >
+                      <MoreHorizontal class="w-4 h-4" />
+                    </button>
+                    <template v-if="openSetMenuId === set.id">
+                      <div class="fixed inset-0 z-10" @click.stop="openSetMenuId = null"></div>
+                      <div
+                        class="absolute right-0 mt-2 w-52 bg-surface border border-line rounded-2xl shadow-elev-3 z-20 p-1.5 animate-pop-in"
+                      >
+                        <button
+                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-ink hover:bg-surface-soft transition-colors text-left"
+                          title="Statistiques"
+                          @click.stop="
+                            closeSetMenuThen(() => router.push(`/revision/sets/${set.id}/stats`))
+                          "
+                        >
+                          <BarChart3 class="w-4 h-4 text-primary shrink-0" />
+                          Statistiques
+                        </button>
+                        <button
+                          v-if="canDetach"
+                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-ink hover:bg-surface-soft transition-colors text-left"
+                          title="Retirer du classeur"
+                          @click.stop="closeSetMenuThen(() => detachItem('set', set.id))"
+                        >
+                          <FolderMinus class="w-4 h-4 text-primary shrink-0" />
+                          Retirer du classeur
+                        </button>
+                        <div v-if="isOwner" class="my-1 h-px bg-line"></div>
+                        <button
+                          v-if="isOwner"
+                          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-danger hover:bg-surface-soft transition-colors text-left"
+                          title="Supprimer l'ensemble"
+                          @click.stop="closeSetMenuThen(() => confirmDeleteSet(set))"
+                        >
+                          <Trash2 class="w-4 h-4 text-danger shrink-0" />
+                          Supprimer l'ensemble
+                        </button>
+                      </div>
+                    </template>
+                  </div>
                   <ChevronRight class="w-4 h-4 text-ink-subtle" />
                 </template>
               </ListRow>
@@ -672,6 +728,10 @@ export interface BinderAggregateResult {
   deckCount: number
   noteCount: number
   lastActivityLabel: string | null
+  // Date brute (ISO) derrière lastActivityLabel (Task 4, bibliotheque-notes-listes) --
+  // permet de comparer l'activité de plusieurs classeurs entre eux (quelle carte
+  // accentuer sur la grille) sans reparser un libellé déjà formaté en français.
+  lastActivityIso: string | null
 }
 
 // Agrégat client-side pour une carte de classeur (Bibliothèque, Task 1) : nombre de
@@ -698,22 +758,27 @@ export function binderAggregate(
     ...binderDecks.map((d) => d.created_at),
   ].filter((d): d is string => Boolean(d))
 
+  const mostRecent = dates.length ? dates.sort().reverse()[0] : null
+
   return {
     deckCount: binderDecks.length,
     noteCount: binderNotes.length,
-    lastActivityLabel: dates.length ? formatDayDiffLabel(dates.sort().reverse()[0]) : null,
+    lastActivityLabel: mostRecent ? formatDayDiffLabel(mostRecent) : null,
+    lastActivityIso: mostRecent,
   }
 }
 </script>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import type { Component } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
 import { useBindersStore } from '../../stores/binders'
 import type { Binder } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
+import type { Note } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagSelector from '../../components/ui/TagSelector.vue'
@@ -734,10 +799,13 @@ import type { TabItem } from '../../components/ui/base'
 import { useRevisionStore } from '../../stores/revision'
 import type { RevisionSet, RevisionItem, RevisionItemType } from '../../stores/revision'
 import RevisionSetModal from '../../components/decks/RevisionSetModal.vue'
+import TagBadge from '../../components/ui/TagBadge.vue'
 import {
   Plus,
   ChevronRight,
   ChevronDown,
+  MoreHorizontal,
+  Play,
   FileText,
   Layers,
   Trash2,
@@ -792,6 +860,36 @@ const contentTabs = computed<TabItem[]>(() => [
   { key: 'other', label: 'Autres' },
 ])
 
+// Titre de page (Task 2, bibliotheque-notes-listes) : suit Notes.dc.html -- "Bibliothèque"
+// à la racine, sinon le libellé de l'onglet actif (le sur-titre mono du fil d'Ariane porte
+// déjà le nom du classeur, cf. breadcrumbItems ci-dessous).
+// Largeur (Task 7, bibliotheque-notes-listes) : grille de classeurs large à la racine
+// (Bibliotheque.dc.html, 3 colonnes), colonne de lecture étroite une fois "dans" un
+// classeur (Notes.dc.html -- les lignes de notes/ensembles s'étirent sinon sur toute la
+// largeur d'un grand écran).
+const pageContainerSize = computed(() => (currentBinderId.value === null ? 'wide' : 'content'))
+
+const pageTitle = computed(() => {
+  if (currentBinderId.value === null) return 'Bibliothèque'
+  const tab = contentTabs.value.find((t) => t.key === activeType.value)
+  return tab?.label ?? 'Bibliothèque'
+})
+
+// Sous-titre agrégé (Task 3, bibliotheque-notes-listes) : "N classeurs · N notes · N decks"
+// sous le H1, uniquement sur la grille racine (Bibliotheque.dc.html). Total de bibliothèque
+// (tous les classeurs/notes/decks possédés par l'utilisateur) -- volontairement différent de
+// binderAggregate(), qui ne compte QUE le contenu directement attaché à un classeur donné
+// (décision actée dans le chantier bibliotheque-redesign) : ce sous-titre résume tout le
+// compte, pas un classeur particulier.
+const rootSubtitle = computed(() => {
+  if (currentBinderId.value !== null) return undefined
+  const binderCount = bindersStore.binders.length
+  const noteCount = notesStore.notes.length
+  const deckCount = decksStore.decks.length
+  const s = (n: number) => (n === 1 ? '' : 's')
+  return `${binderCount} classeur${s(binderCount)} · ${noteCount} note${s(noteCount)} · ${deckCount} deck${s(deckCount)}`
+})
+
 const primaryActionLabel = computed(() => {
   if (activeType.value === 'notes') return 'Nouvelle note'
   if (activeType.value === 'revision') return 'Nouvel ensemble'
@@ -842,6 +940,14 @@ const TYPE_ICONS: Record<RevisionItemType, unknown> = {
   association: Shuffle,
 }
 const setItemsById = ref<Record<number, RevisionItem[]>>({})
+// Menu "…" par ligne d'ensemble (Task 6, bibliotheque-notes-listes) : un seul ouvert à la
+// fois, identifié par l'id du set concerné (pas un booléen par ligne -- même idiome que
+// showAddMenu/showMoreMenu, mais indexé puisqu'il y a plusieurs lignes).
+const openSetMenuId = ref<number | null>(null)
+function closeSetMenuThen(fn: () => void) {
+  openSetMenuId.value = null
+  fn()
+}
 
 function setAggregate(setId: number) {
   const items = setItemsById.value[setId] ?? []
@@ -952,6 +1058,52 @@ const addMenu = computed(() => {
 
 function closeMenuThen(fn: () => void) {
   showAddMenu.value = false
+  fn()
+}
+
+const showMoreMenu = ref(false)
+
+// Menu "…" (Task 2, bibliotheque-notes-listes) : actions de gestion du classeur qui
+// n'ont de sens que sur un vrai classeur (gardé par isRealBinderId côté template,
+// donc pas revalidé ici). Labels dynamiques identiques à l'ancien affichage en
+// boutons directs (Public/Partager, Partagé (N)/Classe).
+const moreMenu = computed(() => {
+  const items: { label: string; icon: Component; action: () => void; danger?: boolean }[] = [
+    {
+      label: 'Stats',
+      icon: BarChart3,
+      action: () =>
+        closeMoreThen(() => router.push(`/revision/binders/${currentBinderId.value}/stats`)),
+    },
+    {
+      label: currentBinder.value?.is_public ? 'Public' : 'Partager',
+      icon: Globe,
+      action: () => closeMoreThen(openShareModal),
+    },
+    {
+      label: isSharedToClass.value ? `Partagé (${sharedClasses.value.length})` : 'Classe',
+      icon: GraduationCap,
+      action: () => closeMoreThen(openClassShareModal),
+    },
+  ]
+  if (currentDecks.value.length > 0) {
+    items.push({
+      label: 'Réviser ce dossier',
+      icon: Brain,
+      action: () => closeMoreThen(reviseBinder),
+    })
+  }
+  items.push({
+    label: 'Supprimer',
+    icon: Trash2,
+    action: () => closeMoreThen(confirmDeleteCurrentBinder),
+    danger: true,
+  })
+  return items
+})
+
+function closeMoreThen(fn: () => void) {
+  showMoreMenu.value = false
   fn()
 }
 
@@ -1086,12 +1238,43 @@ function cardAggregate(entry: Binder | VirtualBinderEntry) {
   return binderAggregate(id, decksStore.decks, notesStore.notes, revisionStore.sets)
 }
 
+// Carte accentuée (Task 4, bibliotheque-notes-listes) : Bibliotheque.dc.html accentue le
+// liseré gauche d'une seule carte au niveau courant -- la plus récemment active. Égalité :
+// le premier candidat rencontré l'emporte (comparaison stricte "supérieur à", pas
+// "supérieur ou égal"), sans signification produit particulière -- aucune maquette ne
+// montre deux cartes accentuées en même temps.
+const mostRecentEntryId = computed(() => {
+  let bestId: string | null = null
+  let bestIso: string | null = null
+  for (const entry of childrenAtCurrentLevel.value) {
+    const iso = cardAggregate(entry).lastActivityIso
+    if (iso && (bestIso === null || iso > bestIso)) {
+      bestIso = iso
+      bestId = entry.id
+    }
+  }
+  return bestId
+})
+
 // Les 3 filtres de contenu ci-dessous utilisent `filterBinderId`, PAS
 // `currentBinderId` — voir la définition de filterBinderId plus haut pour la
 // raison (distinction navigation vs filtrage).
 const currentNotes = computed(() =>
   notesStore.notes.filter((n) => n.binder_id === filterBinderId.value),
 )
+
+// Extrait 1 ligne (Task 5, bibliotheque-notes-listes) : content est du Markdown brut (cf.
+// NoteEdit.vue, rendu via `marked`) -- pas question de faire tourner un parseur Markdown
+// complet pour une prévisualisation tronquée en CSS (`truncate`). On retire juste les
+// caractères de balisage les plus visibles (#, *, _, `, >) et on aplatit les retours à la
+// ligne ; la troncature visuelle (ellipsis) est gérée par la classe `truncate` du template,
+// pas ici -- pas de découpage arbitraire en caractères.
+function noteExcerpt(note: Note): string {
+  return note.content
+    .replace(/[#*_`>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 const currentDecks = computed(() =>
   decksStore.decks.filter((d) => d.binder_id === filterBinderId.value),
 )
@@ -1243,9 +1426,13 @@ async function detachItem(type: BinderItemType, id: number | string) {
 }
 
 // Fil d'Ariane (PageHeader) — navigation par URL.
+// Sur-titre mono uppercase (Task 2, bibliotheque-notes-listes) : "BIBLIOTHÈQUE / CHIMIE
+// ORGANIQUE" dans Notes.dc.html -- pas de ligne du tout à la racine (aucune maquette ne
+// montre de fil d'Ariane sur l'écran Bibliotheque.dc.html), d'où le tableau vide ci-dessous
+// plutôt que le "Racine" auto-référent que le code affichait avant cette tâche.
 const breadcrumbItems = computed(() => {
-  const items: { label: string; to?: string }[] = [{ label: 'Racine', to: '/bibliotheque' }]
-  if (currentBinderId.value === null) return items
+  const items: { label: string; to?: string }[] = [{ label: 'Bibliothèque', to: '/bibliotheque' }]
+  if (currentBinderId.value === null) return []
   // Cas spécial explicite AVANT la boucle bindersStore.binders.find(...) : 'non-classe'
   // n'est pas un id de classeur réel, cette boucle ne le trouverait jamais et
   // produirait silencieusement un fil d'Ariane vide/faux (cf. brief Task 2).

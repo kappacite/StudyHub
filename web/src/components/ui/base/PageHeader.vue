@@ -3,7 +3,7 @@
     <!-- Fil d'Ariane -->
     <nav
       v-if="breadcrumbs && breadcrumbs.length"
-      class="flex items-center flex-wrap gap-1.5 text-xs font-semibold text-ink-subtle"
+      class="flex items-center flex-wrap gap-1.5 font-mono uppercase tracking-wide text-xs text-ink-subtle"
     >
       <template v-for="(crumb, i) in breadcrumbs" :key="i">
         <router-link
@@ -15,7 +15,7 @@
         <span v-else :class="i === breadcrumbs.length - 1 ? 'text-ink' : ''">{{
           crumb.label
         }}</span>
-        <span v-if="i < breadcrumbs.length - 1" class="text-ink-subtle/60">›</span>
+        <span v-if="i < breadcrumbs.length - 1" class="text-ink-subtle/60">/</span>
       </template>
     </nav>
 

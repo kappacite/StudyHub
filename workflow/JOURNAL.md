@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : bibliotheque-notes-listes
 
 ## Chantiers ouverts
 
@@ -11,6 +11,40 @@ Chantier actif : aucun
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
+
+- 2026-09-03 — [bibliotheque-notes-listes] Task 8 (barre de filtre par tags -- conditionnée
+  à la racine, corrige un bug latent où elle s'affichait sans effet dans un classeur)
+  terminée. 537/537 tests, `vue-tsc` propre. Prochain, dernière tâche : Task 9 (vérification
+  visuelle complète + non-régression finale).
+
+- 2026-09-03 — [bibliotheque-notes-listes] Task 7 (largeur : colonne étroite dans un
+  classeur, grille racine inchangée) terminée. 535/535 tests, `vue-tsc` propre, vérifié
+  visuellement. Prochain : Task 8 (barre de filtre par tags).
+
+- 2026-09-03 — [bibliotheque-notes-listes] Task 6 (lignes d'ensemble -- bouton Réviser, menu
+  par ligne, phrase d'explication) terminée. 533/533 tests, `vue-tsc` propre, vérifié
+  visuellement. Prochain : Task 7 (largeur 920px dans un classeur).
+
+- 2026-09-03 — [bibliotheque-notes-listes] Task 5 (lignes de notes -- extrait, tag, date,
+  globe, séparateurs pointillés) terminée. 530/530 tests, `vue-tsc` propre, vérifié
+  visuellement. Prochain : Task 6 (lignes d'ensemble de révision).
+
+- 2026-09-03 — [bibliotheque-notes-listes] Tasks 3+4 (sous-titre agrégé racine, liseré/rayon
+  + accent de `BinderCard`) terminées. 525/525 tests, `vue-tsc` propre. Prochain : Task 5
+  (lignes de notes).
+
+- 2026-09-03 — [bibliotheque-notes-listes] Task 2 (en-tête de `Binders.vue` : titre dynamique,
+  sur-titre mono, menu « … ») terminée. 519/519 tests, `vue-tsc` propre, vérifié visuellement.
+  Prochain : Task 3 (sous-titre agrégé sur la grille racine).
+
+- 2026-09-02 — [bibliotheque-notes-listes] Task 1 (variante « segmented » de `Tabs.vue`)
+  terminée. 514/514 tests, `vue-tsc` propre. Prochain : Task 2 (en-tête de `Binders.vue`).
+
+- 2026-09-02 — [bibliotheque-notes-listes] chantier ouvert. Vue liste de la Bibliothèque
+  (dans un classeur) recomparée à `Notes.dc.html` par lecture des sources ET comparaison
+  visuelle réelle via Claude in Chrome. `bibliotheque-redesign` (#132) avait traité
+  l'architecture de l'écran, pas la densité des lignes ni la silhouette de l'en-tête.
+  9 tâches. Prochain : Task 1 (variante bascule de `Tabs.vue`).
 
 - 2026-09-02 — [editeur-notes-notation-ia] **PR #138 mergée dans `main`** (squash, `770cffe`),
   CI verte (6/6 checks, après correctif d'un test E2E cassé par la refonte sidebar — voir le

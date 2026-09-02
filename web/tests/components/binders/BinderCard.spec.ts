@@ -50,16 +50,44 @@ describe('BinderCard', () => {
     expect(wrapper.emitted('click')).toHaveLength(1)
   })
 
-  it('rend un <button> avec le chrome BaseCard (rounded-lg, bordure, ombre)', () => {
+  // Task 4 (bibliotheque-notes-listes) : rayon 4px ("bandeaux fiche bristol", skill
+  // design-system) au lieu du rayon 8px générique de BaseCard -- Bibliotheque.dc.html.
+  it('rend un <button> avec le chrome BaseCard (rayon bristol 4px, bordure, ombre)', () => {
     const wrapper = mount(BinderCard, {
       props: { binder: BINDER, deckCount: 1, noteCount: 1, lastActivityLabel: null },
     })
 
     expect(wrapper.element.tagName).toBe('BUTTON')
     expect(wrapper.attributes('type')).toBe('button')
-    expect(wrapper.classes()).toContain('rounded-lg')
+    expect(wrapper.classes()).toContain('rounded')
+    expect(wrapper.classes()).not.toContain('rounded-lg')
     expect(wrapper.classes()).toContain('border-line')
     expect(wrapper.classes()).toContain('shadow-elev-1')
+  })
+
+  // Task 4 : liseré gauche 4px sur chaque carte -- accent (couleur de mise en avant) sur la
+  // carte la plus récemment active, neutre (même teinte que la bordure ambiante) sinon.
+  // Le choix de LAQUELLE est la plus récente appartient à Binders.vue (prop `accent`) --
+  // BinderCard reste présentationnel pur, cf. commentaire du composant.
+  it('liseré gauche 4px neutre par défaut, accent quand la prop accent est vraie', () => {
+    const neutral = mount(BinderCard, {
+      props: { binder: BINDER, deckCount: 1, noteCount: 1, lastActivityLabel: null },
+    })
+    expect(neutral.classes()).toContain('border-l-4')
+    expect(neutral.classes()).toContain('border-l-line')
+
+    const accented = mount(BinderCard, {
+      props: {
+        binder: BINDER,
+        deckCount: 1,
+        noteCount: 1,
+        lastActivityLabel: null,
+        accent: true,
+      },
+    })
+    expect(accented.classes()).toContain('border-l-4')
+    expect(accented.classes()).toContain('border-l-accent')
+    expect(accented.classes()).not.toContain('border-l-line')
   })
 
   it('affiche un badge "Cours" quand le classeur est en lecture seule', () => {

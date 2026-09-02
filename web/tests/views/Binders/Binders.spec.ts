@@ -23,7 +23,19 @@ const HETEROGENEOUS_SET = { id: 7, name: 'Mixte', description: null, type: null,
 // binder_id === null, jamais sur la chaîne littérale 'non-classe').
 const NOW = new Date().toISOString()
 const NOTE_UNCLASSIFIED = { id: 'n-libre', binder_id: null, title: 'Note libre', content: '', created_at: NOW, updated_at: NOW, tags: [] }
-const NOTE_B1 = { id: 'n-b1', binder_id: 'b1', title: 'Note du classeur b1', content: '', created_at: NOW, updated_at: NOW, tags: [] }
+// Champs ajoutés pour Task 5 (bibliotheque-notes-listes, ligne de note enrichie) : content
+// (extrait), tags (pastille de chapitre), is_public (icône globe) -- valeurs ajoutées sans
+// toucher aux champs déjà exploités par les tests existants (title, id, binder_id, dates).
+const NOTE_B1 = {
+  id: 'n-b1',
+  binder_id: 'b1',
+  title: 'Note du classeur b1',
+  content: '# Titre\n\nCeci est le **contenu** de la note du classeur b1.',
+  created_at: NOW,
+  updated_at: NOW,
+  tags: [{ id: 9, name: 'Ch. 4', color: '#C99A2E', created_at: '' }],
+  is_public: true,
+}
 
 const stub = { template: '<div />' }
 function createTestRouter(): Router {
@@ -33,6 +45,7 @@ function createTestRouter(): Router {
       { path: '/bibliotheque/:id?', name: 'Bibliotheque', component: stub },
       { path: '/revision/sets/:id', name: 'RevisionSetDetail', component: stub },
       { path: '/revision/sets/:id/stats', name: 'RevisionSetStats', component: stub },
+      { path: '/revision/sets/:id/study', name: 'RevisionSetStudy', component: stub },
       { path: '/decks/:id/study', name: 'StudyDeck', component: stub },
     ],
   })
@@ -132,6 +145,17 @@ describe('Binders — racine : grille de classeurs uniquement', () => {
     expect(text).not.toContain('Sous-classeurs')
   })
 
+  // Task 3 (bibliotheque-notes-listes) : Bibliotheque.dc.html affiche "6 classeurs · 214
+  // notes · 38 decks" sous le H1 -- total de bibliothèque (tous classeurs/notes/decks
+  // possédés), PAS la somme des cartes visibles (qui sont non-récursives, cf.
+  // binderAggregate). Fixture : BINDER + SUBBINDER = 2 classeurs, NOTE_UNCLASSIFIED +
+  // NOTE_B1 = 2 notes, DECK = 1 deck.
+  it('affiche le sous-titre agrégé "N classeurs · N notes · N decks" sous le H1', async () => {
+    const { wrapper } = await mountBinders(null)
+
+    expect(wrapper.text()).toContain('2 classeurs · 2 notes · 1 deck')
+  })
+
   // Régression revue finale (item 1) : BinderCard n'affichait plus du tout les tags
   // du classeur (TagBadge retiré lors de la refonte SplitView -> grille). BINDER
   // porte un tag ('Urgent') précisément pour ce test.
@@ -162,6 +186,22 @@ describe('Binders — racine : grille de classeurs uniquement', () => {
 
     expect(router.currentRoute.value.fullPath).toBe('/bibliotheque/non-classe')
   })
+
+  // Task 4 (bibliotheque-notes-listes) : Bibliotheque.dc.html accentue le liseré gauche
+  // d'une seule carte (la plus récemment active), toutes les autres restent neutres.
+  it('accentue exactement une carte quand plusieurs cartes ont une activité', async () => {
+    const { wrapper } = await mountBinders(null)
+
+    // b1 (NOTE_B1, updated_at NOW) et "Non classé" (NOTE_UNCLASSIFIED, updated_at NOW)
+    // ont chacune une activité -- peu importe laquelle des deux gagne l'égalité, une
+    // seule doit être accentuée.
+    const chimie = findCard(wrapper, 'Chimie organique')!
+    const nonClasse = findCard(wrapper, 'Non classé')!
+    const accentedCount = [chimie, nonClasse].filter((c) =>
+      c.classes().includes('border-l-accent'),
+    ).length
+    expect(accentedCount).toBe(1)
+  })
 })
 
 describe('Binders — à l\'intérieur d\'un classeur réel', () => {
@@ -175,7 +215,6 @@ describe('Binders — à l\'intérieur d\'un classeur réel', () => {
     // apparaître (cf. test miroir ci-dessous pour le cas "0 enfant").
     expect(text).toContain('Sous-classeurs')
     expect(text).toContain('Sous-classeur B1')
-    expect(text).toContain('Notes (')
     expect(text).toContain('Note du classeur b1')
     // filterBinderId === currentBinderId pour un vrai classeur : la note non classée
     // ne doit pas fuiter dans le contenu de b1.
@@ -215,12 +254,12 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
     expect(findCard(wrapper, 'Chimie organique')).toBeFalsy()
   })
 
-  it('fil d\'Ariane : "Racine / Non classé" sans planter', async () => {
+  it('fil d\'Ariane : "Bibliothèque / Non classé" sans planter', async () => {
     const { wrapper } = await mountBinders('non-classe')
     const nav = wrapper.find('nav')
 
     expect(nav.exists()).toBe(true)
-    expect(nav.text()).toContain('Racine')
+    expect(nav.text()).toContain('Bibliothèque')
     expect(nav.text()).toContain('Non classé')
   })
 
@@ -243,17 +282,16 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
   // finale : couverture manquante pour Stats/Partager/Classe/Réviser ce dossier/
   // Supprimer/Sous-dossier/Élément existant. Le code (isRealBinderId, addMenu)
   // était déjà correct ; ce test comble seulement le trou de couverture.
-  it('aucune action réservée à un vrai classeur (Stats/Partager/Classe/Réviser/Supprimer/Sous-dossier/Élément existant) ne s\'affiche sur le pseudo-classeur Non classé', async () => {
+  it('aucune action réservée à un vrai classeur (bouton "…", Sous-dossier/Élément existant) ne s\'affiche sur le pseudo-classeur Non classé', async () => {
     const { wrapper } = await mountBinders('non-classe')
 
     const buttonLabel = (label: string) =>
       wrapper.findAll('button').find((b) => b.text().trim() === label)
 
-    expect(buttonLabel('Stats')).toBeFalsy()
-    expect(buttonLabel('Partager')).toBeFalsy()
-    expect(buttonLabel('Classe')).toBeFalsy()
-    expect(buttonLabel('Réviser ce dossier')).toBeFalsy()
-    expect(buttonLabel('Supprimer')).toBeFalsy()
+    // Le bouton "…" (Stats/Partager/Classe/Réviser ce dossier/Supprimer) ne rend
+    // pas du tout sur le pseudo-classeur -- rien à y trouver, même caché dans un
+    // menu fermé.
+    expect(wrapper.find('[data-test="more-actions-button"]').exists()).toBe(false)
 
     // Menu "Ajouter" : Sous-dossier et Élément existant nécessitent un vrai
     // classeur parent (createBinder/attachItems attendent un id réel côté
@@ -277,6 +315,13 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
     const buttonLabel = (label: string) =>
       wrapper.findAll('button').find((b) => b.text().trim() === label)
 
+    // Repliées dans le menu "…" (Task 2, bibliotheque-notes-listes) : pas de
+    // recherche directe par label avant ouverture du menu.
+    const moreButton = wrapper.find('[data-test="more-actions-button"]')
+    expect(moreButton.exists()).toBe(true)
+    await moreButton.trigger('click')
+    await flushPromises()
+
     expect(buttonLabel('Stats')).toBeTruthy()
     expect(buttonLabel('Partager')).toBeTruthy()
     expect(buttonLabel('Classe')).toBeTruthy()
@@ -294,6 +339,123 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
     expect(buttonLabel('Élément existant')).toBeTruthy()
     expect(buttonLabel('Note')).toBeTruthy()
     expect(buttonLabel('Diagramme')).toBeTruthy()
+  })
+})
+
+describe('Binders — en-tête (Task 2, bibliotheque-notes-listes)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('titre "Bibliothèque" et aucun fil d\'Ariane à la racine', async () => {
+    const { wrapper } = await mountBinders(null)
+
+    expect(wrapper.find('h1').text()).toBe('Bibliothèque')
+    // Notes.dc.html/Bibliotheque.dc.html : aucune ligne de fil d'Ariane à la racine
+    // (elle n'apparaît qu'une fois "dans" un classeur).
+    expect(wrapper.find('nav').exists()).toBe(false)
+  })
+
+  it('titre suit l\'onglet actif à l\'intérieur d\'un classeur : "Notes", puis "Révision"', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    expect(wrapper.find('h1').text()).toBe('Notes')
+
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+    expect(wrapper.find('h1').text()).toBe('Révision')
+
+    await clickTab(wrapper, 'Autres')
+    await flushPromises()
+    expect(wrapper.find('h1').text()).toBe('Autres')
+  })
+
+  it('sous-titre agrégé absent à l\'intérieur d\'un classeur (uniquement sur la grille racine)', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    expect(wrapper.text()).not.toContain('classeurs ·')
+  })
+
+  it('en-tête réduite à 3 contrôles visibles (primaire, Ajouter, …) au lieu de 7', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    const topLevelLabels = wrapper
+      .findAll('[data-test="primary-action-button"], [data-test="add-menu-button"], [data-test="more-actions-button"]')
+      .map((b) => b.text().trim())
+
+    expect(topLevelLabels).toHaveLength(3)
+    // Les 5 actions repliées ne doivent PAS être trouvables par leur libellé tant
+    // que le menu "…" n'a pas été ouvert (non-régression du repli lui-même).
+    const visibleButtonLabels = wrapper.findAll('button').map((b) => b.text().trim())
+    expect(visibleButtonLabels).not.toContain('Stats')
+    expect(visibleButtonLabels).not.toContain('Supprimer')
+  })
+
+  it('le menu "…" sépare visuellement Supprimer (dangereux) du reste', async () => {
+    const { wrapper } = await mountBinders('b1')
+    await wrapper.find('[data-test="more-actions-button"]').trigger('click')
+    await flushPromises()
+
+    const supprimer = wrapper.findAll('button').find((b) => b.text().trim() === 'Supprimer')!
+    expect(supprimer.classes()).toContain('text-danger')
+  })
+})
+
+describe('Binders — ligne de note enrichie (Task 5, bibliotheque-notes-listes)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("affiche un extrait tronqué du contenu (markdown allégé), la pastille du premier tag, la date et l'icône globe pour une note publique", async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    // Extrait : caractères markdown (#, **) retirés, contenu réel visible.
+    expect(wrapper.text()).toContain('Titre')
+    expect(wrapper.text()).toContain('Ceci est le contenu de la note du classeur b1.')
+    expect(wrapper.text()).not.toContain('# Titre')
+    expect(wrapper.text()).not.toContain('**contenu**')
+
+    // Pastille de tag (premier tag de la note).
+    expect(wrapper.text()).toContain('Ch. 4')
+
+    // Icône globe (note publique) : accessible par aria-label, pas par du texte visible.
+    expect(
+      wrapper.find('[aria-label="Note partagée publiquement"]').exists(),
+    ).toBe(true)
+  })
+
+  it("n'affiche ni extrait ni pastille ni globe pour une note sans contenu/tags/is_public (Note libre, pseudo-classeur Non classé)", async () => {
+    const { wrapper } = await mountBinders('non-classe')
+
+    expect(wrapper.text()).toContain('Note libre')
+    expect(
+      wrapper.find('[aria-label="Note partagée publiquement"]').exists(),
+    ).toBe(false)
+  })
+
+  it('le titre interne "Notes (N)" a disparu (redondant avec le H1, Task 2)', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    expect(wrapper.text()).not.toContain('Notes (')
+  })
+
+  it('sépare les lignes de notes par un filet pointillé (Notes.dc.html), pas un espacement plein', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    const container = wrapper.find('[data-test="notes-list"]')
+    expect(container.exists()).toBe(true)
+    expect(container.classes()).toContain('divide-dashed')
+    expect(container.classes()).not.toContain('space-y-1')
+  })
+})
+
+describe('Binders — largeur (Task 7, bibliotheque-notes-listes)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('grille racine large (max-w-7xl), colonne étroite à l\'intérieur d\'un classeur (max-w-4xl)', async () => {
+    const root = await mountBinders(null)
+    expect(root.wrapper.find('.max-w-7xl').exists()).toBe(true)
+    expect(root.wrapper.find('.max-w-4xl').exists()).toBe(false)
+
+    const inside = await mountBinders('b1')
+    expect(inside.wrapper.find('.max-w-4xl').exists()).toBe(true)
+    expect(inside.wrapper.find('.max-w-7xl').exists()).toBe(false)
   })
 })
 
@@ -342,6 +504,59 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     expect(row.find('[data-test="type-icon-flashcard"]').exists()).toBe(true)
     expect(row.find('[data-test="type-icon-qcm"]').exists()).toBe(true)
     expect(row.text()).toContain("dernier passage aujourd'hui")
+  })
+
+  // Task 6 (bibliotheque-notes-listes) : RevisionSetDetail.dc.html met le bouton ▶ Réviser
+  // en première position -- distinct du clic sur la ligne (qui ouvre le détail de
+  // l'ensemble, cf. test "clic sur un ensemble hétérogène" ci-dessus). @click.stop pour ne
+  // pas déclencher les deux navigations à la fois.
+  it("ligne d'ensemble : bouton Réviser (première position) navigue vers la session d'étude, sans ouvrir le détail", async () => {
+    const { wrapper, router } = await mountBinders()
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+
+    const row = wrapper.find('[data-test="revision-row-set-7"]')
+    const reviserButton = row.findAll('button').find((b) => b.attributes('title') === "Réviser l'ensemble")
+    expect(reviserButton).toBeTruthy()
+    await reviserButton!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/study')
+  })
+
+  // Stats/Détacher/Supprimer repliés dans un menu "…" par ligne -- Éditer reste visible
+  // directement (maquette : réviser/éditer/supprimer visibles, seuls stats et détacher
+  // n'ont pas d'équivalent dans la maquette et rejoignent le menu avec Supprimer).
+  it('ligne d\'ensemble : Stats/Détacher/Supprimer repliés dans un menu "…", Éditer reste visible', async () => {
+    const { wrapper } = await mountBinders()
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+
+    const row = wrapper.find('[data-test="revision-row-set-7"]')
+    const buttonTitle = (title: string) => row.findAll('button').find((b) => b.attributes('title') === title)
+
+    expect(buttonTitle("Éditer l'ensemble")).toBeTruthy()
+    expect(buttonTitle('Statistiques')).toBeFalsy()
+    expect(buttonTitle('Retirer du classeur')).toBeFalsy()
+    expect(buttonTitle("Supprimer l'ensemble")).toBeFalsy()
+
+    const moreButton = buttonTitle("Plus d'actions")
+    expect(moreButton).toBeTruthy()
+    await moreButton!.trigger('click')
+    await flushPromises()
+
+    expect(buttonTitle('Statistiques')).toBeTruthy()
+    expect(buttonTitle('Retirer du classeur')).toBeTruthy()
+    expect(buttonTitle("Supprimer l'ensemble")).toBeTruthy()
+  })
+
+  it("phrase d'explication affichée au-dessus de la liste Révision, titre interne \"Révision (N)\" disparu", async () => {
+    const { wrapper } = await mountBinders()
+    await clickTab(wrapper, 'Révision')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('ensembles de révision')
+    expect(wrapper.text()).not.toContain('Révision (')
   })
 
   it('bouton primaire contextuel : "Nouvelle note" sur Notes, "Nouvel ensemble" sur Révision', async () => {
@@ -398,6 +613,9 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     await flushPromises()
 
     const setRow = wrapper.find('[data-test="revision-row-set-7"]')
+    // Repliée dans le menu "…" par ligne (Task 6) : ouvrir avant de chercher le bouton.
+    await setRow.findAll('button').find((b) => b.attributes('title') === "Plus d'actions")!.trigger('click')
+    await flushPromises()
     const detachButton = setRow.findAll('button').find((b) => b.attributes('title') === 'Retirer du classeur')
     expect(detachButton).toBeTruthy()
     await detachButton!.trigger('click')
@@ -414,6 +632,9 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     await flushPromises()
 
     const setRow = wrapper.find('[data-test="revision-row-set-7"]')
+    // Repliée dans le menu "…" par ligne (Task 6) : ouvrir avant de chercher le bouton.
+    await setRow.findAll('button').find((b) => b.attributes('title') === "Plus d'actions")!.trigger('click')
+    await flushPromises()
     const statsButton = setRow.findAll('button').find((b) => b.attributes('title') === 'Statistiques')
     expect(statsButton).toBeTruthy()
     await statsButton!.trigger('click')
@@ -422,12 +643,37 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/stats')
   })
 
-  it("non-regression : le filtre par tag reste visible quel que soit l'onglet", async () => {
-    const { wrapper } = await mountBinders()
-    expect(wrapper.text()).toContain('Filtrer')
+  // Task 8 (bibliotheque-notes-listes) : la barre "Filtrer" appelle
+  // bindersStore.fetchBinders(tagId), qui ne change que la grille de classeurs de la
+  // racine -- elle n'a AUCUN effet visible une fois "dans" un classeur (les notes/
+  // ensembles affichés ne sont jamais refiltrés par elle). L'afficher quand même sur ces
+  // écrans (comportement précédent, seul testé jusqu'ici) est un bug latent, pas une
+  // fonctionnalité à préserver : ni Bibliotheque.dc.html ni Notes.dc.html ne montrent
+  // cette barre nulle part -- remplace l'ancien test "reste visible quel que soit
+  // l'onglet", qui vérifiait justement ce comportement erroné.
+  it("n'affiche la barre de filtre que sur la grille racine, jamais à l'intérieur d'un classeur", async () => {
+    const { wrapper, tagsStore } = await mountBinders()
+    tagsStore.tags = [{ id: 5, name: 'Urgent', color: '#4F46E5', created_at: '' }]
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Filtrer')
     await clickTab(wrapper, 'Révision')
     await flushPromises()
+    expect(wrapper.text()).not.toContain('Filtrer')
+  })
+
+  it("n'affiche pas la barre de filtre à la racine tant qu'aucun tag n'existe", async () => {
+    const { wrapper } = await mountBinders(null)
+    expect(wrapper.text()).not.toContain('Filtrer')
+  })
+
+  it('affiche la barre de filtre à la racine dès qu\'au moins un tag existe', async () => {
+    const { wrapper, tagsStore } = await mountBinders(null)
+    tagsStore.tags = [{ id: 5, name: 'Urgent', color: '#4F46E5', created_at: '' }]
+    await flushPromises()
+
     expect(wrapper.text()).toContain('Filtrer')
+    expect(wrapper.text()).toContain('Urgent')
   })
 })
 
@@ -461,6 +707,14 @@ describe('binderAggregate', () => {
     expect(result.lastActivityLabel).toBe("aujourd'hui")
   })
 
+  // lastActivityIso (Task 4, bibliotheque-notes-listes) : date brute de l'activité la plus
+  // récente, à côté du libellé déjà formaté -- nécessaire pour comparer plusieurs classeurs
+  // entre eux (quelle carte accentuer sur la grille) sans reparser un libellé français.
+  it('expose la date brute (ISO) de l\'activité retenue, pas seulement son libellé', () => {
+    const result = binderAggregate('b1', decks, notes, sets)
+    expect(result.lastActivityIso).toBe(NOW_ISO)
+  })
+
   it('formate "hier" pour un ensemble de révision mis à jour il y a environ 25h', () => {
     const result = binderAggregate('b-yesterday', decks, notes, sets)
     expect(result.lastActivityLabel).toBe('hier')
@@ -476,6 +730,11 @@ describe('binderAggregate', () => {
 
   it('retourne un libellé null (pas de date fabriquée) pour un classeur sans aucun enfant', () => {
     const result = binderAggregate('b-empty', decks, notes, sets)
-    expect(result).toEqual({ deckCount: 0, noteCount: 0, lastActivityLabel: null })
+    expect(result).toEqual({
+      deckCount: 0,
+      noteCount: 0,
+      lastActivityLabel: null,
+      lastActivityIso: null,
+    })
   })
 })
