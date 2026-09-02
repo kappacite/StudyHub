@@ -1547,7 +1547,7 @@ function renderMarkup(text: string): string {
 
       let elementHtml = ''
       if (!state.revealed) {
-        elementHtml = `<span class="px-2.5 py-0.5 bg-surface-soft dark:bg-surface-soft text-transparent rounded-lg cursor-pointer border border-line dark:border-line select-none hover:bg-surface-soft hover:text-ink-subtle/10 active:scale-95 transition-all inline-block align-middle font-mono font-bold" data-action="reveal" data-tag="${encodeURIComponent(rawTag)}">???</span>`
+        elementHtml = `<span class="px-2.5 py-0.5 bg-surface-soft dark:bg-surface-soft text-transparent rounded-lg cursor-pointer border border-line dark:border-line select-none hover:bg-line dark:hover:bg-line hover:text-ink-subtle/10 active:scale-95 transition-all inline-block align-middle font-mono font-bold" data-action="reveal" data-tag="${encodeURIComponent(rawTag)}">???</span>`
       } else {
         elementHtml = `<span class="bg-primary-soft/80 dark:bg-primary-soft text-primary dark:text-primary px-2 py-0.5 rounded-lg font-bold border-b border-primary inline-flex items-center align-middle select-all transition-all">${word}${renderSm2Buttons(cardId, rawTag)}</span>`
       }
@@ -2031,7 +2031,7 @@ function renderDiagramHtml(diagram: any): string {
           const isRevealed = state.revealed
           const fillClass = isRevealed
             ? 'fill-transparent stroke-danger/20'
-            : 'fill-ink dark:fill-ink opacity-100 cursor-pointer'
+            : 'fill-ink opacity-100 cursor-pointer'
           const pointerEvents = isRevealed ? 'pointer-events-none' : 'pointer-events-auto'
 
           masksSvg += `
