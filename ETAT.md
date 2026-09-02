@@ -492,6 +492,17 @@ suivre.
    lacunes d'erreur corrigées (dont le premier câblage réel de `BaseToast`). 37 tests créés de
    zéro, 271/271 tests web verts, `vue-tsc -b` sans erreur. Détail complet ci-dessous.
 
+4. **Éditeur de notes et mode Zen** (`NoteEdit.vue`) — chantier dédié `editeur-notes-notation-ia`
+   (10 tâches) : 3 modales extraites (`NoteEditHelpModal`, `NoteInputModal`,
+   `NoteEvaluationModal`), `NoteSidebar.vue` créée (Assistant IA à 3 méthodes conformes au
+   canevas — Évaluation mixte / Feuille blanche / Feynman, sans « Générer un quiz » — + bouton
+   Notation désactivé en attendant le backend de notation IA, hors périmètre), en-tête/barre
+   d'outils/HTML généré retonés, fil d'ariane et état d'erreur de chargement ajoutés en mode
+   lecture. 48 tests dédiés à `NoteEdit.vue` (+ 19 sur les 4 composants extraits), 508/508 tests
+   web verts. Vérification visuelle réelle en environnement natif (Task 10) : 1 bug réel trouvé
+   et corrigé (débordement horizontal de la barre d'actions du mode lecture à 375px). Détail
+   complet ci-dessous.
+
 ### Écran 2 — Accueil (`web/src/views/Home/Accueil.vue`) — terminé
 
 **Inventaire de l'existant** (lecture complète du fichier, 2026-08-25) : le fichier est déjà
@@ -1035,6 +1046,119 @@ compté), `vue-tsc -b` propre. Aucun token ni primitive modifié.
 réouverture ci-dessus (comparaison structurelle complète contre `Main.dc.html`, vérification
 visuelle 4 combinaisons déjà confirmée).
 
-**Prochaine action** : écran 4 — Éditeur de notes et mode Zen (`NoteEdit.vue`), premier écran non
-encore migré, cycle complet `migration-ecran` (inventaire, comparaison à `NoteEdit.dc.html`,
-états, tests, composition).
+**Prochaine action (avant écran 4)** : écran 4 — Éditeur de notes et mode Zen (`NoteEdit.vue`),
+premier écran non encore migré à ce moment, cycle complet `migration-ecran` (inventaire,
+comparaison à `NoteEdit.dc.html`, états, tests, composition). Voir sa clôture ci-dessous.
+
+## Écran 4 — Éditeur de notes et mode Zen (`NoteEdit.vue`) — terminé
+
+Exécuté comme chantier dédié `workflow/editeur-notes-notation-ia/` (10 tâches TDD,
+`docs/superpowers/plans/2026-08-30-editeur-notes-redesign.md`), plutôt qu'en ligne directe dans
+ce fichier comme les écrans 1-3 — cf. `workflow/editeur-notes-notation-ia/{CONTEXT,PLAN,
+JOURNAL}.md` pour le détail tâche par tâche (extraction des 3 modales, `NoteSidebar.vue`,
+retonage en-tête/barre d'outils/HTML généré, fil d'ariane + état d'erreur de chargement,
+suite de tests comportementale). Cette section documente uniquement la clôture (Tâche 10) :
+vérification visuelle réelle en environnement natif, dernier filet avant la revue de branche.
+
+**Environnement natif monté (pas de Docker, conforme au précédent StudyDeck/Accueil)** — deux
+vrais accrocs d'environnement trouvés et contournés, tous deux propres à cette machine (Windows
+**ARM64**), aucun n'a touché de code applicatif :
+- `psycopg2-binary` et `cryptography==42.0.7` (pin du `requirements.txt`) n'ont pas de wheel
+  ARM64 Windows et échouent à la compilation (pas de `pg_config`/Rust sur la machine). L'app ne
+  nécessite que SQLite en dev, et PyJWT retombe proprement sans `cryptography`
+  (`except ModuleNotFoundError` dans `jwt/utils.py`, HS256 ne le nécessite pas) : `psycopg2` non
+  installé, `cryptography` installé en 46.0.3 (wheel ARM64 existant) puis retiré à nouveau car
+  bloqué au chargement par la stratégie de contrôle d'application Windows de cette machine
+  (Code Integrity/WDAC, `UsermodeCodeIntegrityPolicyEnforcementStatus=2` confirmé via
+  `Get-CimInstance Win32_DeviceGuard`) — fallback PyJWT sans crypto utilisé à la place.
+- `flask run` chargeait silencieusement `DATABASE_URL=postgresql://...@db:5432/...` depuis le
+  `.env` racine du dépôt (orienté Docker Compose, un niveau au-dessus de la worktree) via
+  l'auto-chargement `.env`/`.flaskenv` du CLI Flask (absent d'un import direct de `wsgi.py` ou de
+  `ScriptInfo.load_app()` — comportement propre à la commande `run`). Contourné avec
+  `FLASK_SKIP_DOTENV=1` au lancement, aucune modification de fichier.
+
+Backend servi en SQLite (migrations auto-appliquées, cache Redis en repli mémoire — avertissement
+attendu), frontend Vite servi normalement. Données de test réelles créées **via l'app elle-même**
+(pas de fixture) : inscription UI, un classeur (« Chimie Organique »), deux notes (une note
+principale exerçant `{{trou::}}`/`{{qcm::}}`/`{{vf::}}`/`{{ordre::}}`/`{{assoc::}}` + LaTeX
+inline, une seconde note pour vérifier le lien entre notes).
+
+**Outillage de vérification** : l'extension Chrome (`claude-in-chrome`) n'a pas pu être utilisée
+— aucune installation de Chrome présente sur cette machine (confirmé : ni
+`Program Files\Google\Chrome`, ni `AppData\Local\Google\Chrome`, ni dans le PATH). Sur arbitrage
+du contrôleur, bascule vers **Playwright piloté directement** (dépendance déjà présente,
+Chromium déjà téléchargé localement, `web/playwright.config.ts`) via un script Node jetable
+(non commité, hors de la suite `tests-e2e` qui mocke l'API) pointant le vrai backend/frontend
+ci-dessus — même principe que la « technique iframe » utilisée aux écrans 1-3 pour contourner un
+`resize_window` plafonné, en plus direct.
+
+**Checklist vérifiée en direct, chaque item avec capture d'écran réelle** :
+- Sidebar Assistant IA : exactement 3 méthodes (Évaluation mixte / Méthode de la feuille
+  blanche / Méthode Feynman), pas de « Générer un quiz » — confirmé par lecture DOM + capture.
+- Bouton Notation : visible, `disabled`, tooltip
+  « Bientôt disponible : nécessite le backend de notation IA (non encore livré). » — confirmé.
+- Fil d'ariane : « BIBLIOTHÈQUE / CHIMIE ORGANIQUE / NOTES » (nom du classeur réel) — confirmé,
+  visible uniquement en mode lecture comme prévu par la maquette.
+- Méthode Feynman : navigation réelle depuis la sidebar vers `/notes/:id/feynman`, page rendue
+  avec le vrai titre de la note et un textarea fonctionnel — aucune régression.
+- `NoteQuiz.vue` : accessible par URL directe (`/notes/:id/quiz`), rendu complet du générateur
+  de QCM IA (curseur nombre de questions, bouton Gemini) bien que retiré du panneau — conforme.
+- Mode édition : frappe réelle dans le textarea + bouton « Gras » de la barre flottante
+  vérifiés bout en bout (sélection encadrée de `**...**` dans le contenu réel), autosave
+  fonctionnel — aucune régression fonctionnelle, seul le visuel a changé (tâches 6-7).
+- Export PDF : modale d'options (styles Modern Pro/Académique/Éco Minimal, taille d'écriture,
+  éléments du document) rendue et fonctionnelle — aucune régression.
+- Lien entre notes : lien ajouté depuis le tiroir Contexte/Liens vers une seconde note réelle,
+  badge visible en mode lecture, clic → navigation réelle vers la note liée — aucune régression.
+- Révision Active : bascule fonctionnelle, `{{trou::}}` masqué puis révélé au clic (« glucose »),
+  QCM/Vrai-Faux/Ordre/Association rendus avec leurs contrôles interactifs — aucune régression.
+- Responsive 375px/1440px × clair/sombre, mode édition **et** mode lecture (8 captures) + sidebar
+  (visible dans les captures du mode lecture) : les 8 combinaisons confirmées propres après le
+  correctif ci-dessous (0 erreur console sur l'ensemble des scénarios testés).
+
+**1 bug réel trouvé et corrigé (TDD)** — même discipline que le bug PomodoroTimer/StudyDeck
+ci-dessus : la rangée d'actions du mode lecture (« Retour aux notes » / bascule Lecture-Révision
+Active à gauche, « Modifier la fiche » / « Guide » / « Exporter en PDF » à droite,
+`NoteEdit.vue` ligne ~479) n'avait pas `flex-wrap`, contrairement à la rangée équivalente du mode
+édition (ligne ~106, qui l'a déjà). Mesure DOM réelle à 375px (pas seulement visuelle) : les
+boutons « Guide » (x=416) et « Exporter en PDF » (x=525) se retrouvaient positionnés hors du
+viewport (375px de large), et donc **inatteignables** — sans que la page ne scrolle
+horizontalement (`document.scrollWidth === 375`, donc clippés silencieusement plutôt que
+scrollables). Reproduit par capture d'écran (texte « Modifier la fi[che] » tronqué pile au bord)
+puis confirmé par mesure de `getBoundingClientRect()`. Correctif TDD : test rouge d'abord
+(`web/tests/views/Notes/NoteEdit.spec.ts`, vérifie que la classe `flex-wrap` est présente sur la
+rangée), confirmé en échec pour la bonne raison contre le fichier non modifié, puis `flex-wrap`
+ajouté à la rangée et à ses deux groupes enfants (même pattern que la rangée du mode édition) —
+vert. Reverifié en navigateur réel après correctif : les 6 boutons/contrôles de la rangée
+tiennent tous dans 375px de large (x max ≈ 305), répartis sur 3 lignes, aucun débordement.
+
+**Suite finale** : 508/508 tests web verts (507 avant Task 10 + 1 nouveau test du correctif),
+`vue-tsc -b` sans erreur, `eslint` propre sur le diff (les ~77 erreurs `no-undef`/`no-explicit-
+any` restantes dans `NoteEdit.vue` sont préexistantes — gap de configuration ESLint déjà
+documenté à l'écran 3, aucune sur les lignes touchées par ce correctif).
+
+**Concern signalé, non corrigé (architectural, hors périmètre)** : `NoteResponse`
+(`backend/app/schemas/note_schema.py`) ne renvoie jamais de champ `flashcards` — confirmé par
+lecture de `note_service.get_note`/`update_note` et de `app/api/v1/notes.py`. Le code de
+`NoteEdit.vue` qui lit `(note as any).flashcards` pour lier un `{{trou::}}` à une vraie
+flashcard (déclenchant la modale d'évaluation SM-2 différée après révélation) ne peut donc
+jamais s'activer avec de vraies données aujourd'hui — confirmé en pratique : la révélation du
+trou fonctionne (affiche « glucose »), mais aucune modale d'évaluation n'apparaît, faute de
+`cardId`. C'est cohérent avec le rapport de la Tâche 9 (« Aucune des 4 notes de test n'inclut de
+`flashcards` dans la réponse mockée ») : ce sous-flux n'a jamais été exercé qu'en mock. Pas un
+bug introduit par ce chantier ni par cette tâche — la liaison note↔flashcard pour les trous
+semble ne jamais avoir été câblée côté backend. Signalé pour un futur chantier ciblé plutôt que
+corrigé ici (architectural, pas un correctif ponctuel).
+
+**Documentation** : `workflow/editeur-notes-notation-ia/{PLAN,JOURNAL}.md` mis à jour (tâches
+cochées, entrée de clôture). `docs/superpowers/plans/2026-08-30-editeur-notes-redesign.md`
+reste la référence détaillée des 10 tâches. Volet backend « Notation de la note » (flux 2)
+toujours hors périmètre, cases non cochées intentionnellement.
+
+**Écran 4 terminé** — étape 8 : cette section à jour, commit à suivre.
+
+**Prochaine action** : écran 5 — Blurting IA (`web/src/views/Notes/Blurting.vue`,
+route `notes/:id/blurting`), cycle complet `migration-ecran` (inventaire, comparaison à la
+maquette Direction A correspondante, états, tests, composition). Rappel de la note déjà actée
+plus haut (§ « Ordre des flux ») : retonation visuelle seulement, le contenu fonctionnel ne
+change pas au-delà de ce qui a déjà été livré par le flux 5 (ce chantier).

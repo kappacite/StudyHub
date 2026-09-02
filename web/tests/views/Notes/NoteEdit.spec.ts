@@ -382,6 +382,23 @@ describe('NoteEdit — bascule édition / lecture (Task 9)', () => {
     expect(wrapper.text()).toContain('Modifier la fiche')
   })
 
+  it("la barre d'actions du mode lecture peut passer à la ligne (pas de débordement horizontal à 375px)", async () => {
+    // Bug réel trouvé en vérification visuelle Task 10 : à 375px, cette rangée
+    // (Retour aux notes / Lecture-Révision Active à gauche, Modifier la fiche / Guide /
+    // Exporter en PDF à droite) n'avait pas `flex-wrap` — mesuré en navigateur réel, les
+    // boutons "Guide" et "Exporter en PDF" se retrouvaient positionnés hors du viewport
+    // (x=416 et x=525 sur 375px de large) et donc inatteignables, alors même que la page
+    // ne scrolle pas horizontalement (clippés silencieusement). Le même fichier utilise déjà
+    // `flex-wrap` pour la rangée équivalente du mode édition (Row 1, ligne ~106) : même
+    // correctif appliqué ici pour cohérence.
+    const { wrapper } = await mountNoteEdit('/notes/42')
+
+    const backBtn = wrapper.findAll('button').find((b) => b.text().includes('Retour aux notes'))!
+    const actionsRow = backBtn.element.closest('.max-w-4xl.mx-auto.flex.items-center.justify-between')
+    expect(actionsRow).not.toBeNull()
+    expect(actionsRow!.className).toContain('flex-wrap')
+  })
+
   it("'Retour aux notes' sauvegarde la note puis navigue vers /notes", async () => {
     api.put.mockResolvedValue({ data: { ...NOTE, flashcards: [] } })
     const { wrapper, router } = await mountNoteEdit('/notes/42')

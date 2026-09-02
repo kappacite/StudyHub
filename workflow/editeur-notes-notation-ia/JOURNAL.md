@@ -48,3 +48,42 @@ ajouté désactivé en attendant. Chantier passé de `planifié` à `ouvert`. Ex
 Prochaine action : dispatcher Task 4 — construction de `NoteSidebar.vue` (sidebar à 3 méthodes
 Évaluation mixte/Feuille blanche/Feynman + bouton Notation désactivé, interface canevas-vérifiée
 dans le plan détaillé). C'est la tâche la plus importante du chantier côté conformité canevas.
+
+## 2026-09-02 (Tasks 4-9 exécutées, Task 10 : clôture)
+
+Tasks 4 à 9 exécutées depuis la reprise (commits `2a4e9d0`..`5d5fd3f`, détail complet dans les
+messages de commit et `ETAT.md` § Écran 4) : `NoteSidebar.vue` (3 méthodes + Notation désactivé,
+Task 4), câblage Feynman revérifié sans reconstruction (Task 5), retonage en-tête/barre
+d'outils/partage/tiroir réglages du mode édition (Task 6), retonage du HTML généré par
+`renderMarkup`/`renderSm2Buttons`/`renderDiagramHtml` + 1 correctif de revue (survol perdu,
+classe dark redondante, Task 7), fil d'ariane + état d'erreur de chargement + retonage de
+l'en-tête lecture (Task 8), suite de tests comportementale complète pour `NoteEdit.vue`
+(+40 tests sur 2 vagues, Task 9). 507/507 tests avant Task 10.
+
+**Task 10 (clôture)** : environnement natif monté (pas de Docker) — deux accrocs ARM64 Windows
+trouvés et contournés sans toucher au code (`psycopg2-binary`/`cryptography` sans wheel ARM64 →
+PyJWT en repli sans crypto, HS256 n'en a pas besoin ; `.env` racine orienté Docker chargé
+silencieusement par `flask run` → `FLASK_SKIP_DOTENV=1`). Données de test réelles créées via
+l'app (inscription, classeur, 2 notes dont une avec `{{trou::}}`/`{{qcm::}}`/`{{vf::}}`/
+`{{ordre::}}`/`{{assoc::}}`). L'extension Chrome n'ayant pas de Chrome installé sur cette
+machine, vérification faite via Playwright piloté directement (déjà une dépendance du projet,
+Chromium déjà présent localement) plutôt que `claude-in-chrome` — arbitrage du contrôleur.
+
+Checklist complète vérifiée en direct avec captures réelles (sidebar 3 méthodes, Notation
+désactivé+tooltip, fil d'ariane, Feynman, `NoteQuiz` par URL directe, mode édition frappe+barre
+d'outils, export PDF, lien entre notes, Révision Active, 8 combinaisons responsive×thème×mode).
+**1 bug réel trouvé et corrigé en TDD** : la barre d'actions du mode lecture débordait
+horizontalement à 375px (boutons « Guide »/« Exporter en PDF » positionnés hors viewport,
+mesuré par `getBoundingClientRect()`, inatteignables) — `flex-wrap` manquant, ajouté par
+cohérence avec la rangée équivalente du mode édition qui l'avait déjà. Test rouge confirmé puis
+correctif vert (`web/tests/views/Notes/NoteEdit.spec.ts`). **1 concern signalé, non corrigé**
+(architectural, hors périmètre) : `NoteResponse` ne renvoie jamais de champ `flashcards`, donc
+la liaison `{{trou::}}`→flashcard réelle (modale d'évaluation SM-2 différée) n'est jamais
+atteignable avec de vraies données aujourd'hui — pas une régression de ce chantier, signalé pour
+un futur chantier ciblé.
+
+**508/508 tests web verts** (507 + 1 nouveau test du correctif), `vue-tsc -b` propre. `ETAT.md`
+§ Écran 4 mis à jour (clôture complète), `PLAN.md` coché (Tasks 4-10), pointeur « Prochaine
+action » déplacé vers l'écran 5 (Blurting IA). Volet backend « Notation de la note » (flux 2)
+resté hors périmètre, cases non cochées intentionnellement. Chantier `editeur-notes-notation-ia`
+prêt pour la revue finale de branche.

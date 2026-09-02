@@ -476,8 +476,10 @@
             class="flex-1 bg-surface-soft dark:bg-[#070913] py-10 px-4 md:px-8 print:p-0 print:bg-surface w-full"
           >
             <!-- Top Bar Actions inside Preview page sheet (Centered wrapper) -->
-            <div class="max-w-4xl mx-auto flex items-center justify-between no-print mb-6">
-              <div class="flex items-center gap-4">
+            <div
+              class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-y-3 no-print mb-6"
+            >
+              <div class="flex flex-wrap items-center gap-4">
                 <button
                   class="text-sm font-semibold text-ink-muted hover:text-primary dark:text-ink-subtle dark:hover:text-primary flex items-center gap-1"
                   @click="goBack"
@@ -518,7 +520,7 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-3">
+              <div class="flex flex-wrap items-center gap-3">
                 <!-- View Mode Toggler -->
                 <button
                   class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink dark:text-ink-subtle"
