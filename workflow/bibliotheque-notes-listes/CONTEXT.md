@@ -1,8 +1,8 @@
 # Bibliothèque — alignement de la vue liste sur `Notes.dc.html`
 
-Statut : ouvert
+Statut : clos
 Branche : feature/bibliotheque-notes-listes
-PR : (aucune)
+PR : #140 (mergée, squash `4d361a4`)
 
 ## Pourquoi
 

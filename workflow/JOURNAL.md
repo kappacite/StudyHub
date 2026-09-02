@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : bibliotheque-notes-listes
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
@@ -11,6 +11,13 @@ Chantier actif : bibliotheque-notes-listes
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
+
+- 2026-09-03 — [bibliotheque-notes-listes] **PR #140 mergée dans `main`** (squash, `4d361a4`),
+  CI verte (6/6 checks). Chantier `clos`. Prochaine action : ouvrir le chantier révision QCM
+  (root cause déjà identifié en investigation : garde backend sur `rset.type` au lieu de
+  `item.type` dans `check_qcm_answer`/`answer_qcm_item`, et `RevisionStudy.vue` qui exclut
+  systématiquement les QCM d'un ensemble hétérogène — limitation différée deux fois
+  [`backend-ensembles-heterogenes`, `reviser-hub`], jamais traitée).
 
 - 2026-09-03 — [bibliotheque-notes-listes] Task 8 (barre de filtre par tags -- conditionnée
   à la racine, corrige un bug latent où elle s'affichait sans effet dans un classeur)
