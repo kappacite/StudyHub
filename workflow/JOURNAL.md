@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : bibliotheque-notes-listes
 
 ## Chantiers ouverts
 
@@ -11,6 +11,12 @@ Chantier actif : aucun
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
+
+- 2026-09-02 — [bibliotheque-notes-listes] chantier ouvert. Vue liste de la Bibliothèque
+  (dans un classeur) recomparée à `Notes.dc.html` par lecture des sources ET comparaison
+  visuelle réelle via Claude in Chrome. `bibliotheque-redesign` (#132) avait traité
+  l'architecture de l'écran, pas la densité des lignes ni la silhouette de l'en-tête.
+  9 tâches. Prochain : Task 1 (variante bascule de `Tabs.vue`).
 
 - 2026-09-02 — [editeur-notes-notation-ia] **PR #138 mergée dans `main`** (squash, `770cffe`),
   CI verte (6/6 checks, après correctif d'un test E2E cassé par la refonte sidebar — voir le
