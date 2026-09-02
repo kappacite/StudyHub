@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory, type Router } from 'vue-router'
+import DOMPurify from 'dompurify'
+import { nextTick } from 'vue'
 
 // NoteEdit.vue parle à `api` à la fois directement et via notesStore/bindersStore/tagsStore
 // (qui, eux, appellent le même client HTTP partagé) : on mock ce client une seule fois ici.
@@ -16,6 +18,10 @@ vi.mock('../../../src/services/api', () => ({ default: api }))
 
 import NoteEdit from '../../../src/views/Notes/NoteEdit.vue'
 import { BaseEmptyState, BaseButton } from '../../../src/components/ui/base'
+import NoteInputModal from '../../../src/components/notes/NoteInputModal.vue'
+import NoteEvaluationModal from '../../../src/components/notes/NoteEvaluationModal.vue'
+import TagSelector from '../../../src/components/ui/TagSelector.vue'
+import { useNotesStore, type Note } from '../../../src/stores/notes'
 
 const NOTE = {
   id: '42',
@@ -30,6 +36,12 @@ const NOTE = {
 interface ApiOverrides {
   note?: () => Promise<unknown>
   binders?: () => Promise<unknown>
+  // Task 9 : quelques tests ont besoin de peupler la liste des notes (liens entre notes),
+  // des diagrammes (insertion de schéma) ou des tags (TagSelector) — overrides additionnels,
+  // rétro-compatibles avec les tests des Tasks 1-8 qui ne les fournissent pas.
+  notes?: () => Promise<unknown>
+  diagrams?: () => Promise<unknown>
+  tags?: () => Promise<unknown>
 }
 
 function makeGetImpl(over: ApiOverrides = {}) {
@@ -37,12 +49,23 @@ function makeGetImpl(over: ApiOverrides = {}) {
     if (/^\/notes\/\d+$/.test(url)) {
       return (over.note ?? (() => Promise.resolve({ data: NOTE })))()
     }
-    if (url.startsWith('/notes?')) return Promise.resolve({ data: { data: [] } })
+    if (url.startsWith('/notes?')) {
+      return (over.notes ?? (() => Promise.resolve({ data: { data: [] } })))()
+    }
     if (url.startsWith('/binders?')) {
       return (over.binders ?? (() => Promise.resolve({ data: { data: [] } })))()
     }
-    if (url === '/tags') return Promise.resolve({ data: { data: [] } })
-    if (url.startsWith('/diagrams?')) return Promise.resolve({ data: { data: [] } })
+    if (url === '/tags') return (over.tags ?? (() => Promise.resolve({ data: { data: [] } })))()
+    if (url.startsWith('/diagrams?')) {
+      return (over.diagrams ?? (() => Promise.resolve({ data: { data: [] } })))()
+    }
+    if (/^\/diagrams\/\d+$/.test(url)) {
+      // Task 9 : les tests d'insertion de [diagram:ID] déclenchent le watcher noteBody ->
+      // fetchDiagramIfNeeded (chargement individuel du schéma inséré) ; on répond par un
+      // schéma minimal pour ne pas polluer la sortie de test avec une erreur non mockée.
+      const id = Number(url.split('/').pop())
+      return Promise.resolve({ data: { id, title: 'Diagramme', code: '{}' } })
+    }
     return Promise.reject(new Error(`URL GET non mockée dans le test: ${url}`))
   }
 }
@@ -53,6 +76,7 @@ function createTestRouter(): Router {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
+      { path: '/notes', name: 'NotesList', component: stub },
       { path: '/notes/:id', name: 'NoteEdit', component: NoteEdit },
       { path: '/notes/:id/evaluation', name: 'NoteEvaluation', component: stub },
       { path: '/notes/:id/blurting', name: 'NoteBlurting', component: stub },
@@ -60,6 +84,12 @@ function createTestRouter(): Router {
     ],
   })
 }
+
+// Task 9 : les nouveaux tests déclenchent la sauvegarde différée (setTimeout 1500ms dans
+// triggerAutoSave). On garde une trace de chaque wrapper monté pour le démonter après chaque
+// test (onBeforeUnmount coupe le timer en attente) — évite qu'un timer résiduel n'appelle
+// l'API mockée d'un test suivant après un `api.put.mockReset()`.
+const mountedWrappers: VueWrapper[] = []
 
 async function mountNoteEdit(to = '/notes/42') {
   const pinia = createPinia()
@@ -70,12 +100,68 @@ async function mountNoteEdit(to = '/notes/42') {
   await router.isReady()
 
   const wrapper = mount(NoteEdit, {
-    global: { plugins: [pinia, router] },
+    global: {
+      plugins: [pinia, router],
+      // La directive v-dompurify-html est enregistrée globalement dans main.ts (jamais montée
+      // par défaut dans les tests) : sans elle, tout le corps de note rendu (renderMarkup)
+      // resterait vide. On la reproduit ici à l'identique pour les tests qui inspectent le
+      // rendu (Task 9 : révélation d'un trou en mode Révision Active).
+      directives: {
+        'dompurify-html': (el: Element, binding: { value?: string }) => {
+          el.innerHTML = DOMPurify.sanitize(binding.value || '')
+        },
+      },
+    },
   })
+  mountedWrappers.push(wrapper)
 
   await flushPromises()
 
-  return { wrapper, router }
+  return { wrapper, router, pinia }
+}
+
+afterEach(() => {
+  while (mountedWrappers.length > 0) {
+    mountedWrappers.pop()!.unmount()
+  }
+  vi.useRealTimers()
+})
+
+// Sélectionne `needle` dans le textarea (après y avoir écrit `fullText`) et déclenche le même
+// évènement que l'utilisateur (mouseup) pour peupler `selectionText`/`showSelectionMenu`,
+// exactement comme handleTextareaSelect() le fait en conditions réelles.
+async function selectText(wrapper: VueWrapper, fullText: string, needle: string) {
+  const textarea = wrapper.get('textarea')
+  await textarea.setValue(fullText)
+  const start = fullText.indexOf(needle)
+  if (start === -1) throw new Error(`"${needle}" introuvable dans "${fullText}"`)
+  const end = start + needle.length
+  ;(textarea.element as HTMLTextAreaElement).setSelectionRange(start, end)
+  await textarea.trigger('mouseup')
+  return textarea
+}
+
+function textareaValue(wrapper: VueWrapper): string {
+  return (wrapper.get('textarea').element as HTMLTextAreaElement).value
+}
+
+// NoteInputModal/NoteEvaluationModal/NoteEditHelpModal utilisent BaseModal, qui s'appuie sur
+// le <Dialog> de @headlessui/vue — celui-ci téléporte son contenu dans document.body. Le
+// wrapper du composant (VueWrapper.find/findAll, scoped à son propre noeud DOM) ne voit donc
+// plus ce contenu une fois téléporté : on l'interroge directement via document.body, comme le
+// font déjà NoteInputModal.spec.ts / NoteEvaluationModal.spec.ts / NoteEditHelpModal.spec.ts.
+function findDialogButton(text: string): HTMLButtonElement {
+  const btn = Array.from(document.body.querySelectorAll('[role="dialog"] button')).find((b) =>
+    b.textContent?.includes(text),
+  ) as HTMLButtonElement | undefined
+  if (!btn) throw new Error(`Bouton "${text}" introuvable dans la boîte de dialogue ouverte`)
+  return btn
+}
+
+async function clickDialogButton(text: string) {
+  findDialogButton(text).click()
+  await nextTick()
+  await flushPromises()
 }
 
 describe('NoteEdit — sidebar Assistant IA & bouton Notation (canevas Direction A)', () => {
@@ -210,5 +296,853 @@ describe("NoteEdit — état d'erreur de chargement (Task 8, échec silencieux c
 
     expect(wrapper.findComponent(BaseEmptyState).exists()).toBe(false)
     expect(wrapper.text()).toContain('Ma note de chimie')
+  })
+})
+
+// ============================================================================================
+// Task 9 — inventaire complémentaire (chargement, édition/lecture, autosave, transformations de
+// sélection, export PDF, liens, révision active, partage, tiroir/aperçu/sidebar/guide,
+// classeur/tags, note en lecture seule, interactions de révision + évaluation SM-2).
+// ============================================================================================
+
+describe('NoteEdit — chargement (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+  })
+
+  it('affiche le spinner pendant le chargement puis le contenu une fois la note résolue', async () => {
+    let resolveNote: (value: unknown) => void = () => {}
+    const pending = new Promise((resolve) => {
+      resolveNote = resolve
+    })
+    api.get.mockImplementation(makeGetImpl({ note: () => pending }))
+
+    const { wrapper } = await mountNoteEdit()
+
+    expect(wrapper.text()).toContain('Ouverture de la note...')
+    expect(wrapper.text()).not.toContain('Ma note de chimie')
+
+    resolveNote({ data: NOTE })
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Ouverture de la note...')
+    expect(wrapper.text()).toContain('Ma note de chimie')
+  })
+})
+
+describe('NoteEdit — bascule édition / lecture (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  it("ouvre en mode édition par défaut quand le titre vaut 'Note sans titre'", async () => {
+    api.get.mockImplementation(
+      makeGetImpl({ note: () => Promise.resolve({ data: { ...NOTE, title: 'Note sans titre' } }) }),
+    )
+    const { wrapper } = await mountNoteEdit('/notes/42')
+
+    expect(wrapper.find('textarea').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Visualiser')
+  })
+
+  it("ouvre en mode lecture par défaut sinon, et bascule vers édition via 'Modifier la fiche' sans sauvegarder", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42')
+
+    expect(wrapper.find('textarea').exists()).toBe(false)
+    const editBtn = wrapper.findAll('button').find((b) => b.text() === 'Modifier la fiche')!
+    await editBtn.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('textarea').exists()).toBe(true)
+    expect(api.put).not.toHaveBeenCalled()
+  })
+
+  it("bascule de édition vers lecture via 'Visualiser', ce qui sauvegarde la note au passage", async () => {
+    api.put.mockResolvedValue({ data: { ...NOTE, flashcards: [] } })
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+
+    const viewBtn = wrapper.findAll('button').find((b) => b.text() === 'Visualiser')!
+    await viewBtn.trigger('click')
+    await flushPromises()
+
+    expect(api.put).toHaveBeenCalledWith(
+      '/notes/42',
+      expect.objectContaining({ title: 'Ma note de chimie' }),
+    )
+    expect(wrapper.find('textarea').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Modifier la fiche')
+  })
+
+  it("'Retour aux notes' sauvegarde la note puis navigue vers /notes", async () => {
+    api.put.mockResolvedValue({ data: { ...NOTE, flashcards: [] } })
+    const { wrapper, router } = await mountNoteEdit('/notes/42')
+    const push = vi.spyOn(router, 'push')
+
+    const backBtn = wrapper.findAll('button').find((b) => b.text().includes('Retour aux notes'))!
+    await backBtn.trigger('click')
+    await flushPromises()
+
+    expect(api.put).toHaveBeenCalled()
+    expect(push).toHaveBeenCalledWith('/notes')
+  })
+})
+
+describe('NoteEdit — sauvegarde automatique différée (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  it("une modification du titre programme une sauvegarde après 1.5s et met à jour l'indicateur d'état", async () => {
+    api.put.mockResolvedValue({ data: { ...NOTE, title: 'Titre modifié', flashcards: [] } })
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+
+    vi.useFakeTimers()
+    const titleInput = wrapper.get('input[placeholder="Titre de la note..."]')
+    await titleInput.setValue('Titre modifié')
+
+    expect(wrapper.text()).toContain('Modifications...')
+    expect(api.put).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(1600)
+
+    expect(api.put).toHaveBeenCalledWith(
+      '/notes/42',
+      expect.objectContaining({ title: 'Titre modifié' }),
+    )
+    expect(wrapper.text()).toContain('Sauvegardé')
+  })
+})
+
+describe('NoteEdit — barre de formatage (Row 2) en mode édition (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  it("un bouton de formatage (Titre H1) insère son préfixe au point de curseur (mécanisme insertText partagé par les boutons Format/LaTeX/Code)", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    const textarea = wrapper.get('textarea')
+    await textarea.setValue('Chapitre un')
+    ;(textarea.element as HTMLTextAreaElement).setSelectionRange(0, 0)
+
+    await wrapper.get('[title="Titre H1"]').trigger('click')
+
+    expect(textareaValue(wrapper)).toBe('# Chapitre un')
+  })
+
+  it("le sélecteur 'Insérer un diagramme...' insère un tag [diagram:ID] au point de curseur", async () => {
+    api.get.mockImplementation(
+      makeGetImpl({ diagrams: () => Promise.resolve({ data: { data: [{ id: 7, title: 'Anatomie' }] } }) }),
+    )
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await flushPromises()
+
+    const textarea = wrapper.get('textarea')
+    await textarea.setValue('')
+    ;(textarea.element as HTMLTextAreaElement).setSelectionRange(0, 0)
+
+    const diagramSelect = wrapper
+      .findAll('select')
+      .find((s) => s.text().includes('Insérer un diagramme...'))!
+    await diagramSelect.setValue('7')
+
+    expect(textareaValue(wrapper)).toBe('[diagram:7]')
+  })
+
+  it("le bouton 'Définition (Info-bulle)' exige une sélection, puis (sélection faite) ouvre la modale et insère [terme]{def:...}", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+
+    const defBtn = wrapper.findAll('button').find((b) => b.text() === 'Définition (Info-bulle)')!
+    await defBtn.trigger('click')
+    await flushPromises()
+
+    let modal = wrapper.findComponent(NoteInputModal)
+    expect(modal.props('visible')).toBe(true)
+    expect(modal.props('title')).toBe('Sélection requise')
+    await clickDialogButton('Compris')
+    expect(modal.props('visible')).toBe(false)
+
+    const textareaEl = wrapper.get('textarea').element as HTMLTextAreaElement
+    const start = textareaEl.value.indexOf('note')
+    textareaEl.setSelectionRange(start, start + 'note'.length)
+
+    await defBtn.trigger('click')
+    await flushPromises()
+
+    modal = wrapper.findComponent(NoteInputModal)
+    expect(modal.props('title')).toBe('Définition info-bulle')
+    const input = document.body.querySelector('[role="dialog"] input') as HTMLInputElement
+    input.value = 'Explication du terme'
+    input.dispatchEvent(new Event('input'))
+    await nextTick()
+    await clickDialogButton('Ajouter la définition')
+
+    expect(textareaValue(wrapper)).toContain('[note]{def:Explication du terme}')
+  })
+})
+
+describe('NoteEdit — barre flottante de sélection : transformations (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  it("le bouton 'Trou' entoure la sélection de {{trou::...}}", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await selectText(wrapper, 'La capitale de la France est Paris.', 'Paris')
+
+    await wrapper.get('[title="Trou (Cloze)"]').trigger('click')
+
+    expect(textareaValue(wrapper)).toBe('La capitale de la France est {{trou::Paris}}.')
+  })
+
+  it("le bouton 'Définition' de la barre flottante ouvre la modale puis insère [terme]{def:...}", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await selectText(wrapper, 'La photosynthèse transforme la lumière.', 'photosynthèse')
+
+    await wrapper.get('[title="Définition info-bulle"]').trigger('click')
+    await flushPromises()
+
+    const modal = wrapper.findComponent(NoteInputModal)
+    expect(modal.props('visible')).toBe(true)
+    expect(modal.props('title')).toBe('Définition info-bulle')
+
+    await clickDialogButton('Ajouter la définition')
+
+    expect(modal.props('visible')).toBe(false)
+    expect(textareaValue(wrapper)).toBe(
+      'La [photosynthèse]{def:Définition...} transforme la lumière.',
+    )
+  })
+
+  it("le bouton 'QCM' ouvre la modale puis insère {{qcm::...}} avec la sélection comme bonne réponse", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await selectText(wrapper, 'Le mitochondrie est la centrale énergétique.', 'mitochondrie')
+
+    await wrapper.get('[title="QCM (Choix multiples)"]').trigger('click')
+    await flushPromises()
+
+    const modal = wrapper.findComponent(NoteInputModal)
+    expect(modal.props('title')).toBe('Créer un QCM')
+    await clickDialogButton('Créer le QCM')
+
+    expect(textareaValue(wrapper)).toBe(
+      'Le {{qcm::Question ?::|*mitochondrie*|}} est la centrale énergétique.',
+    )
+  })
+
+  it("le bouton 'Ordre' ouvre la modale puis insère {{ordre::...}} avec la sélection comme première étape", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await selectText(wrapper, 'Étapes : Germination puis croissance.', 'Germination')
+
+    await wrapper.get('[title="Séquence (Ordre)"]').trigger('click')
+    await flushPromises()
+
+    const modal = wrapper.findComponent(NoteInputModal)
+    expect(modal.props('title')).toBe('Séquence ordonnée')
+    await clickDialogButton('Créer la séquence')
+
+    expect(textareaValue(wrapper)).toBe('Étapes : {{ordre::Ordre::Germination > }} puis croissance.')
+  })
+
+  it("le bouton 'Assoc' ouvre la modale puis insère {{assoc::...}} avec la sélection comme clé", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await selectText(wrapper, 'Capitale : Paris est en France.', 'Paris')
+
+    await wrapper.get('[title="Association"]').trigger('click')
+    await flushPromises()
+
+    const modal = wrapper.findComponent(NoteInputModal)
+    expect(modal.props('title')).toBe('Créer une association')
+    await clickDialogButton('Créer l’association')
+
+    expect(textareaValue(wrapper)).toBe('Capitale : {{assoc::Relations::Paris = }} est en France.')
+  })
+
+  it("le bouton 'V/F' ouvre la modale puis insère {{vf::...}} avec la sélection comme assertion", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await selectText(wrapper, 'Fait : Paris est la capitale.', 'Paris est la capitale')
+
+    await wrapper.get('[title="Vrai / Faux"]').trigger('click')
+    await flushPromises()
+
+    const modal = wrapper.findComponent(NoteInputModal)
+    expect(modal.props('title')).toBe('Vrai / Faux')
+    await clickDialogButton('Créer la question')
+
+    expect(textareaValue(wrapper)).toBe(
+      'Fait : {{vf::Paris est la capitale::Vrai::Justification...}}.',
+    )
+  })
+
+  it("le bouton 'Schéma' (diagramme disponible) ouvre la modale de sélection puis insère [diagram:ID]", async () => {
+    api.get.mockImplementation(
+      makeGetImpl({
+        diagrams: () => Promise.resolve({ data: { data: [{ id: 5, title: 'Cycle de Krebs' }] } }),
+      }),
+    )
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await flushPromises()
+    await selectText(wrapper, 'Voir le schéma joint.', 'schéma')
+
+    await wrapper.get('[title="Insérer un diagramme / schéma"]').trigger('click')
+    await flushPromises()
+
+    const modal = wrapper.findComponent(NoteInputModal)
+    expect(modal.props('title')).toBe('Insérer un diagramme')
+    await clickDialogButton('Insérer')
+
+    expect(textareaValue(wrapper)).toBe('Voir le [diagram:5] joint.')
+  })
+
+  it("le bouton 'Schéma' sans diagramme disponible affiche une modale d'information, sans rien insérer", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    const original = 'Voir le schéma joint.'
+    await selectText(wrapper, original, 'schéma')
+
+    await wrapper.get('[title="Insérer un diagramme / schéma"]').trigger('click')
+    await flushPromises()
+
+    const modal = wrapper.findComponent(NoteInputModal)
+    expect(modal.props('visible')).toBe(true)
+    expect(modal.props('title')).toBe('Aucun diagramme')
+    await clickDialogButton('Compris')
+
+    expect(modal.props('visible')).toBe(false)
+    expect(textareaValue(wrapper)).toBe(original)
+  })
+
+  it('les transformations textuelles simples (gras/italique/code en ligne/bloc de code/math bloc/math ligne) enveloppent la sélection sans passer par une modale', async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    const base = 'Un mot important ici.'
+
+    // "Gras" et "Italique" partagent le même attribut title avec les boutons Row 2
+    // (mêmes libellés) : on distingue le bouton de la barre flottante par son contenu
+    // court ("G" / "I" en gras/italique) plutôt que par le mot complet du bouton Row 2.
+    await selectText(wrapper, base, 'mot')
+    const grasBtn = wrapper.findAll('[title="Gras"]').find((b) => b.text() === 'G')!
+    await grasBtn.trigger('click')
+    expect(textareaValue(wrapper)).toBe('Un **mot** important ici.')
+
+    await selectText(wrapper, base, 'mot')
+    const italiqueBtn = wrapper.findAll('[title="Italique"]').find((b) => b.text() === 'I')!
+    await italiqueBtn.trigger('click')
+    expect(textareaValue(wrapper)).toBe('Un *mot* important ici.')
+
+    await selectText(wrapper, base, 'mot')
+    await wrapper.get('[title="Code en ligne"]').trigger('click')
+    expect(textareaValue(wrapper)).toBe('Un `mot` important ici.')
+
+    await selectText(wrapper, base, 'mot')
+    await wrapper.get('[title="Bloc de code"]').trigger('click')
+    expect(textareaValue(wrapper)).toBe('Un ```\nmot\n``` important ici.')
+
+    await selectText(wrapper, base, 'mot')
+    await wrapper.get('[title="Math Bloc (LaTeX)"]').trigger('click')
+    expect(textareaValue(wrapper)).toBe('Un $$\nmot\n$$ important ici.')
+
+    await selectText(wrapper, base, 'mot')
+    await wrapper.get('[title="Math Ligne (LaTeX)"]').trigger('click')
+    expect(textareaValue(wrapper)).toBe('Un $mot$ important ici.')
+  })
+})
+
+describe('NoteEdit — raccourcis clavier du textarea (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  it('Tab insère deux espaces au point de curseur au lieu de déplacer le focus', async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    const textarea = wrapper.get('textarea')
+    await textarea.setValue('Ligne')
+    ;(textarea.element as HTMLTextAreaElement).setSelectionRange(5, 5)
+
+    await textarea.trigger('keydown', { key: 'Tab' })
+
+    expect(textareaValue(wrapper)).toBe('Ligne  ')
+  })
+
+  it('Maj+Entrée insère un saut de ligne souple, ou un <br> dans une ligne de tableau Markdown', async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    const textarea = wrapper.get('textarea')
+
+    await textarea.setValue('Texte simple')
+    ;(textarea.element as HTMLTextAreaElement).setSelectionRange(12, 12)
+    await textarea.trigger('keydown', { key: 'Enter', shiftKey: true })
+    expect(textareaValue(wrapper)).toBe('Texte simple\n')
+
+    await textarea.setValue('| a | b |')
+    ;(textarea.element as HTMLTextAreaElement).setSelectionRange(9, 9)
+    await textarea.trigger('keydown', { key: 'Enter', shiftKey: true })
+    expect(textareaValue(wrapper)).toBe('| a | b |<br>')
+  })
+})
+
+describe("NoteEdit — export PDF (Task 9)", () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  it("'Exporter en PDF' ouvre la modale d'export avec le titre de la note", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42')
+
+    const trigger = wrapper.findAll('button').find((b) => b.text() === 'Exporter en PDF')!
+    await trigger.trigger('click')
+
+    expect(wrapper.text()).toContain('Exportation PDF & Impression')
+    expect(wrapper.text()).toContain('Ma note de chimie')
+  })
+
+  it("confirmer l'export imprime le document (après un court délai) et referme la modale", async () => {
+    const originalPrint = window.print
+    window.print = vi.fn()
+    try {
+      const { wrapper } = await mountNoteEdit('/notes/42')
+      const trigger = wrapper.findAll('button').find((b) => b.text() === 'Exporter en PDF')!
+      await trigger.trigger('click')
+
+      vi.useFakeTimers()
+      const confirmExport = wrapper
+        .findAll('button')
+        .find((b) => b.text().includes("Lancer l'exportation PDF"))!
+      await confirmExport.trigger('click')
+
+      expect(wrapper.text()).not.toContain('Exportation PDF & Impression')
+      expect(window.print).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(200)
+
+      expect(window.print).toHaveBeenCalledTimes(1)
+    } finally {
+      window.print = originalPrint
+    }
+  })
+
+  it("'Annuler' dans la modale d'export la referme sans imprimer", async () => {
+    const originalPrint = window.print
+    window.print = vi.fn()
+    try {
+      const { wrapper } = await mountNoteEdit('/notes/42')
+      const trigger = wrapper.findAll('button').find((b) => b.text() === 'Exporter en PDF')!
+      await trigger.trigger('click')
+
+      const cancelBtn = wrapper.findAll('button').find((b) => b.text() === 'Annuler')!
+      await cancelBtn.trigger('click')
+
+      expect(wrapper.text()).not.toContain('Exportation PDF & Impression')
+      expect(window.print).not.toHaveBeenCalled()
+    } finally {
+      window.print = originalPrint
+    }
+  })
+})
+
+describe('NoteEdit — liens entre notes (Task 9)', () => {
+  const OTHER_NOTE: Note = {
+    id: '9',
+    binder_id: null,
+    title: 'Autre note',
+    content: '',
+    created_at: '',
+    updated_at: '',
+    tags: [],
+  }
+  const LINKED_NOTE: Note = {
+    id: '7',
+    binder_id: null,
+    title: 'Note cible',
+    content: '',
+    created_at: '',
+    updated_at: '',
+    tags: [],
+  }
+
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+  })
+
+  it('ajoute un lien vers une autre note depuis le tiroir Contexte / Liens, puis le retire via le badge', async () => {
+    api.get.mockImplementation(
+      makeGetImpl({ notes: () => Promise.resolve({ data: { data: [OTHER_NOTE] } }) }),
+    )
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await flushPromises()
+
+    const settingsBtn = wrapper.findAll('button').find((b) => b.text() === 'Contexte / Liens')!
+    await settingsBtn.trigger('click')
+
+    const linkSelect = wrapper
+      .findAll('select')
+      .find((s) => s.text().includes('Sélectionner une note...'))!
+    await linkSelect.setValue('9')
+
+    const linkBtn = wrapper.findAll('button').find((b) => b.text() === 'Lier')!
+    await linkBtn.trigger('click')
+
+    expect(wrapper.text()).toContain('Autre note')
+
+    const removeBtn = wrapper.findAll('button').find((b) => b.text() === '✕')!
+    await removeBtn.trigger('click')
+
+    expect(wrapper.findAll('button').find((b) => b.text() === '✕')).toBeUndefined()
+  })
+
+  it('navigue vers la note liée au clic sur son badge, en mode lecture', async () => {
+    api.get.mockImplementation(
+      makeGetImpl({
+        note: () =>
+          Promise.resolve({
+            data: {
+              ...NOTE,
+              content:
+                '<!-- LINKED_NOTES: 7 -->\n<!-- SECTION_BODY -->\nCorps.\n<!-- END_SECTION_BODY -->',
+            },
+          }),
+        notes: () => Promise.resolve({ data: { data: [LINKED_NOTE] } }),
+      }),
+    )
+    const { wrapper, router } = await mountNoteEdit('/notes/42')
+    await flushPromises()
+    const push = vi.spyOn(router, 'push')
+
+    const linkedBadge = wrapper.findAll('button').find((b) => b.text().includes('Note cible'))!
+    await linkedBadge.trigger('click')
+
+    expect(push).toHaveBeenCalledWith('/notes/7')
+  })
+})
+
+describe('NoteEdit — bascule Lecture / Révision Active (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  it('le sélecteur Lecture / Révision Active bascule notesStore.isReviewModeActive', async () => {
+    const { wrapper, pinia } = await mountNoteEdit('/notes/42')
+    const notesStore = useNotesStore(pinia)
+    expect(notesStore.isReviewModeActive).toBe(false)
+
+    const revisionBtn = wrapper.findAll('button').find((b) => b.text().includes('Révision Active'))!
+    await revisionBtn.trigger('click')
+    expect(notesStore.isReviewModeActive).toBe(true)
+
+    const lectureBtn = wrapper.findAll('button').find((b) => b.text().trim() === 'Lecture')!
+    await lectureBtn.trigger('click')
+    expect(notesStore.isReviewModeActive).toBe(false)
+  })
+})
+
+describe('NoteEdit — partage / visibilité (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  it('rend la note publique (popup + lien), copie le lien, puis la rend privée à nouveau', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      configurable: true,
+    })
+    api.patch.mockImplementation((_url: string, body: { is_public: boolean }) => {
+      if (body.is_public) {
+        return Promise.resolve({ data: { is_public: true, share_token: 'tok-123' } })
+      }
+      return Promise.resolve({ data: { is_public: false, share_token: null } })
+    })
+
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+
+    const shareBtn = wrapper.findAll('button').find((b) => b.text() === 'Privé')!
+    await shareBtn.trigger('click')
+    await flushPromises()
+
+    expect(api.patch).toHaveBeenCalledWith('/notes/42/visibility', { is_public: true })
+    expect(wrapper.text()).toContain('Public')
+    expect(wrapper.text()).toContain('Note publique')
+
+    const copyBtn = wrapper.findAll('button').find((b) => b.text() === 'Copier')!
+    await copyBtn.trigger('click')
+    await flushPromises()
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/notes/public/tok-123`,
+    )
+    expect(wrapper.text()).toContain('Copié !')
+
+    const makePrivateBtn = wrapper.findAll('button').find((b) => b.text() === 'Rendre privée')!
+    await makePrivateBtn.trigger('click')
+    await flushPromises()
+
+    expect(api.patch).toHaveBeenLastCalledWith('/notes/42/visibility', { is_public: false })
+    expect(wrapper.text()).toContain('Privé')
+  })
+})
+
+describe('NoteEdit — tiroir Contexte/Liens, aperçu live, sidebar de raccourcis et guide (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  it("le bouton 'Contexte / Liens' ouvre puis referme le tiroir contextuel", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    expect(wrapper.find('textarea[placeholder*="Historique"]').exists()).toBe(false)
+
+    const settingsBtn = wrapper.findAll('button').find((b) => b.text() === 'Contexte / Liens')!
+    await settingsBtn.trigger('click')
+    expect(wrapper.find('textarea[placeholder*="Historique"]').exists()).toBe(true)
+
+    await settingsBtn.trigger('click')
+    expect(wrapper.find('textarea[placeholder*="Historique"]').exists()).toBe(false)
+  })
+
+  it("le bouton 'Aperçu' affiche puis masque le panneau de prévisualisation en temps réel", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    expect(wrapper.text()).not.toContain('Aperçu en temps réel')
+
+    const previewBtn = wrapper.findAll('button').find((b) => b.text() === 'Aperçu')!
+    await previewBtn.trigger('click')
+    expect(wrapper.text()).toContain('Aperçu en temps réel')
+
+    await previewBtn.trigger('click')
+    expect(wrapper.text()).not.toContain('Aperçu en temps réel')
+  })
+
+  it("le bouton de la barre latérale de raccourcis émet l'évènement studyhub:toggle-sidebar sur window", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    const handler = vi.fn()
+    window.addEventListener('studyhub:toggle-sidebar', handler)
+
+    try {
+      await wrapper.get('[title="Afficher la barre de raccourcis"]').trigger('click')
+      expect(handler).toHaveBeenCalledTimes(1)
+    } finally {
+      window.removeEventListener('studyhub:toggle-sidebar', handler)
+    }
+  })
+
+  it("le bouton 'Guide' ouvre la modale d'aide, en mode édition comme en mode lecture", async () => {
+    // NoteEditHelpModal s'appuie sur BaseModal (Dialog headlessui, téléporté dans
+    // document.body) : on vérifie le contenu affiché via document.body, pas wrapper.text().
+    const edit = await mountNoteEdit('/notes/42?edit=true')
+    const editGuideBtn = edit.wrapper.findAll('button').find((b) => b.text() === 'Guide')!
+    await editGuideBtn.trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain("Guide d'utilisation StudyHub")
+    edit.wrapper.unmount()
+    const editIdx = mountedWrappers.indexOf(edit.wrapper)
+    if (editIdx !== -1) mountedWrappers.splice(editIdx, 1)
+
+    const read = await mountNoteEdit('/notes/42')
+    const readGuideBtn = read.wrapper.findAll('button').find((b) => b.text() === 'Guide')!
+    await readGuideBtn.trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain("Guide d'utilisation StudyHub")
+  })
+})
+
+describe('NoteEdit — classeur & tags (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+  })
+
+  it('changer le classeur sélectionné déclenche une sauvegarde différée avec le nouveau binder_id', async () => {
+    api.get.mockImplementation(
+      makeGetImpl({
+        binders: () =>
+          Promise.resolve({
+            data: { data: [{ id: 'b2', name: 'Maths', parent_id: null, created_at: '' }] },
+          }),
+      }),
+    )
+    api.put.mockResolvedValue({ data: { ...NOTE, binder_id: 'b2', flashcards: [] } })
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await flushPromises()
+
+    vi.useFakeTimers()
+    const binderSelect = wrapper.findAll('select').find((s) => s.text().includes('Général (Aucun)'))!
+    await binderSelect.setValue('b2')
+
+    await vi.advanceTimersByTimeAsync(1600)
+
+    expect(api.put).toHaveBeenCalledWith('/notes/42', expect.objectContaining({ binder_id: 'b2' }))
+  })
+
+  it("le TagSelector émet change -> saveNoteTags met à jour les tags de la note via l'API", async () => {
+    api.get.mockImplementation(
+      makeGetImpl({
+        tags: () =>
+          Promise.resolve({ data: { data: [{ id: 1, name: 'Chimie', color: null, created_at: '' }] } }),
+      }),
+    )
+    api.post.mockResolvedValue({
+      data: { data: [{ id: 1, name: 'Chimie', color: null, created_at: '' }] },
+    })
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+    await flushPromises()
+
+    const tagSelector = wrapper.findComponent(TagSelector)
+    await tagSelector.get('button').trigger('click')
+    const select = tagSelector.get('select')
+    await select.setValue('1')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/notes/42/tags', { tag_ids: [1] })
+    expect(tagSelector.props('modelValue')).toEqual([
+      { id: 1, name: 'Chimie', color: null, created_at: '' },
+    ])
+  })
+})
+
+describe('NoteEdit — note en lecture seule partagée par un cours (Task 9)', () => {
+  const READONLY_NOTE = { ...NOTE, read_only: true }
+
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl({ note: () => Promise.resolve({ data: READONLY_NOTE }) }))
+  })
+
+  it("affiche la bannière lecture seule et 'Cacher' masque la note puis redirige vers /notes", async () => {
+    api.post.mockResolvedValue({ data: {} })
+    const { wrapper, router } = await mountNoteEdit('/notes/42')
+    const push = vi.spyOn(router, 'push')
+
+    expect(wrapper.text()).toContain('Note partagée par un cours — lecture seule.')
+
+    const hideBtn = wrapper.findAll('button').find((b) => b.text() === 'Cacher')!
+    await hideBtn.trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/notes/42/hide')
+    expect(push).toHaveBeenCalledWith('/notes')
+  })
+
+  it("'Copier pour modifier' crée une copie personnelle et navigue vers son édition", async () => {
+    api.post.mockResolvedValue({
+      data: {
+        id: '99',
+        binder_id: null,
+        title: 'Ma note de chimie',
+        content: '',
+        created_at: '',
+        updated_at: '',
+        tags: [],
+      },
+    })
+    const { wrapper, router } = await mountNoteEdit('/notes/42')
+    const push = vi.spyOn(router, 'push')
+
+    const copyBtn = wrapper.findAll('button').find((b) => b.text() === 'Copier pour modifier')!
+    await copyBtn.trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/notes/42/copy')
+    expect(push).toHaveBeenCalledWith('/notes/99?edit=true')
+  })
+})
+
+describe('NoteEdit — révision active : trou révélé et évaluation SM-2 (Task 9)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+  })
+
+  it("révéler un trou lié à une flashcard ouvre (après un court délai) la modale d'évaluation SM-2 ; soumettre une note appelle l'API et referme la modale", async () => {
+    api.get.mockImplementation(
+      makeGetImpl({
+        note: () =>
+          Promise.resolve({
+            data: {
+              ...NOTE,
+              content:
+                '<!-- SECTION_BODY -->\nUn terme important : {{trou::motcache}}.\n<!-- END_SECTION_BODY -->',
+              flashcards: [{ id: 99, original_text: '{{trou::motcache}}' }],
+            },
+          }),
+      }),
+    )
+    api.patch.mockResolvedValue({ data: {} })
+
+    const { wrapper } = await mountNoteEdit('/notes/42')
+
+    const revisionBtn = wrapper.findAll('button').find((b) => b.text().includes('Révision Active'))!
+    await revisionBtn.trigger('click')
+    await flushPromises()
+
+    const revealEl = wrapper.get('[data-action="reveal"]')
+
+    vi.useFakeTimers()
+    await revealEl.trigger('click')
+    await vi.advanceTimersByTimeAsync(800)
+
+    const evalModal = wrapper.findComponent(NoteEvaluationModal)
+    expect(evalModal.props('visible')).toBe(true)
+
+    vi.useRealTimers()
+    await clickDialogButton('Facile')
+
+    expect(api.patch).toHaveBeenCalledWith('/flashcards/99/review', { score: 5 })
+    expect(wrapper.findComponent(NoteEvaluationModal).props('visible')).toBe(false)
   })
 })
