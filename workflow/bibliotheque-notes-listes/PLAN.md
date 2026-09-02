@@ -13,7 +13,7 @@ plus local (lignes), puis vérification visuelle réelle.
   `PageHeader` (agrégation client-side, même principe que `cardAggregate`).
 - [x] Task 4 — `BinderCard.vue` : liseré gauche 4px + rayon 4px, densité verticale alignée
   sur la maquette. Rebrancher l'accentuation de la carte la plus récemment active.
-- [ ] Task 5 — Lignes de notes : extrait tronqué (1 ligne, depuis `content`), pastille de tag,
+- [x] Task 5 — Lignes de notes : extrait tronqué (1 ligne, depuis `content`), pastille de tag,
   date relative alignée à droite (réutiliser `formatDayDiffLabel` déjà dans `Binders.vue`),
   icône globe si `is_public`. Séparateurs pointillés, suppression du second titre interne.
   Ajouter `is_public` au type `Note` du store s'il manque côté front.

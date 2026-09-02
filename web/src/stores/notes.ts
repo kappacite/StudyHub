@@ -12,6 +12,11 @@ export interface Note {
   updated_at: string
   tags: Tag[]
   read_only?: boolean
+  // Toujours renvoyé par le backend (NoteResponse) ; optionnel ici pour ne pas casser les
+  // littéraux de test existants qui ne le renseignent pas (même convention que read_only
+  // ci-dessus). Utilisé par Binders.vue (Task 5, bibliotheque-notes-listes) pour l'icône
+  // globe de la ligne de note.
+  is_public?: boolean
 }
 
 interface NotesResponse {
@@ -43,7 +48,7 @@ export const useNotesStore = defineStore('notes', () => {
     loading.value = true
     try {
       const response = await api.get<Note>(`/notes/${id}`)
-      const index = notes.value.findIndex(n => n.id === id)
+      const index = notes.value.findIndex((n) => n.id === id)
       if (index !== -1) {
         notes.value[index] = response.data
       } else {
@@ -53,7 +58,7 @@ export const useNotesStore = defineStore('notes', () => {
     } catch (error) {
       console.error(`Erreur de chargement de la note ${id}`, error)
       // Fallback local search
-      return notes.value.find(n => n.id === id)
+      return notes.value.find((n) => n.id === id)
     } finally {
       loading.value = false
     }
@@ -65,7 +70,7 @@ export const useNotesStore = defineStore('notes', () => {
       const response = await api.post<Note>('/notes', {
         title,
         content,
-        binder_id: binderId
+        binder_id: binderId,
       })
       const newNote = response.data
       notes.value.push(newNote)
@@ -80,18 +85,18 @@ export const useNotesStore = defineStore('notes', () => {
 
   async function updateNote(id: string, title: string, content: string, binderId?: string | null) {
     try {
-      const note = notes.value.find(n => n.id === id)
+      const note = notes.value.find((n) => n.id === id)
       // Si un binderId est fourni (string ou null explicite), on l'utilise ;
       // sinon on conserve le classeur actuel de la note.
-      const binder_id = binderId !== undefined ? binderId : (note ? note.binder_id : null)
+      const binder_id = binderId !== undefined ? binderId : note ? note.binder_id : null
 
       const response = await api.put<Note>(`/notes/${id}`, {
         title,
         content,
-        binder_id
+        binder_id,
       })
       const updatedNote = response.data
-      const index = notes.value.findIndex(n => n.id === id)
+      const index = notes.value.findIndex((n) => n.id === id)
       if (index !== -1) {
         notes.value[index] = updatedNote
       }
@@ -113,13 +118,13 @@ export const useNotesStore = defineStore('notes', () => {
   async function hideNote(id: string) {
     // Masque une note de cours partagée dans la vue de l'élève.
     await api.post(`/notes/${id}/hide`)
-    notes.value = notes.value.filter(n => n.id !== id)
+    notes.value = notes.value.filter((n) => n.id !== id)
   }
 
   async function deleteNote(id: string) {
     try {
       await api.delete(`/notes/${id}`)
-      notes.value = notes.value.filter(n => n.id !== id)
+      notes.value = notes.value.filter((n) => n.id !== id)
     } catch (error) {
       console.error('Erreur de suppression de la note', error)
       throw error
@@ -136,6 +141,6 @@ export const useNotesStore = defineStore('notes', () => {
     updateNote,
     copyNote,
     hideNote,
-    deleteNote
+    deleteNote,
   }
 })

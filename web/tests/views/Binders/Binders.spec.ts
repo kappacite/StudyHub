@@ -23,7 +23,19 @@ const HETEROGENEOUS_SET = { id: 7, name: 'Mixte', description: null, type: null,
 // binder_id === null, jamais sur la chaîne littérale 'non-classe').
 const NOW = new Date().toISOString()
 const NOTE_UNCLASSIFIED = { id: 'n-libre', binder_id: null, title: 'Note libre', content: '', created_at: NOW, updated_at: NOW, tags: [] }
-const NOTE_B1 = { id: 'n-b1', binder_id: 'b1', title: 'Note du classeur b1', content: '', created_at: NOW, updated_at: NOW, tags: [] }
+// Champs ajoutés pour Task 5 (bibliotheque-notes-listes, ligne de note enrichie) : content
+// (extrait), tags (pastille de chapitre), is_public (icône globe) -- valeurs ajoutées sans
+// toucher aux champs déjà exploités par les tests existants (title, id, binder_id, dates).
+const NOTE_B1 = {
+  id: 'n-b1',
+  binder_id: 'b1',
+  title: 'Note du classeur b1',
+  content: '# Titre\n\nCeci est le **contenu** de la note du classeur b1.',
+  created_at: NOW,
+  updated_at: NOW,
+  tags: [{ id: 9, name: 'Ch. 4', color: '#C99A2E', created_at: '' }],
+  is_public: true,
+}
 
 const stub = { template: '<div />' }
 function createTestRouter(): Router {
@@ -202,7 +214,6 @@ describe('Binders — à l\'intérieur d\'un classeur réel', () => {
     // apparaître (cf. test miroir ci-dessous pour le cas "0 enfant").
     expect(text).toContain('Sous-classeurs')
     expect(text).toContain('Sous-classeur B1')
-    expect(text).toContain('Notes (')
     expect(text).toContain('Note du classeur b1')
     // filterBinderId === currentBinderId pour un vrai classeur : la note non classée
     // ne doit pas fuiter dans le contenu de b1.
@@ -384,6 +395,52 @@ describe('Binders — en-tête (Task 2, bibliotheque-notes-listes)', () => {
 
     const supprimer = wrapper.findAll('button').find((b) => b.text().trim() === 'Supprimer')!
     expect(supprimer.classes()).toContain('text-danger')
+  })
+})
+
+describe('Binders — ligne de note enrichie (Task 5, bibliotheque-notes-listes)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it("affiche un extrait tronqué du contenu (markdown allégé), la pastille du premier tag, la date et l'icône globe pour une note publique", async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    // Extrait : caractères markdown (#, **) retirés, contenu réel visible.
+    expect(wrapper.text()).toContain('Titre')
+    expect(wrapper.text()).toContain('Ceci est le contenu de la note du classeur b1.')
+    expect(wrapper.text()).not.toContain('# Titre')
+    expect(wrapper.text()).not.toContain('**contenu**')
+
+    // Pastille de tag (premier tag de la note).
+    expect(wrapper.text()).toContain('Ch. 4')
+
+    // Icône globe (note publique) : accessible par aria-label, pas par du texte visible.
+    expect(
+      wrapper.find('[aria-label="Note partagée publiquement"]').exists(),
+    ).toBe(true)
+  })
+
+  it("n'affiche ni extrait ni pastille ni globe pour une note sans contenu/tags/is_public (Note libre, pseudo-classeur Non classé)", async () => {
+    const { wrapper } = await mountBinders('non-classe')
+
+    expect(wrapper.text()).toContain('Note libre')
+    expect(
+      wrapper.find('[aria-label="Note partagée publiquement"]').exists(),
+    ).toBe(false)
+  })
+
+  it('le titre interne "Notes (N)" a disparu (redondant avec le H1, Task 2)', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    expect(wrapper.text()).not.toContain('Notes (')
+  })
+
+  it('sépare les lignes de notes par un filet pointillé (Notes.dc.html), pas un espacement plein', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    const container = wrapper.find('[data-test="notes-list"]')
+    expect(container.exists()).toBe(true)
+    expect(container.classes()).toContain('divide-dashed')
+    expect(container.classes()).not.toContain('space-y-1')
   })
 })
 

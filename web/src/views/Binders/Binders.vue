@@ -220,26 +220,39 @@
         <div class="space-y-6">
           <!-- Notes -->
           <BaseCard v-if="activeType === 'notes'">
-            <h3 class="font-bold text-sm text-ink flex items-center gap-2 mb-3">
-              <FileText class="w-4 h-4 text-cat-note" />
-              Notes ({{ currentNotes.length }})
-            </h3>
-            <div class="space-y-1">
+            <!-- Pas de titre interne "Notes (N)" (Task 5, bibliotheque-notes-listes) : le
+                 H1 (Task 2) porte déjà ce rôle -- Notes.dc.html n'a pas non plus de titre
+                 de section ici. -->
+            <div data-test="notes-list" class="divide-y divide-dashed divide-line">
               <ListRow
                 v-for="note in currentNotes"
                 :key="note.id"
                 interactive
+                padding="cozy"
                 class="group"
-                :title="note.title"
                 @click="router.push(`/notes/${note.id}`)"
               >
-                <template #leading
-                  ><div
-                    class="w-9 h-9 rounded-xl bg-cat-note-soft text-cat-note flex items-center justify-center"
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <p class="text-sm font-bold text-ink truncate">{{ note.title }}</p>
+                    <Globe
+                      v-if="note.is_public"
+                      class="w-3.5 h-3.5 text-primary shrink-0"
+                      aria-label="Note partagée publiquement"
+                    />
+                  </div>
+                  <p
+                    v-if="noteExcerpt(note)"
+                    class="text-xs text-ink-subtle truncate mt-1 max-w-xl"
                   >
-                    <FileText class="w-4.5 h-4.5" /></div
-                ></template>
+                    {{ noteExcerpt(note) }}
+                  </p>
+                </div>
                 <template #trailing>
+                  <TagBadge v-if="note.tags[0]" :tag="note.tags[0]" />
+                  <span class="font-mono text-xs text-ink-subtle w-20 text-right shrink-0">{{
+                    formatDayDiffLabel(note.updated_at)
+                  }}</span>
                   <span
                     v-if="note.read_only"
                     class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-warning-soft text-warning"
@@ -719,6 +732,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useBindersStore } from '../../stores/binders'
 import type { Binder } from '../../stores/binders'
 import { useNotesStore } from '../../stores/notes'
+import type { Note } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
 import TagSelector from '../../components/ui/TagSelector.vue'
@@ -739,6 +753,7 @@ import type { TabItem } from '../../components/ui/base'
 import { useRevisionStore } from '../../stores/revision'
 import type { RevisionSet, RevisionItem, RevisionItemType } from '../../stores/revision'
 import RevisionSetModal from '../../components/decks/RevisionSetModal.vue'
+import TagBadge from '../../components/ui/TagBadge.vue'
 import {
   Plus,
   ChevronRight,
@@ -1186,6 +1201,19 @@ const mostRecentEntryId = computed(() => {
 const currentNotes = computed(() =>
   notesStore.notes.filter((n) => n.binder_id === filterBinderId.value),
 )
+
+// Extrait 1 ligne (Task 5, bibliotheque-notes-listes) : content est du Markdown brut (cf.
+// NoteEdit.vue, rendu via `marked`) -- pas question de faire tourner un parseur Markdown
+// complet pour une prévisualisation tronquée en CSS (`truncate`). On retire juste les
+// caractères de balisage les plus visibles (#, *, _, `, >) et on aplatit les retours à la
+// ligne ; la troncature visuelle (ellipsis) est gérée par la classe `truncate` du template,
+// pas ici -- pas de découpage arbitraire en caractères.
+function noteExcerpt(note: Note): string {
+  return note.content
+    .replace(/[#*_`>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 const currentDecks = computed(() =>
   decksStore.decks.filter((d) => d.binder_id === filterBinderId.value),
 )

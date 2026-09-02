@@ -154,4 +154,39 @@ Note d'outillage (confirme l'entrée Task 2) : le même contournement `tdd_guard
 `Binders.vue`) a été nécessaire à répétition sur cette tâche — le problème est systématique,
 pas un incident isolé.
 
-Commit : (ce commit). Prochain : Task 5 (lignes de notes -- extrait, tag, date, globe).
+Commit : `4a2eefa`.
+
+## 2026-09-03 — Task 5 : lignes de notes (extrait, tag, date, globe)
+
+L'écart le plus fort du constat initial (titre seul sur une ligne quasi vide) est corrigé.
+
+Changements :
+- `Note` (store) gagne `is_public?: boolean` -- toujours renvoyé par le backend
+  (`NoteResponse`), jamais déclaré côté front (même convention que `read_only`).
+- `ListRow.vue` gagne une prop `padding` (`'default'` inchangé, `'cozy'` = `px-0 py-4` --
+  lignes plus aérées sans indent horizontal, le retrait vient déjà du padding de la
+  `BaseCard` englobante). Changement additif, 2 autres consommateurs (`Accueil.vue`,
+  `RevisionSetDetail.vue`) non affectés.
+- `noteExcerpt()` (Binders.vue) : `content` est du Markdown brut (rendu via `marked` dans
+  `NoteEdit.vue`) -- pas question de faire tourner un parseur complet pour un extrait
+  tronqué en CSS. Retire seulement les caractères de balisage les plus visibles
+  (`#`, `*`, `_`, backtick, `>`), aplatit les retours à la ligne ; la troncature visuelle
+  (ellipsis) reste gérée par la classe `truncate` du template, pas par un découpage de
+  caractères arbitraire.
+- Ligne de note reconstruite : titre + icône globe (accessible via `aria-label`, pas de
+  texte visible -- pas d'équivalent texte pertinent) si `is_public`, extrait en dessous ;
+  en zone trailing : pastille du premier tag (`TagBadge`, primitive déjà utilisée ailleurs
+  dans ce même fichier pour les tags de classeur -- pas de nouveau composant), date relative
+  (`formatDayDiffLabel`, déjà défini dans ce fichier) alignée à droite, largeur fixe.
+- Titre interne `<h3>Notes (N)</h3>` supprimé (redondant avec le H1 de Task 2).
+- Séparateurs : `divide-y divide-dashed divide-line` sur le conteneur au lieu de
+  `space-y-1` (Notes.dc.html : filet pointillé entre les lignes, pas d'espacement plein).
+
+TDD complet (ListRow, Binders.vue -- extrait/tag/globe/date, absence sur note vide,
+disparition du titre interne, séparateurs). Rouge vérifié avant implémentation. Suite
+complète : 530/530, `vue-tsc -b` propre. Vérifié visuellement en local (extraits, dates,
+filets pointillés conformes ; tag/globe non visibles sur les données de seed actuelles, qui
+n'ont ni tag ni note publique -- couverts par les tests unitaires avec données mockées).
+
+Commit : (ce commit). Prochain : Task 6 (lignes d'ensemble de révision -- bouton Réviser,
+menu par ligne, phrase d'explication).
