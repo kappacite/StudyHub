@@ -215,4 +215,22 @@ non-régression des 2 tests existants Statistiques/Détacher qui ouvrent désorm
 d'abord, phrase + disparition du titre interne). Rouge vérifié. Suite complète : 533/533,
 `vue-tsc -b` propre. Vérifié visuellement en local, conforme.
 
-Commit : (ce commit). Prochain : Task 7 (largeur 920px dans un classeur).
+Commit : `75ea422`.
+
+## 2026-09-03 — Task 7 : largeur (colonne étroite dans un classeur)
+
+`PageContainer.vue` gagne une valeur de taille `'content'` (`max-w-4xl`, 896px -- pas de
+token à 920px pile dans l'échelle Tailwind par défaut, valeur la plus proche). Changement
+additif à un enum déjà existant, aucun des 12 autres consommateurs de `PageContainer`
+n'est touché (ils ne passent jamais `size="content"`).
+
+`Binders.vue` : nouveau computed `pageContainerSize` -- `'wide'` à la racine (grille de
+classeurs inchangée, 3 colonnes), `'content'` dès qu'on est "dans" un classeur (y compris
+le pseudo-classeur `'non-classe'`, qui affiche la même vue de contenu qu'un vrai classeur).
+
+TDD : test sur `PageContainer` (nouvelle valeur), test sur `Binders.vue` (largeur au
+niveau racine vs à l'intérieur d'un classeur). Rouge vérifié. Suite complète : 535/535,
+`vue-tsc -b` propre. Vérifié visuellement : colonne centrée, nettement plus proche de la
+maquette qu'avant (les lignes ne s'étirent plus sur toute la largeur de l'écran).
+
+Commit : (ce commit). Prochain : Task 8 (barre de filtre par tags).

@@ -445,6 +445,20 @@ describe('Binders — ligne de note enrichie (Task 5, bibliotheque-notes-listes)
   })
 })
 
+describe('Binders — largeur (Task 7, bibliotheque-notes-listes)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('grille racine large (max-w-7xl), colonne étroite à l\'intérieur d\'un classeur (max-w-4xl)', async () => {
+    const root = await mountBinders(null)
+    expect(root.wrapper.find('.max-w-7xl').exists()).toBe(true)
+    expect(root.wrapper.find('.max-w-4xl').exists()).toBe(false)
+
+    const inside = await mountBinders('b1')
+    expect(inside.wrapper.find('.max-w-4xl').exists()).toBe(true)
+    expect(inside.wrapper.find('.max-w-7xl').exists()).toBe(false)
+  })
+})
+
 describe('Binders — bascule Notes/Revision/Autres', () => {
   beforeEach(() => vi.clearAllMocks())
 

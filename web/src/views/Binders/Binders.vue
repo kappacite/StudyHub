@@ -1,5 +1,5 @@
 <template>
-  <PageContainer size="wide">
+  <PageContainer :size="pageContainerSize">
     <PageHeader :title="pageTitle" :subtitle="rootSubtitle" :breadcrumbs="breadcrumbItems">
       <template #actions>
         <!-- Racine (currentBinderId === null) : aucun onglet/contenu typé n'a de
@@ -855,6 +855,12 @@ const contentTabs = computed<TabItem[]>(() => [
 // Titre de page (Task 2, bibliotheque-notes-listes) : suit Notes.dc.html -- "Bibliothèque"
 // à la racine, sinon le libellé de l'onglet actif (le sur-titre mono du fil d'Ariane porte
 // déjà le nom du classeur, cf. breadcrumbItems ci-dessous).
+// Largeur (Task 7, bibliotheque-notes-listes) : grille de classeurs large à la racine
+// (Bibliotheque.dc.html, 3 colonnes), colonne de lecture étroite une fois "dans" un
+// classeur (Notes.dc.html -- les lignes de notes/ensembles s'étirent sinon sur toute la
+// largeur d'un grand écran).
+const pageContainerSize = computed(() => (currentBinderId.value === null ? 'wide' : 'content'))
+
 const pageTitle = computed(() => {
   if (currentBinderId.value === null) return 'Bibliothèque'
   const tab = contentTabs.value.find((t) => t.key === activeType.value)

@@ -12,6 +12,10 @@ Chantier actif : bibliotheque-notes-listes
 
 ## Historique
 
+- 2026-09-03 — [bibliotheque-notes-listes] Task 7 (largeur : colonne étroite dans un
+  classeur, grille racine inchangée) terminée. 535/535 tests, `vue-tsc` propre, vérifié
+  visuellement. Prochain : Task 8 (barre de filtre par tags).
+
 - 2026-09-03 — [bibliotheque-notes-listes] Task 6 (lignes d'ensemble -- bouton Réviser, menu
   par ligne, phrase d'explication) terminée. 533/533 tests, `vue-tsc` propre, vérifié
   visuellement. Prochain : Task 7 (largeur 920px dans un classeur).
