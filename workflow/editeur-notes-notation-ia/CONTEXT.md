@@ -33,7 +33,9 @@ seule, worktree `.worktrees/noteedit-migration` conservé intact) :
   retrait de "Générer un quiz" du panneau) **explicitement motivée par une vérification du
   canevas Direction A** — et une Task 5 complète pour construire `NoteFeynman.vue` de zéro,
   aujourd'hui redondante (Feynman déjà livré par `reviser-hub`, vérifié conforme au canevas
-  dans un chantier antérieur).
+  dans un chantier antérieur). Contenu exact archivé (le stash lui-même est local, non
+  transférable d'une machine à l'autre) :
+  `workflow/editeur-notes-notation-ia/reference-stash-2026-08-30-noteedit-migration-plan-amendment.patch`.
 - `NoteSidebar.vue` tel que committé sur la vieille branche a toujours l'ANCIENNE liste
   d'activités (Blurting/Générer un quiz/Évaluer la note) — jamais corrigée avant le stash.
 
