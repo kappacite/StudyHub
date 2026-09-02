@@ -12,6 +12,10 @@ Chantier actif : bibliotheque-notes-listes
 
 ## Historique
 
+- 2026-09-03 — [bibliotheque-notes-listes] Tasks 3+4 (sous-titre agrégé racine, liseré/rayon
+  + accent de `BinderCard`) terminées. 525/525 tests, `vue-tsc` propre. Prochain : Task 5
+  (lignes de notes).
+
 - 2026-09-03 — [bibliotheque-notes-listes] Task 2 (en-tête de `Binders.vue` : titre dynamique,
   sur-titre mono, menu « … ») terminée. 519/519 tests, `vue-tsc` propre, vérifié visuellement.
   Prochain : Task 3 (sous-titre agrégé sur la grille racine).

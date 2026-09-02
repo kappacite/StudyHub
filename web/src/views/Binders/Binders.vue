@@ -1,6 +1,6 @@
 <template>
   <PageContainer size="wide">
-    <PageHeader :title="pageTitle" :breadcrumbs="breadcrumbItems">
+    <PageHeader :title="pageTitle" :subtitle="rootSubtitle" :breadcrumbs="breadcrumbItems">
       <template #actions>
         <!-- Racine (currentBinderId === null) : aucun onglet/contenu typé n'a de
              sens ici (rien de typé ne peut s'attacher a binder_id === null tant
@@ -207,6 +207,7 @@
             :note-count="cardAggregate(child).noteCount"
             :last-activity-label="cardAggregate(child).lastActivityLabel"
             :tags="cardBinderProps(child).tags"
+            :accent="child.id === mostRecentEntryId"
             @click="goTo(child.id)"
           />
         </div>
@@ -668,6 +669,10 @@ export interface BinderAggregateResult {
   deckCount: number
   noteCount: number
   lastActivityLabel: string | null
+  // Date brute (ISO) derrière lastActivityLabel (Task 4, bibliotheque-notes-listes) --
+  // permet de comparer l'activité de plusieurs classeurs entre eux (quelle carte
+  // accentuer sur la grille) sans reparser un libellé déjà formaté en français.
+  lastActivityIso: string | null
 }
 
 // Agrégat client-side pour une carte de classeur (Bibliothèque, Task 1) : nombre de
@@ -694,10 +699,13 @@ export function binderAggregate(
     ...binderDecks.map((d) => d.created_at),
   ].filter((d): d is string => Boolean(d))
 
+  const mostRecent = dates.length ? dates.sort().reverse()[0] : null
+
   return {
     deckCount: binderDecks.length,
     noteCount: binderNotes.length,
-    lastActivityLabel: dates.length ? formatDayDiffLabel(dates.sort().reverse()[0]) : null,
+    lastActivityLabel: mostRecent ? formatDayDiffLabel(mostRecent) : null,
+    lastActivityIso: mostRecent,
   }
 }
 </script>
@@ -797,6 +805,21 @@ const pageTitle = computed(() => {
   if (currentBinderId.value === null) return 'Bibliothèque'
   const tab = contentTabs.value.find((t) => t.key === activeType.value)
   return tab?.label ?? 'Bibliothèque'
+})
+
+// Sous-titre agrégé (Task 3, bibliotheque-notes-listes) : "N classeurs · N notes · N decks"
+// sous le H1, uniquement sur la grille racine (Bibliotheque.dc.html). Total de bibliothèque
+// (tous les classeurs/notes/decks possédés par l'utilisateur) -- volontairement différent de
+// binderAggregate(), qui ne compte QUE le contenu directement attaché à un classeur donné
+// (décision actée dans le chantier bibliotheque-redesign) : ce sous-titre résume tout le
+// compte, pas un classeur particulier.
+const rootSubtitle = computed(() => {
+  if (currentBinderId.value !== null) return undefined
+  const binderCount = bindersStore.binders.length
+  const noteCount = notesStore.notes.length
+  const deckCount = decksStore.decks.length
+  const s = (n: number) => (n === 1 ? '' : 's')
+  return `${binderCount} classeur${s(binderCount)} · ${noteCount} note${s(noteCount)} · ${deckCount} deck${s(deckCount)}`
 })
 
 const primaryActionLabel = computed(() => {
@@ -1138,6 +1161,24 @@ function cardAggregate(entry: Binder | VirtualBinderEntry) {
   const id = isVirtualEntry(entry) ? null : entry.id
   return binderAggregate(id, decksStore.decks, notesStore.notes, revisionStore.sets)
 }
+
+// Carte accentuée (Task 4, bibliotheque-notes-listes) : Bibliotheque.dc.html accentue le
+// liseré gauche d'une seule carte au niveau courant -- la plus récemment active. Égalité :
+// le premier candidat rencontré l'emporte (comparaison stricte "supérieur à", pas
+// "supérieur ou égal"), sans signification produit particulière -- aucune maquette ne
+// montre deux cartes accentuées en même temps.
+const mostRecentEntryId = computed(() => {
+  let bestId: string | null = null
+  let bestIso: string | null = null
+  for (const entry of childrenAtCurrentLevel.value) {
+    const iso = cardAggregate(entry).lastActivityIso
+    if (iso && (bestIso === null || iso > bestIso)) {
+      bestIso = iso
+      bestId = entry.id
+    }
+  }
+  return bestId
+})
 
 // Les 3 filtres de contenu ci-dessous utilisent `filterBinderId`, PAS
 // `currentBinderId` — voir la définition de filterBinderId plus haut pour la

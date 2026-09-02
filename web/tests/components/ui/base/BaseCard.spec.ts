@@ -30,4 +30,16 @@ describe('BaseCard', () => {
     const flat = mount(BaseCard)
     expect(flat.classes()).not.toContain('hover:shadow-elev-2')
   })
+
+  // radius="bristol" (Task 4, bibliotheque-notes-listes) : rayon 4px des "bandeaux fiche
+  // bristol" (skill design-system, § Rayons) -- BinderCard.vue en est le premier
+  // consommateur. Défaut inchangé pour les 22 autres consommateurs de BaseCard.
+  it('applique rounded-lg par défaut, rounded avec radius="bristol"', () => {
+    const wrapper = mount(BaseCard)
+    expect(wrapper.classes()).toContain('rounded-lg')
+
+    const bristol = mount(BaseCard, { props: { radius: 'bristol' } })
+    expect(bristol.classes()).toContain('rounded')
+    expect(bristol.classes()).not.toContain('rounded-lg')
+  })
 })

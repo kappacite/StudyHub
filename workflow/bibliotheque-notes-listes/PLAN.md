@@ -9,9 +9,9 @@ plus local (lignes), puis vérification visuelle réelle.
 - [x] Task 2 — `Binders.vue` en-tête : titre dynamique « Notes » / « Révision » selon
   l'onglet dans un classeur (« Bibliothèque » à la racine), sur-titre mono majuscule à la
   place du fil d'Ariane texte, un seul bouton primaire visible, le reste replié dans un menu.
-- [ ] Task 3 — `Binders.vue` racine : sous-titre `N classeurs · N notes · N decks` sur le
+- [x] Task 3 — `Binders.vue` racine : sous-titre `N classeurs · N notes · N decks` sur le
   `PageHeader` (agrégation client-side, même principe que `cardAggregate`).
-- [ ] Task 4 — `BinderCard.vue` : liseré gauche 4px + rayon 4px, densité verticale alignée
+- [x] Task 4 — `BinderCard.vue` : liseré gauche 4px + rayon 4px, densité verticale alignée
   sur la maquette. Rebrancher l'accentuation de la carte la plus récemment active.
 - [ ] Task 5 — Lignes de notes : extrait tronqué (1 ligne, depuis `content`), pastille de tag,
   date relative alignée à droite (réutiliser `formatDayDiffLabel` déjà dans `Binders.vue`),

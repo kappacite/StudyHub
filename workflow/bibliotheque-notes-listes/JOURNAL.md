@@ -110,5 +110,48 @@ lui-même, hors périmètre de ce chantier — à signaler si le hook doit être
 (délimiter la recherche par le sous-dossier miroir attendu, `views/` ici, pas une recherche
 plate sur tout `web/tests`).
 
-Commit : (ce commit). Prochain : Task 3 (sous-titre `N classeurs · N notes · N decks` sur
-`PageHeader` à la racine).
+Commit : `63bbadf`.
+
+## 2026-09-03 — Task 3 : sous-titre agrégé sur la grille racine
+
+`rootSubtitle` (computed) : `N classeur(s) · N note(s) · N deck(s)`, `undefined` dès qu'on
+est dans un classeur (`PageHeader` ne rend rien dans ce cas — pas besoin d'un `v-if`
+supplémentaire côté template). Volontairement **total de bibliothèque** (tous les
+classeurs/notes/decks possédés), pas la somme des cartes visibles : `binderAggregate()`
+compte le contenu directement attaché à UN classeur (décision actée par
+`bibliotheque-redesign`), ce sous-titre résume l'ensemble du compte — les deux logiques
+coexistent sans se contredire, documenté en commentaire pour ne pas les confondre plus tard.
+
+TDD : 2 tests (présence à la racine avec le bon compte depuis les fixtures existantes,
+absence dans un classeur). Rouge vérifié, puis implémentation.
+
+Commit : `<voir historique>`.
+
+## 2026-09-03 — Task 4 : liseré + rayon de `BinderCard`, accent de la carte active
+
+`BaseCard.vue` gagne une prop `radius` (`'card'` défaut inchangé = `rounded-lg`, `'bristol'`
+nouveau = `rounded`, vocabulaire repris du skill `design-system` § Rayons — "bandeaux fiche
+bristol"). Changement additif, défaut préservé pour les 22 autres consommateurs de
+`BaseCard`. `BinderCard.vue` : `radius="bristol"` + liseré gauche 4px sur **chaque** carte
+(neutre `border-l-line` par défaut, `border-l-accent` si la nouvelle prop `accent` est
+vraie) — Bibliotheque.dc.html accentue une seule carte (la plus récemment active), pas de
+liseré conditionnellement absent comme l'ancien `highlighted` mort qui avait été retiré en
+revue finale de `bibliotheque-redesign`.
+
+Le choix de QUELLE carte accentuer reste dans `Binders.vue` (composant présentationnel pur,
+convention déjà établie) : `BinderAggregateResult` gagne un champ `lastActivityIso` (date
+brute à côté du libellé déjà formaté `lastActivityLabel`) pour permettre la comparaison
+entre classeurs sans reparser un libellé français ; `mostRecentEntryId` (computed) retient
+le premier candidat au max de `lastActivityIso` parmi `childrenAtCurrentLevel` (égalité :
+le premier rencontré l'emporte, sans signification produit -- aucune maquette ne montre deux
+cartes accentuées à la fois).
+
+TDD complet (BaseCard, BinderCard, binderAggregate, câblage Binders.vue). Suite complète :
+525/525, `vue-tsc -b` propre.
+
+Note d'outillage (confirme l'entrée Task 2) : le même contournement `tdd_guard.py`
+(toucher le mtime de `web/tests/stores/binders.spec.ts` avant chaque édition de
+`Binders.vue`) a été nécessaire à répétition sur cette tâche — le problème est systématique,
+pas un incident isolé.
+
+Commit : (ce commit). Prochain : Task 5 (lignes de notes -- extrait, tag, date, globe).

@@ -132,6 +132,17 @@ describe('Binders — racine : grille de classeurs uniquement', () => {
     expect(text).not.toContain('Sous-classeurs')
   })
 
+  // Task 3 (bibliotheque-notes-listes) : Bibliotheque.dc.html affiche "6 classeurs · 214
+  // notes · 38 decks" sous le H1 -- total de bibliothèque (tous classeurs/notes/decks
+  // possédés), PAS la somme des cartes visibles (qui sont non-récursives, cf.
+  // binderAggregate). Fixture : BINDER + SUBBINDER = 2 classeurs, NOTE_UNCLASSIFIED +
+  // NOTE_B1 = 2 notes, DECK = 1 deck.
+  it('affiche le sous-titre agrégé "N classeurs · N notes · N decks" sous le H1', async () => {
+    const { wrapper } = await mountBinders(null)
+
+    expect(wrapper.text()).toContain('2 classeurs · 2 notes · 1 deck')
+  })
+
   // Régression revue finale (item 1) : BinderCard n'affichait plus du tout les tags
   // du classeur (TagBadge retiré lors de la refonte SplitView -> grille). BINDER
   // porte un tag ('Urgent') précisément pour ce test.
@@ -161,6 +172,22 @@ describe('Binders — racine : grille de classeurs uniquement', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.fullPath).toBe('/bibliotheque/non-classe')
+  })
+
+  // Task 4 (bibliotheque-notes-listes) : Bibliotheque.dc.html accentue le liseré gauche
+  // d'une seule carte (la plus récemment active), toutes les autres restent neutres.
+  it('accentue exactement une carte quand plusieurs cartes ont une activité', async () => {
+    const { wrapper } = await mountBinders(null)
+
+    // b1 (NOTE_B1, updated_at NOW) et "Non classé" (NOTE_UNCLASSIFIED, updated_at NOW)
+    // ont chacune une activité -- peu importe laquelle des deux gagne l'égalité, une
+    // seule doit être accentuée.
+    const chimie = findCard(wrapper, 'Chimie organique')!
+    const nonClasse = findCard(wrapper, 'Non classé')!
+    const accentedCount = [chimie, nonClasse].filter((c) =>
+      c.classes().includes('border-l-accent'),
+    ).length
+    expect(accentedCount).toBe(1)
   })
 })
 
@@ -327,6 +354,12 @@ describe('Binders — en-tête (Task 2, bibliotheque-notes-listes)', () => {
     await clickTab(wrapper, 'Autres')
     await flushPromises()
     expect(wrapper.find('h1').text()).toBe('Autres')
+  })
+
+  it('sous-titre agrégé absent à l\'intérieur d\'un classeur (uniquement sur la grille racine)', async () => {
+    const { wrapper } = await mountBinders('b1')
+
+    expect(wrapper.text()).not.toContain('classeurs ·')
   })
 
   it('en-tête réduite à 3 contrôles visibles (primaire, Ajouter, …) au lieu de 7', async () => {
@@ -518,6 +551,14 @@ describe('binderAggregate', () => {
     expect(result.lastActivityLabel).toBe("aujourd'hui")
   })
 
+  // lastActivityIso (Task 4, bibliotheque-notes-listes) : date brute de l'activité la plus
+  // récente, à côté du libellé déjà formaté -- nécessaire pour comparer plusieurs classeurs
+  // entre eux (quelle carte accentuer sur la grille) sans reparser un libellé français.
+  it('expose la date brute (ISO) de l\'activité retenue, pas seulement son libellé', () => {
+    const result = binderAggregate('b1', decks, notes, sets)
+    expect(result.lastActivityIso).toBe(NOW_ISO)
+  })
+
   it('formate "hier" pour un ensemble de révision mis à jour il y a environ 25h', () => {
     const result = binderAggregate('b-yesterday', decks, notes, sets)
     expect(result.lastActivityLabel).toBe('hier')
@@ -533,6 +574,11 @@ describe('binderAggregate', () => {
 
   it('retourne un libellé null (pas de date fabriquée) pour un classeur sans aucun enfant', () => {
     const result = binderAggregate('b-empty', decks, notes, sets)
-    expect(result).toEqual({ deckCount: 0, noteCount: 0, lastActivityLabel: null })
+    expect(result).toEqual({
+      deckCount: 0,
+      noteCount: 0,
+      lastActivityLabel: null,
+      lastActivityIso: null,
+    })
   })
 })
