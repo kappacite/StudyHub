@@ -643,12 +643,37 @@ describe('Binders — bascule Notes/Revision/Autres', () => {
     expect(router.currentRoute.value.fullPath).toBe('/revision/sets/7/stats')
   })
 
-  it("non-regression : le filtre par tag reste visible quel que soit l'onglet", async () => {
-    const { wrapper } = await mountBinders()
-    expect(wrapper.text()).toContain('Filtrer')
+  // Task 8 (bibliotheque-notes-listes) : la barre "Filtrer" appelle
+  // bindersStore.fetchBinders(tagId), qui ne change que la grille de classeurs de la
+  // racine -- elle n'a AUCUN effet visible une fois "dans" un classeur (les notes/
+  // ensembles affichés ne sont jamais refiltrés par elle). L'afficher quand même sur ces
+  // écrans (comportement précédent, seul testé jusqu'ici) est un bug latent, pas une
+  // fonctionnalité à préserver : ni Bibliotheque.dc.html ni Notes.dc.html ne montrent
+  // cette barre nulle part -- remplace l'ancien test "reste visible quel que soit
+  // l'onglet", qui vérifiait justement ce comportement erroné.
+  it("n'affiche la barre de filtre que sur la grille racine, jamais à l'intérieur d'un classeur", async () => {
+    const { wrapper, tagsStore } = await mountBinders()
+    tagsStore.tags = [{ id: 5, name: 'Urgent', color: '#4F46E5', created_at: '' }]
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Filtrer')
     await clickTab(wrapper, 'Révision')
     await flushPromises()
+    expect(wrapper.text()).not.toContain('Filtrer')
+  })
+
+  it("n'affiche pas la barre de filtre à la racine tant qu'aucun tag n'existe", async () => {
+    const { wrapper } = await mountBinders(null)
+    expect(wrapper.text()).not.toContain('Filtrer')
+  })
+
+  it('affiche la barre de filtre à la racine dès qu\'au moins un tag existe', async () => {
+    const { wrapper, tagsStore } = await mountBinders(null)
+    tagsStore.tags = [{ id: 5, name: 'Urgent', color: '#4F46E5', created_at: '' }]
+    await flushPromises()
+
     expect(wrapper.text()).toContain('Filtrer')
+    expect(wrapper.text()).toContain('Urgent')
   })
 })
 

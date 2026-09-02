@@ -233,4 +233,30 @@ niveau racine vs à l'intérieur d'un classeur). Rouge vérifié. Suite complèt
 `vue-tsc -b` propre. Vérifié visuellement : colonne centrée, nettement plus proche de la
 maquette qu'avant (les lignes ne s'étirent plus sur toute la largeur de l'écran).
 
-Commit : (ce commit). Prochain : Task 8 (barre de filtre par tags).
+Commit : `f856d39`.
+
+## 2026-09-03 — Task 8 : barre de filtre par tags
+
+Le PLAN posait un choix ouvert (« décider entre repli dans l'en-tête et affichage
+conditionnel »). Tranché par la lecture du code plutôt qu'en le redemandant : `filterByTag()`
+appelle `bindersStore.fetchBinders(tagId)`, qui ne filtre QUE la liste des classeurs de la
+grille racine -- elle n'a strictement aucun effet visible une fois « dans » un classeur.
+Or la barre s'affichait jusqu'ici sur tous les écrans, y compris les onglets Notes/
+Révision/Autres d'un classeur, où cliquer un tag ne change rien à l'écran (bug latent, pas
+une fonctionnalité à préserver). « Affichage conditionnel » est donc la lecture correcte,
+pas juste l'option la plus simple : « repli dans l'en-tête » aurait fallu, de toute façon,
+être limité à la racine pour rester cohérent avec l'effet réel du filtre.
+
+Barre affichée seulement si `currentBinderId === null && tagsStore.tags.length > 0`
+(les deux volets de la question posée par le PLAN sont couverts : hors de la bande pleine
+largeur d'un classeur, et conditionnée sur l'existence de tags).
+
+TDD : l'ancien test « reste visible quel que soit l'onglet » vérifiait justement le
+comportement à corriger -- remplacé par 3 tests (absence dans un classeur même avec des
+tags existants, absence à la racine sans tag, présence à la racine avec au moins un tag).
+Tags injectés directement sur `tagsStore.tags` dans le test (mock `/tags` toujours vide
+dans les fixtures partagées, plus simple que de dupliquer `makeGetImpl` pour ce seul cas).
+Rouge vérifié. Suite complète : 537/537, `vue-tsc -b` propre.
+
+Commit : (ce commit). Prochain, dernière tâche : Task 9 (vérification visuelle complète +
+non-régression finale).

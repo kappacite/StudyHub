@@ -12,6 +12,11 @@ Chantier actif : bibliotheque-notes-listes
 
 ## Historique
 
+- 2026-09-03 — [bibliotheque-notes-listes] Task 8 (barre de filtre par tags -- conditionnée
+  à la racine, corrige un bug latent où elle s'affichait sans effet dans un classeur)
+  terminée. 537/537 tests, `vue-tsc` propre. Prochain, dernière tâche : Task 9 (vérification
+  visuelle complète + non-régression finale).
+
 - 2026-09-03 — [bibliotheque-notes-listes] Task 7 (largeur : colonne étroite dans un
   classeur, grille racine inchangée) terminée. 535/535 tests, `vue-tsc` propre, vérifié
   visuellement. Prochain : Task 8 (barre de filtre par tags).

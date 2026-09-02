@@ -21,7 +21,7 @@ plus local (lignes), puis vérification visuelle réelle.
   supprimer repliés dans un menu par ligne, phrase d'explication au-dessus de la liste.
 - [x] Task 7 — Largeur : 920px pour la liste de contenu dans un classeur, grille racine
   inchangée (`wide`). Vérifier qu'aucun autre consommateur de `PageContainer` ne change.
-- [ ] Task 8 — Barre de filtre par tags : la sortir de la bande pleine largeur (absente de la
+- [x] Task 8 — Barre de filtre par tags : la sortir de la bande pleine largeur (absente de la
   maquette) sans perdre la fonctionnalité — décider entre repli dans l'en-tête et affichage
   conditionnel (uniquement si des tags existent).
 - [ ] Task 9 — Vérification visuelle réelle contre les maquettes (racine / classeur Notes /

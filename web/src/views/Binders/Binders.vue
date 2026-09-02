@@ -108,8 +108,16 @@
       </template>
     </PageHeader>
 
-    <!-- Filtre par tags -->
-    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface p-3">
+    <!-- Filtre par tags (Task 8, bibliotheque-notes-listes) : uniquement sur la grille
+         racine, là où filterByTag() a un effet visible (bindersStore.fetchBinders(tagId)
+         ne filtre que la liste des classeurs, jamais le contenu affiché à l'intérieur d'un
+         classeur) -- l'afficher aussi à l'intérieur d'un classeur était un bug latent (barre
+         sans effet), pas une fonctionnalité, cf. commentaire du test associé. Conditionné
+         en plus sur la présence d'au moins un tag (rien à filtrer sinon). -->
+    <div
+      v-if="currentBinderId === null && tagsStore.tags.length > 0"
+      class="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface p-3"
+    >
       <span class="text-xs font-bold uppercase tracking-wider text-ink-subtle">Filtrer</span>
       <button
         type="button"
