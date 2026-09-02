@@ -102,3 +102,19 @@ persistantes du chantier comme l'exigeait le plan. Corrigé : paragraphe ajouté
 `NoteEvaluationModal.vue`, hors périmètre des tâches concernées, déjà repérées comme motifs
 préexistants partagés avec d'autres écrans) — aucune action requise, notées pour un futur audit
 de tokens couleur. Chantier prêt pour clôture (push + PR).
+
+## 2026-09-02 (CI rouge après ouverture de la PR #138, corrigé)
+
+La CI GitHub Actions de la PR #138 est passée rouge sur le job E2E (Playwright) :
+`web/tests-e2e/note-navigation.spec.ts` n'avait pas été mis à jour par la Tâche 4 et testait
+encore l'ancienne modale « Réviser avec l'IA » (bouton disparu) et son activité « QCM » (retirée
+du panneau par décision de conception, cf. Tâche 4). Gap de process : `npx vitest run` (lancé à
+chaque tâche et en clôture) ne couvre pas `tests-e2e/`, une suite Playwright séparée que la CI
+seule exécute — jamais relancée pendant ce chantier.
+
+Corrigé : le test « Page blanche » renommé/adapté (clique directement le bouton de la sidebar
+« Méthode de la feuille blanche », plus de modale à ouvrir) ; le test « QCM » remplacé par
+« Méthode Feynman » (l'activité qui a remplacé QCM dans le panneau) plutôt que supprimé, pour
+garder une couverture E2E des 2/3 méthodes restantes en plus de l'évaluation mixte. Suite complète
+relancée localement (`npx playwright test`) : 23/23 verts. `npx vitest run` et `vue-tsc -b`
+revérifiés après coup : toujours 508/508 et propre.
