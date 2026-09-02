@@ -30,6 +30,26 @@
       >
     </div>
 
+    <!-- Error State — échec du chargement initial -->
+    <div
+      v-else-if="loadError"
+      class="flex-1 flex items-center justify-center py-20 px-4 no-print h-full w-full"
+    >
+      <div class="w-full max-w-md">
+        <BaseCard padding="none">
+          <BaseEmptyState
+            title="Le chargement a échoué"
+            description="Cette note n'a pas pu être récupérée. Vérifiez votre connexion et réessayez."
+          >
+            <template #icon><AlertCircle class="w-8 h-8 text-danger" /></template>
+            <template #actions>
+              <BaseButton @click="loadNoteDetails">Réessayer</BaseButton>
+            </template>
+          </BaseEmptyState>
+        </BaseCard>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <div
       v-else
@@ -103,7 +123,7 @@
                     v-model="title"
                     type="text"
                     placeholder="Titre de la note..."
-                    class="block flex-1 max-w-xl text-lg font-bold bg-transparent border-0 focus:ring-0 focus:outline-none placeholder-slate-300 dark:placeholder-slate-700 py-1"
+                    class="block flex-1 max-w-xl text-lg font-bold bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-ink-subtle py-1"
                     @input="triggerAutoSave"
                   />
                 </div>
@@ -217,14 +237,14 @@
                             <X class="w-4 h-4" />
                           </button>
                         </div>
-                        <p class="text-[11px] text-ink-muted dark:text-ink-subtle mb-3">
+                        <p class="text-xs text-ink-muted dark:text-ink-subtle mb-3">
                           Toute personne avec ce lien peut lire cette note.
                         </p>
                         <div
                           class="flex items-center gap-2 bg-surface-soft dark:bg-surface-soft rounded-xl px-3 py-2"
                         >
                           <span
-                            class="text-[10px] font-mono text-ink-muted dark:text-ink-subtle flex-1 truncate"
+                            class="text-tiny font-mono text-ink-muted dark:text-ink-subtle flex-1 truncate"
                             >{{ shareUrl }}</span
                           >
                           <button
@@ -260,7 +280,7 @@
               <div
                 class="flex flex-wrap items-center gap-1.5 px-6 py-2 bg-surface-soft dark:bg-surface-soft"
               >
-                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2"
+                <span class="text-tiny font-bold text-ink-subtle uppercase tracking-wider px-2"
                   >Format</span
                 >
                 <button
@@ -276,7 +296,7 @@
 
                 <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
 
-                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2"
+                <span class="text-tiny font-bold text-ink-subtle uppercase tracking-wider px-2"
                   >LaTeX</span
                 >
                 <button
@@ -292,7 +312,7 @@
 
                 <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
 
-                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider px-2"
+                <span class="text-tiny font-bold text-ink-subtle uppercase tracking-wider px-2"
                   >Code</span
                 >
                 <button
@@ -395,7 +415,7 @@
                     <span
                       v-for="linkedId in noteLinks"
                       :key="linkedId"
-                      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface border border-line dark:bg-surface-soft dark:border-line text-ink dark:text-ink-subtle text-[11px] font-semibold rounded-lg shadow-sm"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-surface border border-line dark:bg-surface-soft dark:border-line text-ink dark:text-ink-subtle text-tiny font-semibold rounded-lg shadow-sm"
                     >
                       {{ getNoteTitle(linkedId) }}
                       <button
@@ -441,7 +461,7 @@
               >
                 <div class="border-b border-line dark:border-line pb-3 mb-6 no-print">
                   <span
-                    class="text-[10px] font-extrabold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider"
+                    class="text-tiny font-extrabold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider"
                     >Aperçu en temps réel</span
                   >
                 </div>
@@ -456,8 +476,10 @@
             class="flex-1 bg-surface-soft dark:bg-[#070913] py-10 px-4 md:px-8 print:p-0 print:bg-surface w-full"
           >
             <!-- Top Bar Actions inside Preview page sheet (Centered wrapper) -->
-            <div class="max-w-4xl mx-auto flex items-center justify-between no-print mb-6">
-              <div class="flex items-center gap-4">
+            <div
+              class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-y-3 no-print mb-6"
+            >
+              <div class="flex flex-wrap items-center gap-4">
                 <button
                   class="text-sm font-semibold text-ink-muted hover:text-primary dark:text-ink-subtle dark:hover:text-primary flex items-center gap-1"
                   @click="goBack"
@@ -498,16 +520,7 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-3">
-                <!-- Réviser avec l'IA (regroupe Page blanche / QCM / Évaluation) -->
-                <button
-                  class="inline-flex items-center gap-2 px-4 py-2 border border-primary dark:border-primary rounded-xl text-sm font-semibold text-primary dark:text-primary hover:bg-primary-soft dark:hover:bg-primary-soft active:scale-95 transition-all"
-                  @click="showAiModal = true"
-                >
-                  <Sparkles class="w-4 h-4 text-primary" />
-                  Réviser avec l'IA
-                </button>
-
+              <div class="flex flex-wrap items-center gap-3">
                 <!-- View Mode Toggler -->
                 <button
                   class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink dark:text-ink-subtle"
@@ -538,663 +551,262 @@
               </div>
             </div>
 
-            <!-- Cohesive Paper Sheet -->
-            <div
-              class="max-w-4xl mx-auto bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 lg:p-12 shadow-xl shadow-soft-lg dark:shadow-soft-lg space-y-6 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black"
-            >
-              <!-- PRINT-ONLY DEDICATED HEADER -->
+            <!-- Fiche + sidebar Assistant IA / Métadonnées (mode lecture uniquement) -->
+            <div class="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 lg:items-start">
+              <!-- Cohesive Paper Sheet -->
               <div
-                v-if="pdfExportOptions.includeHeader"
-                class="hidden print:block print-header-banner mb-6 pb-4 border-b-2 border-slate-900"
+                class="flex-1 min-w-0 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 lg:p-12 shadow-xl shadow-soft-lg dark:shadow-soft-lg space-y-6 print:border-none print:shadow-none print:p-0 print:bg-white print:text-black"
               >
-                <div class="flex items-center justify-between mb-3 text-xs text-slate-500">
-                  <div
-                    v-if="getBinderName(binderId)"
-                    class="font-bold text-slate-900 uppercase tracking-wider"
-                  >
-                    {{ getBinderName(binderId) }}
-                  </div>
-                  <div class="text-[11px] font-medium text-slate-500">
-                    {{ currentExportDateFormatted }}
-                  </div>
-                </div>
-
-                <h1
-                  class="text-3xl font-extrabold text-slate-950 tracking-tight leading-tight mb-2"
+                <!-- Fil d'ariane (canevas Direction A) -->
+                <nav
+                  class="flex items-center gap-1.5 font-mono text-tiny tracking-wide text-ink-muted uppercase no-print"
+                  aria-label="Fil d'ariane"
                 >
-                  {{ title || 'Note sans titre' }}
-                </h1>
+                  <span>Bibliothèque</span>
+                  <span aria-hidden="true">/</span>
+                  <span>{{ getBinderName(binderId) }}</span>
+                  <span aria-hidden="true">/</span>
+                  <span>Notes</span>
+                </nav>
 
-                <div v-if="noteTags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
-                  <span
-                    v-for="tag in noteTags"
-                    :key="tag.id"
-                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300"
-                  >
-                    #{{ tag.name }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Screen Note Title (Hidden in print if print header banner is enabled) -->
-              <div
-                :class="[
-                  'border-b border-line dark:border-line pb-6 print:mb-4',
-                  pdfExportOptions.includeHeader ? 'print:hidden' : '',
-                ]"
-              >
-                <h1 class="text-3xl font-extrabold text-ink dark:text-white print:text-black">
-                  {{ title || 'Note sans titre' }}
-                </h1>
-                <div class="flex items-center gap-3 mt-3 no-print">
-                  <span class="text-xs font-semibold text-ink-subtle uppercase tracking-wider"
-                    >Classeur :</span
-                  >
-                  <span
-                    class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary uppercase tracking-wider"
-                  >
-                    {{ getBinderName(binderId) }}
-                  </span>
-                  <TagBadge v-for="tag in noteTags" :key="tag.id" :tag="tag" />
-                </div>
-              </div>
-
-              <!-- PRINT-ONLY TABLE OF CONTENTS -->
-              <div
-                v-if="pdfExportOptions.includeToc && extractedHeadings.length > 0"
-                class="hidden print:block print-toc-block bg-slate-50 border border-slate-300 rounded-xl p-5 mb-6 break-inside-avoid"
-              >
+                <!-- PRINT-ONLY DEDICATED HEADER -->
                 <div
-                  class="text-xs font-black uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2 border-b border-slate-200 pb-2"
+                  v-if="pdfExportOptions.includeHeader"
+                  class="hidden print:block print-header-banner mb-6 pb-4 border-b-2 border-slate-900"
                 >
-                  <span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span>
-                  Sommaire de la note
-                </div>
-                <div class="space-y-1 text-xs">
-                  <div
-                    v-for="(h, idx) in extractedHeadings"
-                    :key="idx"
-                    :class="[
-                      'flex items-center justify-between',
-                      h.level === 1 ? 'font-bold text-slate-900 pt-1' : '',
-                      h.level === 2 ? 'font-semibold text-slate-800 pl-4' : '',
-                      h.level === 3 ? 'text-slate-600 pl-8 text-[11px]' : '',
-                    ]"
-                  >
-                    <span>• {{ h.text }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 1. Context Block -->
-              <div
-                v-if="noteContext && pdfExportOptions.includeContext"
-                class="bg-warning-soft border-l-4 border-warning rounded-r-2xl p-5 dark:bg-warning-soft dark:border-warning print:bg-[#fffbeb] print:border-warning print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
-              >
-                <h3
-                  class="text-xs font-bold text-warning dark:text-warning flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-amber-900"
-                >
-                  <Compass class="w-4 h-4" />
-                  Contexte de la note
-                </h3>
-                <div
-                  v-dompurify-html="renderMarkup(noteContext)"
-                  class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
-                ></div>
-              </div>
-
-              <!-- Legacy Definitions Block -->
-              <div
-                v-if="noteDefinition"
-                class="bg-success-soft border-l-4 border-success rounded-r-2xl p-5 dark:bg-success-soft dark:border-success print:bg-[#ecfdf5] print:border-success print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
-              >
-                <h3
-                  class="text-xs font-bold text-success dark:text-success flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-emerald-900"
-                >
-                  <BookOpen class="w-4 h-4" />
-                  Définitions clés (Legacy)
-                </h3>
-                <div
-                  v-dompurify-html="renderMarkup(noteDefinition)"
-                  class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
-                ></div>
-              </div>
-
-              <!-- 2. Main Note Content Block -->
-              <div
-                class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-ink-subtle print:text-black markdown-body"
-                @click="handleMarkdownClick"
-              >
-                <div v-dompurify-html="renderMarkup(noteBody)"></div>
-              </div>
-
-              <!-- PRINT-ONLY DEFINITIONS GLOSSARY -->
-              <div
-                v-if="pdfExportOptions.includeGlossary && extractedDefinitions.length > 0"
-                class="hidden print:block print-glossary-block border-t-2 border-slate-900 pt-6 mt-8 break-inside-avoid"
-              >
-                <h3
-                  class="text-sm font-extrabold uppercase tracking-wider text-slate-950 mb-3 flex items-center gap-2"
-                >
-                  <BookOpen class="w-4.5 h-4.5 text-emerald-600 inline-block" />
-                  Index des Définitions Clés
-                </h3>
-                <div class="grid grid-cols-2 gap-3 text-xs">
-                  <div
-                    v-for="item in extractedDefinitions"
-                    :key="item.term"
-                    class="p-3 bg-slate-50 border border-slate-300 rounded-lg"
-                  >
-                    <div class="font-bold text-slate-950 border-b border-slate-200 pb-1 mb-1">
-                      {{ item.term }}
+                  <div class="flex items-center justify-between mb-3 text-xs text-slate-500">
+                    <div
+                      v-if="getBinderName(binderId)"
+                      class="font-bold text-slate-900 uppercase tracking-wider"
+                    >
+                      {{ getBinderName(binderId) }}
                     </div>
-                    <div class="text-slate-800 text-[11px] leading-relaxed">{{ item.def }}</div>
+                    <div class="text-[11px] font-medium text-slate-500">
+                      {{ currentExportDateFormatted }}
+                    </div>
+                  </div>
+
+                  <h1
+                    class="text-3xl font-extrabold text-slate-950 tracking-tight leading-tight mb-2"
+                  >
+                    {{ title || 'Note sans titre' }}
+                  </h1>
+
+                  <div v-if="noteTags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                    <span
+                      v-for="tag in noteTags"
+                      :key="tag.id"
+                      class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300"
+                    >
+                      #{{ tag.name }}
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              <!-- 3. Linked Notes Block -->
-              <div
-                v-if="noteLinks.length > 0"
-                class="border-t border-line dark:border-line pt-6 no-print"
-              >
-                <h3
-                  class="text-xs font-bold text-ink-subtle uppercase tracking-wider flex items-center gap-1.5 mb-3"
+                <!-- Screen Note Title (Hidden in print if print header banner is enabled) -->
+                <div
+                  :class="[
+                    'border-b border-line dark:border-line pb-6 print:mb-4',
+                    pdfExportOptions.includeHeader ? 'print:hidden' : '',
+                  ]"
                 >
-                  <LinkIcon class="w-4.5 h-4.5 text-primary" />
-                  Notes liées
-                </h3>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="linkedId in noteLinks"
-                    :key="linkedId"
-                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl transition-all text-xs font-semibold"
-                    @click="navigateToNote(linkedId)"
+                  <div class="flex items-start justify-between gap-4">
+                    <h1 class="text-3xl font-extrabold text-ink print:text-black">
+                      {{ title || 'Note sans titre' }}
+                    </h1>
+
+                    <!-- Notation : désactivé, en attente du backend de notation IA (flux 2). -->
+                    <button
+                      type="button"
+                      class="no-print shrink-0 inline-flex items-center gap-2 px-4 py-2 border border-accent dark:border-accent rounded-xl text-sm font-semibold text-accent dark:text-accent opacity-60 cursor-not-allowed"
+                      disabled
+                      title="Bientôt disponible : nécessite le backend de notation IA (non encore livré)."
+                    >
+                      <Star class="w-4 h-4" />
+                      Notation
+                    </button>
+                  </div>
+                  <div class="flex items-center gap-3 mt-3 no-print">
+                    <span class="text-xs font-semibold text-ink-subtle uppercase tracking-wider"
+                      >Classeur :</span
+                    >
+                    <span
+                      class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary uppercase tracking-wider"
+                    >
+                      {{ getBinderName(binderId) }}
+                    </span>
+                    <TagBadge v-for="tag in noteTags" :key="tag.id" :tag="tag" />
+                  </div>
+                </div>
+
+                <!-- PRINT-ONLY TABLE OF CONTENTS -->
+                <div
+                  v-if="pdfExportOptions.includeToc && extractedHeadings.length > 0"
+                  class="hidden print:block print-toc-block bg-slate-50 border border-slate-300 rounded-xl p-5 mb-6 break-inside-avoid"
+                >
+                  <div
+                    class="text-xs font-black uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2 border-b border-slate-200 pb-2"
                   >
-                    <span>{{ getNoteTitle(linkedId) }}</span>
-                    <ChevronRight class="w-3.5 h-3.5 text-ink-subtle" />
-                  </button>
+                    <span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span>
+                    Sommaire de la note
+                  </div>
+                  <div class="space-y-1 text-xs">
+                    <div
+                      v-for="(h, idx) in extractedHeadings"
+                      :key="idx"
+                      :class="[
+                        'flex items-center justify-between',
+                        h.level === 1 ? 'font-bold text-slate-900 pt-1' : '',
+                        h.level === 2 ? 'font-semibold text-slate-800 pl-4' : '',
+                        h.level === 3 ? 'text-slate-600 pl-8 text-[11px]' : '',
+                      ]"
+                    >
+                      <span>• {{ h.text }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 1. Context Block -->
+                <div
+                  v-if="noteContext && pdfExportOptions.includeContext"
+                  class="bg-warning-soft border-l-4 border-warning rounded-r-2xl p-5 dark:bg-warning-soft dark:border-warning print:bg-[#fffbeb] print:border-warning print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
+                >
+                  <h3
+                    class="text-xs font-bold text-warning dark:text-warning flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-amber-900"
+                  >
+                    <Compass class="w-4 h-4" />
+                    Contexte de la note
+                  </h3>
+                  <div
+                    v-dompurify-html="renderMarkup(noteContext)"
+                    class="prose prose-amber max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
+                  ></div>
+                </div>
+
+                <!-- Legacy Definitions Block -->
+                <div
+                  v-if="noteDefinition"
+                  class="bg-success-soft border-l-4 border-success rounded-r-2xl p-5 dark:bg-success-soft dark:border-success print:bg-[#ecfdf5] print:border-success print:my-4 print:p-4 print:rounded-r-xl break-inside-avoid"
+                >
+                  <h3
+                    class="text-xs font-bold text-success dark:text-success flex items-center gap-1.5 uppercase tracking-wider mb-2 print:text-emerald-900"
+                  >
+                    <BookOpen class="w-4 h-4" />
+                    Définitions clés (Legacy)
+                  </h3>
+                  <div
+                    v-dompurify-html="renderMarkup(noteDefinition)"
+                    class="prose prose-emerald max-w-none text-xs leading-relaxed dark:prose-invert print:text-black"
+                  ></div>
+                </div>
+
+                <!-- 2. Main Note Content Block -->
+                <div
+                  class="prose prose-slate max-w-none dark:prose-invert leading-relaxed text-sm dark:text-ink-subtle print:text-black markdown-body"
+                  @click="handleMarkdownClick"
+                >
+                  <div v-dompurify-html="renderMarkup(noteBody)"></div>
+                </div>
+
+                <!-- PRINT-ONLY DEFINITIONS GLOSSARY -->
+                <div
+                  v-if="pdfExportOptions.includeGlossary && extractedDefinitions.length > 0"
+                  class="hidden print:block print-glossary-block border-t-2 border-slate-900 pt-6 mt-8 break-inside-avoid"
+                >
+                  <h3
+                    class="text-sm font-extrabold uppercase tracking-wider text-slate-950 mb-3 flex items-center gap-2"
+                  >
+                    <BookOpen class="w-4.5 h-4.5 text-emerald-600 inline-block" />
+                    Index des Définitions Clés
+                  </h3>
+                  <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div
+                      v-for="item in extractedDefinitions"
+                      :key="item.term"
+                      class="p-3 bg-slate-50 border border-slate-300 rounded-lg"
+                    >
+                      <div class="font-bold text-slate-950 border-b border-slate-200 pb-1 mb-1">
+                        {{ item.term }}
+                      </div>
+                      <div class="text-slate-800 text-[11px] leading-relaxed">{{ item.def }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. Linked Notes Block -->
+                <div
+                  v-if="noteLinks.length > 0"
+                  class="border-t border-line dark:border-line pt-6 no-print"
+                >
+                  <h3
+                    class="text-xs font-bold text-ink-subtle uppercase tracking-wider flex items-center gap-1.5 mb-3"
+                  >
+                    <LinkIcon class="w-4.5 h-4.5 text-primary" />
+                    Notes liées
+                  </h3>
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      v-for="linkedId in noteLinks"
+                      :key="linkedId"
+                      class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-soft hover:bg-primary-soft dark:bg-surface-soft dark:hover:bg-primary-soft border border-line dark:border-line rounded-xl transition-all text-xs font-semibold"
+                      @click="navigateToNote(linkedId)"
+                    >
+                      <span>{{ getNoteTitle(linkedId) }}</span>
+                      <ChevronRight class="w-3.5 h-3.5 text-ink-subtle" />
+                    </button>
+                  </div>
+                </div>
+
+                <!-- PRINT-ONLY FOOTER -->
+                <div
+                  v-if="pdfExportOptions.includeFooter"
+                  class="hidden print:flex print-footer-banner pt-6 mt-8 border-t border-slate-300 text-[10px] text-slate-500 justify-between items-center"
+                >
+                  <span>StudyHub • Document d'étude exporté en haute définition</span>
+                  <span>Fiche d'apprentissage</span>
                 </div>
               </div>
 
-              <!-- PRINT-ONLY FOOTER -->
-              <div
-                v-if="pdfExportOptions.includeFooter"
-                class="hidden print:flex print-footer-banner pt-6 mt-8 border-t border-slate-300 text-[10px] text-slate-500 justify-between items-center"
-              >
-                <span>StudyHub • Document d'étude exporté en haute définition</span>
-                <span>Fiche d'apprentissage</span>
-              </div>
+              <!-- Sidebar Assistant IA / Métadonnées (canevas Direction A) -->
+              <NoteSidebar
+                class="w-full lg:w-72 shrink-0 no-print"
+                :binder-name="getBinderName(binderId)"
+                :tags="noteTags"
+                :updated-at="noteUpdatedAt"
+                @start-activity="startAiActivity"
+              />
             </div>
           </div>
         </div>
       </div>
 
       <!-- Help Modal (Guide for Placeholders & Split Screen) -->
-      <transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 scale-95"
-        enter-to-class="opacity-100 scale-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100 scale-100"
-        leave-to-class="opacity-0 scale-95"
-      >
-        <div
-          v-if="showHelpModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
-        >
-          <div
-            class="bg-surface dark:bg-[#111827] border border-line dark:border-line rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 shadow-2xl flex flex-col justify-between"
-          >
-            <div class="space-y-6">
-              <!-- Header -->
-              <div
-                class="flex items-center justify-between border-b border-line dark:border-line pb-3"
-              >
-                <div class="flex items-center gap-2">
-                  <HelpCircle class="w-5 h-5 text-primary" />
-                  <h3 class="font-extrabold text-base text-ink dark:text-white">
-                    Guide d'utilisation StudyHub
-                  </h3>
-                </div>
-                <button
-                  class="p-1.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded-xl text-ink-subtle dark:text-ink-muted transition-colors"
-                  @click="showHelpModal = false"
-                >
-                  <X class="w-5 h-5" />
-                </button>
-              </div>
-
-              <!-- Content Sections -->
-              <div
-                class="space-y-5 overflow-y-auto text-xs text-ink-muted dark:text-ink-subtle leading-relaxed pr-1 max-h-[60vh]"
-              >
-                <!-- Section 1: Placeholders -->
-                <div class="space-y-2">
-                  <h4
-                    class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold"
-                  >
-                    1. Syntaxes de Révision Intégrée (Active Reading)
-                  </h4>
-                  <p>
-                    Incorporez des questions interactives de révision directe dans vos notes
-                    Markdown. Révisez-les en place via le mode « Révision Active » ; elles
-                    alimentent aussi les évaluations IA générées depuis la note :
-                  </p>
-                  <ul class="list-disc pl-5 space-y-2.5 mt-1">
-                    <li>
-                      <strong class="text-primary dark:text-primary"
-                        >Texte à trous (Cloze) :</strong
-                      >
-                      Utilisez <code v-pre>{{trou::mot caché}}</code
-                      >.
-                      <p class="text-[10px] text-ink-muted mt-0.5">
-                        Exemple : La capitale de la France est <code v-pre>{{ trou::Paris }}</code
-                        >.
-                      </p>
-                    </li>
-                    <li>
-                      <strong class="text-primary dark:text-primary"
-                        >Question à choix multiples (QCM) :</strong
-                      >
-                      Utilisez
-                      <code v-pre>{{qcm::Question ?::Option1|*Bonne Option*|Option3}}</code>
-                      (entourez la bonne option d'astérisques).
-                      <p class="text-[10px] text-ink-muted mt-0.5">
-                        Exemple : <code v-pre>{{qcm::Combien de continents ?::4|5|*6|7*|8}}</code
-                        >.
-                      </p>
-                    </li>
-                    <li>
-                      <strong class="text-primary dark:text-primary">Ordre / Séquence :</strong>
-                      Utilisez
-                      <code v-pre>{{ordre::Titre::Étape 1 > Étape 2 > Étape 3}}</code> (étapes
-                      séparées par <code>></code>).
-                      <p class="text-[10px] text-ink-muted mt-0.5">
-                        Exemple :
-                        <code
-                          v-pre
-                          >{{ordre::Cycle de l'eau::Évaporation > Condensation > Précipitations}}</code
-                        >.
-                      </p>
-                    </li>
-                    <li>
-                      <strong class="text-primary dark:text-primary">Associations :</strong>
-                      Utilisez
-                      <code v-pre>{{assoc::Titre::Clé 1=Valeur 1 | Clé 2=Valeur 2}}</code> (paires
-                      <code>clé=valeur</code> séparées par <code>|</code>).
-                      <p class="text-[10px] text-ink-muted mt-0.5">
-                        Exemple : <code v-pre>{{assoc::Capitales::France=Paris | Italie=Rome}}</code
-                        >.
-                      </p>
-                    </li>
-                    <li>
-                      <strong class="text-primary dark:text-primary">Vrai / Faux :</strong>
-                      Utilisez
-                      <code v-pre>{{ vf::Affirmation::Vrai / Faux::Justification }}</code>
-                      (séparateur <code>::</code>).
-                      <p class="text-[10px] text-ink-muted mt-0.5">
-                        Exemple :
-                        <code
-                          v-pre
-                          >{{vf::La Terre est plate::Faux::Elle a la forme d'un géoïde.}}</code
-                        >.
-                      </p>
-                    </li>
-                  </ul>
-                </div>
-
-                <!-- Section 2: Split Screen -->
-                <div class="space-y-2 border-t border-line dark:border-line pt-4">
-                  <h4
-                    class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold"
-                  >
-                    2. Écran Partagé & Liaisons PDF
-                  </h4>
-                  <p>Étudiez vos PDF de cours tout en rédigeant ou révisant vos notes :</p>
-                  <ul class="list-disc pl-5 space-y-2.5 mt-1">
-                    <li>
-                      <strong class="text-primary dark:text-primary"
-                        >Démarrer l'écran partagé :</strong
-                      >
-                      Sélectionnez un document PDF dans la liste déroulante
-                      <strong class="text-ink dark:text-white font-semibold">"Aperçu PDF"</strong>
-                      en haut à droite de l'éditeur de notes. Le PDF s'affichera à gauche.
-                    </li>
-                    <li>
-                      <strong class="text-primary dark:text-primary"
-                        >Créer une citation (Deep Link) :</strong
-                      >
-                      Sélectionnez du texte dans le panneau PDF, puis cliquez sur le bouton
-                      <strong class="text-primary dark:text-primary">"Citer"</strong> qui apparaît
-                      au-dessus du texte. Cela insère un lien spécial de type
-                      <code v-pre>pdf://</code> dans votre note.
-                    </li>
-                    <li>
-                      <strong class="text-primary dark:text-primary"
-                        >Naviguer à partir d'un lien :</strong
-                      >
-                      Dans le mode visualisation de la note, cliquez sur un de vos liens de
-                      citation. Le PDF s'ouvrira automatiquement sur la bonne page et la zone
-                      correspondante sera surlignée.
-                    </li>
-                  </ul>
-                </div>
-
-                <!-- Section 3: Image Occlusion -->
-                <div class="space-y-2 border-t border-line dark:border-line pt-4">
-                  <h4
-                    class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold"
-                  >
-                    3. Masques d'Image (Occlusion)
-                  </h4>
-                  <p>
-                    Dans le module
-                    <strong class="text-ink dark:text-white font-semibold">Diagrammes</strong>,
-                    importez un schéma (corps humain, géographie, formule), tracez des rectangles de
-                    masquage opaques sur les parties à deviner, puis nommez-les. En mode révision,
-                    cliquez sur les masques pour les révéler et évaluer votre mémorisation.
-                  </p>
-                </div>
-
-                <!-- Section 4: Tableaux & sauts de ligne -->
-                <div class="space-y-2 border-t border-line dark:border-line pt-4">
-                  <h4
-                    class="font-bold text-ink dark:text-white text-xs uppercase tracking-wider font-semibold"
-                  >
-                    4. Tableaux & sauts de ligne
-                  </h4>
-                  <p>
-                    Dans un tableau Markdown, chaque ligne du texte correspond à une ligne du
-                    tableau : une simple touche
-                    <kbd
-                      class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono"
-                      >Entrée</kbd
-                    >
-                    casserait donc la ligne. Pour aller à la ligne
-                    <strong class="text-ink dark:text-white font-semibold"
-                      >à l'intérieur d'une cellule</strong
-                    >, utilisez
-                    <kbd
-                      class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono"
-                      >Maj</kbd
-                    >
-                    +
-                    <kbd
-                      class="px-1.5 py-0.5 rounded bg-surface-soft dark:bg-surface-soft border border-line text-[10px] font-mono"
-                      >Entrée</kbd
-                    >
-                    (insère un retour à la ligne propre). Cela fonctionne aussi partout ailleurs
-                    pour un saut de ligne souple.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="border-t border-line dark:border-line pt-4 mt-4 flex justify-end">
-              <button
-                class="px-5 py-2.5 bg-primary hover:bg-primary-strong text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md shadow-elev-primary"
-                @click="showHelpModal = false"
-              >
-                Compris !
-              </button>
-            </div>
-          </div>
-        </div>
-      </transition>
-
-      <!-- AI Review Modal (choix de l'activité de révision IA) -->
-      <transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 scale-95"
-        enter-to-class="opacity-100 scale-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100 scale-100"
-        leave-to-class="opacity-0 scale-95"
-      >
-        <div
-          v-if="showAiModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
-          @click.self="showAiModal = false"
-        >
-          <div
-            class="bg-surface dark:bg-[#111827] border border-line dark:border-line rounded-3xl max-w-2xl w-full p-6 shadow-2xl"
-          >
-            <!-- Header -->
-            <div
-              class="flex items-center justify-between border-b border-line dark:border-line pb-3 mb-5"
-            >
-              <div class="flex items-center gap-2">
-                <Sparkles class="w-5 h-5 text-primary" />
-                <h3 class="font-extrabold text-base text-ink dark:text-white">Réviser avec l'IA</h3>
-              </div>
-              <button
-                class="p-1.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded-xl text-ink-subtle dark:text-ink-muted transition-colors"
-                @click="showAiModal = false"
-              >
-                <X class="w-5 h-5" />
-              </button>
-            </div>
-
-            <!-- Activity cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                v-for="activity in aiActivities"
-                :key="activity.type"
-                class="flex flex-col items-start text-left gap-2 p-4 border rounded-2xl transition-all active:scale-95"
-                :class="activity.cardClass"
-                @click="startAiActivity(activity.type)"
-              >
-                <component :is="activity.icon" class="w-6 h-6" :class="activity.iconClass" />
-                <span class="font-bold text-sm text-ink dark:text-white">{{ activity.label }}</span>
-                <span class="text-xs text-ink-muted dark:text-ink-subtle leading-relaxed">{{
-                  activity.description
-                }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </transition>
+      <NoteEditHelpModal v-if="showHelpModal" @close="showHelpModal = false" />
 
       <!-- ============================================================ -->
       <!-- INPUT MODAL (remplace les prompt/confirm/alert natifs)       -->
       <!-- ============================================================ -->
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="inputModal.visible"
-          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm no-print"
-          @click.self="inputModal.onCancel()"
-        >
-          <Transition
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="opacity-0 scale-95 translate-y-2"
-            enter-to-class="opacity-100 scale-100 translate-y-0"
-          >
-            <div
-              v-if="inputModal.visible"
-              class="w-full max-w-md bg-surface dark:bg-surface-soft rounded-3xl shadow-2xl border border-line dark:border-line overflow-hidden custom-input-modal"
-            >
-              <!-- Header -->
-              <div class="px-6 pt-6 pb-4 flex items-start gap-4 input-modal-header">
-                <div
-                  class="flex items-center justify-center w-11 h-11 rounded-2xl flex-shrink-0 text-white shadow-lg"
-                  :class="inputModal.iconBg || 'bg-primary'"
-                >
-                  <component :is="inputModal.icon" class="w-5 h-5" />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <h3 class="font-bold text-ink dark:text-white text-base input-modal-title">
-                    {{ inputModal.title }}
-                  </h3>
-                  <p
-                    v-if="inputModal.description"
-                    class="text-xs text-ink-muted dark:text-ink-subtle input-modal-desc"
-                  >
-                    {{ inputModal.description }}
-                  </p>
-                </div>
-                <button
-                  class="text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle transition-colors mt-0.5"
-                  @click="inputModal.onCancel()"
-                >
-                  <X class="w-5 h-5" />
-                </button>
-              </div>
-
-              <!-- Fields -->
-              <div class="px-6 pb-2 space-y-3">
-                <div v-for="(field, i) in inputModal.fields" :key="i">
-                  <label
-                    class="block text-xs font-bold text-ink-muted dark:text-ink-subtle mb-1.5 uppercase tracking-wider"
-                    >{{ field.label }}</label
-                  >
-
-                  <!-- Texte -->
-                  <input
-                    v-if="field.type === 'text' || field.type === 'textarea'"
-                    :ref="i === 0 ? 'modalFirstInput' : undefined"
-                    v-model="field.value"
-                    :placeholder="field.placeholder || ''"
-                    class="w-full px-4 py-2.5 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                    @keydown.enter.prevent="inputModal.onConfirm()"
-                    @keydown.escape.prevent="inputModal.onCancel()"
-                  />
-
-                  <!-- Booléen (Vrai / Faux) -->
-                  <div v-else-if="field.type === 'bool'" class="flex gap-3">
-                    <button
-                      class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
-                      :class="
-                        field.value === true
-                          ? 'border-success bg-success-soft dark:bg-success-soft text-success dark:text-success'
-                          : 'border-line dark:border-line text-ink-muted hover:border-success'
-                      "
-                      @click="field.value = true"
-                    >
-                      ✓ Vrai
-                    </button>
-                    <button
-                      class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
-                      :class="
-                        field.value === false
-                          ? 'border-danger bg-danger-soft dark:bg-danger-soft text-danger dark:text-danger'
-                          : 'border-line dark:border-line text-ink-muted hover:border-danger'
-                      "
-                      @click="field.value = false"
-                    >
-                      ✗ Faux
-                    </button>
-                  </div>
-
-                  <!-- Select diagramme -->
-                  <select
-                    v-else-if="field.type === 'select'"
-                    v-model="field.value"
-                    class="w-full px-4 py-2.5 bg-surface-soft dark:bg-surface-soft border border-line dark:border-line rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                  >
-                    <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Actions -->
-              <div class="flex gap-3 px-6 py-5">
-                <button
-                  class="flex-1 py-2.5 border border-line dark:border-line rounded-xl text-sm font-semibold text-ink-muted dark:text-ink-subtle hover:bg-surface-soft dark:hover:bg-surface-soft transition-all"
-                  @click="inputModal.onCancel()"
-                >
-                  Annuler
-                </button>
-                <button
-                  class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95 shadow-md"
-                  :class="
-                    inputModal.confirmBg || 'bg-primary hover:bg-primary-strong shadow-elev-primary'
-                  "
-                  @click="inputModal.onConfirm()"
-                >
-                  {{ inputModal.confirmLabel || 'Confirmer' }}
-                </button>
-              </div>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
+      <NoteInputModal
+        :visible="inputModal.visible"
+        :title="inputModal.title"
+        :description="inputModal.description"
+        :icon="inputModal.icon"
+        :icon-bg="inputModal.iconBg"
+        :confirm-bg="inputModal.confirmBg"
+        :confirm-label="inputModal.confirmLabel"
+        :fields="inputModal.fields"
+        @update:fields="inputModal.fields = $event"
+        @confirm="inputModal.onConfirm()"
+        @cancel="inputModal.onCancel()"
+      />
 
       <!-- SM-2 Evaluation Modal -->
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="evaluationModal.visible"
-          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
-          @click.self="evaluationModal.visible = false"
-        >
-          <Transition
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="opacity-0 scale-95 translate-y-2"
-            enter-to-class="opacity-100 scale-100 translate-y-0"
-          >
-            <div
-              v-if="evaluationModal.visible"
-              class="w-full max-w-sm bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl shadow-2xl p-6 text-center sm2-modal-container"
-            >
-              <!-- Icon/Header -->
-              <div class="flex flex-col items-center mb-3">
-                <div
-                  class="w-10 h-10 bg-primary-soft dark:bg-primary-soft rounded-2xl flex items-center justify-center text-primary dark:text-primary mb-2 border border-primary dark:border-primary"
-                >
-                  <Sparkles class="w-5 h-5 animate-pulse" />
-                </div>
-                <h3 class="font-extrabold text-ink dark:text-white text-base sm2-modal-title">
-                  C'était facile ?
-                </h3>
-                <p class="text-xs text-ink-muted dark:text-ink-subtle sm2-modal-desc">
-                  Évaluez votre niveau de rappel pour l'algorithme d'apprentissage.
-                </p>
-              </div>
-
-              <!-- Buttons Grid -->
-              <div class="grid grid-cols-2 gap-2.5 mb-4">
-                <button
-                  v-for="btn in evaluationButtons"
-                  :key="btn.val"
-                  :disabled="isEvaluating"
-                  class="flex flex-col items-center border-2 rounded-2xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none sm2-modal-btn"
-                  :class="btn.class"
-                  @click="submitSm2Evaluation(btn.val)"
-                >
-                  <span class="text-2xl sm2-btn-emoji">{{ btn.emoji }}</span>
-                  <span class="text-xs font-bold sm2-btn-label">{{ btn.label }}</span>
-                  <span class="text-[9px] opacity-60 sm2-btn-desc">{{ btn.desc }}</span>
-                </button>
-              </div>
-
-              <!-- Actions -->
-              <button
-                class="w-full py-2 border border-line dark:border-line rounded-xl text-xs font-bold text-ink-muted hover:bg-surface-soft dark:hover:bg-surface-soft transition-all sm2-modal-cancel"
-                @click="evaluationModal.visible = false"
-              >
-                Passer sans évaluer
-              </button>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
+      <NoteEvaluationModal
+        :visible="evaluationModal.visible"
+        :is-evaluating="isEvaluating"
+        @evaluate="submitSm2Evaluation($event)"
+        @cancel="evaluationModal.visible = false"
+      />
 
       <!-- Floating Selection Action Bar -->
       <transition
@@ -1366,17 +978,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../../services/api'
 import { useNotesStore } from '../../stores/notes'
 import { useBindersStore } from '../../stores/binders'
 import { useTagsStore, type Tag } from '../../stores/tags'
+import { BaseCard, BaseEmptyState, BaseButton } from '../../components/ui/base'
 import TagBadge from '../../components/ui/TagBadge.vue'
 import TagSelector from '../../components/ui/TagSelector.vue'
 import NotePdfExportModal, {
   type PdfExportOptions,
 } from '../../components/notes/NotePdfExportModal.vue'
+import NoteEditHelpModal from '../../components/notes/NoteEditHelpModal.vue'
+import NoteInputModal, { type ModalField } from '../../components/notes/NoteInputModal.vue'
+import NoteEvaluationModal from '../../components/notes/NoteEvaluationModal.vue'
+import NoteSidebar from '../../components/notes/NoteSidebar.vue'
 import {
   ChevronLeft,
   Menu,
@@ -1399,7 +1016,8 @@ import {
   Sparkles,
   Sigma,
   Image,
-  Lightbulb,
+  Star,
+  AlertCircle,
 } from '@lucide/vue'
 import { marked } from 'marked'
 import katex from 'katex'
@@ -1435,6 +1053,7 @@ const noteId = ref(route.params.id as string)
 const allUserDiagrams = ref<any[]>([])
 const loadedDiagrams = ref<Record<number, any>>({})
 const loading = ref(true)
+const loadError = ref(false)
 const isSaving = ref(false)
 const saveStatus = ref('Enregistré')
 // Note partagée par un cours (lecture seule) : aucune édition possible.
@@ -1449,7 +1068,6 @@ const isEditMode = computed({
 })
 const showSettings = ref(false)
 const showHelpModal = ref(false)
-const showAiModal = ref(false)
 const showPdfModal = ref(false)
 
 const pdfExportOptions = ref<PdfExportOptions>({
@@ -1494,47 +1112,9 @@ const currentExportDateFormatted = computed(() => {
   })
 })
 
-// Activités de révision IA proposées dans la modale de choix.
-const aiActivities = [
-  {
-    type: 'blurting',
-    label: 'Page blanche',
-    description: "Restituez le cours de mémoire, puis laissez l'IA évaluer votre restitution.",
-    icon: Brain,
-    iconClass: 'text-emerald-500',
-    cardClass:
-      'border-emerald-250 dark:border-emerald-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/20',
-  },
-  {
-    type: 'quiz',
-    label: 'QCM',
-    description: 'Générez un questionnaire à choix multiples à partir de cette fiche.',
-    icon: HelpCircle,
-    iconClass: 'text-indigo-500',
-    cardClass:
-      'border-indigo-250 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/20',
-  },
-  {
-    type: 'evaluation',
-    label: 'Évaluation',
-    description: "Obtenez une feuille d'exercices corrigée pour vous tester en profondeur.",
-    icon: Sparkles,
-    iconClass: 'text-amber-500',
-    cardClass:
-      'border-amber-250 dark:border-amber-900 hover:bg-amber-50 dark:hover:bg-amber-950/20',
-  },
-  {
-    type: 'feynman',
-    label: 'Méthode Feynman',
-    description: "Expliquez le concept avec vos propres mots, l'IA repère jargon et lacunes.",
-    icon: Lightbulb,
-    iconClass: 'text-sky-500',
-    cardClass: 'border-sky-250 dark:border-sky-900 hover:bg-sky-50 dark:hover:bg-sky-950/20',
-  },
-] as const
-
+// Handler unique appelé depuis l'emit `start-activity` de NoteSidebar (Assistant IA :
+// Évaluation mixte / Méthode de la feuille blanche / Méthode Feynman).
 function startAiActivity(type: string) {
-  showAiModal.value = false
   router.push(`/notes/${noteId.value}/${type}`)
 }
 const isLivePreviewActive = ref(false)
@@ -1549,41 +1129,6 @@ const evaluationModal = ref({
   cardId: null as number | null,
   rawTag: '',
 })
-
-const evaluationButtons = [
-  {
-    val: 1,
-    label: 'À revoir',
-    emoji: '🔁',
-    desc: 'Pas retenu',
-    class:
-      'border-rose-100 dark:border-rose-950/40 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:border-rose-350',
-  },
-  {
-    val: 2,
-    label: 'Difficile',
-    emoji: '😕',
-    desc: 'Gros effort',
-    class:
-      'border-amber-100 dark:border-amber-950/40 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 hover:border-amber-350',
-  },
-  {
-    val: 3,
-    label: 'Correct',
-    emoji: '🙂',
-    desc: 'Rappel normal',
-    class:
-      'border-emerald-100 dark:border-emerald-950/40 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 hover:border-emerald-350',
-  },
-  {
-    val: 5,
-    label: 'Facile',
-    emoji: '😎',
-    desc: 'Aucun effort',
-    class:
-      'border-blue-100 dark:border-blue-950/40 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:border-blue-350',
-  },
-]
 
 const isEvaluating = ref(false)
 
@@ -1626,20 +1171,15 @@ const showSelectionMenu = ref(false)
 const selectionMenuPos = ref({ top: 0, left: 0 })
 
 // ---------------------------------------------------------------
-// Modal stylisé (remplace prompt / confirm / alert)
+// Modal stylisé (remplace prompt / confirm / alert) — rendu délégué à
+// NoteInputModal.vue (composant purement présentationnel) ; la logique de
+// transformation par type d'insertion reste ici, dans applySelectionTransform.
 // ---------------------------------------------------------------
-interface ModalField {
-  label: string
-  type: 'text' | 'bool' | 'select' | 'textarea'
-  value: any
-  placeholder?: string
-  options?: { value: any; label: string }[]
-}
 interface ModalConfig {
   visible: boolean
   title: string
   description?: string
-  icon: any
+  icon: Component
   iconBg?: string
   confirmBg?: string
   confirmLabel?: string
@@ -1651,7 +1191,7 @@ interface ModalConfig {
 const inputModal = ref<ModalConfig>({
   visible: false,
   title: '',
-  icon: null,
+  icon: BookOpen,
   fields: [],
   onConfirm: () => {},
   onCancel: () => {},
@@ -1673,17 +1213,13 @@ function openModal(
         resolve(null)
       },
     }
-    // Focus le premier champ après rendu
-    setTimeout(() => {
-      const el = document.querySelector<HTMLElement>('.modal-first-input')
-      el?.focus()
-    }, 50)
   })
 }
 
 const title = ref('')
 const binderId = ref<string | null>(null)
 const noteTags = ref<Tag[]>([])
+const noteUpdatedAt = ref('')
 const isPublic = ref(false)
 const shareToken = ref<string | null>(null)
 const sharePopupVisible = ref(false)
@@ -1795,11 +1331,20 @@ function insertDiagramTag(event: Event) {
 
 async function loadNoteDetails() {
   loading.value = true
+  loadError.value = false
   isSaving.value = false
   saveStatus.value = 'Enregistré'
 
-  const note = await notesStore.fetchNoteById(noteId.value)
-  if (note) {
+  try {
+    // notesStore.fetchNoteById capture déjà ses propres erreurs réseau et
+    // retombe sur un `find` local (donc ne rejette jamais) : un échec se
+    // traduit par une note absente (`undefined`), pas par une exception.
+    const note = await notesStore.fetchNoteById(noteId.value)
+    if (!note) {
+      loadError.value = true
+      return
+    }
+
     title.value = note.title
     binderId.value = note.binder_id
     isReadOnly.value = !!(note as any).read_only
@@ -1807,6 +1352,7 @@ async function loadNoteDetails() {
     shareToken.value = (note as any).share_token || null
     noteFlashcards.value = (note as any).flashcards || []
     noteTags.value = (note as any).tags || []
+    noteUpdatedAt.value = note.updated_at || ''
 
     // Parse structured divisions
     const parsed = parseStructuredNote(note.content)
@@ -1824,8 +1370,12 @@ async function loadNoteDetails() {
     } else {
       isEditMode.value = false
     }
+  } catch (error) {
+    console.error(`Erreur lors du chargement de la note ${noteId.value}`, error)
+    loadError.value = true
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 
 async function togglePublic() {
@@ -1942,7 +1492,7 @@ function renderSm2Buttons(cardId: number | null, rawTag: string): string {
     // En révision active, on n'affiche pas le rappel « En attente de sauvegarde… »
     // (bruit visuel pendant la révision) : seul le mode Lecture/édition l'indique.
     if (notesStore.isReviewModeActive) return ''
-    return `<span class="text-[10px] text-slate-450 italic font-semibold align-middle">En attente de sauvegarde...</span>`
+    return `<span class="text-tiny text-ink-subtle italic font-semibold align-middle">En attente de sauvegarde...</span>`
   }
   const state = placeholderStates.value[rawTag]
   if (!state || state.score === undefined) return ''
@@ -1955,7 +1505,7 @@ function renderSm2Buttons(cardId: number | null, rawTag: string): string {
   ]
 
   const b = buttons.find((x) => x.val === state.score)
-  return `<button type="button" data-action="sm2-re-evaluate" data-card-id="${cardId}" data-tag="${encodeURIComponent(rawTag)}" class="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-[9px] font-bold text-indigo-650 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 align-middle transition-all cursor-pointer">★ ${b ? b.label : state.score}</button>`
+  return `<button type="button" data-action="sm2-re-evaluate" data-card-id="${cardId}" data-tag="${encodeURIComponent(rawTag)}" class="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-soft hover:bg-primary-soft dark:bg-primary-soft dark:hover:bg-primary-soft text-tiny font-bold text-primary dark:text-primary border border-primary dark:border-primary align-middle transition-all cursor-pointer">★ ${b ? b.label : state.score}</button>`
 }
 
 // Rendering marked + LaTeX + Definition tooltips + Active Reading Placeholders
@@ -1975,7 +1525,7 @@ function renderMarkup(text: string): string {
       placeholders.push(html)
       return key
     } catch (e) {
-      return `<span class="text-rose-500 font-bold border border-rose-200 p-1 rounded">LaTeX Block Error: ${formula}</span>`
+      return `<span class="text-danger font-bold border border-danger p-1 rounded">LaTeX Block Error: ${formula}</span>`
     }
   })
 
@@ -1987,13 +1537,13 @@ function renderMarkup(text: string): string {
       placeholders.push(html)
       return key
     } catch (e) {
-      return `<span class="text-rose-500 font-bold">LaTeX Inline Error: ${formula}</span>`
+      return `<span class="text-danger font-bold">LaTeX Inline Error: ${formula}</span>`
     }
   })
 
   // 3. Definition Tooltips [term]{def:definition}
   temp = temp.replace(/\[([^\]]+)\]\{def:([^\}]+)\}/g, (_match, term, definition) => {
-    const html = `<span class="group relative inline-block underline decoration-emerald-500 decoration-dashed cursor-help bg-emerald-50/30 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded transition-all duration-200" def-term="${term}">${term}<span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded-xl bg-slate-900 dark:bg-slate-950 p-3 text-xs font-medium text-slate-100 dark:text-slate-200 shadow-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100 leading-normal normal-case text-center">${definition}</span><span class="hidden print:inline text-[11px] text-emerald-800 dark:text-emerald-300 font-normal italic"> (${definition})</span></span>`
+    const html = `<span class="group relative inline-block underline decoration-success decoration-dashed cursor-help bg-success-soft/30 dark:bg-success-soft/20 px-1.5 py-0.5 rounded transition-all duration-200" def-term="${term}">${term}<span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded-xl bg-ink dark:bg-ink p-3 text-xs font-medium text-app dark:text-app shadow-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100 leading-normal normal-case text-center">${definition}</span><span class="hidden print:inline text-xs text-success dark:text-success font-normal italic"> (${definition})</span></span>`
     const key = `DEFPLACEHOLDER${placeholders.length}`
     placeholders.push(html)
     return key
@@ -2007,8 +1557,8 @@ function renderMarkup(text: string): string {
     let html = ''
     if (diag === undefined) {
       html = `
-        <div class="flex items-center gap-2 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/20 text-xs font-semibold text-slate-400 my-4 select-none">
-          <svg class="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <div class="flex items-center gap-2 p-4 border border-line dark:border-line rounded-2xl bg-surface-soft/20 text-xs font-semibold text-ink-subtle my-4 select-none">
+          <svg class="animate-spin h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -2037,7 +1587,7 @@ function renderMarkup(text: string): string {
     const cardId = card ? card.id : null
 
     if (!isReview) {
-      const displayHtml = `<span class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-semibold border-b border-indigo-500">${word}</span>`
+      const displayHtml = `<span class="bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary px-1.5 py-0.5 rounded font-semibold border-b border-primary">${word}</span>`
       const key = `REVISIONPLACEHOLDER${placeholders.length}`
       placeholders.push(displayHtml)
       return key
@@ -2047,9 +1597,9 @@ function renderMarkup(text: string): string {
 
       let elementHtml = ''
       if (!state.revealed) {
-        elementHtml = `<span class="px-2.5 py-0.5 bg-slate-200 dark:bg-slate-750 text-transparent rounded-lg cursor-pointer border border-slate-300 dark:border-slate-600 select-none hover:bg-slate-300 hover:text-slate-500/10 active:scale-95 transition-all inline-block align-middle font-mono font-bold" data-action="reveal" data-tag="${encodeURIComponent(rawTag)}">???</span>`
+        elementHtml = `<span class="px-2.5 py-0.5 bg-surface-soft dark:bg-surface-soft text-transparent rounded-lg cursor-pointer border border-line dark:border-line select-none hover:bg-line dark:hover:bg-line hover:text-ink-subtle/10 active:scale-95 transition-all inline-block align-middle font-mono font-bold" data-action="reveal" data-tag="${encodeURIComponent(rawTag)}">???</span>`
       } else {
-        elementHtml = `<span class="bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-lg font-bold border-b border-indigo-400 inline-flex items-center align-middle select-all transition-all">${word}${renderSm2Buttons(cardId, rawTag)}</span>`
+        elementHtml = `<span class="bg-primary-soft/80 dark:bg-primary-soft text-primary dark:text-primary px-2 py-0.5 rounded-lg font-bold border-b border-primary inline-flex items-center align-middle select-all transition-all">${word}${renderSm2Buttons(cardId, rawTag)}</span>`
       }
       const key = `REVISIONPLACEHOLDER${placeholders.length}`
       placeholders.push(elementHtml)
@@ -2069,16 +1619,16 @@ function renderMarkup(text: string): string {
           const isCorrect = opt.startsWith('*') && opt.endsWith('*')
           const cleanOpt = opt.replace(/\*/g, '')
           return isCorrect
-            ? `<li class="font-extrabold text-emerald-600 dark:text-emerald-400">✓ ${cleanOpt} (Correct)</li>`
+            ? `<li class="font-extrabold text-success dark:text-success">✓ ${cleanOpt} (Correct)</li>`
             : `<li>${cleanOpt}</li>`
         })
         .join('')
 
       const displayHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold block mb-1">QCM</strong>
-          <p class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-2">${question}</p>
-          <ul class="list-none pl-0 mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-400">${listItems}</ul>
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold block mb-1">QCM</strong>
+          <p class="font-bold text-sm text-ink dark:text-ink-subtle mb-2">${question}</p>
+          <ul class="list-none pl-0 mt-2 space-y-1 text-xs text-ink-muted dark:text-ink-subtle">${listItems}</ul>
         </div>
       `
       const key = `REVISIONPLACEHOLDER${placeholders.length}`
@@ -2096,18 +1646,18 @@ function renderMarkup(text: string): string {
           const isCorrect = opt.startsWith('*') && opt.endsWith('*')
           const cleanOpt = opt.replace(/\*/g, '')
           let btnClass =
-            'px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 text-xs font-semibold transition-all active:scale-95'
+            'px-3 py-1.5 border border-line dark:border-line rounded-xl hover:bg-surface-soft dark:hover:bg-surface-soft text-xs font-semibold transition-all active:scale-95'
 
           if (state.answered) {
             if (isCorrect) {
               btnClass =
-                'px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold'
+                'px-3 py-1.5 bg-success-soft dark:bg-success-soft border border-success dark:border-success text-success dark:text-success rounded-xl text-xs font-bold'
             } else if (state.selectedOption === cleanOpt) {
               btnClass =
-                'px-3 py-1.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-600 dark:text-rose-450 rounded-xl text-xs font-bold'
+                'px-3 py-1.5 bg-danger-soft dark:bg-danger-soft border border-danger dark:border-danger text-danger dark:text-danger rounded-xl text-xs font-bold'
             } else {
               btnClass =
-                'px-3 py-1.5 border border-slate-100 dark:border-slate-850 opacity-40 rounded-xl text-xs font-semibold'
+                'px-3 py-1.5 border border-line dark:border-line opacity-40 rounded-xl text-xs font-semibold'
             }
           }
           return `<button type="button" class="${btnClass}" data-action="qcm-select" data-tag="${encodeURIComponent(rawTag)}" data-option="${encodeURIComponent(cleanOpt)}" ${state.answered ? 'disabled' : ''}>${cleanOpt}</button>`
@@ -2115,12 +1665,12 @@ function renderMarkup(text: string): string {
         .join(' ')
 
       const elementHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
-            <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold">QCM</strong>
+            <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold">QCM</strong>
             ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
           </div>
-          <p class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-3">${question}</p>
+          <p class="font-bold text-sm text-ink dark:text-ink-subtle mb-3">${question}</p>
           <div class="flex flex-wrap gap-2">${buttonsHtml}</div>
         </div>
       `
@@ -2140,11 +1690,11 @@ function renderMarkup(text: string): string {
 
       if (!isReview) {
         const displayHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold block mb-1">Vrai ou Faux</strong>
-          <p class="font-semibold text-sm text-slate-800 dark:text-slate-100">${assertion}</p>
-          <div class="mt-2 text-xs font-bold">Réponse : <span class="${isVrai ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${answer}</span></div>
-          <div class="text-xs text-slate-500 dark:text-slate-400 italic mt-1">${justification}</div>
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold block mb-1">Vrai ou Faux</strong>
+          <p class="font-semibold text-sm text-ink dark:text-ink-subtle">${assertion}</p>
+          <div class="mt-2 text-xs font-bold">Réponse : <span class="${isVrai ? 'text-success dark:text-success' : 'text-danger dark:text-danger'}">${answer}</span></div>
+          <div class="text-xs text-ink-muted dark:text-ink-subtle italic mt-1">${justification}</div>
         </div>
       `
         const key = `REVISIONPLACEHOLDER${placeholders.length}`
@@ -2160,19 +1710,19 @@ function renderMarkup(text: string): string {
         const btns = ['Vrai', 'Faux']
           .map((btnVal) => {
             let btnClass =
-              'px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all active:scale-95'
+              'px-4 py-2 border border-line dark:border-line rounded-xl hover:bg-surface-soft dark:hover:bg-surface-soft text-xs font-bold transition-all active:scale-95'
             const isThisCorrect = btnVal.toLowerCase() === answer.trim().toLowerCase()
 
             if (state.answered) {
               if (isThisCorrect) {
                 btnClass =
-                  'px-4 py-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold'
+                  'px-4 py-2 bg-success-soft dark:bg-success-soft border border-success dark:border-success text-success dark:text-success rounded-xl text-xs font-bold'
               } else if (state.selectedAnswer === btnVal) {
                 btnClass =
-                  'px-4 py-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 text-rose-600 dark:text-rose-455 rounded-xl text-xs font-bold'
+                  'px-4 py-2 bg-danger-soft dark:bg-danger-soft border border-danger dark:border-danger text-danger dark:text-danger rounded-xl text-xs font-bold'
               } else {
                 btnClass =
-                  'px-4 py-2 border border-slate-100 dark:border-slate-850 opacity-40 rounded-xl text-xs font-bold'
+                  'px-4 py-2 border border-line dark:border-line opacity-40 rounded-xl text-xs font-bold'
               }
             }
             return `<button type="button" class="${btnClass}" data-action="vf-select" data-tag="${encodeURIComponent(rawTag)}" data-value="${btnVal}" ${state.answered ? 'disabled' : ''}>${btnVal}</button>`
@@ -2180,19 +1730,19 @@ function renderMarkup(text: string): string {
           .join(' ')
 
         const elementHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
-            <strong class="text-[10px] uppercase tracking-wider text-slate-450 font-bold">Vrai ou Faux</strong>
+            <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold">Vrai ou Faux</strong>
             ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
           </div>
-          <p class="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-3">${assertion}</p>
+          <p class="font-semibold text-sm text-ink dark:text-ink-subtle mb-3">${assertion}</p>
           <div class="flex gap-3 mb-3">${btns}</div>
           ${
             state.answered
               ? `
-            <div class="bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs mt-3">
-              <div class="font-bold text-slate-700 dark:text-slate-300 mb-1">Justification :</div>
-              <div class="italic text-slate-500 dark:text-slate-400">${justification}</div>
+            <div class="bg-surface-soft/40 dark:bg-surface-soft/40 p-3 rounded-xl text-xs mt-3">
+              <div class="font-bold text-ink dark:text-ink-subtle mb-1">Justification :</div>
+              <div class="italic text-ink-muted dark:text-ink-subtle">${justification}</div>
             </div>
           `
               : ''
@@ -2220,8 +1770,8 @@ function renderMarkup(text: string): string {
     if (!isReview) {
       const stepItems = steps.map((s: string) => `<li class="mb-1">${cleanStep(s)}</li>`).join('')
       const displayHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-2.5 border border-slate-200 dark:border-slate-800 rounded-xl my-2 max-w-2xl shadow-sm not-prose">
-          <strong class="text-[9px] uppercase tracking-wider text-slate-455 font-bold block mb-0.5">Séquence : ${title}</strong>
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-2.5 border border-line dark:border-line rounded-xl my-2 max-w-2xl shadow-sm not-prose">
+          <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold block mb-0.5">Séquence : ${title}</strong>
           <ol class="list-decimal mt-1.5 space-y-0.5 text-xs" style="margin-left: 1rem !important; padding-left: 1rem !important;">${stepItems}</ol>
         </div>
       `
@@ -2238,14 +1788,14 @@ function renderMarkup(text: string): string {
       const stepButtons = state.order
         .map((step: string, idx: number) => {
           return `
-          <div class="flex items-center justify-between p-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold mb-1.5 shadow-sm">
+          <div class="flex items-center justify-between p-2.5 bg-surface dark:bg-surface border border-line dark:border-line rounded-xl text-xs font-semibold mb-1.5 shadow-sm">
             <span>${cleanStep(step)}</span>
             ${
               !state.answered
                 ? `
               <div class="flex gap-1 no-print">
-                <button type="button" class="px-1.5 py-0.5 hover:bg-slate-100 dark:hover:bg-slate-850 rounded text-slate-400 hover:text-indigo-650" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="up">▲</button>
-                <button type="button" class="px-1.5 py-0.5 hover:bg-slate-100 dark:hover:bg-slate-850 rounded text-slate-400 hover:text-indigo-650" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="down">▼</button>
+                <button type="button" class="px-1.5 py-0.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded text-ink-subtle hover:text-primary" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="up">▲</button>
+                <button type="button" class="px-1.5 py-0.5 hover:bg-surface-soft dark:hover:bg-surface-soft rounded text-ink-subtle hover:text-primary" data-action="order-move" data-tag="${encodeURIComponent(rawTag)}" data-index="${idx}" data-dir="down">▼</button>
               </div>
             `
                 : ''
@@ -2256,9 +1806,9 @@ function renderMarkup(text: string): string {
         .join('')
 
       const elementHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
-            <strong class="text-[10px] uppercase tracking-wider text-slate-455 font-bold">Séquence : ${title}</strong>
+            <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold">Séquence : ${title}</strong>
             ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
           </div>
           <div class="mt-3">${stepButtons}</div>
@@ -2266,15 +1816,15 @@ function renderMarkup(text: string): string {
           ${
             !state.answered
               ? `
-            <button type="button" class="w-full mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent" data-action="order-validate" data-tag="${encodeURIComponent(rawTag)}">
+            <button type="button" class="w-full mt-3 px-4 py-2 bg-primary hover:bg-primary-strong text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent" data-action="order-validate" data-tag="${encodeURIComponent(rawTag)}">
               Valider l'ordre
             </button>
           `
               : `
-            <div class="mt-3 bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
-              <div class="font-bold text-slate-700 dark:text-slate-350">Ordre attendu :</div>
+            <div class="mt-3 bg-surface-soft/40 dark:bg-surface-soft/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
+              <div class="font-bold text-ink dark:text-ink-subtle">Ordre attendu :</div>
               <div class="flex flex-wrap items-center gap-1">
-                ${steps.map((s: string) => `<span class="bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200/50 text-[10px] font-semibold">${cleanStep(s)}</span>`).join(' ➜ ')}
+                ${steps.map((s: string) => `<span class="bg-surface dark:bg-surface-soft px-2 py-1 rounded-lg border border-line/50 dark:border-line/50 text-tiny font-semibold">${cleanStep(s)}</span>`).join(' ➜ ')}
               </div>
             </div>
           `
@@ -2302,17 +1852,17 @@ function renderMarkup(text: string): string {
       const rows = pairs
         .map(
           (p: { key: string; value: string }) =>
-            `<tr><td class="border border-slate-200 dark:border-slate-800 p-2 font-semibold text-slate-700 dark:text-slate-300">${p.key}</td><td class="border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-400">${p.value}</td></tr>`,
+            `<tr><td class="border border-line dark:border-line p-2 font-semibold text-ink dark:text-ink-subtle">${p.key}</td><td class="border border-line dark:border-line p-2 text-ink-muted dark:text-ink-subtle">${p.value}</td></tr>`,
         )
         .join('')
       const displayHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
-          <strong class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Associations : ${title}</strong>
-          <table class="table-auto text-xs mt-3 w-full border-collapse border border-slate-200 dark:border-slate-800">
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+          <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold block mb-1">Associations : ${title}</strong>
+          <table class="table-auto text-xs mt-3 w-full border-collapse border border-line dark:border-line">
             <thead>
-              <tr class="bg-slate-150 dark:bg-slate-800 font-bold">
-                <th class="border border-slate-200 dark:border-slate-800 p-2 text-left">Clé</th>
-                <th class="border border-slate-200 dark:border-slate-800 p-2 text-left">Liaison</th>
+              <tr class="bg-surface-soft dark:bg-surface-soft font-bold">
+                <th class="border border-line dark:border-line p-2 text-left">Clé</th>
+                <th class="border border-line dark:border-line p-2 text-left">Liaison</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -2343,13 +1893,13 @@ function renderMarkup(text: string): string {
             'p-2 border text-left rounded-xl text-xs font-semibold shadow-sm transition-all'
           if (state.selectedKey === k) {
             btnClass +=
-              ' border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/10'
+              ' border-primary bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary ring-2 ring-primary/10'
           } else if (isMatched) {
             btnClass +=
-              ' border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-850 text-slate-400 cursor-not-allowed opacity-60'
+              ' border-line dark:border-line bg-surface-soft dark:bg-surface-soft text-ink-subtle cursor-not-allowed opacity-60'
           } else {
             btnClass +=
-              ' border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer'
+              ' border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft cursor-pointer'
           }
 
           return `<button type="button" class="${btnClass}" data-action="assoc-key-select" data-tag="${encodeURIComponent(rawTag)}" data-key="${encodeURIComponent(k)}" ${isMatched || state.answered ? 'disabled' : ''}>${k}</button>`
@@ -2363,10 +1913,10 @@ function renderMarkup(text: string): string {
             'p-2 border text-left rounded-xl text-xs font-semibold shadow-sm transition-all'
           if (isMatched) {
             btnClass +=
-              ' border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-850 text-slate-400 cursor-not-allowed opacity-60'
+              ' border-line dark:border-line bg-surface-soft dark:bg-surface-soft text-ink-subtle cursor-not-allowed opacity-60'
           } else {
             btnClass +=
-              ' border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer'
+              ' border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft cursor-pointer'
           }
 
           return `<button type="button" class="${btnClass}" data-action="assoc-value-select" data-tag="${encodeURIComponent(rawTag)}" data-value="${encodeURIComponent(v)}" ${isMatched || state.answered || !state.selectedKey ? 'disabled' : ''}>${v}</button>`
@@ -2375,35 +1925,35 @@ function renderMarkup(text: string): string {
 
       const matchesHtml = Object.entries(state.matches)
         .map(([k, v]) => {
-          return `<div class="flex items-center justify-between p-2 bg-indigo-50/50 dark:bg-slate-850 border border-indigo-100 dark:border-slate-800 rounded-xl text-[11px] font-semibold">${k} ➜ ${v} ${!state.answered ? `<button type="button" class="text-rose-500 hover:text-rose-700 ml-2" data-action="assoc-remove" data-tag="${encodeURIComponent(rawTag)}" data-key="${encodeURIComponent(k)}">✕</button>` : ''}</div>`
+          return `<div class="flex items-center justify-between p-2 bg-primary-soft/50 dark:bg-primary-soft border border-primary dark:border-primary rounded-xl text-xs font-semibold">${k} ➜ ${v} ${!state.answered ? `<button type="button" class="text-danger hover:text-danger ml-2" data-action="assoc-remove" data-tag="${encodeURIComponent(rawTag)}" data-key="${encodeURIComponent(k)}">✕</button>` : ''}</div>`
         })
         .join('')
 
       const elementHtml = `
-        <div class="bg-slate-50/50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
+        <div class="bg-surface-soft/50 dark:bg-surface-soft/50 p-4 border border-line dark:border-line rounded-2xl my-4 max-w-2xl shadow-sm not-prose">
           <div class="flex items-center justify-between mb-1.5">
-            <strong class="text-[10px] uppercase tracking-wider text-slate-455 font-bold">Associations : ${title}</strong>
+            <strong class="text-tiny uppercase tracking-wider text-ink-subtle font-bold">Associations : ${title}</strong>
             ${state.answered ? renderSm2Buttons(cardId, rawTag) : ''}
           </div>
           <div class="grid grid-cols-2 gap-4 mt-3">
-            <div class="flex flex-col gap-1.5"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Clés</div>${keysHtml}</div>
-            <div class="flex flex-col gap-1.5"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Valeurs</div>${valuesHtml}</div>
+            <div class="flex flex-col gap-1.5"><div class="text-tiny font-bold text-ink-subtle uppercase tracking-wider mb-1">Clés</div>${keysHtml}</div>
+            <div class="flex flex-col gap-1.5"><div class="text-tiny font-bold text-ink-subtle uppercase tracking-wider mb-1">Valeurs</div>${valuesHtml}</div>
           </div>
-          
-          ${Object.keys(state.matches).length > 0 ? `<div class="mt-4 border-t border-slate-200 dark:border-slate-800 pt-3"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2">Liaisons créées :</div><div class="flex flex-col gap-1.5">${matchesHtml}</div></div>` : ''}
+
+          ${Object.keys(state.matches).length > 0 ? `<div class="mt-4 border-t border-line dark:border-line pt-3"><div class="text-tiny font-bold text-ink-subtle uppercase tracking-wider mb-2">Liaisons créées :</div><div class="flex flex-col gap-1.5">${matchesHtml}</div></div>` : ''}
           
           ${
             !state.answered
               ? `
-            <button type="button" class="w-full mt-4 px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent disabled:opacity-40" data-action="assoc-validate" data-tag="${encodeURIComponent(rawTag)}" ${Object.keys(state.matches).length !== keysList.length ? 'disabled' : ''}>
+            <button type="button" class="w-full mt-4 px-4 py-2 bg-primary hover:bg-primary-strong text-white font-bold rounded-xl text-xs active:scale-95 transition-all border border-transparent disabled:opacity-40" data-action="assoc-validate" data-tag="${encodeURIComponent(rawTag)}" ${Object.keys(state.matches).length !== keysList.length ? 'disabled' : ''}>
               Valider les liaisons
             </button>
           `
               : `
-            <div class="mt-4 bg-slate-100/40 dark:bg-slate-800/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
-              <div class="font-bold text-slate-700 dark:text-slate-350">Associations attendues :</div>
+            <div class="mt-4 bg-surface-soft/40 dark:bg-surface-soft/40 p-3 rounded-xl text-xs flex flex-col gap-1.5">
+              <div class="font-bold text-ink dark:text-ink-subtle">Associations attendues :</div>
               <div class="grid grid-cols-1 gap-1.5">
-                ${pairs.map((p: any) => `<div class="text-[11px] font-semibold text-slate-500"><span class="text-indigo-600 dark:text-indigo-400 font-bold">${p.key}</span> ➜ ${p.value}</div>`).join('')}
+                ${pairs.map((p: any) => `<div class="text-xs font-semibold text-ink-muted"><span class="text-primary dark:text-primary font-bold">${p.key}</span> ➜ ${p.value}</div>`).join('')}
               </div>
             </div>
           `
@@ -2447,7 +1997,7 @@ function renderMarkup(text: string): string {
 
 function renderDiagramHtml(diagram: any): string {
   if (!diagram)
-    return '<div class="text-xs text-slate-450 italic my-2">Diagramme introuvable.</div>'
+    return '<div class="text-xs text-ink-subtle italic my-2">Diagramme introuvable.</div>'
 
   try {
     const data = JSON.parse(diagram.code)
@@ -2475,7 +2025,7 @@ function renderDiagramHtml(diagram: any): string {
         const fromNode = nodesList.find((n: any) => n.id === conn.from)
         const toNode = nodesList.find((n: any) => n.id === conn.to)
         if (fromNode && toNode) {
-          linesSvg += `<line x1="${fromNode.x}" y1="${fromNode.y}" x2="${toNode.x}" y2="${toNode.y}" stroke="#6366f1" stroke-width="2" marker-end="url(#arrow-preview)" />`
+          linesSvg += `<line x1="${fromNode.x}" y1="${fromNode.y}" x2="${toNode.x}" y2="${toNode.y}" stroke="rgb(var(--sh-primary))" stroke-width="2" marker-end="url(#arrow-preview)" />`
         }
       })
 
@@ -2499,12 +2049,12 @@ function renderDiagramHtml(diagram: any): string {
           nodesHtml += `
             <div class="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center" style="top: ${node.y}px; left: ${node.x}px; width: 45px; height: 45px;">
               <div style="${shapeStyle} background-color: ${colorHex}; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 3px rgba(0,0,0,0.05);"></div>
-              <span class="absolute z-10 text-[8px] font-extrabold text-white px-1 leading-tight select-none">${node.label}</span>
+              <span class="absolute z-10 text-tiny font-extrabold text-white px-1 leading-tight select-none">${node.label}</span>
             </div>
           `
         } else {
           nodesHtml += `
-            <div class="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center px-1 text-[8px] font-bold text-white shadow-sm border border-black/5" style="top: ${node.y}px; left: ${node.x}px; ${shapeStyle} background-color: ${colorHex};">
+            <div class="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center px-1 text-tiny font-bold text-white shadow-sm border border-black/5" style="top: ${node.y}px; left: ${node.x}px; ${shapeStyle} background-color: ${colorHex};">
               <span class="select-none leading-tight">${node.label}</span>
             </div>
           `
@@ -2530,8 +2080,8 @@ function renderDiagramHtml(diagram: any): string {
         if (isReview) {
           const isRevealed = state.revealed
           const fillClass = isRevealed
-            ? 'fill-transparent stroke-rose-500/20'
-            : 'fill-slate-800 dark:fill-slate-700 opacity-100 cursor-pointer'
+            ? 'fill-transparent stroke-danger/20'
+            : 'fill-ink opacity-100 cursor-pointer'
           const pointerEvents = isRevealed ? 'pointer-events-none' : 'pointer-events-auto'
 
           masksSvg += `
@@ -2540,7 +2090,7 @@ function renderDiagramHtml(diagram: any): string {
               y="${mask.y}" 
               width="${mask.width}" 
               height="${mask.height}" 
-              class="${fillClass} stroke-rose-600 stroke-2"
+              class="${fillClass} stroke-danger stroke-2"
               style="${pointerEvents}"
               data-action="reveal" 
               data-tag="${encodeURIComponent(rawTag)}"
@@ -2551,8 +2101,8 @@ function renderDiagramHtml(diagram: any): string {
             const card = noteFlashcards.value.find((c) => c.original_text === rawTag)
             const cardId = card ? card.id : null
             activeReviewHtml += `
-              <div class="mt-2 p-2.5 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900 flex flex-col items-center gap-2">
-                <span class="text-[10px] font-bold text-slate-500">Zone : <span class="text-rose-500 font-extrabold">${mask.label}</span></span>
+              <div class="mt-2 p-2.5 border border-line dark:border-line rounded-xl bg-surface-soft/50 dark:bg-surface-soft flex flex-col items-center gap-2">
+                <span class="text-tiny font-bold text-ink-muted">Zone : <span class="text-danger font-extrabold">${mask.label}</span></span>
                 ${renderSm2Buttons(cardId, rawTag)}
               </div>
             `
@@ -2565,26 +2115,26 @@ function renderDiagramHtml(diagram: any): string {
               y="${mask.y}" 
               width="${mask.width}" 
               height="${mask.height}" 
-              class="fill-rose-500/20 stroke-rose-600 stroke-2"
+              class="fill-danger/20 stroke-danger stroke-2"
               title="Zone cachée : ${mask.label}"
             />
-            <text x="${mask.x + 4}" y="${mask.y + 12}" fill="#e11d48" font-size="8px" font-weight="bold" class="select-none pointer-events-none">${mask.label}</text>
+            <text x="${mask.x + 4}" y="${mask.y + 12}" fill="rgb(var(--sh-danger))" font-size="8px" font-weight="bold" class="select-none pointer-events-none">${mask.label}</text>
           `
         }
       })
 
       return `
-        <div class="relative w-full border border-slate-150 dark:border-slate-800 rounded-2xl bg-slate-50/20 dark:bg-slate-950/15 p-2 overflow-hidden my-4 no-print select-none" style="height: ${Math.min(500, maxY + 120)}px;">
-          <div class="absolute inset-x-0 top-0 px-4 py-1 flex items-center justify-between text-[8px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50/80 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800/60 z-10">
+        <div class="relative w-full border border-line dark:border-line rounded-2xl bg-surface-soft/20 dark:bg-surface-soft/15 p-2 overflow-hidden my-4 no-print select-none" style="height: ${Math.min(500, maxY + 120)}px;">
+          <div class="absolute inset-x-0 top-0 px-4 py-1 flex items-center justify-between text-tiny text-ink-subtle font-bold uppercase tracking-wider bg-surface-soft/80 dark:bg-surface-soft border-b border-line dark:border-line/60 z-10">
             <span>Schéma visuel : ${diagram.title}</span>
-            ${isReview ? '<span class="text-rose-500 animate-pulse font-extrabold">Mode Révision - Cliquez sur les zones grises</span>' : ''}
+            ${isReview ? '<span class="text-danger animate-pulse font-extrabold">Mode Révision - Cliquez sur les zones grises</span>' : ''}
           </div>
           <div class="w-full h-full overflow-auto pt-6 pb-24">
             <div class="relative" style="width: ${maxX}px; height: ${maxY}px;">
               <svg class="absolute inset-0 w-full h-full">
                 <defs>
                   <marker id="arrow-preview" viewBox="0 0 10 10" refX="20" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#6366f1" />
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgb(var(--sh-primary))" />
                   </marker>
                 </defs>
                 ${bgImgHtml}
@@ -2594,24 +2144,24 @@ function renderDiagramHtml(diagram: any): string {
               ${nodesHtml}
             </div>
           </div>
-          <div class="absolute inset-x-0 bottom-0 p-2 bg-white/95 dark:bg-slate-900/95 border-t border-slate-100 dark:border-slate-800/80 z-20 flex flex-col gap-1.5 max-h-36 overflow-y-auto">
-            ${activeReviewHtml || `<div class="text-[9px] text-slate-400 italic text-center py-1">${isReview ? "Aucun masque d'occlusion révélé." : "Légende : masques d'occlusion affichés."}</div>`}
+          <div class="absolute inset-x-0 bottom-0 p-2 bg-surface/95 dark:bg-surface-soft/95 border-t border-line dark:border-line/80 z-20 flex flex-col gap-1.5 max-h-36 overflow-y-auto">
+            ${activeReviewHtml || `<div class="text-tiny text-ink-subtle italic text-center py-1">${isReview ? "Aucun masque d'occlusion révélé." : "Légende : masques d'occlusion affichés."}</div>`}
           </div>
         </div>
       `
     } else {
       return `
-        <div class="border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/30 dark:bg-slate-950/15 p-4 my-4">
-          <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-2">Schéma Mermaid : ${diagram.title}</div>
-          <pre class="text-[10px] text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto select-all">${diagram.code}</pre>
+        <div class="border border-line dark:border-line rounded-2xl bg-surface-soft/30 dark:bg-surface-soft/15 p-4 my-4">
+          <div class="text-tiny text-ink-subtle font-bold uppercase tracking-wider mb-2">Schéma Mermaid : ${diagram.title}</div>
+          <pre class="text-tiny text-ink-muted font-mono bg-surface-soft dark:bg-surface-soft p-3 rounded-lg overflow-x-auto select-all">${diagram.code}</pre>
         </div>
       `
     }
   } catch {
     return `
-      <div class="border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/30 dark:bg-slate-950/15 p-4 my-4">
-        <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-2">Schéma Mermaid : ${diagram.title}</div>
-        <pre class="text-[10px] text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto select-all">${diagram.code}</pre>
+      <div class="border border-line dark:border-line rounded-2xl bg-surface-soft/30 dark:bg-surface-soft/15 p-4 my-4">
+        <div class="text-tiny text-ink-subtle font-bold uppercase tracking-wider mb-2">Schéma Mermaid : ${diagram.title}</div>
+        <pre class="text-tiny text-ink-muted font-mono bg-surface-soft dark:bg-surface-soft p-3 rounded-lg overflow-x-auto select-all">${diagram.code}</pre>
       </div>
     `
   }
@@ -2707,7 +2257,7 @@ async function applySelectionTransform(
       ],
     })
     if (!result) return
-    replaced = `[${selected}]{def:${result[0].value.trim() || 'Définition...'}}`
+    replaced = `[${selected}]{def:${String(result[0].value).trim() || 'Définition...'}}`
   } else if (type === 'qcm') {
     const result = await openModal({
       title: 'Créer un QCM',
@@ -3095,9 +2645,9 @@ async function insertDefinitionTooltip() {
       },
     ],
   })
-  if (!result || !result[0].value.trim()) return
+  if (!result || !String(result[0].value).trim()) return
 
-  const replacement = `[${selected}]{def:${result[0].value.trim()}}`
+  const replacement = `[${selected}]{def:${String(result[0].value).trim()}}`
   noteBody.value = text.substring(0, start) + replacement + text.substring(end)
 
   setTimeout(() => {
@@ -3426,55 +2976,6 @@ async function saveNoteTags(tags: Tag[]) {
 .popup-leave-to {
   opacity: 0;
   transform: translateY(-6px) scale(0.97);
-}
-
-/* Spacing & Margin resets for Modals */
-.sm2-modal-container {
-  padding: 1.5rem !important;
-}
-.sm2-modal-container .sm2-modal-title {
-  margin: 0 !important;
-  padding: 0 !important;
-  margin-bottom: 4px !important;
-  line-height: 1.1 !important;
-  font-size: 1.125rem !important;
-}
-.sm2-modal-container .sm2-modal-desc {
-  margin: 0 !important;
-  padding: 0 !important;
-  margin-top: 4px !important;
-  line-height: 1.25 !important;
-  font-size: 0.75rem !important;
-}
-.sm2-modal-container .sm2-modal-btn {
-  margin: 0 !important;
-  padding: 0.625rem 0.5rem !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  line-height: 1 !important;
-}
-.sm2-modal-container .sm2-modal-btn .sm2-btn-emoji {
-  margin: 0 0 2px 0 !important;
-  padding: 0 !important;
-  line-height: 1 !important;
-  font-size: 1.5rem !important;
-}
-.sm2-modal-container .sm2-modal-btn .sm2-btn-label {
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 1 !important;
-  font-size: 0.75rem !important;
-}
-.sm2-modal-container .sm2-modal-btn .sm2-btn-desc {
-  margin: 2px 0 0 0 !important;
-  padding: 0 !important;
-  line-height: 1 !important;
-  font-size: 9px !important;
-}
-.sm2-modal-container .sm2-modal-cancel {
-  margin-top: 0.75rem !important;
 }
 
 /* Input modal spacing reset */

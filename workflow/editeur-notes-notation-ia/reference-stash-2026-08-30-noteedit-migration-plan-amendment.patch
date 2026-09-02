@@ -1,0 +1,676 @@
+diff --git a/docs/superpowers/plans/2026-08-25-noteedit-migration-plan.md b/docs/superpowers/plans/2026-08-25-noteedit-migration-plan.md
+index f9a898f..d9bb8ba 100644
+--- a/docs/superpowers/plans/2026-08-25-noteedit-migration-plan.md
++++ b/docs/superpowers/plans/2026-08-25-noteedit-migration-plan.md
+@@ -235,7 +235,7 @@ import NoteEditHelpModal from '../../components/notes/NoteEditHelpModal.vue'
+ 
+ Run: `cd web && npx vitest run && npx vue-tsc -b`
+ Expected: all tests pass (existing count + 4), no type errors. There is no existing
+-`NoteEdit.spec.ts` yet (Task 8 creates it) — this step only guards against breaking other files.
++`NoteEdit.spec.ts` yet (Task 9 creates it) — this step only guards against breaking other files.
+ 
+ - [ ] **Step 7: Commit**
+ 
+@@ -454,7 +454,7 @@ is intentional: it's part of "apply the theme" (one consistent primary action co
+ different raw color per modal flow) — update the 6 call sites in `NoteEdit.vue`
+ (`applySelectionTransform`'s `def`/`qcm`/`ordre`/`assoc`/`vf`/`diagramme` branches and
+ `insertDefinitionTooltip`) to drop the now-unused `confirmBg` and `iconBg` raw-color values in
+-Task 5 (they become dead fields once this component ignores them — Task 5 removes them from the
++Task 6 (they become dead fields once this component ignores them — Task 6 removes them from the
+ call sites; leave them in the `openModal()` calls for this task, `NoteInputModal` simply ignores
+ the field so nothing breaks yet).
+ 
+@@ -653,20 +653,45 @@ git commit -m "refactor(notes): extrait la modale d'evaluation SM-2 vers NoteEva
+ 
+ ### Task 4: Build `NoteSidebar.vue` (replaces the AI activity modal)
+ 
++> **Amendement (canevas Direction A, révision de la maquette Notes/NoteEdit) :** cette
++> tâche a été réécrite après coup pour refléter la maquette à jour : l'Assistant IA ne
++> propose plus 3 activités arbitraires (Blurting/Générer un quiz/Évaluer la note) mais
++> exactement les **3 méthodes d'entraînement génératif** décidées avec l'utilisateur —
++> Évaluation mixte, Méthode de la feuille blanche (Blurting, renommé), Méthode Feynman
++> (nouvelle, backend déjà prêt — voir Tâche 5). Le vieux type `'quiz'`
++> (`NoteQuiz.vue`/`ai_service.generate_quiz`, QCM pur) est **retiré du panneau** : il fait
++> doublon avec `'evaluation'` (`NoteEvaluation.vue`/`ai_service.generate_evaluation`, qui
++> génère déjà un mix qcm/vf/trou/open — c'est ÇA, "Évaluation mixte") et n'est pas l'une des
++> 3 méthodes demandées. `NoteQuiz.vue` et sa route ne sont pas supprimés par cette tâche
++> (aucune suppression de fichier hors périmètre) — seulement retirés de ce panneau ; le
++> sort du fichier est une décision produit séparée à consigner dans `ETAT.md` si elle est
++> prise plus tard.
++>
++> Le bouton **« Notation »** (nouveau, décision utilisateur : noter la qualité de la fiche
++> elle-même sur 100 avec points forts/lacunes — **distinct** de « Évaluation mixte », qui
++> note la *performance de l'élève* sur des exercices générés) prend la place de l'ancien
++> bouton d'en-tête « Réviser avec l'IA ». Sa cible (`ai_service.evaluate_note_quality` ou
++> équivalent + route + vue de résultat) **n'existe pas encore** — c'est le flux 2 du plan
++> global (voir `ETAT.md` § Plan global par flux). Cette tâche ajoute donc le bouton
++> **désactivé**, avec l'info-bulle qui l'explique, plutôt que de le brancher sur du code
++> inexistant ou une route qui 404 — pas de demi-mesure silencieuse.
++
+ **Files:**
+ - Create: `web/src/components/notes/NoteSidebar.vue`
+ - Create: `web/tests/components/notes/NoteSidebar.spec.ts`
+-- Modify: `web/src/views/Notes/NoteEdit.vue` (read-mode section, `:387-461`): remove the
+-  "Réviser avec l'IA" header button and the whole AI modal block (`:724-769`), add
+-  `<NoteSidebar>` next to the reading sheet, wrap both in a flex row.
++- Modify: `web/src/views/Notes/NoteEdit.vue` (read-mode section, `:387-461`): replace the
++  "Réviser avec l'IA" header button with the new disabled "Notation" button, remove the whole
++  AI modal block (`:724-769`), add `<NoteSidebar>` next to the reading sheet, wrap both in a
++  flex row.
+ 
+ **Interfaces:**
+ - Consumes: nothing from stores directly (pure presentational — receives data via props, matches
+   `components/CLAUDE.md`).
+ - Produces: `NoteSidebar` — props `{ binderName: string, tags: Tag[], updatedAt: string }`
+-  (`Tag` from `../../stores/tags`), emits `start-activity: [type: 'blurting' | 'quiz' |
+-  'evaluation']`. The parent (`NoteEdit.vue`) keeps `startAiActivity(type)` as the single
+-  handler, now called from the emit instead of from a modal button.
++  (`Tag` from `../../stores/tags`), emits `start-activity: [type: 'evaluation' | 'blurting' |
++  'feynman']`. The parent (`NoteEdit.vue`) keeps `startAiActivity(type)` as the single
++  handler, now called from the emit instead of from a modal button. Task 5 (`NoteFeynman.vue`)
++  consumes the `'feynman'` type by registering the matching route.
+ 
+ - [ ] **Step 1: Write the failing test**
+ 
+@@ -682,11 +707,13 @@ const tags: Tag[] = [
+ ]
+ 
+ describe('NoteSidebar', () => {
+-  it('affiche les 3 activites IA', () => {
++  it('affiche les 3 methodes IA a jour (evaluation mixte, feuille blanche, feynman)', () => {
+     const wrapper = mount(NoteSidebar, { props: { binderName: 'Chimie organique', tags: [], updatedAt: '2026-08-25T09:14:00Z' } })
+-    expect(wrapper.text()).toContain('Blurting')
+-    expect(wrapper.text()).toContain('Générer un quiz')
+-    expect(wrapper.text()).toContain('Évaluer la note')
++    expect(wrapper.text()).toContain('Évaluation mixte')
++    expect(wrapper.text()).toContain('Méthode de la feuille blanche')
++    expect(wrapper.text()).toContain('Méthode Feynman')
++    expect(wrapper.text()).not.toContain('Générer un quiz')
++    expect(wrapper.text()).not.toContain('Évaluer la note')
+   })
+ 
+   it('emet start-activity avec le bon type au clic sur chaque carte', async () => {
+@@ -695,7 +722,7 @@ describe('NoteSidebar', () => {
+     await buttons[0].trigger('click')
+     await buttons[1].trigger('click')
+     await buttons[2].trigger('click')
+-    expect(wrapper.emitted('start-activity')).toEqual([['blurting'], ['quiz'], ['evaluation']])
++    expect(wrapper.emitted('start-activity')).toEqual([['evaluation'], ['blurting'], ['feynman']])
+   })
+ 
+   it('affiche le classeur, les tags et la date de modification dans Metadonnees', () => {
+@@ -724,7 +751,8 @@ Expected: FAIL — module not found.
+ <template>
+   <div class="w-full lg:w-72 flex-shrink-0 flex flex-col gap-4 no-print">
+     <BaseCard padding="sm">
+-      <h4 class="text-xs font-bold text-ink-muted uppercase tracking-wider mb-3">Assistant IA</h4>
++      <h4 class="text-xs font-bold text-ink-muted uppercase tracking-wider mb-1">Assistant IA</h4>
++      <p class="text-[11px] text-ink-subtle mb-3 leading-snug">S'entraîner sur cette note, à partir de son contenu.</p>
+       <div class="flex flex-col gap-2">
+         <button
+           v-for="activity in activities"
+@@ -765,7 +793,7 @@ Expected: FAIL — module not found.
+ 
+ <script setup lang="ts">
+ import { computed } from 'vue'
+-import { Brain, HelpCircle, Sparkles } from '@lucide/vue'
++import { Brain, HelpCircle, Lightbulb } from '@lucide/vue'
+ import BaseCard from '../ui/base/BaseCard.vue'
+ import TagBadge from '../ui/TagBadge.vue'
+ import type { Tag } from '../../stores/tags'
+@@ -776,12 +804,15 @@ const props = defineProps<{
+   updatedAt: string
+ }>()
+ 
+-defineEmits<{ 'start-activity': [type: 'blurting' | 'quiz' | 'evaluation'] }>()
++defineEmits<{ 'start-activity': [type: 'evaluation' | 'blurting' | 'feynman'] }>()
+ 
++// Ordre et libellés alignés sur la demande utilisateur : Évaluation mixte, Méthode de la
++// feuille blanche, Méthode Feynman — exactement ces 3 méthodes, pas de 4e (le QCM pur
++// 'quiz' fait doublon avec l'évaluation mixte et n'a pas été demandé ici).
+ const activities = [
+-  { type: 'blurting' as const, label: 'Blurting', icon: Brain },
+-  { type: 'quiz' as const, label: 'Générer un quiz', icon: HelpCircle },
+-  { type: 'evaluation' as const, label: 'Évaluer la note', icon: Sparkles },
++  { type: 'evaluation' as const, label: 'Évaluation mixte', icon: HelpCircle },
++  { type: 'blurting' as const, label: 'Méthode de la feuille blanche', icon: Brain },
++  { type: 'feynman' as const, label: 'Méthode Feynman', icon: Lightbulb },
+ ]
+ 
+ const formattedUpdatedAt = computed(() => {
+@@ -798,10 +829,29 @@ const formattedUpdatedAt = computed(() => {
+ Run: `cd web && npx vitest run tests/components/notes/NoteSidebar.spec.ts`
+ Expected: 4 passed
+ 
+-- [ ] **Step 5: Wire it into `NoteEdit.vue`, remove the AI modal and header button**
++- [ ] **Step 5: Wire it into `NoteEdit.vue`: swap the header button for "Notation", remove the AI modal**
+ 
+ In the read-mode block (`NoteEdit.vue:387-461`):
+-1. Remove the "Réviser avec l'IA" `<button>` (`:425-431`).
++1. Replace the "Réviser avec l'IA" `<button>` (`:425-431`) with a disabled "Notation" button —
++   same slot, new purpose, kept deliberately non-functional until the flux 2 plan (Notation de
++   la note) lands (see the amendment note above the task title):
++
++```vue
++<!-- Notation (note quality grading) - disabled until flux 2 ships the backend + result view -->
++<button
++  type="button"
++  disabled
++  data-test="note-quality-grade-button"
++  title="Bientôt disponible — dépend du chantier « Notation de la note » (voir ETAT.md, plan global par flux)"
++  class="inline-flex items-center gap-2 px-4 py-2 border border-line dark:border-line rounded-xl text-sm font-semibold text-ink-subtle opacity-50 cursor-not-allowed"
++>
++  <Award class="w-4 h-4" />
++  Notation
++</button>
++```
++
++Add `Award` to the existing `@lucide/vue` import in `NoteEdit.vue`'s `<script setup>`.
++
+ 2. Wrap the existing `<div class="max-w-4xl mx-auto bg-surface ...">` (the "Cohesive Paper Sheet",
+    `:464` onward) and the new `<NoteSidebar>` in a flex row, so the sheet stays centered/max-width
+    when there's no sidebar need (edit mode is untouched) but gets a sidebar in read mode:
+@@ -830,7 +880,7 @@ div loses its `.max-w-4xl` class in this change — but the sheet already carrie
+ `print:border-none print:shadow-none print:p-0 print:bg-white print:text-black` Tailwind
+ variants inline, which cover the same reset directly and don't depend on the generic selector.
+ The new outer `.max-w-6xl` wrapper is still matched by that generic rule. This should be
+-sufficient, but confirm PDF export still looks correct in Task 9's visual verification rather
++sufficient, but confirm PDF export still looks correct in Task 10's visual verification rather
+ than assuming — if margins look off in print preview, add the missing reset declarations
+ directly as `print:` Tailwind variants on the sheet div, the same way the existing ones are
+ written.
+@@ -838,7 +888,16 @@ written.
+ 3. Remove the entire AI modal block (`:724-769`, the whole `<transition>...showAiModal...`).
+ 4. Remove `showAiModal` ref (`NoteEdit.vue:1188`) and the `aiActivities` array
+    (`NoteEdit.vue:1233-1258`) — both now dead.
+-5. Add a new `noteUpdatedAt` ref, populated in `loadNoteDetails()` alongside the other fields
++5. Simplify `startAiActivity` (`NoteEdit.vue:1260-1263`) — drop the now-meaningless
++   `showAiModal.value = false` line, keep only the navigation:
++
++```typescript
++function startAiActivity(type: string) {
++  router.push(`/notes/${noteId.value}/${type}`)
++}
++```
++
++6. Add a new `noteUpdatedAt` ref, populated in `loadNoteDetails()` alongside the other fields
+    (`note.updated_at` — already present on the `Note` interface in `stores/notes.ts:12`):
+ 
+ ```typescript
+@@ -862,7 +921,390 @@ git commit -m "feat(notes): remplace la modale Activites IA par une carte latera
+ 
+ ---
+ 
+-### Task 5: Retone the edit-mode header, toolbar, share popup and settings drawer
++### Task 5: Build `NoteFeynman.vue` and wire the Feynman activity
++
++**Context:** the backend for this method is already fully built and shipped — nothing to add
++there. `POST /api/v1/feynman/analyze` (body `{ note_id, user_explanation, duration_seconds }`)
++returns either `{ status: 'SUCCESS', result }` (sync fallback) or `{ task_id, status }` (202,
++async — poll `GET /api/v1/feynman/tasks/<task_id>` the same way `Blurting.vue` already does for
++`/blurting/analyze`/`/blurting/tasks/<id>`). `result` is exactly:
++`{ clarity_score: number (0-100), jargon: string[], gaps: { concept: string, issue: string }[],
++feedback: string, suggestion: string }` (`backend/app/services/ai_service.py:180-244`). This
++task mirrors `Blurting.vue`'s structure (same two-step layout: writing → results, same polling
++loop) but for this exact result shape — no flashcard-import panel (the Feynman prompt doesn't
++generate flashcards).
++
++**Files:**
++- Create: `web/src/views/Notes/NoteFeynman.vue`
++- Create: `web/tests/views/Notes/NoteFeynman.spec.ts`
++- Modify: `web/src/router/index.ts`: add the route (find the existing `blurting`/`quiz`/
++  `evaluation` note-activity routes and add a sibling entry).
++
++**Interfaces:**
++- Consumes: `NoteSidebar`'s `start-activity` emit with `type: 'feynman'` (Task 4) navigates here
++  via `router.push(\`/notes/${noteId}/feynman\`)`.
++- Produces: nothing consumed by later tasks — this is a leaf view.
++
++- [ ] **Step 1: Add the router entry**
++
++In `web/src/router/index.ts`, next to the existing note-activity routes (search for the route
++whose `component` resolves `Blurting.vue`, e.g. `path: '/notes/:id/blurting'`), add:
++
++```typescript
++{
++  path: '/notes/:id/feynman',
++  name: 'NoteFeynman',
++  component: () => import('../views/Notes/NoteFeynman.vue'),
++  meta: { requiresAuth: true },
++},
++```
++
++Match the exact `meta` shape used by the sibling `blurting` route in this file (copy it rather
++than guessing — some note-activity routes also set `meta: { immersive: true }` to hide the app
++shell header; if the `blurting` route has it, `feynman` gets it too, for the same full-bleed
++session layout).
++
++- [ ] **Step 2: Write the failing test**
++
++```typescript
++// web/tests/views/Notes/NoteFeynman.spec.ts
++import { describe, it, expect, vi, beforeEach } from 'vitest'
++import { mount, flushPromises } from '@vue/test-utils'
++import { createRouter, createMemoryHistory } from 'vue-router'
++import { createTestingPinia } from '@pinia/testing'
++import NoteFeynman from '../../../src/views/Notes/NoteFeynman.vue'
++import api from '../../../src/services/api'
++
++vi.mock('../../../src/services/api')
++
++const router = createRouter({
++  history: createMemoryHistory(),
++  routes: [
++    { path: '/notes/:id/feynman', name: 'NoteFeynman', component: NoteFeynman },
++    { path: '/notes/:id', name: 'NoteEdit', component: { template: '<div/>' } },
++  ],
++})
++
++async function mountView() {
++  router.push('/notes/42/feynman')
++  await router.isReady()
++  return mount(NoteFeynman, {
++    global: { plugins: [router, createTestingPinia({ createSpy: vi.fn })] },
++  })
++}
++
++describe('NoteFeynman', () => {
++  beforeEach(() => {
++    vi.mocked(api.get).mockResolvedValue({ data: { title: 'SN1 vs SN2', content: '...' } })
++  })
++
++  it('charge le titre de la note et affiche la consigne Feynman', async () => {
++    const wrapper = await mountView()
++    await flushPromises()
++    expect(wrapper.text()).toContain('SN1 vs SN2')
++    expect(wrapper.text()).toContain('Méthode Feynman')
++  })
++
++  it("envoie l'explication et affiche le resultat (chemin synchrone)", async () => {
++    vi.mocked(api.post).mockResolvedValue({
++      data: {
++        status: 'SUCCESS',
++        result: {
++          clarity_score: 65,
++          jargon: ['carbocation'],
++          gaps: [{ concept: 'inversion de Walden', issue: 'jamais mentionnée' }],
++          feedback: 'Bonne intuition mais quelques trous.',
++          suggestion: 'Introduis une analogie pour le groupe partant.',
++        },
++      },
++    })
++    const wrapper = await mountView()
++    await flushPromises()
++    await wrapper.find('textarea').setValue('Mon explication simple du mecanisme...')
++    await wrapper.find('[data-test="feynman-submit"]').trigger('click')
++    await flushPromises()
++    expect(api.post).toHaveBeenCalledWith('/feynman/analyze', expect.objectContaining({
++      note_id: '42',
++      user_explanation: 'Mon explication simple du mecanisme...',
++    }))
++    expect(wrapper.text()).toContain('65')
++    expect(wrapper.text()).toContain('carbocation')
++    expect(wrapper.text()).toContain('inversion de Walden')
++    expect(wrapper.text()).toContain('Introduis une analogie pour le groupe partant.')
++  })
++
++  it('desactive le bouton envoyer tant que le champ est vide', async () => {
++    const wrapper = await mountView()
++    await flushPromises()
++    const button = wrapper.find('[data-test="feynman-submit"]')
++    expect(button.attributes('disabled')).toBeDefined()
++  })
++})
++```
++
++- [ ] **Step 3: Run test to verify it fails**
++
++Run: `cd web && npx vitest run tests/views/Notes/NoteFeynman.spec.ts`
++Expected: FAIL — module not found.
++
++- [ ] **Step 4: Write the component**
++
++```vue
++<!-- web/src/views/Notes/NoteFeynman.vue -->
++<template>
++  <div class="min-h-screen bg-surface-soft dark:bg-[#070913] flex flex-col animate-fade-in">
++    <header class="bg-surface dark:bg-surface-soft border-b border-line dark:border-line px-6 py-4 sticky top-0 z-30">
++      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
++        <div class="flex items-center gap-3">
++          <button
++            @click="goBack"
++            class="p-2 text-ink-subtle hover:text-ink-muted dark:hover:text-ink-subtle rounded-xl hover:bg-surface-soft dark:hover:bg-surface-soft transition-all"
++            title="Retour à la note"
++          >
++            <ChevronLeft class="w-5 h-5" />
++          </button>
++          <div>
++            <span class="text-[10px] font-bold text-primary uppercase tracking-wider">Méthode Feynman (IA)</span>
++            <h1 class="text-base font-bold text-ink dark:text-white line-clamp-1">
++              {{ noteTitle || 'Chargement de la note...' }}
++            </h1>
++          </div>
++        </div>
++
++        <button
++          v-if="step === 'writing'"
++          data-test="feynman-submit"
++          @click="submitForAnalysis"
++          :disabled="!explanation.trim() || analyzing"
++          class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-strong text-white rounded-xl text-sm font-bold shadow-lg shadow-elev-primary disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all"
++        >
++          <Sparkles class="w-4 h-4" />
++          Analyser avec l'IA
++        </button>
++
++        <button
++          v-if="step === 'results'"
++          @click="resetSession"
++          class="inline-flex items-center gap-2 px-5 py-2.5 border border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft rounded-xl text-sm font-bold transition-all text-ink dark:text-ink-subtle"
++        >
++          <RotateCcw class="w-4 h-4" />
++          Recommencer
++        </button>
++      </div>
++    </header>
++
++    <main class="flex-1 max-w-4xl mx-auto w-full p-6 flex flex-col gap-6">
++      <div v-if="step === 'writing'" class="flex-1 flex flex-col gap-6">
++        <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm">
++          <h2 class="text-sm font-bold text-ink dark:text-ink-subtle flex items-center gap-2">
++            <BookOpen class="w-4 h-4 text-primary" />
++            Consigne
++          </h2>
++          <p class="text-xs text-ink-muted dark:text-ink-subtle mt-2 leading-relaxed">
++            Explique ce sujet avec tes propres mots, comme si tu l'enseignais à quelqu'un qui n'y
++            connaît rien. Évite le jargon — ou explique-le au passage.
++          </p>
++        </div>
++
++        <div class="flex-1 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-lg shadow-soft-lg dark:shadow-none flex flex-col">
++          <textarea
++            v-model="explanation"
++            placeholder="Explique ce concept comme si tu le racontais à un enfant de 10 ans..."
++            class="flex-1 w-full p-4 bg-transparent outline-none border-0 focus:ring-0 text-base leading-relaxed text-ink dark:text-ink-subtle resize-none font-sans"
++            :disabled="analyzing"
++          ></textarea>
++        </div>
++      </div>
++
++      <div v-else-if="step === 'results'" class="flex flex-col gap-6">
++        <div class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 shadow-sm flex flex-col md:flex-row items-center gap-8">
++          <div class="relative w-32 h-32 flex items-center justify-center flex-shrink-0">
++            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
++              <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8" class="text-ink-subtle dark:text-ink" fill="transparent" />
++              <circle
++                cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8"
++                :class="scoreColorClass" fill="transparent"
++                :stroke-dasharray="2 * Math.PI * 40"
++                :stroke-dashoffset="2 * Math.PI * 40 * (1 - result.clarity_score / 100)"
++                class="transition-all duration-1000 ease-out"
++              />
++            </svg>
++            <div class="absolute flex flex-col items-center">
++              <span class="text-2xl font-extrabold text-ink dark:text-white">{{ result.clarity_score }}</span>
++              <span class="text-[9px] text-ink-subtle font-bold uppercase tracking-wider">Clarté / 100</span>
++            </div>
++          </div>
++          <p class="flex-1 text-sm text-ink-muted dark:text-ink-subtle leading-relaxed italic">" {{ result.feedback }} "</p>
++        </div>
++
++        <div v-if="result.jargon.length > 0" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm">
++          <h2 class="text-sm font-bold text-ink dark:text-ink-subtle uppercase tracking-wider mb-3">Jargon glissé sans l'expliquer</h2>
++          <div class="flex flex-wrap gap-2">
++            <span v-for="term in result.jargon" :key="term" class="text-xs font-semibold px-3 py-1 rounded-full bg-warning-soft text-warning">{{ term }}</span>
++          </div>
++        </div>
++
++        <div v-if="result.gaps.length > 0" class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm">
++          <h2 class="text-sm font-bold text-ink dark:text-ink-subtle uppercase tracking-wider mb-3">Là où l'explication décroche</h2>
++          <ul class="space-y-2">
++            <li v-for="gap in result.gaps" :key="gap.concept" class="text-sm text-ink-muted dark:text-ink-subtle">
++              <strong class="text-ink dark:text-white">{{ gap.concept }}</strong> — {{ gap.issue }}
++            </li>
++          </ul>
++        </div>
++
++        <div class="bg-primary-soft border border-primary/20 rounded-3xl p-6">
++          <h2 class="text-sm font-bold text-primary uppercase tracking-wider mb-2">Suggestion</h2>
++          <p class="text-sm text-ink dark:text-ink-subtle leading-relaxed">{{ result.suggestion }}</p>
++        </div>
++      </div>
++    </main>
++  </div>
++</template>
++
++<script setup lang="ts">
++import { ref, computed, onMounted } from 'vue'
++import { useRoute, useRouter } from 'vue-router'
++import api from '../../services/api'
++import { ChevronLeft, Sparkles, BookOpen, RotateCcw } from '@lucide/vue'
++
++const route = useRoute()
++const router = useRouter()
++
++const noteId = ref(route.params.id as string)
++const noteTitle = ref('')
++
++const step = ref<'writing' | 'results'>('writing')
++const explanation = ref('')
++const analyzing = ref(false)
++
++const result = ref<{
++  clarity_score: number
++  jargon: string[]
++  gaps: Array<{ concept: string; issue: string }>
++  feedback: string
++  suggestion: string
++}>({ clarity_score: 0, jargon: [], gaps: [], feedback: '', suggestion: '' })
++
++const scoreColorClass = computed(() => {
++  const score = result.value.clarity_score
++  if (score >= 80) return 'text-emerald-500'
++  if (score >= 50) return 'text-amber-500'
++  return 'text-rose-500'
++})
++
++async function loadNote() {
++  try {
++    const res = await api.get(`/notes/${noteId.value}`)
++    noteTitle.value = res.data.title
++  } catch (err) {
++    console.error('Erreur lors du chargement de la note', err)
++    alert('Impossible de charger la note.')
++    goBack()
++  }
++}
++
++onMounted(loadNote)
++
++function goBack() {
++  router.push(`/notes/${noteId.value}`)
++}
++
++function resetSession() {
++  explanation.value = ''
++  result.value = { clarity_score: 0, jargon: [], gaps: [], feedback: '', suggestion: '' }
++  step.value = 'writing'
++}
++
++async function submitForAnalysis() {
++  if (!explanation.value.trim()) return
++  analyzing.value = true
++
++  try {
++    const response = await api.post('/feynman/analyze', {
++      note_id: noteId.value,
++      user_explanation: explanation.value,
++      duration_seconds: 0,
++    })
++
++    if (response.data.status === 'SUCCESS' && response.data.result) {
++      result.value = response.data.result
++      step.value = 'results'
++      return
++    }
++
++    const { task_id } = response.data
++    if (!task_id) {
++      throw new Error("L'API n'a pas retourné de identifiant de tâche (task_id).")
++    }
++
++    let finished = false
++    let attempts = 0
++    const maxAttempts = 60
++
++    while (!finished && attempts < maxAttempts) {
++      attempts++
++      await new Promise((resolve) => setTimeout(resolve, 2000))
++
++      const pollResponse = await api.get(`/feynman/tasks/${task_id}`)
++      const status = pollResponse.data.status
++
++      if (status === 'SUCCESS') {
++        finished = true
++        result.value = pollResponse.data.result
++        step.value = 'results'
++      } else if (status === 'FAILURE' || pollResponse.data.error) {
++        finished = true
++        const errorMsg = pollResponse.data.error?.message || "L'analyse a échoué."
++        throw new Error(errorMsg)
++      }
++    }
++
++    if (!finished) {
++      throw new Error("L'analyse a mis trop de temps à s'exécuter. Veuillez réessayer.")
++    }
++  } catch (err: any) {
++    console.error("Erreur lors de l'analyse par l'IA", err)
++    const errMsg = err.response?.data?.error?.message || err.message || 'Une erreur inconnue est survenue.'
++    alert(`Erreur d'analyse IA : ${errMsg}`)
++  } finally {
++    analyzing.value = false
++  }
++}
++</script>
++
++<style scoped>
++.animate-fade-in {
++  animation: fadeIn 0.4s ease-out forwards;
++}
++
++@keyframes fadeIn {
++  from { opacity: 0; transform: translateY(8px); }
++  to { opacity: 1; transform: translateY(0); }
++}
++</style>
++```
++
++- [ ] **Step 5: Run test to verify it passes**
++
++Run: `cd web && npx vitest run tests/views/Notes/NoteFeynman.spec.ts`
++Expected: 3 passed
++
++- [ ] **Step 6: Run full web suite and typecheck**
++
++Run: `cd web && npx vitest run && npx vue-tsc -b`
++Expected: all tests pass, no type errors.
++
++- [ ] **Step 7: Commit**
++
++```bash
++git add web/src/views/Notes/NoteFeynman.vue web/tests/views/Notes/NoteFeynman.spec.ts web/src/router/index.ts
++git commit -m "feat(notes): ajoute la methode Feynman (IA) comme 3e activite de l'assistant"
++```
++
++---
++
++### Task 6: Retone the edit-mode header, toolbar, share popup and settings drawer
+ 
+ **Files:**
+ - Modify: `web/src/views/Notes/NoteEdit.vue:52-350` (edit-mode block: header rows, formatting
+@@ -872,8 +1314,8 @@ git commit -m "feat(notes): remplace la modale Activites IA par une carte latera
+ 
+ This task has no new test (pure visual retoning of already-tested-elsewhere interactive
+ elements — the existing `data-test`/structure stays, only `class` attributes change). Guard rail:
+-run the full suite before and after to confirm no existing behavior broke, and re-run Task 8's
+-suite once it exists later in the plan (Task 8 depends on this task's final class names for a
++run the full suite before and after to confirm no existing behavior broke, and re-run Task 9's
++suite once it exists later in the plan (Task 9 depends on this task's final class names for a
+ handful of assertions noted there).
+ 
+ - [ ] **Step 1: Replace every raw color class in this range per the spec's token mapping table**
+@@ -954,7 +1396,7 @@ git commit -m "refactor(notes): retone l'en-tete et la barre de formatage du mod
+ 
+ ---
+ 
+-### Task 6: Retone `renderMarkup`'s generated HTML (active-reading placeholders, SM-2 buttons, diagram rendering)
++### Task 7: Retone `renderMarkup`'s generated HTML (active-reading placeholders, SM-2 buttons, diagram rendering)
+ 
+ **Files:**
+ - Modify: `web/src/views/Notes/NoteEdit.vue:1618-2214` (`renderSm2Buttons`, `renderMarkup`,
+@@ -1173,13 +1615,13 @@ git commit -m "refactor(notes): retone le moteur de rendu des syntaxes de revisi
+ 
+ ---
+ 
+-### Task 7: Fix the silent load-error gap, add breadcrumb, retone the read-mode sheet header
++### Task 8: Fix the silent load-error gap, add breadcrumb, retone the read-mode sheet header
+ 
+ **Files:**
+ - Modify: `web/src/views/Notes/NoteEdit.vue` (`loadNoteDetails`, read-mode header block)
+-- Test: extends `web/tests/views/Notes/NoteEdit.spec.ts` (created in Task 8 — if Task 8 hasn't
++- Test: extends `web/tests/views/Notes/NoteEdit.spec.ts` (created in Task 9 — if Task 9 hasn't
+   run yet in whatever order the executor picks, create the file here with just this task's tests;
+-  Task 8 will find it already present and add to it, per the "no placeholders" merge note below)
++  Task 9 will find it already present and add to it, per the "no placeholders" merge note below)
+ 
+ **Interfaces:** adds a `loadError` ref (boolean) to `NoteEdit.vue`'s existing state, following
+ the exact same pattern already used on `Accueil.vue` and `StudyDeck.vue` for this cycle's
+@@ -1188,7 +1630,7 @@ earlier screens.
+ - [ ] **Step 1: Write the failing test**
+ 
+ ```typescript
+-// web/tests/views/Notes/NoteEdit.spec.ts (new file, or append if Task 8 already created it)
++// web/tests/views/Notes/NoteEdit.spec.ts (new file, or append if Task 9 already created it)
+ import { describe, it, expect, vi, beforeEach } from 'vitest'
+ import { mount, flushPromises } from '@vue/test-utils'
+ import { createPinia, setActivePinia } from 'pinia'
+@@ -1362,7 +1804,7 @@ existing `<div class="max-w-4xl mx-auto flex items-center justify-between no-pri
+ 
+ Convert "Réviser avec l'IA" — wait, that button was removed in Task 4. Convert "Modifier la
+ fiche" and "Guide" to `BaseButton variant="secondary"`, "Exporter en PDF" to `BaseButton
+-variant="primary"`, matching the same pattern as Task 5's edit-mode conversions. Mode switcher
++variant="primary"`, matching the same pattern as Task 6's edit-mode conversions. Mode switcher
+ (Lecture / Révision Active) becomes the `Tabs` primitive:
+ 
+ ```vue
+@@ -1386,17 +1828,17 @@ git commit -m "fix(notes): ajoute un etat d'erreur au chargement de la note, fil
+ 
+ ---
+ 
+-### Task 8: Full behavioral test suite for `NoteEdit.vue`
++### Task 9: Full behavioral test suite for `NoteEdit.vue`
+ 
+ **Files:**
+-- Modify: `web/tests/views/Notes/NoteEdit.spec.ts` (extends the file started in Task 7)
++- Modify: `web/tests/views/Notes/NoteEdit.spec.ts` (extends the file started in Task 8)
+ 
+ **Interfaces:** none new — this task is pure test coverage against the inventory in the spec
+ document, following `migration-ecran` step 3 (a test per recensed element/action/state).
+ 
+ - [ ] **Step 1: Write the tests, one per inventory item not already covered by Tasks 1-7's tests**
+ 
+-Cover, each as a separate `it(...)`, mounting via the same `mountRoute()`-style helper as Task 7
++Cover, each as a separate `it(...)`, mounting via the same `mountRoute()`-style helper as Task 8
+ (reuse/extend it in this file rather than duplicating):
+ 
+ - Loading state: spinner shows while `fetchNoteById` is pending (unresolved promise), text
+@@ -1468,7 +1910,7 @@ git commit -m "test(notes): couverture complete de NoteEdit.vue (inventaire ecra
+ 
+ ---
+ 
+-### Task 9: Visual verification and `ETAT.md` update
++### Task 10: Visual verification and `ETAT.md` update
+ 
+ **Files:**
+ - Modify: `ETAT.md`
