@@ -1150,6 +1150,14 @@ bug introduit par ce chantier ni par cette tâche — la liaison note↔flashcar
 semble ne jamais avoir été câblée côté backend. Signalé pour un futur chantier ciblé plutôt que
 corrigé ici (architectural, pas un correctif ponctuel).
 
+**Déviation documentée (Tâche 6)** : le menu flottant de sélection de texte du mode édition
+(couleurs `pink-50`/`cyan-50`/`teal-50`/`sky-50` et leurs variantes `dark:`, `NoteEdit.vue`
+lignes ~866/896/906/916) reste volontairement non retoné sur les tokens du design system — celui-ci
+n'expose que 8 teintes distinctes (5 sémantiques + 3 catégories bibliothèque) pour les 9 actions
+d'insertion du menu, ce qui exigerait une décision de design dédiée plutôt qu'un simple
+remplacement de token (détail complet dans le corps du commit `2f947a8`). Candidat pour un futur
+audit de tokens couleur, au même titre que le concern `flashcards` ci-dessus.
+
 **Documentation** : `workflow/editeur-notes-notation-ia/{PLAN,JOURNAL}.md` mis à jour (tâches
 cochées, entrée de clôture). `docs/superpowers/plans/2026-08-30-editeur-notes-redesign.md`
 reste la référence détaillée des 10 tâches. Volet backend « Notation de la note » (flux 2)

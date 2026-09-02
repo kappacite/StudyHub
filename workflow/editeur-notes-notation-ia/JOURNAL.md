@@ -87,3 +87,18 @@ un futur chantier ciblé.
 action » déplacé vers l'écran 5 (Blurting IA). Volet backend « Notation de la note » (flux 2)
 resté hors périmètre, cases non cochées intentionnellement. Chantier `editeur-notes-notation-ia`
 prêt pour la revue finale de branche.
+
+## 2026-09-02 (revue de branche finale, correctif documentation)
+
+Revue de branche complète (`main`..`feature/editeur-notes-notation-ia`, 14 commits) dispatchée
+via `superpowers:requesting-code-review`. Résultat : aucun défaut Critical, code/tests/typecheck
+solides et revérifiés indépendamment par le relecteur (508/508 tests, `vue-tsc -b` propre,
+gestion DOMPurify/XSS intacte, aucun `any` nouveau, routing des 3 activités de la sidebar
+vérifié). 1 défaut Important : la déviation de la Tâche 6 (menu flottant de sélection de texte
+laissé non retoné — 4 couleurs brutes `pink-50`/`cyan-50`/`teal-50`/`sky-50`, détail dans le
+corps du commit `2f947a8`) n'était documentée que dans le message de commit, pas dans les docs
+persistantes du chantier comme l'exigeait le plan. Corrigé : paragraphe ajouté à `ETAT.md`
+§ Écran 4. Quelques remarques Minor (couleurs brutes `bg-[#070913]` et palette de
+`NoteEvaluationModal.vue`, hors périmètre des tâches concernées, déjà repérées comme motifs
+préexistants partagés avec d'autres écrans) — aucune action requise, notées pour un futur audit
+de tokens couleur. Chantier prêt pour clôture (push + PR).
