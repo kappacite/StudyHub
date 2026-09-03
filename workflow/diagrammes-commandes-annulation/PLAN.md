@@ -2,9 +2,9 @@
 
 Une case = une tâche atomique. TDD sans exception (§8.7). Arbitrages : `CONTEXT.md`.
 
-- [ ] Task 1 — Ajout de `fast-check` en devDependency (`npm install -D fast-check`). Aucun
+- [x] Task 1 — Ajout de `fast-check` en devDependency (`npm install -D fast-check`). Aucun
   test propre à cette tâche (installation de dépendance) ; vérifiée par l'usage en Task 2.
-- [ ] Task 2 — Invariant d'annulation testé par propriété, **écrit en premier** (§8.7). Dans
+- [x] Task 2 — Invariant d'annulation testé par propriété, **écrit en premier** (§8.7). Dans
   `web/tests/diagram/history.property.spec.ts` : générateur `fast-check` de séquences
   arbitraires de `Command` (add/remove/update sur des éléments générés), propriété : pour
   toute séquence exécutée puis intégralement annulée, le document final est structurellement
