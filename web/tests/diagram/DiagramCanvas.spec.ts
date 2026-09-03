@@ -94,4 +94,58 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
       expect((wrapper.vm as unknown as { selectedElementId: string | null }).selectedElementId).toBe('a')
     })
   })
+
+  describe('déplacement d\'un élément (diagrammes-placement-selection, Task 4)', () => {
+    it('un glisser complet produit exactement une entrée dans l\'historique (pas une par mousemove)', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+      await el.trigger('mousedown', { clientX: 400, clientY: 300 })
+      await el.trigger('mousemove', { clientX: 410, clientY: 300 })
+      await el.trigger('mousemove', { clientX: 420, clientY: 305 })
+      await el.trigger('mousemove', { clientX: 430, clientY: 310 })
+      await el.trigger('mouseup', { clientX: 430, clientY: 310 })
+      expect(wrapper.emitted('update:document')).toHaveLength(1)
+    })
+
+    it('annuler après un glisser restitue la position d\'avant le geste', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+      await el.trigger('mousedown', { clientX: 400, clientY: 300 })
+      await el.trigger('mousemove', { clientX: 430, clientY: 310 })
+      await el.trigger('mouseup', { clientX: 430, clientY: 310 })
+      const emitted = wrapper.emitted('update:document')!
+      const afterDrag = emitted[0][0] as DiagramDocumentV1
+      expect(afterDrag.elements[0]).not.toMatchObject({ x: 0, y: 0 })
+
+      const vm = wrapper.vm as unknown as { history: { undo: (d: DiagramDocumentV1) => DiagramDocumentV1 } }
+      const restored = vm.history.undo(afterDrag)
+      expect(restored.elements[0]).toMatchObject({ x: 0, y: 0 })
+    })
+
+    it('maintenir Alt pendant le glisser place l\'élément à la position brute (non magnétisée)', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+      await el.trigger('mousedown', { clientX: 400, clientY: 300 })
+      await el.trigger('mousemove', { clientX: 423, clientY: 317, altKey: true })
+      await el.trigger('mouseup', { clientX: 423, clientY: 317, altKey: true })
+      const emitted = wrapper.emitted('update:document')!
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      expect(doc2.elements[0]).toMatchObject({ x: 23, y: 17 })
+    })
+
+    it('sans Alt, la position est magnétisée sur la grille', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+      await el.trigger('mousedown', { clientX: 400, clientY: 300 })
+      await el.trigger('mousemove', { clientX: 423, clientY: 317 })
+      await el.trigger('mouseup', { clientX: 423, clientY: 317 })
+      const emitted = wrapper.emitted('update:document')!
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      expect(doc2.elements[0]).toMatchObject({ x: 20, y: 20 })
+    })
+  })
 })

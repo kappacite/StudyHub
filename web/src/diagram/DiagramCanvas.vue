@@ -49,7 +49,9 @@
 // du cycle où un geste modifie réellement le document).
 import { ref, computed } from 'vue'
 import { createDefaultCamera, panBy, zoomAt, type Camera } from './camera'
-import { cullElements, getVisibleWorldBounds } from './viewport'
+import { cullElements, elementBounds, getVisibleWorldBounds } from './viewport'
+import { snapToGrid, computeAlignmentSnap } from './snapping'
+import { DiagramHistory } from './history'
 import type { DiagramDocumentV1, DiagramElement } from './document'
 
 const props = defineProps<{
@@ -57,6 +59,15 @@ const props = defineProps<{
   viewportWidth: number
   viewportHeight: number
 }>()
+
+const emit = defineEmits<{ 'update:document': [doc: DiagramDocumentV1] }>()
+
+// Une seule commande par geste de glisser (cf. CONTEXT.md) : pas de flood de la pile
+// d'annulation à chaque mousemove.
+const history = new DiagramHistory()
+
+const GRID_SIZE = 10
+const ALIGN_THRESHOLD_PX = 6
 
 const camera = ref<Camera>(createDefaultCamera())
 const viewportSize = computed(() => ({ width: props.viewportWidth, height: props.viewportHeight }))
@@ -113,11 +124,46 @@ function onBackgroundMouseDown(event: MouseEvent) {
 
 function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
   const start = { x: event.clientX, y: event.clientY }
+  const originalX = element.x
+  const originalY = element.y
   let moved = false
+  let finalX = originalX
+  let finalY = originalY
 
   function onMove(e: MouseEvent) {
     if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > CLICK_THRESHOLD_PX) {
       moved = true
+    }
+    if (!moved) return
+
+    const zoom = camera.value.zoom
+    const rawX = originalX + (e.clientX - start.x) / zoom
+    const rawY = originalY + (e.clientY - start.y) / zoom
+
+    if (e.altKey) {
+      finalX = rawX
+      finalY = rawY
+    } else {
+      const draggedBounds = {
+        minX: rawX,
+        minY: rawY,
+        maxX: rawX + element.width,
+        maxY: rawY + element.height,
+      }
+      const others = props.document.elements.filter((el) => el.id !== element.id).map(elementBounds)
+      const { snapped, guides } = computeAlignmentSnap(
+        draggedBounds,
+        others,
+        ALIGN_THRESHOLD_PX / zoom,
+      )
+      if (guides.length > 0) {
+        finalX = snapped.x
+        finalY = snapped.y
+      } else {
+        const gridSnapped = snapToGrid({ x: rawX, y: rawY }, GRID_SIZE)
+        finalX = gridSnapped.x
+        finalY = gridSnapped.y
+      }
     }
   }
 
@@ -125,11 +171,19 @@ function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
     window.removeEventListener('mousemove', onMove)
     window.removeEventListener('mouseup', onUp)
     selectedElementId.value = element.id
+    if (!moved) return
+
+    const newDoc = history.execute(props.document, {
+      type: 'update-element',
+      id: element.id,
+      changes: { x: finalX, y: finalY },
+    })
+    emit('update:document', newDoc)
   }
 
   window.addEventListener('mousemove', onMove)
   window.addEventListener('mouseup', onUp)
 }
 
-defineExpose({ camera, selectedElementId })
+defineExpose({ camera, selectedElementId, history })
 </script>

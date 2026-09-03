@@ -26,3 +26,15 @@ verts. Prochaine action : Task 3 (sélection).
 relâche désélectionne, au-delà c'est le panoramique existant (cycle 3) et la sélection reste
 intacte. 6/6 tests composant verts. Prochaine action : Task 4 (déplacement d'un élément
 sélectionné, magnétisme, une seule commande par geste).
+
+## 2026-09-04 (Task 4 — déplacement, magnétisme, une commande par geste)
+
+`DiagramCanvas.vue` : `onElementMouseDown` étendu -- au-delà du seuil de clic, suit la souris
+(delta converti en unités monde selon le zoom), essaie l'alignement (`computeAlignmentSnap`)
+puis retombe sur la grille (`snapToGrid`) si aucun guide trouvé, sauf `Alt` maintenu (position
+brute). À la relâche seulement : **une** `DiagramHistory.execute(...)` avec la position finale,
+émise via `update:document` (le composant ne mute jamais `props.document`, conforme au
+principe posé dès le cycle 1). `history` exposé pour permettre l'annulation côté appelant.
+10/10 tests composant verts (dont : une seule entrée d'historique par glisser complet, undo
+restitue la position d'avant geste, Alt désactive la magnétisation). Prochaine action : Task 5
+(rendu visuel : contour de sélection, guides d'alignement).

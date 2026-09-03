@@ -23,7 +23,7 @@ fonctions pures, §8.7). Arbitrages : `CONTEXT.md`.
   Task 4 pour un élément). Tests composant : clic sur un élément expose son id comme
   sélectionné ; clic sur le fond après une sélection la retire ; un glisser (dépassant le
   seuil) sur le fond ne modifie pas la sélection courante (reste le panoramique du cycle 3).
-- [ ] Task 4 — Déplacement d'un élément sélectionné : glisser sur un élément (au-delà du
+- [x] Task 4 — Déplacement d'un élément sélectionné : glisser sur un élément (au-delà du
   seuil de Task 3) suit la souris avec un état de position « live » local (pas de commande
   tant que le geste continue), applique le magnétisme (Task 1) et les guides d'alignement
   (Task 2) à chaque mouvement, sauf si `Alt` est maintenu (désactivation temporaire, §8.4).
