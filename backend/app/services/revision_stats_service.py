@@ -167,6 +167,7 @@ class _SetAggregate:
     mature_successes: int = 0
     success_rates: list = field(default_factory=list)  # par item révisé
     difficulties: list = field(default_factory=list)  # par item
+    retrievabilities: list = field(default_factory=list)  # par item, y compris jamais révisé (0.0)
     item_summaries: list = field(default_factory=list)
     next_review_at: datetime | None = None
     graded_sessions: list = field(
@@ -190,6 +191,18 @@ class _SetAggregate:
         return (
             round(self.mature_successes / self.mature_reviews * 100, 1)
             if self.mature_reviews
+            else 0.0
+        )
+
+    @property
+    def avg_retrievability(self) -> float:
+        """Rétention actuelle (0-100) : moyenne de retrievability() (Ebbinghaus) sur
+        tous les items, y compris jamais révisés (comptent pour 0). Contrairement à
+        true_retention, ne reste jamais bloqué à 0 faute d'élément mûr -- décroît en
+        continu depuis la dernière révision et grandit à chaque révision réussie."""
+        return (
+            round(sum(self.retrievabilities) / len(self.retrievabilities) * 100, 1)
+            if self.retrievabilities
             else 0.0
         )
 
@@ -294,6 +307,8 @@ class RevisionStatsService:
             is_leech = lapses >= LEECH_LAPSES
             is_due = bool(item.next_review and item.next_review <= now)
             last_reviewed = graded[-1].created_at if graded else None
+            item_retrievability = retrievability(item.interval, last_reviewed, now)
+            agg.retrievabilities.append(item_retrievability)
             if item.next_review is not None and (
                 agg.next_review_at is None or item.next_review < agg.next_review_at
             ):
@@ -321,7 +336,7 @@ class RevisionStatsService:
                     reviews=reviews,
                     success_rate=item_success,
                     difficulty=difficulty,
-                    retrievability=retrievability(item.interval, last_reviewed, now),
+                    retrievability=item_retrievability,
                     is_leech=is_leech,
                     is_mature=is_mature,
                     due=is_due,
@@ -364,6 +379,7 @@ class RevisionStatsService:
             mastery_rate=agg.mastery_rate,
             avg_success_rate=agg.avg_success_rate,
             true_retention=agg.true_retention,
+            avg_retrievability=agg.avg_retrievability,
             leeches_count=agg.leeches_count,
             due_count=agg.due_count,
             avg_difficulty=agg.avg_difficulty,
@@ -473,6 +489,7 @@ class RevisionStatsService:
             tot.mature_successes += agg.mature_successes
             tot.success_rates.extend(agg.success_rates)
             tot.difficulties.extend(agg.difficulties)
+            tot.retrievabilities.extend(agg.retrievabilities)
             tot.graded_sessions.extend(agg.graded_sessions)
 
             # Répartition par type d'ITEM (pas d'ensemble) : un ensemble
@@ -526,6 +543,7 @@ class RevisionStatsService:
             mastery_rate=tot.mastery_rate,
             avg_success_rate=tot.avg_success_rate,
             true_retention=tot.true_retention,
+            avg_retrievability=tot.avg_retrievability,
             leeches_count=tot.leeches_count,
             due_count=tot.due_count,
             avg_difficulty=tot.avg_difficulty,

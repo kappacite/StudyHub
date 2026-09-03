@@ -96,6 +96,32 @@ def test_set_stats_aggregates_and_verdicts(client, auth_headers):
     assert isinstance(body["verdicts"], list) and len(body["verdicts"]) >= 1
 
 
+def test_set_stats_avg_retrievability_reflects_recent_review(client, auth_headers):
+    """Rétention actuelle (demande explicite utilisateur, notes-ia-planning-corrections) :
+    moyenne des retrievability() par élément -- décroît en continu depuis la dernière
+    révision (Ebbinghaus), contrairement à true_retention qui reste bloqué à 0 tant
+    qu'aucun élément n'est mûr (>= 21 jours)."""
+    set_id, item = _qcm_with_item(client, auth_headers)
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
+        headers=auth_headers,
+    )
+
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    # Révisé à l'instant : retrievability ~= 1 (cf. test_retrievability_decays_over_time).
+    # Exprimé en pourcentage (0-100), même convention que avg_success_rate/true_retention.
+    assert stats.json["avg_retrievability"] > 90
+
+
+def test_set_stats_avg_retrievability_zero_when_never_reviewed(client, auth_headers):
+    set_id, _item = _qcm_with_item(client, auth_headers)
+    stats = client.get(f"/api/v1/stats/sets/{set_id}", headers=auth_headers)
+    assert stats.status_code == 200
+    assert stats.json["avg_retrievability"] == 0.0
+
+
 def test_set_stats_query_budget(client, auth_headers, app):
     """Agrégat d'ensemble : pas de N+1 (budget de requêtes borné quel que soit le nb d'items)."""
     set_id = client.post(

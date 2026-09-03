@@ -150,6 +150,7 @@ export interface SetStats {
   mastery_rate: number
   avg_success_rate: number
   true_retention: number
+  avg_retrievability: number
   leeches_count: number
   due_count: number
   avg_difficulty: number
@@ -200,6 +201,7 @@ export interface BinderStats {
   mastery_rate: number
   avg_success_rate: number
   true_retention: number
+  avg_retrievability: number
   leeches_count: number
   due_count: number
   avg_difficulty: number

@@ -72,6 +72,25 @@ def test_binder_stats_aggregates_multiple_sets_and_types(client, auth_headers):
     assert isinstance(body["weakest_sets"], list)
 
 
+def test_binder_stats_avg_retrievability_aggregates_across_sets(client, auth_headers):
+    """Rétention actuelle (demande explicite utilisateur) : moyenne de retrievability()
+    sur tous les items du classeur -- un item jamais révisé compte pour 0, un item
+    révisé à l'instant compte pour ~1, la moyenne des deux se situe donc entre les deux
+    (contrairement à true_retention, bloqué à 0 tant que rien n'est mûr)."""
+    binder_id = _binder(client, auth_headers, "Révisions")
+    set_id, item = _qcm_set(client, auth_headers, binder_id, "QCM révisé")
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/study/qcm-answer/{item['id']}",
+        json={"selected_option_ids": ["b"], "score": 5},
+        headers=auth_headers,
+    )
+    _qcm_set(client, auth_headers, binder_id, "QCM jamais révisé")
+
+    resp = client.get(f"/api/v1/stats/binders/{binder_id}", headers=auth_headers)
+    assert resp.status_code == 200
+    assert 0.0 < resp.json["avg_retrievability"] < 100.0
+
+
 def test_binder_stats_includes_descendants_by_default(client, auth_headers):
     parent_id = _binder(client, auth_headers, "Parent")
     child_id = _binder(client, auth_headers, "Enfant", parent_id=parent_id)

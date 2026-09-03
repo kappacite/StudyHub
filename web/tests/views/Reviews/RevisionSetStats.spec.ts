@@ -61,6 +61,7 @@ interface MountOverrides {
   total_duration_seconds?: number
   next_review_at?: string | null
   statsError?: boolean
+  avg_retrievability?: number
 }
 
 function defaultWeeklyProgression() {
@@ -85,6 +86,7 @@ async function mountStats(setType: string | null, overrides: MountOverrides = {}
           mastery_rate: 0,
           avg_success_rate: 87,
           true_retention: 0,
+          avg_retrievability: overrides.avg_retrievability ?? 0,
           leeches_count: 0,
           due_count: 0,
           avg_difficulty: 1,
@@ -128,6 +130,18 @@ describe('RevisionSetStats', () => {
   it('affiche le taux de reussite global dans la carte hero', async () => {
     const { wrapper } = await mountStats('qcm', { items: [itemSummary(1, 'qcm')] })
     expect(wrapper.text()).toContain('87')
+  })
+
+  // notes-ia-planning-corrections : demande explicite utilisateur -- ajoute la
+  // rétention actuelle (avg_retrievability, Ebbinghaus) dans la carte hero, même
+  // métrique que RevisionBinderStats.vue (décroît en continu depuis la dernière
+  // révision, jamais bloquée à 0 comme true_retention tant que rien n'est mûr).
+  it('affiche la rétention actuelle (avg_retrievability) dans la carte hero', async () => {
+    const { wrapper } = await mountStats('qcm', {
+      items: [itemSummary(1, 'qcm')],
+      avg_retrievability: 54.2,
+    })
+    expect(wrapper.text()).toContain('Rétention actuelle : 54.2%')
   })
 
   it('affiche les 4 barres de repartition des notes SM2', async () => {

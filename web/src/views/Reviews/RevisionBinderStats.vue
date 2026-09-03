@@ -76,10 +76,7 @@
             {{ stats.avg_success_rate }}%
           </p>
           <p class="text-xs text-ink-muted mt-2">
-            <template v-if="stats.mastered_count > 0"
-              >Rétention réelle : {{ stats.true_retention }}%</template
-            >
-            <template v-else>Rétention réelle : pas encore d'élément mûr (≥ 21 jours)</template>
+            Rétention actuelle : {{ stats.avg_retrievability }}%
           </p>
         </BaseCard>
         <BaseCard padding="lg">

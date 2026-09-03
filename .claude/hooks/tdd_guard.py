@@ -73,8 +73,9 @@ def find_test_file(rel_path: str) -> pathlib.Path | None:
         # retient le plus recemment modifie -- le plus susceptible d'etre celui
         # que le cycle rouge-vert en cours vient de toucher.
         candidates = [stem]
-        if stem.endswith("_service"):
-            candidates.append(stem[: -len("_service")])
+        for suffix in ("_service", "_schema", "_dao"):
+            if stem.endswith(suffix):
+                candidates.append(stem[: -len(suffix)])
         for cand in candidates:
             for p in search_root.rglob(f"test_{cand}.py"):
                 return p

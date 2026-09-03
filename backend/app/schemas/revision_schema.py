@@ -250,6 +250,10 @@ class RevisionSetStats(BaseModel):
     mastery_rate: float  # % d'items mûrs
     avg_success_rate: float
     true_retention: float  # % grade≥3 sur les items mûrs (True Retention)
+    # Rétention actuelle (0-100, Ebbinghaus) : décroît en continu depuis la
+    # dernière révision, grandit à chaque révision réussie -- contrairement à
+    # true_retention, jamais bloqué à 0 faute d'élément mûr (≥ 21 jours).
+    avg_retrievability: float = 0.0
     leeches_count: int
     due_count: int  # items à réviser maintenant
     avg_difficulty: float
@@ -314,6 +318,7 @@ class RevisionBinderStats(BaseModel):
     mastery_rate: float
     avg_success_rate: float
     true_retention: float
+    avg_retrievability: float = 0.0
     leeches_count: int
     due_count: int
     avg_difficulty: float
