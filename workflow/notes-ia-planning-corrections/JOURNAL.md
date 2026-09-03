@@ -289,3 +289,9 @@ backend (hors `test_pdfs.py`/`test_import.py`, échecs Windows préexistants san
 Les 6 demandes initiales de l'utilisateur restent traitées, plus 3 corrections
 supplémentaires demandées en cours de route (Task 13 : écran Notation dédié ; Task 14 : upload
 PDF Bibliothèque ; Task 15 : forecast accueil). Chantier prêt à re-clôturer.
+
+## 2026-09-03 (clôture, 2e passage)
+
+Les 15 tâches du plan sont cochées et vérifiées (tests + parcours réel pour les Tasks 1-9,
+suites automatisées pour 10-15). Chantier clos (code). Prochaine action : demander à
+l'utilisateur de pousser `feature/notes-ia-planning-corrections`, puis ouvrir la PR.
