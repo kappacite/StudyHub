@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : notes-ia-planning-corrections
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
@@ -11,6 +11,8 @@ Chantier actif : notes-ia-planning-corrections
 
 ## Historique
 
+- 2026-09-03 — [notes-ia-planning-corrections] **PR #144 ouverte**, branche poussée. Chantier
+  clôturé côté suivi (`Chantier actif : aucun`) — statut `pr-ouverte` dans son `CONTEXT.md`.
 - 2026-09-03 — [notes-ia-planning-corrections] Task 15 (forecast "Charge à venir" accueil
   agrège aussi les ensembles de révision) terminée. Suite backend 100% verte. Chantier prêt à
   re-clôturer (toutes tâches cochées).
