@@ -166,7 +166,7 @@
 
           <BaseCard>
             <h4 class="text-xs font-bold uppercase tracking-wide text-ink-muted mb-4">
-              Maturité des cartes
+              Maturité des révisions
             </h4>
             <div class="flex h-2.5 rounded-full overflow-hidden bg-surface-soft">
               <div class="bg-line" :style="{ width: maturityLearningPercent + '%' }"></div>
@@ -487,7 +487,7 @@ const todayCounters = computed(() => [
   { label: 'Devoirs', value: focusStore.assignmentCount, icon: GraduationCap, color: 'text-info' },
 ])
 
-// ─── Maturité des cartes (GET /stats/dashboard) ────────────────────────────
+// ─── Maturité des révisions (GET /stats/dashboard) ─────────────────────────
 interface MaturityDistribution {
   learning: number
   young: number
