@@ -16,7 +16,7 @@ fonctions pures, §8.7). Arbitrages : `CONTEXT.md`.
   guide (ligne à afficher). Tests : alignement gauche-sur-gauche avec un voisin proche ;
   aucun voisin dans le seuil -> pas de snap (position inchangée, pas de guide) ; plusieurs
   voisins candidats -> le plus proche gagne (pas un guide par voisin).
-- [ ] Task 3 — Sélection dans `DiagramCanvas.vue` : `selectedElementId` (état local, jamais
+- [x] Task 3 — Sélection dans `DiagramCanvas.vue` : `selectedElementId` (état local, jamais
   persisté dans `DiagramDocumentV1`), clic sur un élément le sélectionne, clic sur le fond
   désélectionne. Distinction clic/glisser via un seuil de déplacement (quelques pixels) --
   sous le seuil = clic, au-delà = le comportement existant (panoramique sur le fond, cf.

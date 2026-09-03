@@ -17,3 +17,12 @@ sur des valeurs négatives). `computeAlignmentSnap` : compare gauche/centre/droi
 haut/centre/bas (Y) de l'élément déplacé à chaque autre élément, indépendamment par axe ; le
 voisin le plus proche dans le seuil gagne, aucun snap si rien n'est assez proche. 7/7 tests
 verts. Prochaine action : Task 3 (sélection).
+
+## 2026-09-04 (Task 3 — sélection, distinction clic/glisser)
+
+`DiagramCanvas.vue` : `selectedElementId` (état local, exposé). `onElementMouseDown` (nouveau,
+`@mousedown.stop` sur chaque élément) sélectionne à la relâche. `onBackgroundMouseDown` révisé
+: suit le déplacement depuis le point de départ, sous le seuil (`CLICK_THRESHOLD_PX = 4`) la
+relâche désélectionne, au-delà c'est le panoramique existant (cycle 3) et la sélection reste
+intacte. 6/6 tests composant verts. Prochaine action : Task 4 (déplacement d'un élément
+sélectionné, magnétisme, une seule commande par geste).

@@ -5,7 +5,13 @@
     @wheel.prevent="onWheel"
     @mousedown="onBackgroundMouseDown"
   >
-    <g v-for="el in visibleElements" :key="el.id" data-test="diagram-element" :data-id="el.id">
+    <g
+      v-for="el in visibleElements"
+      :key="el.id"
+      data-test="diagram-element"
+      :data-id="el.id"
+      @mousedown.stop="onElementMouseDown($event, el)"
+    >
       <ellipse
         v-if="el.kind === 'shape' && (el.shape === 'circle' || el.shape === 'ellipse')"
         :cx="el.x + el.width / 2"
@@ -44,7 +50,7 @@
 import { ref, computed } from 'vue'
 import { createDefaultCamera, panBy, zoomAt, type Camera } from './camera'
 import { cullElements, getVisibleWorldBounds } from './viewport'
-import type { DiagramDocumentV1 } from './document'
+import type { DiagramDocumentV1, DiagramElement } from './document'
 
 const props = defineProps<{
   document: DiagramDocumentV1
@@ -74,29 +80,56 @@ function onWheel(event: WheelEvent) {
   )
 }
 
-const isPanning = ref(false)
-let lastPointer = { x: 0, y: 0 }
+// Seuil (px écran) sous lequel un mousedown+mouseup est un clic (sélection/désélection),
+// au-delà duquel c'est un geste (panoramique du fond, déplacement d'un élément -- cycle 4).
+const CLICK_THRESHOLD_PX = 4
+
+const selectedElementId = ref<string | null>(null)
 
 function onBackgroundMouseDown(event: MouseEvent) {
-  isPanning.value = true
-  lastPointer = { x: event.clientX, y: event.clientY }
-  window.addEventListener('mousemove', onPanMouseMove)
-  window.addEventListener('mouseup', onPanMouseUp)
+  const start = { x: event.clientX, y: event.clientY }
+  let last = { ...start }
+  let moved = false
+
+  function onMove(e: MouseEvent) {
+    if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > CLICK_THRESHOLD_PX) {
+      moved = true
+    }
+    if (moved) {
+      camera.value = panBy(camera.value, e.clientX - last.x, e.clientY - last.y)
+    }
+    last = { x: e.clientX, y: e.clientY }
+  }
+
+  function onUp() {
+    if (!moved) selectedElementId.value = null
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+  }
+
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
 }
 
-function onPanMouseMove(event: MouseEvent) {
-  if (!isPanning.value) return
-  const dx = event.clientX - lastPointer.x
-  const dy = event.clientY - lastPointer.y
-  lastPointer = { x: event.clientX, y: event.clientY }
-  camera.value = panBy(camera.value, dx, dy)
+function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
+  const start = { x: event.clientX, y: event.clientY }
+  let moved = false
+
+  function onMove(e: MouseEvent) {
+    if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > CLICK_THRESHOLD_PX) {
+      moved = true
+    }
+  }
+
+  function onUp() {
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+    selectedElementId.value = element.id
+  }
+
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
 }
 
-function onPanMouseUp() {
-  isPanning.value = false
-  window.removeEventListener('mousemove', onPanMouseMove)
-  window.removeEventListener('mouseup', onPanMouseUp)
-}
-
-defineExpose({ camera })
+defineExpose({ camera, selectedElementId })
 </script>

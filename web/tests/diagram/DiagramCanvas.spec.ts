@@ -58,4 +58,40 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
     const after = svg.attributes('viewBox')
     expect(after).not.toBe(before)
   })
+
+  describe('sélection (diagrammes-placement-selection, Task 3)', () => {
+    it('clic sur un élément expose son id comme sélectionné', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+      await el.trigger('mousedown', { clientX: 400, clientY: 300 })
+      await el.trigger('mouseup', { clientX: 400, clientY: 300 })
+      expect((wrapper.vm as unknown as { selectedElementId: string | null }).selectedElementId).toBe('a')
+    })
+
+    it('clic sur le fond après une sélection la retire', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+      await el.trigger('mousedown', { clientX: 400, clientY: 300 })
+      await el.trigger('mouseup', { clientX: 400, clientY: 300 })
+      const svg = wrapper.find('svg')
+      await svg.trigger('mousedown', { clientX: 10, clientY: 10 })
+      await svg.trigger('mouseup', { clientX: 10, clientY: 10 })
+      expect((wrapper.vm as unknown as { selectedElementId: string | null }).selectedElementId).toBeNull()
+    })
+
+    it("un glisser (dépassant le seuil) sur le fond ne modifie pas la sélection courante", async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+      await el.trigger('mousedown', { clientX: 400, clientY: 300 })
+      await el.trigger('mouseup', { clientX: 400, clientY: 300 })
+      const svg = wrapper.find('svg')
+      await svg.trigger('mousedown', { clientX: 10, clientY: 10 })
+      await svg.trigger('mousemove', { clientX: 80, clientY: 80 })
+      await svg.trigger('mouseup', { clientX: 80, clientY: 80 })
+      expect((wrapper.vm as unknown as { selectedElementId: string | null }).selectedElementId).toBe('a')
+    })
+  })
 })
