@@ -17,7 +17,7 @@ Détail de l'approche retenue : `CONTEXT.md`.
   du message dédié `filterType === 'qcm'`. Mise à jour des 3 tests qui vérifiaient
   l'exclusion (`RevisionStudy.spec.ts`) ; le test de routage homogène→`/run` reste
   inchangé.
-- [ ] Task 3 — Vérification visuelle réelle : réviser effectivement un item QCM à
+- [x] Task 3 — Vérification visuelle réelle : réviser effectivement un item QCM à
   l'intérieur d'un ensemble hétérogène dans l'app locale (ensemble « Spectroscopie & RMN »
   déjà seedé, contient un QCM), sélection → validation → correction → auto-évaluation →
   SM-2 mis à jour. Non-régression rapide : le mode `/run` homogène route et score toujours

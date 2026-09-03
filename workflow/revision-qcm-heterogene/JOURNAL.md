@@ -47,3 +47,35 @@ avant implémentation) : 3 tests d'exclusion mis à jour en tests d'inclusion
 check → auto-éval → grade). Non-régression : redirection `/run` pour ensemble homogène qcm
 inchangée, routage `?type=` toujours fonctionnel. Suite complète : 538 tests frontend verts,
 `npm run build` (typecheck) OK. Prochaine action : Task 3 (vérification visuelle réelle).
+
+## 2026-09-03 (Task 3 — vérification visuelle réelle)
+
+Backend (`flask run --port=5000`) + frontend (`npm run dev --port 3000`) lancés en local,
+connexion via le compte dev seedé (`dev@studyhub.example.com`, mot de passe réinitialisé
+localement pour l'occasion — base SQLite de dev uniquement, non versionnée). Ensemble
+« Spectroscopie & RMN » (id 3, hétérogène, contient un QCM + un item association).
+
+Constat en cours de route (hors périmètre du diff, non lié à Task 1/2) : les items QCM 4 et 6
+en base de dev avaient des options **sans `id`** (`{"text": ..., "correct": ...}`, ids
+manquants) — probablement créés avant l'introduction des ids d'option, ou via un script/appel
+API direct qui contournait `RevisionItemModal.vue` (celui-ci génère toujours un id à la
+création, `OPTION_IDS[i] || String(i)`). Avec `:value="opt.id"` (undefined pour les deux
+options), `v-model` sur les checkboxes ne peut pas distinguer les deux — cocher l'une coche
+les deux. Corrigé directement en base de dev locale (backfill `id: 'a'/'b'`) pour permettre la
+vérification ; aucun changement de code, ce n'est pas un bug introduit par ce chantier (même
+pattern déjà utilisé par `QcmRun.vue`, donc latent aussi pour le mode `/run` homogène sur des
+items mal formés). À surveiller si des QCM existants en production s'avèrent avoir le même
+défaut — hors périmètre ici, pas d'action corrective au-delà du constat.
+
+Parcours réel effectué avec succès : sélection de la bonne réponse (case à cocher) → Valider →
+correction affichée (✓ Correct !, options ✓/✕) → auto-évaluation « Facile » → SM-2 mis à jour
+en base (`interval=1, ease_factor=2.6, repetitions=1`) et `StudySession` committée
+(`item_type='qcm', grade=5`) → progression automatique vers l'item suivant (association) dans
+la même session mixte, sans accroc. Non-régression `/run` homogène et suite automatisée déjà
+couvertes par les tests (backend 54/54, frontend 538/538) — pas de set QCM homogène en base de
+dev pour un test manuel supplémentaire, jugé redondant avec la couverture automatisée
+existante.
+
+## 2026-09-03 (clôture)
+
+Les 3 tâches du plan sont complètes et vérifiées (tests + parcours réel). Chantier clos.
