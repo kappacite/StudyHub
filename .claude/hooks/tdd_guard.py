@@ -73,12 +73,19 @@ def find_test_file(rel_path: str) -> pathlib.Path | None:
         return None
     if norm.startswith("web/"):
         candidates_roots = [RACINE / "web" / "tests", RACINE / "web" / "tests-e2e"]
+        targets = {f"{stem}{ext}" for ext in (".spec.ts", ".test.ts", ".spec.js", ".test.js")}
         for root in candidates_roots:
             if not root.exists():
                 continue
-            for ext in (".spec.ts", ".test.ts", ".spec.js", ".test.js"):
-                for p in root.rglob(f"{stem}{ext}"):
-                    return p
+            # os.walk (pas Path.rglob) : rglob matche via fnmatch, insensible a la
+            # casse sous Windows/NTFS -- "Binders.vue" matchait a tort le mauvais
+            # fichier ("binders.spec.ts", store, au lieu de "Binders.spec.ts", vue)
+            # des que les deux coexistent. os.walk renvoie les noms tels quels sur
+            # le disque, comparables en casse exacte.
+            for dirpath, _dirnames, filenames in os.walk(root):
+                for name in filenames:
+                    if name in targets:
+                        return pathlib.Path(dirpath) / name
         return None
     return None
 

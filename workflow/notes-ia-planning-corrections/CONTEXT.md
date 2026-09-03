@@ -149,6 +149,24 @@ duplication :
 - `editeur-notes-notation-ia` (clos) : son volet backend différé (« nécessite son propre
   brainstorming/spec ») est repris ici (Tâche 3).
 
+### 7. Écran d'accueil — "Charge à venir (14j)" toujours à 0
+
+Demande explicite de l'utilisateur (2026-09-03, après la Task 14) : même symptôme que le
+planning (item 4) mais sur l'écran d'accueil (`Accueil.vue`). Investigation : `FocusService`
+(`backend/app/services/focus_service.py`) a trois méthodes — `get_today_items()` (compteurs
+"Aujourd'hui") agrège déjà `RevisionItem`/`RevisionSet` (section 3, corrigé lors de
+`reviser-hub`, confirmé en lisant le code) ; `get_forecast()` (Charge à venir 14j) **n'agrège
+que `Flashcard`/`Deck`**, jamais `RevisionItem`/`RevisionSet` — root cause exacte, même classe
+de bug que le planning (Task 1). Un compte qui étudie surtout via des ensembles voit donc un
+histogramme de charge à venir vide même s'il a des révisions programmées. `get_retention_by_subject`
+(Rétention par matière) est également flashcard-only (`overdue_count` par classeur), mais ce champ
+n'est pas rendu dans le template `Accueil.vue` (seuls `retention_pct`/`trend_7d`/`binder_name` le
+sont) — hors périmètre, rien à corriger côté UI actuellement affiché.
+
+**Arbitrage** : étendre `get_forecast()` pour additionner les `RevisionItem` dus par jour (même
+fenêtre `days`), sans filtrage de type (contrairement aux `Flashcard`, un `RevisionItem` est déjà
+un type de révision valide). Détail : `PLAN.md` Task 15.
+
 ## Historique complet des décisions
 
 Ce fichier + `workflow/notes-ia-planning-corrections/JOURNAL.md`. Canevas source cité en tête

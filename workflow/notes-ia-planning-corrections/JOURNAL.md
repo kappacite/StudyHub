@@ -241,3 +241,29 @@ désormais vers l'écran dédié au lieu d'ouvrir une modale ; tout l'état `gra
 option, retour), `NoteEdit.spec.ts` simplifié (un seul test de navigation remplace les 6 tests
 de flux modale déplacés). Suite complète : 566/566 tests frontend verts, `npm run build`
 propre. Prochaine action : Task 14 (upload de PDF dans la Bibliothèque).
+
+## 2026-09-03 (Task 14 — upload de PDF dans la Bibliothèque)
+
+`pdfStore.uploadPdf(file, name?, binderId?)` accepte désormais un `binderId` optionnel,
+ajouté au form multipart (`binder_id`) uniquement si fourni — backend inchangé (acceptait déjà
+ce champ). `Binders.vue` : nouvelle entrée "PDF" dans le menu "Ajouter" (visible aussi depuis
+'Non classé', comme Note/Diagramme), déclenche un input file caché
+(`triggerPdfUpload`/`handlePdfUpload`, même patron que `PDFs.vue`), upload rattaché au
+classeur courant (`filterBinderId`) puis `fetchBinderMedia()` pour rafraîchir la liste locale.
+Bug d'infrastructure trouvé et corrigé au passage : `tdd_guard.py` (`find_test_file`)
+utilisait `Path.rglob()`, insensible à la casse sous Windows/NTFS -- pour `Binders.vue`
+(stem "Binders"), le hook retombait sur `tests/stores/binders.spec.ts` (store, minuscule) au
+lieu de `tests/views/Binders/Binders.spec.ts` (vue), bloquant l'écriture à tort dès que les
+deux coexistent. Remplacé par un parcours `os.walk` (noms de fichiers réels, casse exacte).
+Tests : 2 nouveaux (`pdf.spec.ts` : binder_id présent/absent dans le form ; `Binders.spec.ts` :
+upload depuis un vrai classeur envoie le binder_id, upload depuis 'Non classé' n'en envoie
+aucun). Suite complète : 570/570 tests frontend verts, `npm run build` propre.
+
+## 2026-09-03 (réouverture — Task 15, forecast "Charge à venir" toujours à 0)
+
+Demande explicite de l'utilisateur après la Task 14 : même symptôme que le planning (item 4)
+mais sur l'écran d'accueil. Root cause confirmé en lisant `focus_service.py` :
+`get_forecast()` n'agrège que `Flashcard`/`Deck`, jamais `RevisionItem`/`RevisionSet` --
+`get_today_items()` (compteurs "Aujourd'hui") était lui déjà correct (corrigé lors de
+`reviser-hub`). Détail de l'investigation et l'arbitrage : `CONTEXT.md` §7. Prochaine action :
+Task 15 (TDD : test rouge, puis correctif `get_forecast()`).

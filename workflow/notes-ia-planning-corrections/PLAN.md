@@ -77,11 +77,21 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   en route `/notes/:id/notation` (nouveau `NoteNotation.vue`), même patron de header que
   Feynman (breadcrumb, retour, titre), conserve le mode `choice` (voir/réévaluer) et la
   persistance (Task 12) sans changement côté backend.
-- [ ] Task 14 — Upload de PDF dans la Bibliothèque (demande explicite de l'utilisateur) : le
+- [x] Task 14 — Upload de PDF dans la Bibliothèque (demande explicite de l'utilisateur) : le
   backend accepte déjà `binder_id` à l'upload (`POST /api/v1/pdfs`, inchangé) mais aucune UI
   ne permet d'uploader un PDF depuis `Binders.vue` (seul « Élément existant » attache un PDF
   déjà présent). Ajout d'une entrée « PDF » dans le menu « Ajouter », `pdfStore.uploadPdf`
   étendu d'un `binderId` optionnel.
+- [ ] Task 15 — Backend : `FocusService.get_forecast()` (Charge à venir 14j, écran Accueil)
+  n'interroge que `Flashcard`/`Deck`, jamais `RevisionItem`/`RevisionSet` — même classe de bug
+  que le planning (Task 1), demande explicite de l'utilisateur après avoir constaté que la
+  charge à venir affiche 0 alors qu'il étudie via des ensembles de révision. Étendre
+  `get_forecast()` pour additionner aussi les `RevisionItem` dus par jour dans `forecast_dict`
+  (même fenêtre de `days` jours, pas de filtrage de type nécessaire contrairement aux
+  `Flashcard` — un `RevisionItem` est déjà un type de révision valide par construction).
+  `get_today_items()` (compteurs "Aujourd'hui") et le planning sont déjà corrects (vérifiés en
+  lisant le code) — seul `get_forecast()` a cette lacune. Test : ensemble de révision avec un
+  item dû aujourd'hui compte dans le bucket du jour du forecast.
 - [x] Task 9 — Vérification finale : suite complète (backend + frontend) verte, `npm run build`
   propre, non-régression rapide sur les écrans touchés (Planning avec des decks existants,
   aperçu bibliothèque avec des notes sans commentaire HTML, Feynman/Blurting sur un vrai appel

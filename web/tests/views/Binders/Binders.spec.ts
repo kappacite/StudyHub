@@ -342,6 +342,59 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
   })
 })
 
+// Task 14 (notes-ia-planning-corrections) : le backend accepte déjà binder_id à l'upload
+// (POST /api/v1/pdfs, inchangé) mais aucune UI ne permettait d'uploader un PDF depuis la
+// Bibliothèque -- seul "Élément existant" attachait un PDF déjà présent. Nouvelle entrée
+// "PDF" dans le menu "Ajouter" (comme Note/Diagramme : proposée aussi depuis 'Non classé').
+describe('Binders — upload de PDF depuis le menu "Ajouter" (Task 14)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  async function openAddMenuAndUpload(wrapper: ReturnType<typeof mount>, file: File) {
+    const buttonLabel = (label: string) =>
+      wrapper.findAll('button').find((b) => b.text().trim() === label)
+    await buttonLabel('Ajouter')!.trigger('click')
+    await flushPromises()
+    const pdfMenuItem = buttonLabel('PDF')
+    expect(pdfMenuItem).toBeTruthy()
+    await pdfMenuItem!.trigger('click')
+
+    const input = wrapper.find('input[type="file"]')
+    expect(input.exists()).toBe(true)
+    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+    await input.trigger('change')
+    await flushPromises()
+  }
+
+  it('upload un PDF depuis un vrai classeur : POST /pdfs avec le binder_id courant', async () => {
+    api.post.mockResolvedValue({
+      data: { id: 'pdf-1', name: 'Cours.pdf', binder_id: 'b1', read_only: false },
+    })
+    const { wrapper } = await mountBinders('b1')
+    const file = new File([new Uint8Array([1])], 'Cours.pdf', { type: 'application/pdf' })
+
+    await openAddMenuAndUpload(wrapper, file)
+
+    expect(api.post).toHaveBeenCalledWith('/pdfs', expect.any(FormData), {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    const form = api.post.mock.calls.find((c) => c[0] === '/pdfs')![1] as FormData
+    expect(form.get('binder_id')).toBe('b1')
+  })
+
+  it('upload un PDF depuis "Non classé" : aucun binder_id envoyé', async () => {
+    api.post.mockResolvedValue({
+      data: { id: 'pdf-1', name: 'Cours.pdf', binder_id: null, read_only: false },
+    })
+    const { wrapper } = await mountBinders('non-classe')
+    const file = new File([new Uint8Array([1])], 'Cours.pdf', { type: 'application/pdf' })
+
+    await openAddMenuAndUpload(wrapper, file)
+
+    const form = api.post.mock.calls.find((c) => c[0] === '/pdfs')![1] as FormData
+    expect(form.get('binder_id')).toBeNull()
+  })
+})
+
 describe('Binders — en-tête (Task 2, bibliotheque-notes-listes)', () => {
   beforeEach(() => vi.clearAllMocks())
 
