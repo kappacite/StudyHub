@@ -1,8 +1,8 @@
 # Diagrammes — placement, sélection, magnétisme (Phase 5, cycle 4)
 
-Statut : ouvert
+Statut : clos
 Branche : feature/diagrammes-placement-selection
-PR : (aucune)
+PR : #148
 
 ## Pourquoi
 
