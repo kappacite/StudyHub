@@ -11,7 +11,7 @@ Détail de l'approche retenue : `CONTEXT.md`.
   endpoints dédiés `check_qcm_answer`/`answer_qcm_item` gardent leur garde `rset.type`
   telle quelle (test existant `test_check_and_answer_reject_non_qcm_set` ne doit pas
   changer).
-- [ ] Task 2 — Frontend : bloc de template QCM dans `RevisionStudy.vue` (cases à cocher,
+- [x] Task 2 — Frontend : bloc de template QCM dans `RevisionStudy.vue` (cases à cocher,
   `submitQcm()`, correction ✓/✕ sans points, branché sur `checkAndAwaitSelfEval`/
   `selfEvalGraded`/`gradeItem` déjà génériques). Suppression du filtre `nonQcmItems` et
   du message dédié `filterType === 'qcm'`. Mise à jour des 3 tests qui vérifiaient

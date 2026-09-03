@@ -32,3 +32,18 @@ unitaires purs de `check_answer`/`GRADABLE_TYPES` sans Flask/DB), `test_revision
 les autres types). Non-régression vérifiée : `test_revision_qcm.py` (endpoints dédiés
 `check_qcm_answer`/`answer_qcm_item`, garde `rset.type` inchangée) passe toujours. Suite
 `test_revision*.py` : 54 tests verts. Prochaine action : Task 2 (frontend).
+
+## 2026-09-03 (Task 2 — frontend)
+
+`RevisionStudy.vue` : nouveau bloc de template QCM (cases à cocher `v-model="qcmSelected"`,
+bouton Valider → `submitQcm()` → `checkAndAwaitSelfEval({ selected_option_ids })`, correction
+✓/✕ par option sans poids en points, `SelfEvalButtons` → `gradeItem()`), repris visuellement
+de `QcmRun.vue` sans le compteur de points ni l'écran de score final. Suppression du filtre
+`nonQcmItems` dans `applyItemFilter()` et du message dédié `filterType === 'qcm'` /
+bouton "Réviser quand même" masqué pour ce filtre dans l'état vide — un QCM sans item dû
+retombe désormais sur l'état vide générique comme tout autre type. Tests (TDD, rouge vérifié
+avant implémentation) : 3 tests d'exclusion mis à jour en tests d'inclusion
+(`RevisionStudy.spec.ts`), 1 test ajouté pour le flux check/grade qcm complet (sélection →
+check → auto-éval → grade). Non-régression : redirection `/run` pour ensemble homogène qcm
+inchangée, routage `?type=` toujours fonctionnel. Suite complète : 538 tests frontend verts,
+`npm run build` (typecheck) OK. Prochaine action : Task 3 (vérification visuelle réelle).
