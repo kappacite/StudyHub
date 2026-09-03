@@ -267,3 +267,25 @@ mais sur l'écran d'accueil. Root cause confirmé en lisant `focus_service.py` :
 `get_today_items()` (compteurs "Aujourd'hui") était lui déjà correct (corrigé lors de
 `reviser-hub`). Détail de l'investigation et l'arbitrage : `CONTEXT.md` §7. Prochaine action :
 Task 15 (TDD : test rouge, puis correctif `get_forecast()`).
+
+## 2026-09-03 (Task 15 — forecast "Charge à venir" agrège les ensembles de révision)
+
+`FocusService.get_forecast()` additionne désormais les `RevisionItem` dus par jour (join
+`RevisionSet`, filtré `user_id`) dans le même `forecast_dict` que les `Flashcard` -- pas de
+filtrage de type nécessaire pour les `RevisionItem` (déjà un type de révision valide par
+construction, contrairement au filtrage sur `original_text` des `Flashcard`). Bug
+d'infrastructure trouvé et corrigé au passage (bloquait l'écriture du correctif) :
+`tdd_guard.py` (`find_test_file`, branche backend) ne trouvait pas `test_focus.py` pour
+`focus_service.py` -- convention réelle du dépôt où certains services sont testés sous un nom
+sans le suffixe `_service` (`focus_service.py` -> `test_focus.py`), non prévue par la
+recherche `test_{stem}.py` stricte. Ajout d'un candidat `test_{stem_sans_suffixe}.py` avant le
+repli substring large ; vérifié que `planning_service.py` (qui a les deux `test_planning.py`
+ET `test_planning_service.py`) continue de résoudre correctement. Test : ensemble de révision
+avec un item dû aujourd'hui compte dans le bucket du jour du forecast (`test_focus.py`, via
+l'API comme le test miroir `test_focus_today_includes_due_revision_set`). Suite complète
+backend (hors `test_pdfs.py`/`test_import.py`, échecs Windows préexistants sans rapport) :
+100% verte.
+
+Les 6 demandes initiales de l'utilisateur restent traitées, plus 3 corrections
+supplémentaires demandées en cours de route (Task 13 : écran Notation dédié ; Task 14 : upload
+PDF Bibliothèque ; Task 15 : forecast accueil). Chantier prêt à re-clôturer.

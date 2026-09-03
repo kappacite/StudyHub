@@ -65,8 +65,15 @@ def find_test_file(rel_path: str) -> pathlib.Path | None:
         search_root = RACINE / "backend" / "tests"
         if not search_root.exists():
             return None
-        for p in search_root.rglob(f"test_{stem}.py"):
-            return p
+        # Convention reelle du depot : certains services testes sous un nom sans
+        # le suffixe "_service" (focus_service.py -> test_focus.py). Tente le nom
+        # exact d'abord, puis ce nom raccourci, avant le fallback substring large.
+        candidates = [stem]
+        if stem.endswith("_service"):
+            candidates.append(stem[: -len("_service")])
+        for cand in candidates:
+            for p in search_root.rglob(f"test_{cand}.py"):
+                return p
         for p in search_root.rglob(f"*{stem}*.py"):
             if p.name.startswith("test_"):
                 return p

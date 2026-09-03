@@ -82,7 +82,7 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   ne permet d'uploader un PDF depuis `Binders.vue` (seul « Élément existant » attache un PDF
   déjà présent). Ajout d'une entrée « PDF » dans le menu « Ajouter », `pdfStore.uploadPdf`
   étendu d'un `binderId` optionnel.
-- [ ] Task 15 — Backend : `FocusService.get_forecast()` (Charge à venir 14j, écran Accueil)
+- [x] Task 15 — Backend : `FocusService.get_forecast()` (Charge à venir 14j, écran Accueil)
   n'interroge que `Flashcard`/`Deck`, jamais `RevisionItem`/`RevisionSet` — même classe de bug
   que le planning (Task 1), demande explicite de l'utilisateur après avoir constaté que la
   charge à venir affiche 0 alors qu'il étudie via des ensembles de révision. Étendre

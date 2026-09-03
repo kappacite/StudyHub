@@ -109,6 +109,28 @@ def test_forecast_counts_correct_for_known_deck(app, focus_service, test_user):
         assert result.forecast[1].load_level == "low"  # count < 10
 
 
+def test_forecast_includes_due_revision_set_items(client, auth_headers):
+    """Charge à venir (14j) : un item d'ensemble de révision dû aujourd'hui doit compter
+    dans le forecast du jour -- avant ce correctif, get_forecast() n'interrogeait que
+    Flashcard/Deck, jamais RevisionItem/RevisionSet (même bug que le planning, Task 1)."""
+    from datetime import datetime
+
+    client.post("/api/v1/revision/sets", json={"name": "Droit constit"}, headers=auth_headers)
+    set_id = client.get("/api/v1/revision/sets", headers=auth_headers).json["data"][0]["id"]
+    client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={"type": "vf", "payload": {"assertion": "Vrai ?", "correct": True}},
+        headers=auth_headers,
+    )
+    # L'item vient d'être créé avec next_review = maintenant (dû aujourd'hui).
+
+    resp = client.get("/api/v1/focus/forecast?days=7", headers=auth_headers)
+    assert resp.status_code == 200
+    today_str = datetime.utcnow().date().isoformat()
+    forecast_map = {item["date"]: item["count"] for item in resp.json["forecast"]}
+    assert forecast_map[today_str] >= 1
+
+
 def test_retention_calculation_30_days(app, focus_service, test_user):
     with app.app_context():
         binder = Binder(name="Physique", user_id=test_user["id"])

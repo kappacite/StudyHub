@@ -11,6 +11,10 @@ Chantier actif : notes-ia-planning-corrections
 
 ## Historique
 
+- 2026-09-03 — [notes-ia-planning-corrections] Task 15 (forecast "Charge à venir" accueil
+  agrège aussi les ensembles de révision) terminée. Suite backend 100% verte. Chantier prêt à
+  re-clôturer (toutes tâches cochées).
+- 2026-09-03 — [notes-ia-planning-corrections] Task 14 (upload PDF Bibliothèque) terminée.
 - 2026-09-03 — [notes-ia-planning-corrections] Task 13 (écran Notation dédié, remplace la
   modale) terminée. Suite frontend 566/566, build propre. Prochain : Task 14 (upload PDF
   Bibliothèque).
