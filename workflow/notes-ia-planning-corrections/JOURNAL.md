@@ -156,3 +156,37 @@ strictement le nombre d'éléments toujours visibles par rapport à l'existant, 
 qui a déjà son correctif `flex-wrap` d'un chantier précédent. Tests : 53/53 sur
 `NoteEdit.spec.ts`, suite complète 563/563 tests frontend, `npm run build` propre.
 Prochaine action : Task 9 (vérification finale, clôture).
+
+## 2026-09-03 (Task 9 — vérification finale, clôture)
+
+Suite complète backend (hors `test_pdfs.py`/`test_import.py`, échecs Windows préexistants
+sans rapport, cf. journal `revision-qcm-heterogene`) : 100% verte, exit code 0. Suite
+frontend complète : 563/563, `npm run build` propre. Backend redémarré pour charger le code
+réel des Tasks 1-8 (le serveur tournait sur du code antérieur, `/notation/grade` répondait
+404 avant redémarrage — bug de méthode, pas de code, mais qui aurait invalidé toute
+vérification visuelle faite avant ce constat).
+
+Vérification visuelle réelle (app locale, compte dev) :
+- **Planning** (bug original, item 4) : confirmé résolu — la page affiche désormais les
+  ensembles de révision dus par jour (« Spectroscopie & RMN », « Stéréochimie »,
+  « Mécanismes SN1 / SN2 »), « Total à réviser : 7 cartes » au lieu d'un planning vide en
+  permanence.
+- **Aperçu bibliothèque** (item 5) : extraits de notes rendus proprement, aucune fuite de
+  balisage constatée sur le jeu de notes réel.
+- **Notation IA** (item 1) : bouton actif, ouvre la modale, appelle `/notation/grade`,
+  affiche l'état de chargement puis l'état d'erreur correctement (timeout Axios 10s sur
+  l'appel Gemini réel en repli synchrone sans worker Celery local — caractéristique
+  d'infrastructure préexistante, identique pour Feynman/Blurting, hors périmètre de ce
+  chantier).
+- **Éditeur de notes** (item 6) : popovers Réglages et Insérer fonctionnels et lisibles à
+  1440px ; vérification 375px non mécaniquement faite (limite outillage, documentée à la
+  Task 8).
+
+Les 6 demandes de l'utilisateur sont traitées (Notation IA, Blurting, Feynman, planning,
+fuite HTML, éditeur), 9 tâches complètes. Chantier prêt à clôturer.
+
+## 2026-09-03 (clôture)
+
+Toutes les tâches du plan sont cochées et vérifiées (tests + parcours réel). Chantier clos
+(code). Prochaine action : demander à l'utilisateur de pousser
+`feature/notes-ia-planning-corrections`, puis ouvrir la PR.

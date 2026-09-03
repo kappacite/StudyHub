@@ -56,7 +56,7 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   visibles. Aucune fonctionnalité supprimée. Tests composant sur la présence de toutes les
   actions (déplacées, pas perdues) + vérification visuelle réelle (375px/1440px, clair/sombre)
   dans l'app locale avant de clore la tâche.
-- [ ] Task 9 — Vérification finale : suite complète (backend + frontend) verte, `npm run build`
+- [x] Task 9 — Vérification finale : suite complète (backend + frontend) verte, `npm run build`
   propre, non-régression rapide sur les écrans touchés (Planning avec des decks existants,
   aperçu bibliothèque avec des notes sans commentaire HTML, Feynman/Blurting sur un vrai appel
   IA si clé Gemini disponible sinon revue de code seule), puis clôture du chantier.
