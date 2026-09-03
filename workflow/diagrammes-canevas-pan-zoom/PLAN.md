@@ -42,7 +42,7 @@ relève de l'exception écran-capture — ses interactions (pan/zoom) restent te
   résultat de `cullElements`, pas au total du document ; la molette modifie le `viewBox` ;
   un glisser sur le fond modifie le `viewBox` sans déclencher de commande (aucune interaction
   avec `DiagramHistory`, hors périmètre de ce cycle).
-- [ ] Task 6 — Vérification finale : suite frontend complète verte, `npm run build` propre,
+- [x] Task 6 — Vérification finale : suite frontend complète verte, `npm run build` propre,
   `Diagrams.vue` toujours non modifié. Clôture du chantier ; passation `JOURNAL.md` pour le
   cycle 4 (placement, sélection, magnétisme) : `DiagramCanvas.vue` est prêt à recevoir la
   détection de clic/glisser sur un élément individuel, qui devra passer par

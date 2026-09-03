@@ -49,3 +49,12 @@ document.body` pour que les événements déclenchés sur le `<svg>` y remontent
 détaché n'atteint jamais `window`) -- `afterEach` nettoie `document.body` pour ne pas laisser
 de nœuds entre les tests. 44/44 tests diagrammes verts. Prochaine action : Task 6
 (vérification finale, clôture).
+
+## 2026-09-04 (Task 6 — vérification finale, clôture du cycle 3)
+
+Suite frontend complète : 616/616 (19 nouveaux pour ce chantier). `npm run build` propre.
+`Diagrams.vue` toujours non modifié. Passation pour le cycle 4 (placement, sélection,
+magnétisme) : `DiagramCanvas.vue` est prêt à recevoir la détection de clic/glisser sur un
+élément individuel -- chaque geste devra passer par `DiagramHistory.execute()` (cycle 2),
+jamais de mutation locale de `props.document`. Chantier clos (code). Prochaine action :
+pousser `feature/diagrammes-canevas-pan-zoom`, ouvrir la PR.
