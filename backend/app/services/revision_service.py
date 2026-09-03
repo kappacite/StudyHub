@@ -15,7 +15,10 @@ from app.schemas.revision_schema import (
 )
 
 # Types corrigés automatiquement à l'étude (la définition reste en auto-évaluation).
-GRADABLE_TYPES = ("vf", "association", "ordre")
+# "qcm" (revision-qcm-heterogene) : révisable individuellement via ce flux générique
+# check_item_answer/grade_item, en plus du passage scoré dédié check_qcm_answer/
+# answer_qcm_item (inchangé, réservé à un ensemble homogène "qcm" via /run).
+GRADABLE_TYPES = ("vf", "association", "ordre", "qcm")
 from app.middlewares.error_handler import (
     ForbiddenError,
     ResourceNotFoundError,
@@ -104,6 +107,14 @@ def check_answer(item_type: str, payload: dict, answer: dict) -> bool:
     if item_type == "ordre":
         expected = [s for s in payload.get("steps", []) if str(s).strip()]
         return answer.get("order") == expected
+
+    if item_type == "qcm":
+        # Même règle tout-ou-rien que _score_qcm_answer (endpoints dédiés
+        # check_qcm_answer/answer_qcm_item, inchangés) -- pas de poids par point ici,
+        # ce flux générique ne calcule ni n'affiche de score agrégé.
+        correct_ids = sorted(o["id"] for o in payload.get("options", []) if o.get("correct"))
+        selected_ids = sorted(set(answer.get("selected_option_ids") or []))
+        return selected_ids == correct_ids
 
     return False
 

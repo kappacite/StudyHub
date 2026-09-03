@@ -25,13 +25,7 @@
       v-else-if="items.length === 0"
       class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-10 text-center space-y-3"
     >
-      <p class="text-sm text-ink-muted dark:text-ink-subtle">
-        {{
-          filterType === 'qcm'
-            ? "Les QCM ne se révisent pas encore individuellement — passez par le passage scoré depuis l'ensemble."
-            : "Rien à réviser pour l'instant. 🎉"
-        }}
-      </p>
+      <p class="text-sm text-ink-muted dark:text-ink-subtle">Rien à réviser pour l'instant. 🎉</p>
       <div class="flex items-center justify-center gap-3">
         <button
           class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl"
@@ -40,7 +34,6 @@
           Retour
         </button>
         <button
-          v-if="filterType !== 'qcm'"
           class="px-4 py-2 text-sm font-bold text-primary border border-primary hover:bg-primary-soft dark:hover:bg-primary-soft rounded-xl"
           @click="reviewAnyway"
         >
@@ -276,6 +269,74 @@
           </template>
         </template>
 
+        <!-- QCM -->
+        <template v-else-if="current.type === 'qcm'">
+          <p class="text-sm font-bold text-ink dark:text-ink-subtle">
+            {{ current.payload.question }}
+          </p>
+          <div v-if="phase === 'answer'" class="space-y-2">
+            <label
+              v-for="opt in current.payload.options || []"
+              :key="opt.id"
+              class="flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-colors"
+              :class="
+                qcmSelected.includes(opt.id)
+                  ? 'border-primary bg-primary-soft dark:bg-primary-soft'
+                  : 'border-line dark:border-line'
+              "
+            >
+              <input
+                v-model="qcmSelected"
+                type="checkbox"
+                :value="opt.id"
+                class="accent-primary shrink-0"
+              />
+              <span class="text-sm text-ink dark:text-ink-subtle">{{ opt.text }}</span>
+            </label>
+          </div>
+          <button
+            v-if="phase === 'answer'"
+            :disabled="busy"
+            class="w-full py-3 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-strong disabled:opacity-50"
+            @click="submitQcm"
+          >
+            {{ busy ? 'Correction…' : 'Valider' }}
+          </button>
+          <template v-else>
+            <p class="text-sm font-bold" :class="lastCorrect ? 'text-success' : 'text-danger'">
+              {{ lastCorrect ? 'Correct !' : 'Incorrect.' }}
+            </p>
+            <ul class="space-y-1.5">
+              <li
+                v-for="opt in current.payload.options || []"
+                :key="opt.id"
+                class="flex items-center gap-2 text-sm"
+              >
+                <span class="w-4 shrink-0 text-center">
+                  <span v-if="opt.correct" class="text-success">✓</span>
+                  <span v-else-if="qcmSelected.includes(opt.id)" class="text-danger">✕</span>
+                </span>
+                <span
+                  :class="
+                    opt.correct
+                      ? 'text-success dark:text-success font-semibold'
+                      : 'text-ink-muted dark:text-ink-subtle'
+                  "
+                  >{{ opt.text }}</span
+                >
+              </li>
+            </ul>
+            <template v-if="phase === 'self-eval'">
+              <p
+                class="text-center text-[10px] font-bold text-ink-subtle uppercase tracking-widest"
+              >
+                Votre auto-évaluation
+              </p>
+              <SelfEvalButtons :disabled="busy" @select="selfEvalGraded" />
+            </template>
+          </template>
+        </template>
+
         <!-- Bouton suivant (après correction / révélation auto-corrigée) -->
         <button
           v-if="phase === 'feedback'"
@@ -344,6 +405,9 @@ const allMatched = computed(
 // Ordre
 const ordering = ref<string[]>([])
 
+// QCM
+const qcmSelected = ref<string[]>([])
+
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5)
 }
@@ -372,14 +436,16 @@ function setupItem() {
     })
   } else if (current.value.type === 'ordre') {
     ordering.value = shuffle(payload.steps || [])
+  } else if (current.value.type === 'qcm') {
+    qcmSelected.value = []
   }
 }
 
-// Filtrage commun a l'onMounted et a reviewAnyway (Task 7) : exclut les qcm
-// (cf. commentaire ci-dessous) puis applique le filtre ?type= eventuel.
+// Filtrage commun a l'onMounted et a reviewAnyway (Task 7) : applique le
+// filtre ?type= eventuel -- plus d'exclusion qcm (revision-qcm-heterogene,
+// Task 2), le qcm est revisable comme tout autre type gradable.
 function applyItemFilter(studyItems: RevisionItem[]) {
-  const nonQcmItems = studyItems.filter((i) => i.type !== 'qcm')
-  return filterType.value ? nonQcmItems.filter((i) => i.type === filterType.value) : nonQcmItems
+  return filterType.value ? studyItems.filter((i) => i.type === filterType.value) : studyItems
 }
 
 onMounted(async () => {
@@ -398,11 +464,6 @@ onMounted(async () => {
       return
     }
     setName.value = set.name
-    // Les QCM n'ont pas encore de passage individuel en dehors du mode scoré
-    // dedie (/run), qui ne fonctionne lui-meme que pour un ensemble homogene
-    // (risque deja accepte dans le spec backend) -- exclus de la revision par
-    // item plutot que de rendre une carte vide ou de rediriger vers un flux
-    // lui-meme casse pour un ensemble heterogene.
     items.value = applyItemFilter(studyItems)
     if (items.value.length) setupItem()
   } catch (e) {
@@ -434,6 +495,10 @@ async function submitAssoc() {
 
 async function submitOrdre() {
   await checkAndAwaitSelfEval({ order: [...ordering.value] })
+}
+
+async function submitQcm() {
+  await checkAndAwaitSelfEval({ selected_option_ids: [...qcmSelected.value] })
 }
 
 // vf/association/ordre (Task 5) : la reponse a une correction objective, mais

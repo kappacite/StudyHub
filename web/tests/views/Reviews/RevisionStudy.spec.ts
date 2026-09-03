@@ -137,38 +137,39 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
     expect(wrapper.text()).toContain('Le ciel est bleu.')
   })
 
-  it("exclut les items qcm d'une session mixte : aucune carte vide, les autres types restent normaux", async () => {
-    // Le qcm est place EN PREMIER : sans exclusion, l'ecran ouvrirait sur une carte
-    // vide (aucune branche du template ne matche 'qcm') et resterait bloque dessus.
+  it('revision-qcm-heterogene : rend le gabarit qcm (cases a cocher) dans une session mixte, sans exclusion', async () => {
     const items = [
       item(3, 'qcm', {
         question: 'Capitale de la France ?',
-        options: [{ id: 'a', text: 'Paris', correct: true }],
+        options: [
+          { id: 'a', text: 'Paris', correct: true },
+          { id: 'b', text: 'Lyon', correct: false },
+        ],
       }),
       item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true }),
     ]
     const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
 
-    // La question du qcm n'est jamais rendue...
-    expect(wrapper.text()).not.toContain('Capitale de la France ?')
-    // ...et la session ne compte que l'item vf, affiche immediatement avec ses boutons.
-    expect(wrapper.text()).toContain('1 / 1')
-    expect(wrapper.text()).toContain('Le ciel est bleu.')
-    const labels = wrapper.findAll('button').map((b) => b.text())
-    expect(labels).toContain('Vrai')
-    expect(labels).toContain('Faux')
+    expect(wrapper.text()).toContain('1 / 2')
+    expect(wrapper.text()).toContain('Capitale de la France ?')
+    const checkboxes = wrapper.findAll('input[type="checkbox"]')
+    expect(checkboxes.length).toBe(2)
   })
 
-  it("?type=qcm : message dedie, distinct de l'etat vide generique", async () => {
-    const items = [item(3, 'qcm', { question: 'Capitale de la France ?' })]
+  it('revision-qcm-heterogene : ?type=qcm filtre bien sur les items qcm, plus de message dedie', async () => {
+    const items = [
+      item(3, 'qcm', { question: 'Capitale de la France ?', options: [] }),
+      item(1, 'vf', { assertion: 'Le ciel est bleu.', correct: true }),
+    ]
     const { wrapper } = await mountStudy(
       '/revision/sets/7/study?type=qcm',
       HETEROGENEOUS_SET,
       items,
     )
 
-    expect(wrapper.text()).toContain('ne se révisent pas encore individuellement')
-    expect(wrapper.text()).not.toContain("Rien à réviser pour l'instant")
+    expect(wrapper.text()).toContain('Capitale de la France ?')
+    expect(wrapper.text()).not.toContain('Le ciel est bleu.')
+    expect(wrapper.text()).not.toContain('ne se révisent pas encore individuellement')
   })
 
   it('etat vide reel (aucun item du tout) : conserve le message generique', async () => {
@@ -206,16 +207,13 @@ describe('RevisionStudy — dispatch par item.type (ensembles heterogenes)', () 
     expect(wrapper.text()).toContain('Deja revisee.')
   })
 
-  it('?type=qcm : pas de bouton "Reviser quand meme" (le message qcm redirige deja ailleurs)', async () => {
-    const items = [item(3, 'qcm', { question: 'Capitale de la France ?' })]
-    const { wrapper } = await mountStudy(
-      '/revision/sets/7/study?type=qcm',
-      HETEROGENEOUS_SET,
-      items,
-    )
-    expect(findButtonByText(wrapper, 'Réviser quand même')).toBeUndefined()
+  it('revision-qcm-heterogene : ?type=qcm sur liste vide affiche desormais le bouton generique "Reviser quand meme"', async () => {
+    const { wrapper } = await mountStudy('/revision/sets/7/study?type=qcm', HETEROGENEOUS_SET, [])
+    expect(findButtonByText(wrapper, 'Réviser quand même')).toBeDefined()
   })
 })
+
+// revision-qcm-heterogene Task 2 : gabarit qcm + submitQcm() (branche checkAndAwaitSelfEval).
 
 function findButtonByText(wrapper: ReturnType<typeof mount>, text: string) {
   return wrapper.findAll('button').find((b) => b.text() === text)
@@ -354,6 +352,45 @@ describe('RevisionStudy — notation manuelle vf/association/ordre apres check (
       '/revision/sets/7/study/grade/6',
       expect.objectContaining({ score: 1 }),
     )
+    expect(findButtonByText(wrapper, 'Terminer')).toBeDefined()
+  })
+
+  it('revision-qcm-heterogene : qcm : selection des cases puis check/grade via le flux generique', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/revision/sets/7/study/check/3')
+        return Promise.resolve({ data: { correct: true } })
+      if (url === '/revision/sets/7/study/grade/3')
+        return Promise.resolve({ data: { correct: true, item: { id: 3 } } })
+      return Promise.reject(new Error(`non mocké: ${url}`))
+    })
+    const items = [
+      item(3, 'qcm', {
+        question: 'Capitale de la France ?',
+        options: [
+          { id: 'a', text: 'Paris', correct: true },
+          { id: 'b', text: 'Lyon', correct: false },
+        ],
+      }),
+    ]
+    const { wrapper } = await mountStudy('/revision/sets/7/study', HETEROGENEOUS_SET, items)
+
+    await wrapper.find('input[type="checkbox"]').setValue(true)
+    await findButtonByText(wrapper, 'Valider')!.trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/check/3', {
+      answer: { selected_option_ids: ['a'] },
+    })
+    expect(wrapper.find('[data-test="self-eval-facile"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="self-eval-facile"]').trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/revision/sets/7/study/grade/3', {
+      answer: { selected_option_ids: ['a'] },
+      score: 5,
+      duration_seconds: expect.any(Number),
+    })
     expect(findButtonByText(wrapper, 'Terminer')).toBeDefined()
   })
 })

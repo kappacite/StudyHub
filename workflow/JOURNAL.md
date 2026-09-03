@@ -12,6 +12,22 @@ Chantier actif : aucun
 
 ## Historique
 
+- 2026-09-03 — [revision-qcm-heterogene] **PR #142 ouverte**
+  (`feature/revision-qcm-heterogene` → `main`,
+  https://github.com/kappacite/StudyHub/pull/142). Chantier `pr-ouverte`. 3 tâches complètes
+  (backend `GRADABLE_TYPES`/`check_answer`, frontend bloc de template QCM dans
+  `RevisionStudy.vue`, vérification visuelle réelle). Backend ciblé 54/54, frontend complet
+  538/538, build clean. Suite backend complète tentée séparément : 2 échecs préexistants sans
+  rapport, environnement Windows (`test_pdfs.py` crash natif `python-magic`, `test_import.py`
+  `PermissionError` de verrou de fichier) — non bloquants pour ce chantier. Prochaine action :
+  attendre la revue/CI, puis merger.
+
+- 2026-09-03 — [revision-qcm-heterogene] Chantier ouvert. Root cause identifié en
+  investigation avant tout code (garde `rset.type` au lieu de `item.type`, exclusion
+  systématique des QCM dans `RevisionStudy.vue`) ; approche A retenue en brainstorming
+  (étendre le flux générique GRADABLE_TYPES plutôt que les endpoints QCM dédiés). 3 tâches.
+  Prochain : Task 1 (backend).
+
 - 2026-09-03 — [bibliotheque-notes-listes] **PR #140 mergée dans `main`** (squash, `4d361a4`),
   CI verte (6/6 checks). Chantier `clos`. Prochaine action : ouvrir le chantier révision QCM
   (root cause déjà identifié en investigation : garde backend sur `rset.type` au lieu de
