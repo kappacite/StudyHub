@@ -4,16 +4,20 @@ from datetime import datetime
 from app.extensions import db
 from app.dao.flashcard_dao import FlashcardDAO
 from app.dao.deck_dao import DeckDAO
+from app.dao.revision_dao import RevisionItemDAO, RevisionSetDAO
 from app.services.planning_service import PlanningService
 from app.schemas.planning_schema import PlanningCalendarResponse, PlanningAdvanceRequest
 from app.schemas.flashcard_schema import FlashcardResponse
+from app.schemas.revision_schema import RevisionItemResponse
 from app.middlewares.auth_middleware import jwt_required_middleware
 
 planning_bp = Blueprint("planning", __name__)
 
 flashcard_dao = FlashcardDAO(db.session)
 deck_dao = DeckDAO(db.session)
-planning_service = PlanningService(flashcard_dao, deck_dao)
+revision_item_dao = RevisionItemDAO(db.session)
+revision_set_dao = RevisionSetDAO(db.session)
+planning_service = PlanningService(flashcard_dao, deck_dao, revision_item_dao, revision_set_dao)
 
 @planning_bp.route("/calendar", methods=["GET"])
 @jwt_required_middleware
@@ -69,7 +73,25 @@ def post_planning_advance():
                 "message": f"Validation échouée : {str(e)}"
             }
         }), 400
-        
-    cards = planning_service.advance_review(user_id, req_data.deck_id, req_data.card_ids, req_data.date)
-    response_data = [FlashcardResponse.model_validate(c).model_dump() for c in cards]
+
+    if not req_data.deck_id and not req_data.set_id:
+        return jsonify({
+            "error": {
+                "code": "BAD_REQUEST",
+                "message": "'deck_id' ou 'set_id' est requis."
+            }
+        }), 400
+
+    # notes-ia-planning-corrections, Task 1 : set_id (ensemble de révision) en plus de
+    # deck_id (flashcards) -- même contrat de requête, réponse selon le type.
+    if req_data.set_id:
+        items = planning_service.advance_review_set(
+            user_id, req_data.set_id, req_data.card_ids, req_data.date
+        )
+        response_data = [RevisionItemResponse.model_validate(i).model_dump() for i in items]
+    else:
+        cards = planning_service.advance_review(
+            user_id, req_data.deck_id, req_data.card_ids, req_data.date
+        )
+        response_data = [FlashcardResponse.model_validate(c).model_dump() for c in cards]
     return jsonify(response_data), 200

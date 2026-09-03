@@ -30,3 +30,18 @@ Investigation complète avant tout code :
   jugement UX (regroupement par fréquence d'usage, aucune fonction supprimée).
 
 Plan en 9 tâches (détail : `PLAN.md`). Prochaine action : Task 1 (backend, planning vide).
+
+## 2026-09-03 (Task 1 — backend, planning vide)
+
+`RevisionItemDAO.get_items_due_between()` (nouveau, symétrique de
+`FlashcardDAO.get_cards_due_between`) + `PlanningService.get_calendar()` agrège désormais
+`RevisionItem` en plus de `Flashcard`, `breakdown` généralisé (`BreakdownItemSchema` :
+`kind`/`id`/`name`/`count`, remplace `DeckBreakdownSchema`). `advance_review_set()` (nouveau,
+symétrique de `advance_review`) + route `/planning/advance` accepte désormais `set_id` en plus
+de `deck_id`. Bug trouvé et corrigé au passage : `app/schemas/__init__.py` réexportait encore
+l'ancien nom `DeckBreakdownSchema` (cassait l'import de tout le module schemas au démarrage),
+couvert par un test de non-régression dédié. Tests : 22 tests planning (dont 8 nouveaux :
+isolation `user_id` sur les `RevisionItem`, jour mixte deck+ensemble, `advance_review_set`,
+export du barrel). Suite complète backend (hors `test_pdfs.py`/`test_import.py`, échecs
+Windows préexistants sans rapport, cf. journal `revision-qcm-heterogene`) : 100% verte.
+Prochaine action : Task 2 (frontend, routage planning selon le type d'item).

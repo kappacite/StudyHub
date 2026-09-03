@@ -3,7 +3,7 @@
 Une case = une tâche atomique. TDD (skill `cycle-tdd`) : le test précède le code.
 Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
 
-- [ ] Task 1 — Backend : planning de révision toujours vide. `PlanningService.get_calendar()`
+- [x] Task 1 — Backend : planning de révision toujours vide. `PlanningService.get_calendar()`
   agrège aussi les `RevisionItem` dus (via `RevisionItemDAO`, groupés par `RevisionSet`, même
   principe que le groupement par `deck_id` existant) en plus des `Flashcard`/`Deck` — un jour du
   `breakdown` peut désormais mélanger deck et ensemble. `advance_review()` étendu pour accepter
