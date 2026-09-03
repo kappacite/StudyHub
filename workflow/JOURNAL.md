@@ -1,12 +1,9 @@
 # Journal global — workflow
 
-Chantier actif : diagrammes-commandes-annulation
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
-- `diagrammes-commandes-annulation` — Phase 5, cycle 2/14 (commandes d'édition + annulation
-  testée par propriété), suite de `diagrammes-modele-document` (cycle 1, PR #145 mergée).
-  Détail : son `CONTEXT.md`.
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
   2026-09-03, traité par `notes-ia-planning-corrections`)
@@ -14,6 +11,9 @@ Chantier actif : diagrammes-commandes-annulation
 
 ## Historique
 
+- 2026-09-03 — [diagrammes-commandes-annulation] **PR #146 mergée**, chantier clos. Cycle 3
+  (canevas/panoramique/zoom) ouvre juste après — l'utilisateur a demandé de poursuivre tous
+  les cycles restants sans re-demander (« Fais tout », « merge et continue »).
 - 2026-09-03 — [diagrammes-modele-document] **PR #145 mergée**, chantier clos. L'utilisateur
   a demandé de poursuivre tous les cycles restants (« Fais tout ») — cycle 2 (« commandes et
   annulation ») ouvre juste après cette entrée.
