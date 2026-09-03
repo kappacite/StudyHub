@@ -1,9 +1,12 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : diagrammes-canevas-pan-zoom
 
 ## Chantiers ouverts
 
+- `diagrammes-canevas-pan-zoom` — Phase 5, cycle 3/14 (canevas, panoramique, zoom, rendu
+  borné à la fenêtre de vue), suite de `diagrammes-commandes-annulation` (cycle 2, PR #146
+  mergée). Détail : son `CONTEXT.md`.
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
   2026-09-03, traité par `notes-ia-planning-corrections`)
