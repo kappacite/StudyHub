@@ -71,3 +71,20 @@ avant le nettoyage Markdown existant. Test dédié avec un contenu `<!--- sectio
 suivi de texte réel, vérifie qu'aucune trace de `<!--`/`-->`/`sectionbody` ne fuit dans
 l'extrait rendu. Suite complète : 548/548 tests frontend verts. Prochaine action : Task 4
 (backend, Notation IA).
+
+## 2026-09-03 (Task 4 — backend, Notation IA)
+
+`AIService.grade_note(note_title, note_content)` (patron `analyze_feynman`, JSON structuré :
+`score` 0-100, `verdict`, `points_forts`, `ameliorations`, `suggestions`). Nouveau blueprint
+`app/api/v1/notation.py` (`POST /api/v1/notation/grade`, `GET /api/v1/notation/tasks/<id>`) --
+même patron exact que `feynman.py` (Celery + repli synchrone via `dispatch_or_run`,
+`check_note_access` pour autoriser aussi une note partagée en lecture). Écart volontaire par
+rapport au PLAN.md initial : route top-level `/notation/grade` (body `note_id`) plutôt que
+`/notes/<id>/grade` imbriquée — aligné sur le vrai patron des fonctionnalités sœurs
+(feynman/blurting), découvert en lisant le code plutôt que deviné à l'ouverture du chantier.
+Pas de `StudySession` créée (Notation n'est pas une session d'étude, contrairement à
+Feynman/Blurting). Tests : service (`test_ai_service.py`, clé API manquante + succès mocké) +
+route (`test_notation.py`, nouveau fichier — validation, 404, 403 isolation `user_id`, cycle
+complet check→poll). Suite complète backend (hors `test_pdfs.py`/`test_import.py`, échecs
+Windows préexistants sans rapport) : 100% verte. Prochaine action : Task 5 (frontend, brancher
+le bouton Notation).

@@ -22,7 +22,7 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   (`<!--[\s\S]*?-->`) avant le nettoyage Markdown existant. Test : contenu avec un commentaire
   HTML au milieu, extrait ne doit contenir aucune trace de `<!--`/`-->`, non-régression sur les
   extraits déjà couverts (caractères Markdown, retours à la ligne).
-- [ ] Task 4 — Backend : Notation IA. Nouvelle méthode `AIService.grade_note(note_title,
+- [x] Task 4 — Backend : Notation IA. Nouvelle méthode `AIService.grade_note(note_title,
   note_content) -> dict` (JSON structuré via `_generate_json_object`, même patron que
   `analyze_feynman`) : `score` (0-100), `verdict` (phrase courte), `points_forts` (liste),
   `ameliorations` (liste), `suggestions` (paragraphe). Nouveau service dédié + route
