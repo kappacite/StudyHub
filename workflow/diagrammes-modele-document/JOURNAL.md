@@ -35,3 +35,16 @@ optionnel manquant (`arrow: 'end'`, `dashed: false`, `label: ''`, dimensions à 
 migration complète sans perte (un élément de chaque type) ; document vide/partiel sans
 erreur ; unicité des ids entre catégories ; valeurs par défaut d'une connexion minimale.
 Prochaine action : Task 3 (`parseDiagramDocument`/`serializeDiagramDocument`).
+
+## 2026-09-03 (Task 3 — parse/serialize)
+
+`web/src/diagram/document.ts` : `parseDiagramDocument()` distingue 4 cas (chaîne vide/null/
+undefined → document vide ; `schema_version === 1` → retourné tel quel ; forme legacy
+reconnaissable (`nodes`/`connections`/`masks`/`drawings` présents) → délégué à
+`migrateLegacyV0ToV1` ; JSON invalide ou imprévu → document vide, dégradation silencieuse
+plutôt qu'exception). `serializeDiagramDocument()` : `JSON.stringify` direct. Cycle
+`document.ts <-> migrations.ts` assumé (types/`createEmptyDocument` d'un côté,
+`migrateLegacyV0ToV1` de l'autre) — sans effet à l'exécution ESM, tout usage est différé dans
+des corps de fonction. Tests : les 4 branches + un rondtrip `parse(serialize(doc)) === doc`
+sur un document v1 non trivial. Suite complète + `npm run build` (`vue-tsc -b`) propres.
+Prochaine action : Task 4 (corpus de non-régression de format).

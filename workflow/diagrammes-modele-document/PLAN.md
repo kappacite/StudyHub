@@ -24,7 +24,7 @@ au cycle 3 (canevas) quand il y aura quelque chose à rendre avec.
   `drawings`) migre sans erreur vers des tableaux vides ; un id de nœud numérique (v0) devient
   un id stable (string) sans collision entre types (un node id=1 et une connection ne doivent
   jamais produire le même id final).
-- [ ] Task 3 — `parseDiagramDocument(raw: string | null | undefined): DiagramDocumentV1` et
+- [x] Task 3 — `parseDiagramDocument(raw: string | null | undefined): DiagramDocumentV1` et
   `serializeDiagramDocument(doc: DiagramDocumentV1): string` dans `web/src/diagram/document.ts`.
   `parseDiagramDocument` distingue : chaîne vide/`null`/`undefined` → document vide (fabrique
   Task 1) ; JSON avec `schema_version: 1` → validé et retourné tel quel ; JSON sans
