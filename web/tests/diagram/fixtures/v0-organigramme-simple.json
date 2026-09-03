@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    { "id": 1, "label": "SN1", "type": "rect", "x": 40, "y": 40, "color": "#6366f1" },
+    { "id": 2, "label": "SN2", "type": "rect", "x": 260, "y": 40, "color": "#22c55e" },
+    { "id": 3, "label": "Carbocation intermédiaire", "type": "diamond", "x": 150, "y": 180, "color": "#f59e0b" }
+  ],
+  "connections": [
+    { "from": 1, "to": 3, "label": "étape 1", "arrow": "end", "dashed": false },
+    { "from": 3, "to": 2, "label": "étape 2", "arrow": "end", "dashed": true }
+  ],
+  "masks": [],
+  "backgroundImage": null,
+  "drawings": []
+}
