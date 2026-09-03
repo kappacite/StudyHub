@@ -1,6 +1,6 @@
 # Notes (Notation IA, Blurting, Feynman), Planning vide, fuite de balisage, éditeur épuré
 
-Statut : pr-ouverte
+Statut : clos
 Branche : feature/notes-ia-planning-corrections
 PR : #144
 
