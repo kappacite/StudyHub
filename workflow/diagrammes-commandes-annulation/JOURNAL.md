@@ -17,3 +17,13 @@ d'annulation écrit dans `web/tests/diagram/history.property.spec.ts` **avant**
 fixe de 3 ids candidats (pas `fc.uuid()`) pour que `remove-element`/`update-element` ciblent
 souvent un élément réellement présent plutôt que systématiquement un no-op sur id absent.
 Prochaine action : Task 3 (`Command`/`applyCommand`).
+
+## 2026-09-03 (Task 3+4 — applyCommand et DiagramHistory)
+
+`web/src/diagram/commands.ts` : `applyCommand()` (add/remove/update), toujours un nouveau
+document, jamais de mutation (vérifié par un test dédié comparant le document d'entrée avant/
+après). `web/src/diagram/history.ts` : `DiagramHistory` (undo/redo par snapshot before/after
+capturé à chaque `execute`, `redo` vidé par tout nouvel `execute`). Le test de propriété de
+Task 2, rouge jusqu'ici, passe maintenant (25/25 tests diagrammes verts, y compris 100 runs
+`fast-check` par défaut sur l'invariant d'annulation). Prochaine action : Task 5 (vérification
+finale, clôture).

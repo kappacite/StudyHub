@@ -10,14 +10,14 @@ Une case = une tâche atomique. TDD sans exception (§8.7). Arbitrages : `CONTEX
   toute séquence exécutée puis intégralement annulée, le document final est structurellement
   identique (`toEqual`) au document initial. Ce test doit échouer avant l'écriture de
   `commands.ts`/`history.ts` (rouge confirmé), puis passer une fois Tasks 3-4 faites.
-- [ ] Task 3 — `Command` (union `add-element`/`remove-element`/`update-element`) et
+- [x] Task 3 — `Command` (union `add-element`/`remove-element`/`update-element`) et
   `applyCommand(doc, command): DiagramDocumentV1` dans `web/src/diagram/commands.ts`, pure
   (jamais de mutation du document ou d'un élément existant). Tests unitaires ciblés (en plus
   du test de propriété de Task 2) : `add-element` ajoute en fin de tableau (ordre = z-order,
   cf. cycle 1) ; `remove-element` sur un id absent est un no-op (pas d'exception) ;
   `update-element` fusionne les champs donnés sans toucher aux autres, y compris quand l'id
   est absent (no-op).
-- [ ] Task 4 — `DiagramHistory` dans `web/src/diagram/history.ts` : `execute(doc, command)`
+- [x] Task 4 — `DiagramHistory` dans `web/src/diagram/history.ts` : `execute(doc, command)`
   (empile `{command, before: doc}`, vide la pile de rétablissement, retourne le nouveau
   document), `undo(current)` (dépile, retourne le document `before` capturé, empile côté
   rétablissement), `redo(current)` (symétrique). Tests : `undo` sans historique est un no-op
