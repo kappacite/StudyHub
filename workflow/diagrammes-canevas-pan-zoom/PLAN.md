@@ -27,7 +27,7 @@ relève de l'exception écran-capture — ses interactions (pan/zoom) restent te
   la fenêtre de vue est conservé ; un document vide ne casse rien (bornes visibles valides
   même sans élément) ; le zoom réduit agrandit la zone visible en coordonnées monde (plus
   d'éléments passent le filtre).
-- [ ] Task 4 — Recadrage sur tout le contenu : `computeFitToContent(elements, viewportSize):
+- [x] Task 4 — Recadrage sur tout le contenu : `computeFitToContent(elements, viewportSize):
   Camera` dans `viewport.ts`. Calcule la boîte englobante de tous les éléments puis la caméra
   qui la centre entièrement dans la fenêtre de vue (avec une marge). Tests : un seul élément
   se retrouve centré ; plusieurs éléments dispersés sont tous inclus dans les bornes visibles

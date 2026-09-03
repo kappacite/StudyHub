@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { getVisibleWorldBounds, elementBounds, cullElements } from '../../src/diagram/viewport'
+import {
+  getVisibleWorldBounds,
+  elementBounds,
+  cullElements,
+  computeFitToContent,
+} from '../../src/diagram/viewport'
+import { createDefaultCamera } from '../../src/diagram/camera'
 import type { ShapeElement } from '../../src/diagram/document'
 
 const VIEWPORT = { width: 800, height: 600 }
@@ -53,6 +59,32 @@ describe('viewport (diagrammes-canevas-pan-zoom, Task 3)', () => {
       const zoomedOutCamera = { x: 0, y: 0, zoom: 0.1 }
       expect(cullElements([far], camera, VIEWPORT)).toEqual([])
       expect(cullElements([far], zoomedOutCamera, VIEWPORT).map((e) => e.id)).toEqual(['far'])
+    })
+  })
+
+  describe('computeFitToContent (Task 4)', () => {
+    it('un document vide retourne la caméra par défaut (pas de division par zéro)', () => {
+      expect(computeFitToContent([], VIEWPORT)).toEqual(createDefaultCamera())
+    })
+
+    it('un seul élément se retrouve centré', () => {
+      const el = shape('a', 100, 100, 50, 50) // centre monde : (125, 125)
+      const camera = computeFitToContent([el], VIEWPORT)
+      expect(camera.x).toBeCloseTo(125, 6)
+      expect(camera.y).toBeCloseTo(125, 6)
+    })
+
+    it('plusieurs éléments dispersés sont tous inclus dans les bornes visibles résultantes', () => {
+      const elements = [shape('a', -500, -50, 20, 20), shape('b', 500, 300, 20, 20)]
+      const camera = computeFitToContent(elements, VIEWPORT)
+      const visible = getVisibleWorldBounds(camera, VIEWPORT)
+      for (const el of elements) {
+        const b = elementBounds(el)
+        expect(b.minX).toBeGreaterThanOrEqual(visible.minX)
+        expect(b.maxX).toBeLessThanOrEqual(visible.maxX)
+        expect(b.minY).toBeGreaterThanOrEqual(visible.minY)
+        expect(b.maxY).toBeLessThanOrEqual(visible.maxY)
+      }
     })
   })
 })

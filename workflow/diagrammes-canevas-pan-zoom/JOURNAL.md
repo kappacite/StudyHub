@@ -28,3 +28,10 @@ borné à la fenêtre de vue).
 caméra), `elementBounds` (boîte englobante x/y/width/height), `cullElements` (intersection,
 pas inclusion stricte -- un élément partiellement visible reste affiché). 8/8 tests verts.
 Prochaine action : Task 4 (recadrage sur tout le contenu).
+
+## 2026-09-04 (Task 4 — recadrage sur tout le contenu)
+
+`computeFitToContent()` dans `viewport.ts` : boîte englobante de tous les éléments + marge
+fixe, caméra centrée dessus, zoom = le plus contraignant des deux axes. Document vide -> 
+caméra par défaut (garde `MIN_CONTENT_SIZE` évite une division par zéro sur une boîte
+englobante nulle). 11/11 tests verts. Prochaine action : Task 5 (`DiagramCanvas.vue`).
