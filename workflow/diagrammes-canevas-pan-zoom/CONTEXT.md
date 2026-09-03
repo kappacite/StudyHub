@@ -1,8 +1,8 @@
 # Diagrammes — canevas, panoramique, zoom (Phase 5, cycle 3)
 
-Statut : ouvert
+Statut : clos
 Branche : feature/diagrammes-canevas-pan-zoom
-PR : (aucune)
+PR : #147
 
 ## Pourquoi
 

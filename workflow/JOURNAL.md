@@ -1,12 +1,9 @@
 # Journal global — workflow
 
-Chantier actif : diagrammes-canevas-pan-zoom
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
-- `diagrammes-canevas-pan-zoom` — Phase 5, cycle 3/14 (canevas, panoramique, zoom, rendu
-  borné à la fenêtre de vue), suite de `diagrammes-commandes-annulation` (cycle 2, PR #146
-  mergée). Détail : son `CONTEXT.md`.
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
   2026-09-03, traité par `notes-ia-planning-corrections`)
@@ -14,6 +11,8 @@ Chantier actif : diagrammes-canevas-pan-zoom
 
 ## Historique
 
+- 2026-09-04 — [diagrammes-canevas-pan-zoom] **PR #147 mergée**, chantier clos. Cycle 4
+  (placement, sélection, magnétisme) ouvre juste après (« Fais tout »).
 - 2026-09-03 — [diagrammes-commandes-annulation] **PR #146 mergée**, chantier clos. Cycle 3
   (canevas/panoramique/zoom) ouvre juste après — l'utilisateur a demandé de poursuivre tous
   les cycles restants sans re-demander (« Fais tout », « merge et continue »).
