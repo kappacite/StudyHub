@@ -12,8 +12,6 @@ de schéma de données) : pure migration visuelle vers le design system.
 ## Comment
 
 Un cycle `migration-ecran` par vue, dans n'importe quel ordre (peuvent avancer en parallèle) :
-- Blurting (`Blurting.vue`) — retonation visuelle seulement, le contenu ne change pas au-delà
-  de la Tâche 5 du chantier `editeur-notes-notation-ia` (méthode Feynman)
 - PDF (`PDFs.vue`, lecture/annotations)
 - Diagrammes — coquille uniquement (`Diagrams.vue`), pas le canevas/moteur (hors périmètre
   phase 4, prévu phase 5)
@@ -51,6 +49,14 @@ fortement de leurs maquettes respectives :
 Utiliser ces deux constats au moment d'ouvrir ce chantier plutôt que de redériver la
 comparaison — les fichiers `.dc.html` sont ré-extractibles via la procédure de la mémoire
 `extract-claude-design-mockup` si besoin de les revoir en détail.
+
+## Note ajoutée le 2026-09-03 (retrait de Blurting du périmètre)
+
+Blurting (`Blurting.vue`) retiré de ce chantier — son écart réel avec le canevas (cf. note
+ci-dessous du 2026-08-30) s'est avéré bien plus large qu'une retonation (génération/import de
+flashcards à conserver, structure à recomposer) et a été traité comme sa propre tâche dans le
+chantier `notes-ia-planning-corrections` (2026-09-03), avec Notation IA et Feynman. Ne pas
+retraiter Blurting ici.
 
 ## Note ajoutée le 2026-08-30 (deuxième passe, écrans de note)
 

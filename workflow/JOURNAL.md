@@ -1,16 +1,26 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : notes-ia-planning-corrections
 
 ## Chantiers ouverts
 
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
-  `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; dépendance Blurting→Feynman déjà
-  levée ; écart Blurting probablement structurel, pas juste une retonation ; tâches détaillées
-  le même jour)
+  `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
+  2026-09-03, traité par `notes-ia-planning-corrections`)
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
+
+- 2026-09-03 — [notes-ia-planning-corrections] **Chantier ouvert.** 6 points groupés demandés
+  par l'utilisateur (Notation IA, Blurting, Feynman, planning toujours vide, fuite
+  `<!--- sectionbody` dans l'aperçu bibliothèque, refonte densité éditeur), tous les arbitrages
+  délégués explicitement ("prend les décisions... ne me demande rien"). Investigation complète
+  faite avant tout code : canevas relu en direct (Notation/Blurting/Feynman), root cause du
+  planning vide identifié (`planning_service.py` n'agrège jamais `RevisionItem`/`RevisionSet`,
+  seulement `Flashcard`/`Deck`), root cause de la fuite HTML identifié (`noteExcerpt()` ne
+  nettoie pas les commentaires HTML). Plan en 9 tâches, détail complet des arbitrages :
+  `workflow/notes-ia-planning-corrections/CONTEXT.md`. Prochaine action : Task 1 (backend,
+  planning vide).
 
 - 2026-09-03 — [revision-qcm-heterogene] **PR #142 mergée dans `main`** (squash, `ff897f5`),
   CI verte (6/6 checks). Chantier `clos`. Prochaine action : choisir le prochain chantier à
