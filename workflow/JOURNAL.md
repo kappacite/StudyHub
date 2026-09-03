@@ -1,9 +1,12 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : diagrammes-commandes-annulation
 
 ## Chantiers ouverts
 
+- `diagrammes-commandes-annulation` — Phase 5, cycle 2/14 (commandes d'édition + annulation
+  testée par propriété), suite de `diagrammes-modele-document` (cycle 1, PR #145 mergée).
+  Détail : son `CONTEXT.md`.
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
   2026-09-03, traité par `notes-ia-planning-corrections`)
