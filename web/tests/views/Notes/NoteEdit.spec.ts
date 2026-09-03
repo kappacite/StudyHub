@@ -164,6 +164,23 @@ async function clickDialogButton(text: string) {
   await flushPromises()
 }
 
+// notes-ia-planning-corrections, Task 8 : Classeur/Tags/Contexte-Liens/Aperçu/Guide
+// (mode édition) regroupés derrière un menu "Réglages" (popover simple, même patron que
+// le popup de partage déjà présent dans ce fichier -- pas de composant Menu/Popover
+// générique introduit, YAGNI). Fermé par défaut : l'ouvrir avant de chercher ces boutons.
+// (retrait du bouton Guide dupliqué hors-popover dans NoteEdit.vue a suivre)
+async function openSettingsMenu(wrapper: VueWrapper) {
+  const btn = wrapper.findAll('button').find((b) => b.text() === 'Réglages')!
+  await btn.trigger('click')
+}
+
+// notes-ia-planning-corrections, Task 8 : Définition (Info-bulle) + insertion de
+// diagramme (usage occasionnel, Row 2) regroupés derrière un menu "Insérer".
+async function openInsertMenu(wrapper: VueWrapper) {
+  const btn = wrapper.findAll('button').find((b) => b.text() === 'Insérer')!
+  await btn.trigger('click')
+}
+
 describe('NoteEdit — sidebar Assistant IA & bouton Notation (canevas Direction A)', () => {
   beforeEach(() => {
     api.get.mockReset()
@@ -281,6 +298,49 @@ describe('NoteEdit — Notation IA via NoteGradeModal (notes-ia-planning-correct
 
     resolvePost({ data: { status: 'SUCCESS', result: { score: 50 } } })
     await flushPromises()
+  })
+})
+
+describe('NoteEdit — densité de l\'en-tête d\'édition (notes-ia-planning-corrections, Task 8)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  it("ligne 1 : Classeur/Tags/Contexte-Liens/Aperçu/Guide masqués tant que \"Réglages\" n'est pas ouvert, aucune fonctionnalité perdue", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+
+    // Masqués par défaut.
+    expect(wrapper.findAll('select').find((s) => s.text().includes('Général (Aucun)'))).toBeUndefined()
+    expect(wrapper.findAll('button').find((b) => b.text() === 'Contexte / Liens')).toBeUndefined()
+    expect(wrapper.findAll('button').find((b) => b.text() === 'Aperçu')).toBeUndefined()
+    expect(wrapper.findAll('button').find((b) => b.text() === 'Guide')).toBeUndefined()
+
+    // Toujours visibles (usage fréquent).
+    expect(wrapper.text()).toContain('Visualiser')
+    expect(wrapper.findAll('button').find((b) => b.text().includes('Privé'))).toBeDefined()
+
+    // Réapparaissent une fois "Réglages" ouvert.
+    await openSettingsMenu(wrapper)
+    expect(wrapper.findAll('select').find((s) => s.text().includes('Général (Aucun)'))).toBeDefined()
+    expect(wrapper.findAll('button').find((b) => b.text() === 'Contexte / Liens')).toBeDefined()
+    expect(wrapper.findAll('button').find((b) => b.text() === 'Aperçu')).toBeDefined()
+    expect(wrapper.findAll('button').find((b) => b.text() === 'Guide')).toBeDefined()
+  })
+
+  it("ligne 2 : Définition (Info-bulle) et l'insertion de diagramme masquées tant que \"Insérer\" n'est pas ouvert", async () => {
+    const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
+
+    expect(wrapper.findAll('button').find((b) => b.text() === 'Définition (Info-bulle)')).toBeUndefined()
+    expect(wrapper.findAll('select').find((s) => s.text().includes('Insérer un diagramme...'))).toBeUndefined()
+
+    await openInsertMenu(wrapper)
+    expect(wrapper.findAll('button').find((b) => b.text() === 'Définition (Info-bulle)')).toBeDefined()
+    expect(wrapper.findAll('select').find((s) => s.text().includes('Insérer un diagramme...'))).toBeDefined()
   })
 })
 
@@ -538,6 +598,7 @@ describe('NoteEdit — barre de formatage (Row 2) en mode édition (Task 9)', ()
     await textarea.setValue('')
     ;(textarea.element as HTMLTextAreaElement).setSelectionRange(0, 0)
 
+    await openInsertMenu(wrapper)
     const diagramSelect = wrapper
       .findAll('select')
       .find((s) => s.text().includes('Insérer un diagramme...'))!
@@ -549,6 +610,7 @@ describe('NoteEdit — barre de formatage (Row 2) en mode édition (Task 9)', ()
   it("le bouton 'Définition (Info-bulle)' exige une sélection, puis (sélection faite) ouvre la modale et insère [terme]{def:...}", async () => {
     const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
 
+    await openInsertMenu(wrapper)
     const defBtn = wrapper.findAll('button').find((b) => b.text() === 'Définition (Info-bulle)')!
     await defBtn.trigger('click')
     await flushPromises()
@@ -884,6 +946,7 @@ describe('NoteEdit — liens entre notes (Task 9)', () => {
     const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
     await flushPromises()
 
+    await openSettingsMenu(wrapper)
     const settingsBtn = wrapper.findAll('button').find((b) => b.text() === 'Contexte / Liens')!
     await settingsBtn.trigger('click')
 
@@ -1017,6 +1080,7 @@ describe('NoteEdit — tiroir Contexte/Liens, aperçu live, sidebar de raccourci
     const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
     expect(wrapper.find('textarea[placeholder*="Historique"]').exists()).toBe(false)
 
+    await openSettingsMenu(wrapper)
     const settingsBtn = wrapper.findAll('button').find((b) => b.text() === 'Contexte / Liens')!
     await settingsBtn.trigger('click')
     expect(wrapper.find('textarea[placeholder*="Historique"]').exists()).toBe(true)
@@ -1029,10 +1093,13 @@ describe('NoteEdit — tiroir Contexte/Liens, aperçu live, sidebar de raccourci
     const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
     expect(wrapper.text()).not.toContain('Aperçu en temps réel')
 
+    await openSettingsMenu(wrapper)
     const previewBtn = wrapper.findAll('button').find((b) => b.text() === 'Aperçu')!
     await previewBtn.trigger('click')
     expect(wrapper.text()).toContain('Aperçu en temps réel')
 
+    // Le menu Réglages reste ouvert (pas de fermeture auto sur une bascule interne) --
+    // même bouton retrouvé sans rouvrir le menu.
     await previewBtn.trigger('click')
     expect(wrapper.text()).not.toContain('Aperçu en temps réel')
   })
@@ -1054,6 +1121,7 @@ describe('NoteEdit — tiroir Contexte/Liens, aperçu live, sidebar de raccourci
     // NoteEditHelpModal s'appuie sur BaseModal (Dialog headlessui, téléporté dans
     // document.body) : on vérifie le contenu affiché via document.body, pas wrapper.text().
     const edit = await mountNoteEdit('/notes/42?edit=true')
+    await openSettingsMenu(edit.wrapper)
     const editGuideBtn = edit.wrapper.findAll('button').find((b) => b.text() === 'Guide')!
     await editGuideBtn.trigger('click')
     await flushPromises()
@@ -1092,6 +1160,7 @@ describe('NoteEdit — classeur & tags (Task 9)', () => {
     const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
     await flushPromises()
 
+    await openSettingsMenu(wrapper)
     vi.useFakeTimers()
     const binderSelect = wrapper.findAll('select').find((s) => s.text().includes('Général (Aucun)'))!
     await binderSelect.setValue('b2')
@@ -1114,6 +1183,7 @@ describe('NoteEdit — classeur & tags (Task 9)', () => {
     const { wrapper } = await mountNoteEdit('/notes/42?edit=true')
     await flushPromises()
 
+    await openSettingsMenu(wrapper)
     const tagSelector = wrapper.findComponent(TagSelector)
     await tagSelector.get('button').trigger('click')
     const select = tagSelector.get('select')

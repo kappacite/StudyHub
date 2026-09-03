@@ -47,7 +47,7 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
 - [x] Task 7 — Frontend : harmonisation mineure `NoteFeynman.vue` — score affiché `/10` à une
   décimale au lieu de `%` (même formatage que Notation/Blurting), pas de changement structurel.
   Test composant sur le nouveau format d'affichage.
-- [ ] Task 8 — Frontend : refonte de la densité de `NoteEdit.vue` (cf. arbitrage `CONTEXT.md`,
+- [x] Task 8 — Frontend : refonte de la densité de `NoteEdit.vue` (cf. arbitrage `CONTEXT.md`,
   pas de canevas cible strict pour ce point). Mode édition ligne 1 : regrouper
   Classeur/Tags/Contexte-Liens/Aperçu/Guide dans un menu « Réglages » (popover), garder
   Titre/Sauvegarde/Partage/Visualiser visibles. Ligne 2 : garder Format/LaTeX/Code visibles,

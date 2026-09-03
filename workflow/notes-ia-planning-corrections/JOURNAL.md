@@ -129,3 +129,30 @@ patron que Blurting/Notation) au lieu de `%`. Aucun changement structurel (déj�
 (`'82'`/`'60'`) — corrigés vers le nouveau format (`'8,2'`/`'6,0'`), légitime puisque le
 format d'affichage change intentionnellement. Suite complète : 561/561 tests frontend
 verts, `npm run build` propre. Prochaine action : Task 8 (refonte densité éditeur de notes).
+
+## 2026-09-03 (Task 8 — densité de l'éditeur de notes)
+
+Mode édition : Ligne 1 passe de 9 contrôles visibles à 4 (Titre, statut de sauvegarde,
+Visualiser, Public) + un bouton « Réglages » regroupant Classeur/Tags/Contexte-Liens/
+Aperçu/Guide dans un popover (même patron que le popup Partage déjà présent dans ce
+fichier — pas de composant Menu générique introduit, YAGNI). Ligne 2 : Définition
+(Info-bulle) + insertion de diagramme (usage occasionnel) regroupés dans un bouton
+« Insérer », Format/LaTeX/Code restent visibles (usage très fréquent). Mode lecture laissé
+inchangé après inspection réelle — seulement 5 contrôles, pas de clutter constaté
+contrairement au mode édition (écart avec l'intention initiale du `CONTEXT.md`, corrigé
+ici par jugement direct plutôt que suivi mécanique). Aucune fonctionnalité supprimée,
+uniquement regroupée. Bug trouvé en cours de route (TDD) : mon premier remaniement du Row 1
+laissait un second bouton « Guide » dupliqué hors du popover (`old_string` de l'édition ne
+couvrait pas toute la zone) — détecté par le test de décluttering lui-même, corrigé.
+
+Vérification visuelle réelle faite (app locale, serveur backend relancé au passage — il
+tournait sur du code d'avant les Tasks 4-8, `/notation/grade` répondait 404) : popover
+Réglages et popover Insérer tous deux fonctionnels et lisibles à 1440px, desktop clair
+comme attendu (thème sombre actif par défaut). Limite honnête : la vérification à 375px
+n'a pas pu être faite mécaniquement (l'outil de redimensionnement de fenêtre n'affecte pas
+la fenêtre réellement capturée dans cet environnement, confirmé via `window.innerWidth`
+resté à 1144 après la commande) — risque de régression jugé faible : le changement réduit
+strictement le nombre d'éléments toujours visibles par rapport à l'existant, sur une rangée
+qui a déjà son correctif `flex-wrap` d'un chantier précédent. Tests : 53/53 sur
+`NoteEdit.spec.ts`, suite complète 563/563 tests frontend, `npm run build` propre.
+Prochaine action : Task 9 (vérification finale, clôture).
