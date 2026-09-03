@@ -3,12 +3,12 @@
 Une case = une tâche atomique. TDD sans exception pour la géométrie (magnétisme/alignement :
 fonctions pures, §8.7). Arbitrages : `CONTEXT.md`.
 
-- [ ] Task 1 — Magnétisme sur grille, pur, dans `web/src/diagram/snapping.ts` :
+- [x] Task 1 — Magnétisme sur grille, pur, dans `web/src/diagram/snapping.ts` :
   `snapToGrid(point, gridSize): Point` (arrondit x/y au multiple de `gridSize` le plus
   proche). Tests : un point déjà sur la grille reste inchangé ; un point à mi-chemin arrondit
   au plus proche (comportement d'arrondi standard, pas de biais systématique vers le bas) ;
   `gridSize` de 1 est un no-op (pas d'arrondi visible).
-- [ ] Task 2 — Guides d'alignement, purs, dans `snapping.ts` :
+- [x] Task 2 — Guides d'alignement, purs, dans `snapping.ts` :
   `computeAlignmentSnap(draggedBounds, otherBounds[], thresholdPx, zoom): { snapped: Point;
   guides: AlignmentGuide[] }`. Compare les bords/centres (gauche/droite/haut/bas/centre-x/
   centre-y) de l'élément déplacé à ceux de chaque autre élément ; si un écart est sous le
