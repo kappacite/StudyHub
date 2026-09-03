@@ -37,7 +37,7 @@ fonctions pures, §8.7). Arbitrages : `CONTEXT.md`.
   Relève partiellement de l'exception écran-capture (§8.7) pour l'apparence exacte, mais la
   présence conditionnelle est testable : contour rendu seulement si `selectedElementId` est
   défini ; guides rendus seulement pendant un glisser actif avec un alignement détecté.
-- [ ] Task 6 — Vérification finale : suite frontend complète verte, `npm run build` propre,
+- [x] Task 6 — Vérification finale : suite frontend complète verte, `npm run build` propre,
   `Diagrams.vue` toujours non modifié. Clôture ; passation `JOURNAL.md` pour le cycle 5
   (liens, ancrage, routage) : la sélection et le déplacement d'élément existent désormais --
   un lien pourra s'ancrer sur l'élément sélectionné/survolé. Rappel explicite dans la

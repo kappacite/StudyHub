@@ -48,3 +48,15 @@ persisté) + `displayElements` (visibleElements avec l'override appliqué) rempl
 guide"`), peuplées pendant `onMove` (vidées si `Alt` ou aucun alignement trouvé) et vidées à
 la relâche. 12/12 tests composant verts, 60/60 tests diagrammes. Prochaine action : Task 6
 (vérification finale, clôture).
+
+## 2026-09-04 (Task 6 — vérification finale, clôture du cycle 4)
+
+Suite frontend complète : 632/632 (16 nouveaux pour ce chantier). `npm run build` propre.
+`Diagrams.vue` toujours non modifié. Rappel de passation (déjà noté dans `CONTEXT.md`) :
+redimensionnement/rotation/z-order/duplication/copier-coller/sélection multiple/groupes/
+verrouillage (§8.4) restent hors périmètre de tout le cycle 4 -- à ne pas oublier pour un
+futur cycle, aucun des 10 cycles restants ne les couvre par son titre littéral. Passation pour
+le cycle 5 (liens, ancrage, routage) : la sélection/déplacement d'élément existent désormais,
+un lien pourra s'ancrer sur l'élément sélectionné ou survolé, en réutilisant
+`DiagramHistory.execute()` de la même façon. Chantier clos (code). Prochaine action : pousser
+`feature/diagrammes-placement-selection`, ouvrir la PR.
