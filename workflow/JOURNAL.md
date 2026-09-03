@@ -1,9 +1,12 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : diagrammes-placement-selection
 
 ## Chantiers ouverts
 
+- `diagrammes-placement-selection` — Phase 5, cycle 4/14 (placement, sélection, magnétisme,
+  guides d'alignement), suite de `diagrammes-canevas-pan-zoom` (cycle 3, PR #147 mergée).
+  Détail : son `CONTEXT.md`.
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
   2026-09-03, traité par `notes-ia-planning-corrections`)
