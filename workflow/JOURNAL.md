@@ -1,9 +1,13 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : diagrammes-modele-document
 
 ## Chantiers ouverts
 
+- `diagrammes-modele-document` — Phase 5, cycle 1/14 (modèle de document versionné) de la
+  refonte de l'outil de diagrammes, spec complète `docs/PROMPT_DEMARRAGE.md` §8. Démarre la
+  Phase 5 en avance sur `ETAT.md` (encore Phase 4), confirmé explicitement par l'utilisateur.
+  13 cycles suivants prévus, un chantier chacun, séquence non négociable (cf. son `CONTEXT.md`).
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
   2026-09-03, traité par `notes-ia-planning-corrections`)
@@ -11,6 +15,9 @@ Chantier actif : aucun
 
 ## Historique
 
+- 2026-09-03 — [diagrammes-modele-document] **Chantier ouvert** (cycle 1/14 de la refonte
+  Phase 5 des diagrammes, demande explicite utilisateur). Détail : `CONTEXT.md`.
+- 2026-09-03 — [notes-ia-planning-corrections] PR #144 mergée, chantier clos.
 - 2026-09-03 — [notes-ia-planning-corrections] **PR #144 ouverte**, branche poussée. Chantier
   clôturé côté suivi (`Chantier actif : aucun`) — statut `pr-ouverte` dans son `CONTEXT.md`.
 - 2026-09-03 — [notes-ia-planning-corrections] Task 15 (forecast "Charge à venir" accueil
