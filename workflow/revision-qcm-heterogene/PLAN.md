@@ -3,7 +3,7 @@
 Une case = une tâche atomique. TDD (skill `cycle-tdd`) : le test précède le code.
 Détail de l'approche retenue : `CONTEXT.md`.
 
-- [ ] Task 1 — Backend : `"qcm"` rejoint `GRADABLE_TYPES`, `check_answer()` gagne la
+- [x] Task 1 — Backend : `"qcm"` rejoint `GRADABLE_TYPES`, `check_answer()` gagne la
   branche de comparaison `selected_option_ids`/options correctes. Tests : correction
   correcte/incorrecte/multi-select, `check_item_answer`/`grade_item` acceptent désormais
   un item `qcm` (ne lèvent plus 400), `grade_item` sur un ensemble hétérogène commet bien

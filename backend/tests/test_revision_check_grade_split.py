@@ -56,6 +56,21 @@ GRADABLE_CASES = [
         {"order": ["A", "B", "C"]},
         {"order": ["A", "C", "B"]},
     ),
+    # qcm (revision-qcm-heterogene, Approche A) : rejoint GRADABLE_TYPES pour être
+    # révisable individuellement dans un ensemble hétérogène, pas seulement via le
+    # passage scoré dédié (check_qcm_answer/answer_qcm_item, inchangés).
+    (
+        "qcm",
+        {
+            "question": "Capitale de la France ?",
+            "options": [
+                {"id": "a", "text": "Paris", "correct": True},
+                {"id": "b", "text": "Lyon", "correct": False},
+            ],
+        },
+        {"selected_option_ids": ["a"]},
+        {"selected_option_ids": ["b"]},
+    ),
 ]
 
 

@@ -20,3 +20,15 @@ d'assouplir les endpoints QCM dédiés + construire une UI de réponse QCM sépa
 l'écran d'étude. Détail complet des deux approches et de la décision : `CONTEXT.md`.
 
 Plan en 3 tâches (backend, frontend, vérification). Prochaine action : Task 1.
+
+## 2026-09-03 (Task 1 — backend)
+
+`GRADABLE_TYPES` gagne `"qcm"` ; `check_answer()` gagne la branche `"qcm"` (comparaison
+tout-ou-rien des `selected_option_ids` triés contre les options `correct` du payload, même
+règle que `_score_qcm_answer`). Tests ajoutés : `test_revision_service.py` (nouveau, tests
+unitaires purs de `check_answer`/`GRADABLE_TYPES` sans Flask/DB), `test_revision.py`
+(scénario bout en bout QCM dans ensemble hétérogène : check → grade → SM-2/StudySession),
+`test_revision_check_grade_split.py` (cas `"qcm"` ajouté à `GRADABLE_CASES`, paramétré avec
+les autres types). Non-régression vérifiée : `test_revision_qcm.py` (endpoints dédiés
+`check_qcm_answer`/`answer_qcm_item`, garde `rset.type` inchangée) passe toujours. Suite
+`test_revision*.py` : 54 tests verts. Prochaine action : Task 2 (frontend).

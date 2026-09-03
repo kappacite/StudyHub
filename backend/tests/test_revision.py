@@ -568,6 +568,54 @@ def test_grade_item_on_heterogeneous_set_does_not_crash(client, auth_headers):
     assert response.status_code == 200
 
 
+def test_grade_qcm_item_on_heterogeneous_set_scores_correctly(client, auth_headers, app):
+    """revision-qcm-heterogene : scénario exact du rapport utilisateur -- un QCM
+    dans un ensemble hétérogène (rset.type=None) doit désormais être révisable et
+    noté via le flux générique (check_item_answer/grade_item), pas seulement via
+    le passage scoré dédié réservé à un ensemble homogène "qcm"."""
+    set_id = client.post(
+        "/api/v1/revision/sets",
+        json={"name": "Heterogene"},
+        headers=auth_headers,
+    ).json["id"]
+    item = client.post(
+        f"/api/v1/revision/sets/{set_id}/items",
+        json={
+            "type": "qcm",
+            "payload": {
+                "question": "Capitale de la France ?",
+                "options": [
+                    {"id": "a", "text": "Paris", "correct": True},
+                    {"id": "b", "text": "Lyon", "correct": False},
+                ],
+            },
+        },
+        headers=auth_headers,
+    ).json
+
+    checked = client.post(
+        f"/api/v1/revision/sets/{set_id}/study/check/{item['id']}",
+        json={"answer": {"selected_option_ids": ["a"]}},
+        headers=auth_headers,
+    )
+    assert checked.status_code == 200
+    assert checked.json == {"correct": True}
+
+    graded = client.post(
+        f"/api/v1/revision/sets/{set_id}/study/grade/{item['id']}",
+        json={"answer": {"selected_option_ids": ["a"]}, "score": 5},
+        headers=auth_headers,
+    )
+    assert graded.status_code == 200
+
+    with app.app_context():
+        from app.models.study_session import StudySession
+
+        sess = StudySession.query.filter_by(item_id=item["id"]).first()
+        assert sess.item_type == "qcm"
+        assert sess.grade == 5
+
+
 # --- Flexibility: include_not_due (Task 3, revision-flexibilite) ---------------
 
 
