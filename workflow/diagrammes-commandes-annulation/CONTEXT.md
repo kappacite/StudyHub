@@ -1,8 +1,8 @@
 # Diagrammes — commandes et annulation (Phase 5, cycle 2)
 
-Statut : ouvert
+Statut : clos
 Branche : feature/diagrammes-commandes-annulation
-PR : (aucune)
+PR : #146
 
 ## Pourquoi
 
