@@ -44,7 +44,7 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   Aucun changement de schéma `AIService.analyze_blurting` attendu (juste un réaffichage divisé
   par 10) — vérifier en écrivant le test. Tests composant sur le nouvel affichage du score et la
   présence des sections conservées.
-- [ ] Task 7 — Frontend : harmonisation mineure `NoteFeynman.vue` — score affiché `/10` à une
+- [x] Task 7 — Frontend : harmonisation mineure `NoteFeynman.vue` — score affiché `/10` à une
   décimale au lieu de `%` (même formatage que Notation/Blurting), pas de changement structurel.
   Test composant sur le nouveau format d'affichage.
 - [ ] Task 8 — Frontend : refonte de la densité de `NoteEdit.vue` (cf. arbitrage `CONTEXT.md`,

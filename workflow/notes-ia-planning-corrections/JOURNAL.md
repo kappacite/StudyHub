@@ -120,3 +120,12 @@ aucun test n'existait avant) : non-régression étape rédaction, format `/10` d
 conservation concepts/flashcards, absence de couleurs brutes dans le HTML rendu. Suite
 complète : 561/561 tests frontend verts, `npm run build` propre. Prochaine action : Task 7
 (harmonisation mineure Feynman).
+
+## 2026-09-03 (Task 7 — harmonisation Feynman)
+
+`NoteFeynman.vue` : score affiché `/10` à une décimale (`formattedScore` computed, même
+patron que Blurting/Notation) au lieu de `%`. Aucun changement structurel (déjà conforme).
+2 tests existants mettaient à jour des assertions sur le format brut de l'ancien score
+(`'82'`/`'60'`) — corrigés vers le nouveau format (`'8,2'`/`'6,0'`), légitime puisque le
+format d'affichage change intentionnellement. Suite complète : 561/561 tests frontend
+verts, `npm run build` propre. Prochaine action : Task 8 (refonte densité éditeur de notes).

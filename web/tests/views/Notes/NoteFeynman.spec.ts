@@ -108,7 +108,10 @@ describe('NoteFeynman', () => {
       'Voici mon explication simplifiée du concept.',
       expect.any(Number),
     )
-    expect(wrapper.text()).toContain('82')
+    // notes-ia-planning-corrections, Task 7 : score /10 a une decimale (formattedScore
+    // computed, harmonise avec Notation/Blurting), plus de pourcentage brut.
+    expect(wrapper.text()).toContain('8,2')
+    expect(wrapper.text()).not.toContain('82%')
     expect(wrapper.text()).toContain('Bien')
   })
 
@@ -133,7 +136,8 @@ describe('NoteFeynman', () => {
       await flushPromises()
 
       expect(feynmanService.pollTask).toHaveBeenCalledWith('task-1')
-      expect(wrapper.text()).toContain('60')
+      // notes-ia-planning-corrections, Task 7 : score /10 (60 -> "6,0").
+      expect(wrapper.text()).toContain('6,0')
       expect(wrapper.text()).toContain('osmose')
     } finally {
       vi.useRealTimers()
