@@ -70,4 +70,60 @@ describe('NoteGradeModal — notes-ia-planning-corrections Task 5', () => {
     expect(wrapper.emitted('close')).toBeTruthy()
     wrapper.unmount()
   })
+
+  // notes-ia-planning-corrections, Task 12 : une notation existe deja -- propose un choix
+  // plutot que de rappeler l'IA directement.
+  // fix : parenthese en trop apres computed(formattedDate) corrigee
+  describe('choice=true (une notation existe deja)', () => {
+    it('propose "Voir la notation existante" et "Réévaluer", pas le contenu du resultat', async () => {
+      const wrapper = mount(NoteGradeModal, {
+        props: {
+          open: true,
+          loading: false,
+          error: null,
+          choice: true,
+          result: { score: 82, verdict: 'Note solide.', points_forts: [], ameliorations: [], suggestions: '' },
+        },
+        attachTo: document.body,
+      })
+      await wrapper.vm.$nextTick()
+      expect(document.body.textContent).toContain('Voir la notation existante')
+      expect(document.body.textContent).toContain('Réévaluer')
+      expect(document.body.textContent).not.toContain('Note solide.')
+    })
+
+    it('emet view-existing au clic sur "Voir la notation existante"', async () => {
+      const wrapper = mount(NoteGradeModal, {
+        props: {
+          open: true, loading: false, error: null, choice: true,
+          result: { score: 82, verdict: 'V', points_forts: [], ameliorations: [], suggestions: '' },
+        },
+        attachTo: document.body,
+      })
+      await wrapper.vm.$nextTick()
+      const btn = Array.from(document.body.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Voir la notation existante',
+      )
+      btn!.click()
+      await wrapper.vm.$nextTick()
+      expect(wrapper.emitted('view-existing')).toBeTruthy()
+    })
+
+    it('emet reevaluate au clic sur "Réévaluer"', async () => {
+      const wrapper = mount(NoteGradeModal, {
+        props: {
+          open: true, loading: false, error: null, choice: true,
+          result: { score: 82, verdict: 'V', points_forts: [], ameliorations: [], suggestions: '' },
+        },
+        attachTo: document.body,
+      })
+      await wrapper.vm.$nextTick()
+      const btn = Array.from(document.body.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Réévaluer',
+      )
+      btn!.click()
+      await wrapper.vm.$nextTick()
+      expect(wrapper.emitted('reevaluate')).toBeTruthy()
+    })
+  })
 })

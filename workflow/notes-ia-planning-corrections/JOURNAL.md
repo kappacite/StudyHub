@@ -197,6 +197,29 @@ Suite complète : 564/564 tests frontend verts.
 60s encore trop court en pratique — porté à 120s (2 minutes). Même fichier, même test mis à
 jour. Suite complète : 564/564 tests frontend verts.
 
+## 2026-09-03 (Task 12 — persistance de la Notation IA, demande utilisateur)
+
+La notation n'était jusque-là jamais enregistrée (résultat éphémère). Backend : nouveau
+modèle `NoteGrade` (une par note, écrasée à la réévaluation — pas d'historique, même patron
+que `Evaluation`), migration Alembic (`1a36d88922ba`, nettoyée du faux drift d'index GIN
+`*_search_idx` déjà signalé dans le skill `deployment` — SQLite ne les voit pas, ils
+existent déjà en Postgres), `NoteGradeDAO` (`get_by_note`/`upsert`), `run_note_grading`
+persiste désormais après l'appel IA (rattaché au propriétaire de la note, pas au requérant,
+pour qu'un lecteur d'une note partagée voie/écrase le même résultat), nouvelle route
+`GET /api/v1/notation/<note_id>` (404 si pas encore noté). Bug trouvé en cours de route :
+`NoteGrade` n'était pas listé dans `app/models/__init__.py`, donc invisible à l'autogenerate
+Alembic — première tentative de migration vide (seulement le faux drift GIN), corrigé avant
+de committer.
+
+Frontend : `notationService.getExisting()` (404 → `null`, autres erreurs propagées),
+`NoteGradeModal.vue` gagne un mode `choice` (deux boutons « Voir la notation existante » /
+« Réévaluer »), `NoteEdit.vue::openGradeModal()` vérifie l'existant avant de lancer
+l'évaluation — comportement inchangé si aucune notation n'existe encore. Tests : DAO, schéma,
+route (persistance + isolation `user_id`), service, modale (mode choice), `NoteEdit.vue`
+(3 nouveaux scénarios : existant → choix, voir sans rappeler l'IA, réévaluer et rappeler
+l'IA). Suite complète : backend 100% vert (hors `test_pdfs.py`/`test_import.py`), 573/573
+tests frontend, `npm run build` propre.
+
 ## 2026-09-03 (clôture)
 
 Toutes les tâches du plan sont cochées et vérifiées (tests + parcours réel). Chantier clos

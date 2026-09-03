@@ -869,13 +869,16 @@
         @cancel="evaluationModal.visible = false"
       />
 
-      <!-- Notation IA (notes-ia-planning-corrections, Task 5) -->
+      <!-- Notation IA (notes-ia-planning-corrections, Task 5/12) -->
       <NoteGradeModal
         :open="gradeModal.open"
         :loading="gradeModal.loading"
         :error="gradeModal.error"
         :result="gradeModal.result"
+        :choice="gradeModal.choice"
         @close="gradeModal.open = false"
+        @view-existing="viewExistingGrade"
+        @reevaluate="reevaluateGrade"
       />
 
       <!-- Floating Selection Action Bar -->
@@ -1220,20 +1223,50 @@ function openEvaluationModal(cardId: number, rawTag: string) {
 
 // Notation IA (notes-ia-planning-corrections, Task 5) : meme flux async (Celery +
 // polling, repli synchrone) que evaluateFeynman() dans NoteFeynman.vue.
+// Task 12 : persistance -- si une notation existe deja, propose un choix (voir/reevaluer)
+// au lieu de rappeler l'IA a chaque clic.
 const gradeModal = ref<{
   open: boolean
   loading: boolean
   error: string | null
   result: NotationResult | null
+  choice: boolean
 }>({
   open: false,
   loading: false,
   error: null,
   result: null,
+  choice: false,
 })
 
 async function openGradeModal() {
-  gradeModal.value = { open: true, loading: true, error: null, result: null }
+  gradeModal.value = { open: true, loading: true, error: null, result: null, choice: false }
+  try {
+    const existing = await notationService.getExisting(noteId.value)
+    if (existing) {
+      gradeModal.value = { open: true, loading: false, error: null, result: existing, choice: true }
+      return
+    }
+  } catch (err) {
+    gradeModal.value.error = err instanceof Error ? err.message : 'La notation IA a échoué.'
+    gradeModal.value.loading = false
+    console.error('Erreur de vérification de la notation existante', err)
+    return
+  }
+  await runGrading()
+}
+
+function viewExistingGrade() {
+  gradeModal.value.choice = false
+}
+
+async function reevaluateGrade() {
+  gradeModal.value.choice = false
+  gradeModal.value.loading = true
+  await runGrading()
+}
+
+async function runGrading() {
   try {
     const res = await notationService.grade(noteId.value)
     if (res.status === 'SUCCESS' && res.result) {

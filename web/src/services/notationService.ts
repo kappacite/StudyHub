@@ -1,3 +1,4 @@
+import axios from 'axios'
 import api from './api'
 
 // Notation IA de la note (qualité de la fiche, distincte de l'Évaluation mixte qui note
@@ -11,6 +12,9 @@ export interface NotationResult {
   points_forts?: string[]
   ameliorations?: string[]
   suggestions?: string
+  // Renseigne uniquement par getExisting() (notes-ia-planning-corrections, Task 12) --
+  // absent d'une reponse fraiche de grade()/pollTask().
+  updated_at?: string
 }
 
 export interface NotationGradeResponse {
@@ -36,6 +40,19 @@ const notationService = {
   async pollTask(taskId: string) {
     const response = await api.get<NotationTaskResponse>(`/notation/tasks/${taskId}`)
     return response.data
+  },
+
+  // notes-ia-planning-corrections, Task 12 : notation deja enregistree pour cette note,
+  // ou null si aucune (404 -- cas normal, pas une erreur). Permet au frontend de proposer
+  // voir/reevaluer plutot que de relancer l'IA a chaque clic sur "Notation".
+  async getExisting(noteId: string): Promise<NotationResult | null> {
+    try {
+      const response = await api.get<NotationResult>(`/notation/${noteId}`)
+      return response.data
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) return null
+      throw err
+    }
   },
 }
 

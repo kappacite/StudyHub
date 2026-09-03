@@ -12,6 +12,7 @@ def test_planning_schemas_exported_from_barrel():
     assert PlanningAdvanceRequest is not None
 
 
+# notes-ia-planning-corrections, Task 12 : NoteGrade ajoute a app/models/__init__.py.
 def test_breakdown_item_schema_in_all():
     import app.schemas as schemas_module
     assert "BreakdownItemSchema" in schemas_module.__all__

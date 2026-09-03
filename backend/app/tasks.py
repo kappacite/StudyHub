@@ -3,6 +3,7 @@ from app.dao.note_dao import NoteDAO
 from app.dao.deck_dao import DeckDAO
 from app.dao.flashcard_dao import FlashcardDAO
 from app.dao.study_session_dao import StudySessionDAO
+from app.dao.note_grade_dao import NoteGradeDAO
 from app.services.ai_service import AIService
 from app.services.stats_service import StatsService
 from app.schemas.stats_schema import StudySessionCreate
@@ -135,6 +136,12 @@ def run_note_grading(self, user_id: int, note_id: int) -> dict:
 
         ai_service = AIService()
         result = ai_service.grade_note(note.title, note.content)
+
+        # notes-ia-planning-corrections, Task 12 : persistance (ecrase la precedente,
+        # pas d'historique) -- rattachee au proprietaire de la note, pas au requerant,
+        # pour qu'un lecteur d'une note partagee voie/ecrase le meme resultat partage.
+        note_grade_dao = NoteGradeDAO(db.session)
+        note_grade_dao.upsert(note._id, note.user_id, result)
 
         logger.info(f"Finished async note grading for user_id={user_id}, note_id={note_id}")
         return result

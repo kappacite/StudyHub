@@ -10,6 +10,7 @@ from app.models.study_session import StudySession
 from app.models.tag import Tag
 from app.models.group import Group, GroupMember, GroupBinder, GroupActivity
 from app.models.evaluation import Evaluation, EvaluationItem
+from app.models.note_grade import NoteGrade
 from app.models.assignment import (
     Assignment, AssignmentTask, AssignmentTaskProgress, AssignmentProgress,
 )
@@ -35,6 +36,7 @@ __all__ = [
     "GroupActivity",
     "Evaluation",
     "EvaluationItem",
+    "NoteGrade",
     "Assignment",
     "AssignmentTask",
     "AssignmentTaskProgress",

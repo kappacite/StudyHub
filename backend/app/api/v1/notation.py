@@ -2,8 +2,10 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity
 from app.extensions import db, limiter, celery_app
 from app.dao.note_dao import NoteDAO
+from app.dao.note_grade_dao import NoteGradeDAO
 from app.middlewares.auth_middleware import jwt_required_middleware
 from app.middlewares.error_handler import ResourceNotFoundError
+from app.schemas.note_grade_schema import NoteGradeResponse
 from app.tasks import run_note_grading
 from app.utils.task_dispatch import dispatch_or_run
 from app.utils.security import check_note_access
@@ -11,6 +13,7 @@ from app.utils.security import check_note_access
 notation_bp = Blueprint("notation", __name__)
 
 note_dao = NoteDAO(db.session)
+note_grade_dao = NoteGradeDAO(db.session)
 
 
 def get_user_identity_or_ip():
@@ -52,6 +55,26 @@ def grade():
     if mode == "async":
         return jsonify({"task_id": payload.id, "status": payload.status}), 202
     return jsonify({"status": "SUCCESS", "result": payload}), 200
+
+
+@notation_bp.route("/<note_id>", methods=["GET"])
+@jwt_required_middleware
+def get_existing_grade(note_id):
+    """notes-ia-planning-corrections, Task 12 : notation deja enregistree pour cette
+    note, si elle existe (404 sinon) -- permet au frontend de proposer voir/reevaluer
+    plutot que de relancer l'IA a chaque clic."""
+    user_id = int(get_jwt_identity())
+
+    note = note_dao.get_by_id(note_id)
+    if not note:
+        raise ResourceNotFoundError("Note introuvable.")
+    check_note_access(db.session, note, user_id)
+
+    grade = note_grade_dao.get_by_note(note._id)
+    if not grade:
+        raise ResourceNotFoundError("Pas encore de notation pour cette note.")
+
+    return jsonify(NoteGradeResponse.model_validate(grade).model_dump(mode="json")), 200
 
 
 @notation_bp.route("/tasks/<task_id>", methods=["GET"])

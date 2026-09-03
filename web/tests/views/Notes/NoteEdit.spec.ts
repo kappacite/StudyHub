@@ -4,6 +4,19 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory, type Router } from 'vue-router'
 import DOMPurify from 'dompurify'
 import { nextTick } from 'vue'
+import { AxiosError, AxiosHeaders } from 'axios'
+
+// notes-ia-planning-corrections, Task 12 : getExisting() distingue un 404 (pas encore de
+// notation, cas normal) des autres erreurs -- il faut une vraie AxiosError pour ça.
+function notationNotFoundError() {
+  return new AxiosError('Not Found', '404', undefined, undefined, {
+    status: 404,
+    statusText: 'Not Found',
+    data: {},
+    headers: {},
+    config: { headers: new AxiosHeaders() },
+  })
+}
 
 // NoteEdit.vue parle à `api` à la fois directement et via notesStore/bindersStore/tagsStore
 // (qui, eux, appellent le même client HTTP partagé) : on mock ce client une seule fois ici.
@@ -42,6 +55,9 @@ interface ApiOverrides {
   notes?: () => Promise<unknown>
   diagrams?: () => Promise<unknown>
   tags?: () => Promise<unknown>
+  // Task 12 : par defaut, aucune notation existante (404) -- reproduit le comportement
+  // normal pour la grande majorite des tests qui ne testent pas ce flux specifiquement.
+  notation?: () => Promise<unknown>
 }
 
 function makeGetImpl(over: ApiOverrides = {}) {
@@ -58,6 +74,9 @@ function makeGetImpl(over: ApiOverrides = {}) {
     if (url === '/tags') return (over.tags ?? (() => Promise.resolve({ data: { data: [] } })))()
     if (url.startsWith('/diagrams?')) {
       return (over.diagrams ?? (() => Promise.resolve({ data: { data: [] } })))()
+    }
+    if (/^\/notation\/[^/]+$/.test(url)) {
+      return (over.notation ?? (() => Promise.reject(notationNotFoundError())))()
     }
     if (/^\/diagrams\/\d+$/.test(url)) {
       // Task 9 : les tests d'insertion de [diagram:ID] déclenchent le watcher noteBody ->
@@ -298,6 +317,79 @@ describe('NoteEdit — Notation IA via NoteGradeModal (notes-ia-planning-correct
 
     resolvePost({ data: { status: 'SUCCESS', result: { score: 50 } } })
     await flushPromises()
+  })
+
+  // notes-ia-planning-corrections, Task 12 : persistance -- si une notation existe deja,
+  // propose un choix plutot que de rappeler l'IA directement.
+  // (template NoteGradeModal cable sur choice/view-existing/reevaluate)
+  it('clic sur Notation : une notation existe deja -> propose Voir/Reevaluer, ne rappelle pas /notation/grade tant que rien n\'est choisi', async () => {
+    api.get.mockImplementation(makeGetImpl({
+      notation: () => Promise.resolve({
+        data: { score: 75, verdict: 'Bien.', points_forts: [], ameliorations: [], suggestions: '' },
+      }),
+    }))
+    const { wrapper } = await mountNoteEdit()
+
+    const notationButton = wrapper.findAll('button').find((b) => b.text() === 'Notation')!
+    await notationButton.trigger('click')
+    await flushPromises()
+
+    expect(document.body.textContent).toContain('Voir la notation existante')
+    expect(document.body.textContent).toContain('Réévaluer')
+    expect(api.post).not.toHaveBeenCalledWith('/notation/grade', expect.anything())
+  })
+
+  it('clic sur "Voir la notation existante" affiche le resultat stocke sans rappeler /notation/grade', async () => {
+    api.get.mockImplementation(makeGetImpl({
+      notation: () => Promise.resolve({
+        data: { score: 75, verdict: 'Bien joué.', points_forts: [], ameliorations: [], suggestions: '' },
+      }),
+    }))
+    const { wrapper } = await mountNoteEdit()
+
+    const notationButton = wrapper.findAll('button').find((b) => b.text() === 'Notation')!
+    await notationButton.trigger('click')
+    await flushPromises()
+
+    const viewBtn = Array.from(document.body.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Voir la notation existante',
+    )!
+    viewBtn.click()
+    await flushPromises()
+
+    expect(document.body.textContent).toContain('Bien joué.')
+    expect(api.post).not.toHaveBeenCalledWith('/notation/grade', expect.anything())
+  })
+
+  it('clic sur "Réévaluer" appelle /notation/grade et affiche le nouveau resultat', async () => {
+    api.get.mockImplementation(makeGetImpl({
+      notation: () => Promise.resolve({
+        data: { score: 75, verdict: 'Ancien resultat.', points_forts: [], ameliorations: [], suggestions: '' },
+      }),
+    }))
+    api.post.mockImplementation((url: string) => {
+      if (url === '/notation/grade') {
+        return Promise.resolve({
+          data: { status: 'SUCCESS', result: { score: 95, verdict: 'Nouveau resultat.', points_forts: [], ameliorations: [], suggestions: '' } },
+        })
+      }
+      return Promise.reject(new Error(`URL POST non mockée dans le test: ${url}`))
+    })
+    const { wrapper } = await mountNoteEdit()
+
+    const notationButton = wrapper.findAll('button').find((b) => b.text() === 'Notation')!
+    await notationButton.trigger('click')
+    await flushPromises()
+
+    const reevalBtn = Array.from(document.body.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Réévaluer',
+    )!
+    reevalBtn.click()
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/notation/grade', { note_id: '42' })
+    expect(document.body.textContent).toContain('Nouveau resultat.')
+    expect(document.body.textContent).not.toContain('Ancien resultat.')
   })
 })
 

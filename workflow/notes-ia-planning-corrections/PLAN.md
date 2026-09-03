@@ -62,6 +62,15 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   l'utilisateur.
 - [x] Task 11 — Frontend : 60s encore insuffisant en pratique (demande explicite de
   l'utilisateur) — timeout Axios porté à 120s (2 minutes).
+- [x] Task 12 — Persistance de la Notation IA (demande explicite de l'utilisateur) : la
+  notation n'était jusque-là jamais enregistrée (résultat éphémère, reperdu à chaque clic).
+  Backend : nouveau modèle `NoteGrade` (une par note, écrasée à la réévaluation — pas
+  d'historique, même patron que `Evaluation`), migration Alembic, `NoteGradeDAO`
+  (`get_by_note`/`upsert`), `run_note_grading` persiste désormais le résultat, nouvelle route
+  `GET /api/v1/notation/<note_id>` (404 si pas encore noté). Frontend : au clic sur
+  « Notation », si aucune notation existante → lance l'évaluation comme avant ; si une
+  notation existe déjà → propose un choix (« Voir la notation existante » / « Réévaluer »)
+  dans `NoteGradeModal.vue` avant de rappeler l'IA.
 - [x] Task 9 — Vérification finale : suite complète (backend + frontend) verte, `npm run build`
   propre, non-régression rapide sur les écrans touchés (Planning avec des decks existants,
   aperçu bibliothèque avec des notes sans commentaire HTML, Feynman/Blurting sur un vrai appel

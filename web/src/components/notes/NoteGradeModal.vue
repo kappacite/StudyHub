@@ -1,6 +1,32 @@
 <template>
   <BaseModal :open="open" size="md" title="Notation de la note" @close="$emit('close')">
-    <div v-if="loading" class="flex flex-col items-center justify-center py-10 gap-3">
+    <!-- notes-ia-planning-corrections, Task 12 : une notation existe deja -- propose un
+    choix plutot que d'ecraser silencieusement ou de rappeler l'IA a chaque clic. -->
+    <div v-if="choice" class="space-y-4">
+      <p class="text-sm text-ink-muted dark:text-ink-subtle">
+        Cette note a déjà été notée
+        <template v-if="result?.updated_at">le {{ formattedDate }}</template
+        >.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button
+          type="button"
+          class="flex-1 px-4 py-3 text-sm font-bold text-accent dark:text-accent border border-accent dark:border-accent rounded-xl hover:bg-accent-soft dark:hover:bg-accent-soft transition-all"
+          @click="$emit('view-existing')"
+        >
+          Voir la notation existante
+        </button>
+        <button
+          type="button"
+          class="flex-1 px-4 py-3 text-sm font-bold text-white bg-primary hover:bg-primary-strong rounded-xl transition-all"
+          @click="$emit('reevaluate')"
+        >
+          Réévaluer
+        </button>
+      </div>
+    </div>
+
+    <div v-else-if="loading" class="flex flex-col items-center justify-center py-10 gap-3">
       <svg
         class="animate-spin h-8 w-8 text-primary"
         xmlns="http://www.w3.org/2000/svg"
@@ -105,14 +131,28 @@ import { computed } from 'vue'
 import { BaseModal } from '../ui/base'
 import type { NotationResult } from '../../services/notationService'
 
-const props = defineProps<{
-  open: boolean
-  loading: boolean
-  error: string | null
-  result: NotationResult | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    loading: boolean
+    error: string | null
+    result: NotationResult | null
+    choice?: boolean
+  }>(),
+  { choice: false },
+)
 
-defineEmits<{ close: [] }>()
+defineEmits<{ close: []; 'view-existing': []; reevaluate: [] }>()
+
+const formattedDate = computed(() => {
+  const updatedAt = props.result?.updated_at
+  if (!updatedAt) return ''
+  return new Date(updatedAt).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+})
 
 // Score renvoyé par le backend sur 100, réaffiché /10 à une décimale (convention
 // partagée avec Blurting/Feynman -- cf. canevas Direction A).
