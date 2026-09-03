@@ -55,6 +55,8 @@ async function mountBinderStats(opts: {
   totalDurationSeconds?: number
   binderIds?: string[]
   statsError?: boolean
+  masteredCount?: number
+  trueRetention?: number
 }) {
   const sets = opts.sets ?? []
   const byType = opts.byType ?? []
@@ -62,6 +64,8 @@ async function mountBinderStats(opts: {
   const deckStatsById = opts.deckStatsById ?? {}
   const totalDurationSeconds = opts.totalDurationSeconds ?? 0
   const binderIds = opts.binderIds ?? ['b1']
+  const masteredCount = opts.masteredCount ?? 0
+  const trueRetention = opts.trueRetention ?? 0
 
   const pinia = createPinia()
   setActivePinia(pinia)
@@ -77,10 +81,10 @@ async function mountBinderStats(opts: {
           sets_count: sets.length,
           items_count: sets.reduce((n, s) => n + (s.items_count as number), 0),
           reviewed_items: 0,
-          mastered_count: 0,
+          mastered_count: masteredCount,
           mastery_rate: 0,
           avg_success_rate: 0,
-          true_retention: 0,
+          true_retention: trueRetention,
           leeches_count: 0,
           due_count: 0,
           avg_difficulty: 1,
@@ -133,6 +137,31 @@ describe('RevisionBinderStats', () => {
     expect(names[1]).toContain('Set fort')
     expect(names[2]).toContain('Deck faible')
     expect(names[3]).toContain('Set faible')
+  })
+
+  // notes-ia-planning-corrections : true_retention (mature_successes/mature_reviews)
+  // vaut 0.0 par definition tant qu'aucun element n'a atteint l'intervalle "mur"
+  // (>= 21 jours, cf. MATURE_DAYS backend) -- un "0%" brut se lit comme un echec de
+  // revision alors qu'il n'y a simplement pas encore de donnee. mastered_count == 0
+  // est le signal fiable (un item mur a forcement ete revise au moins une fois).
+  it("affiche un message d'absence de donnee (pas de %) quand aucun element n'est encore mur", async () => {
+    const wrapper = await mountBinderStats({
+      sets: [setSummary(1, 'qcm', { reviewed_items: 5 })],
+      masteredCount: 0,
+      trueRetention: 0,
+    })
+    expect(wrapper.text()).toContain('Rétention réelle')
+    expect(wrapper.text()).not.toContain('Rétention réelle : 0%')
+    expect(wrapper.text()).toMatch(/pas encore|aucun élément mûr/i)
+  })
+
+  it('affiche le pourcentage de rétention réelle dès qu au moins un élément est mûr', async () => {
+    const wrapper = await mountBinderStats({
+      sets: [setSummary(1, 'qcm', { reviewed_items: 5 })],
+      masteredCount: 3,
+      trueRetention: 87.5,
+    })
+    expect(wrapper.text()).toContain('Rétention réelle : 87.5%')
   })
 
   it("affiche Mixte pour un ensemble heterogene dans la liste des ensembles", async () => {

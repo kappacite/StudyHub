@@ -75,7 +75,12 @@
           <p class="font-display font-mono text-3xl font-bold text-ink">
             {{ stats.avg_success_rate }}%
           </p>
-          <p class="text-xs text-ink-muted mt-2">Rétention réelle : {{ stats.true_retention }}%</p>
+          <p class="text-xs text-ink-muted mt-2">
+            <template v-if="stats.mastered_count > 0"
+              >Rétention réelle : {{ stats.true_retention }}%</template
+            >
+            <template v-else>Rétention réelle : pas encore d'élément mûr (≥ 21 jours)</template>
+          </p>
         </BaseCard>
         <BaseCard padding="lg">
           <p class="text-xs font-bold uppercase tracking-wide text-ink-subtle mb-2.5">À réviser</p>
