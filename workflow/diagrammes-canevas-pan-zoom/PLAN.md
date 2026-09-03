@@ -5,14 +5,14 @@ sur des coordonnées... se testent sans canevas ni DOM »). Le rendu visuel du c
 relève de l'exception écran-capture — ses interactions (pan/zoom) restent testées. Arbitrages :
 `CONTEXT.md`.
 
-- [ ] Task 1 — Modèle de caméra et conversions écran↔monde dans `web/src/diagram/camera.ts` :
+- [x] Task 1 — Modèle de caméra et conversions écran↔monde dans `web/src/diagram/camera.ts` :
   `Camera { x: number; y: number; zoom: number }`, `createDefaultCamera()`,
   `screenToWorld(point, camera, viewportSize)`, `worldToScreen(point, camera, viewportSize)`.
   Tests : rondtrip (`worldToScreen(screenToWorld(p, cam, vp), cam, vp)` ≈ `p`, tolérance
   flottante) ; un zoom de 2 rend un déplacement écran de N px deux fois plus petit en
   coordonnées monde ; caméra par défaut (`zoom: 1`) fait coïncider écran et monde à l'offset
   près.
-- [ ] Task 2 — Panoramique et zoom centré sur un point, purs, dans `camera.ts` :
+- [x] Task 2 — Panoramique et zoom centré sur un point, purs, dans `camera.ts` :
   `panBy(camera, dx, dy): Camera` (déplace en coordonnées écran, indépendant du zoom courant),
   `zoomAt(camera, screenPoint, factor, viewportSize): Camera` (le point sous le curseur reste
   visuellement fixe après le zoom — propriété clé, pas juste `zoom *= factor`). Tests :

@@ -12,3 +12,12 @@ constant indépendant du nombre d'éléments une fois le rendu borné à la fen�
 Décision : SVG (pas canevas 2D), justifiée par les besoins LaTeX/édition de texte/accessibilité
 du module, pas par un chiffre de fps. Plan en 6 tâches : `PLAN.md`. Prochaine action : Task 1
 (modèle de caméra).
+
+## 2026-09-04 (Task 1+2 — modèle de caméra, panoramique, zoom centré)
+
+`web/src/diagram/camera.ts` : `Camera {x,y,zoom}` (convention : `x`/`y` = coordonnées monde
+au centre de la fenêtre de vue, `zoom` = pixels-écran par unité-monde), `screenToWorld`/
+`worldToScreen` (rondtrip vérifié), `panBy` (delta écran converti en delta monde selon le
+zoom courant), `zoomAt` (zoom centré sur un point écran, le point ciblé reste fixe en
+coordonnées monde -- vérifié par test). 5/5 tests verts. Prochaine action : Task 3 (rendu
+borné à la fenêtre de vue).
