@@ -1,8 +1,8 @@
 # Diagrammes — modèle de document versionné (Phase 5, cycle 1)
 
-Statut : ouvert
+Statut : clos
 Branche : feature/diagrammes-modele-document
-PR : (aucune)
+PR : #145
 
 ## Pourquoi
 

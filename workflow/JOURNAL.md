@@ -1,13 +1,12 @@
 # Journal global — workflow
 
-Chantier actif : diagrammes-modele-document
+Chantier actif : diagrammes-commandes-annulation
 
 ## Chantiers ouverts
 
-- `diagrammes-modele-document` — Phase 5, cycle 1/14 (modèle de document versionné) de la
-  refonte de l'outil de diagrammes, spec complète `docs/PROMPT_DEMARRAGE.md` §8. Démarre la
-  Phase 5 en avance sur `ETAT.md` (encore Phase 4), confirmé explicitement par l'utilisateur.
-  13 cycles suivants prévus, un chantier chacun, séquence non négociable (cf. son `CONTEXT.md`).
+- `diagrammes-commandes-annulation` — Phase 5, cycle 2/14 (commandes d'édition + annulation
+  testée par propriété), suite de `diagrammes-modele-document` (cycle 1, PR #145 mergée).
+  Détail : son `CONTEXT.md`.
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
   2026-09-03, traité par `notes-ia-planning-corrections`)
@@ -15,6 +14,9 @@ Chantier actif : diagrammes-modele-document
 
 ## Historique
 
+- 2026-09-03 — [diagrammes-modele-document] **PR #145 mergée**, chantier clos. L'utilisateur
+  a demandé de poursuivre tous les cycles restants (« Fais tout ») — cycle 2 (« commandes et
+  annulation ») ouvre juste après cette entrée.
 - 2026-09-03 — [diagrammes-modele-document] **Chantier ouvert** (cycle 1/14 de la refonte
   Phase 5 des diagrammes, demande explicite utilisateur). Détail : `CONTEXT.md`.
 - 2026-09-03 — [notes-ia-planning-corrections] PR #144 mergée, chantier clos.
