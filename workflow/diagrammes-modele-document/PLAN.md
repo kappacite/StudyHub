@@ -8,7 +8,7 @@ Aucun changement à `Diagrams.vue` dans ce cycle : le modèle vit en isolation
 (`web/src/diagram/`), non encore branché sur l'éditeur existant. Le branchement réel se fera
 au cycle 3 (canevas) quand il y aura quelque chose à rendre avec.
 
-- [ ] Task 1 — Types `DiagramDocumentV1`/`DiagramElement` (union discriminée `kind` : shape/
+- [x] Task 1 — Types `DiagramDocumentV1`/`DiagramElement` (union discriminée `kind` : shape/
   link/stroke/occlusion-mask) dans `web/src/diagram/document.ts`, plus une fabrique
   `createEmptyDocument(): DiagramDocumentV1`. Tests : la fabrique produit un document valide
   (`schema_version: 1`, `elements: []`, `backgroundImage: null`) ; TypeScript seul ne suffit
