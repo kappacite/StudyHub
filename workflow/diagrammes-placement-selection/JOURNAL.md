@@ -38,3 +38,13 @@ principe posé dès le cycle 1). `history` exposé pour permettre l'annulation c
 10/10 tests composant verts (dont : une seule entrée d'historique par glisser complet, undo
 restitue la position d'avant geste, Alt désactive la magnétisation). Prochaine action : Task 5
 (rendu visuel : contour de sélection, guides d'alignement).
+
+## 2026-09-04 (Task 5 — contour de sélection, guides d'alignement)
+
+`DiagramCanvas.vue` : `dragPreview` (override d'affichage pendant un glisser actif, jamais
+persisté) + `displayElements` (visibleElements avec l'override appliqué) remplace
+`visibleElements` dans le template. `selectedElementBounds` pilote un `<rect>` de contour
+(`data-test="selection-outline"`), `activeGuides` pilote des `<line>` (`data-test="alignment-
+guide"`), peuplées pendant `onMove` (vidées si `Alt` ou aucun alignement trouvé) et vidées à
+la relâche. 12/12 tests composant verts, 60/60 tests diagrammes. Prochaine action : Task 6
+(vérification finale, clôture).

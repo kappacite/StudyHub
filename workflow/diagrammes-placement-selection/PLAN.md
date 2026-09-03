@@ -32,7 +32,7 @@ fonctions pures, §8.7). Arbitrages : `CONTEXT.md`.
   complet produit exactement une entrée dans l'historique (pas une par `mousemove`) ; annuler
   après un glisser restitue la position d'avant le geste ; maintenir `Alt` pendant le glisser
   place l'élément à la position brute (non magnétisée).
-- [ ] Task 5 — Rendu visuel : contour de sélection (élément sélectionné) et lignes de guide
+- [x] Task 5 — Rendu visuel : contour de sélection (élément sélectionné) et lignes de guide
   d'alignement (pendant un glisser actif seulement) dans le template de `DiagramCanvas.vue`.
   Relève partiellement de l'exception écran-capture (§8.7) pour l'apparence exacte, mais la
   présence conditionnelle est testable : contour rendu seulement si `selectedElementId` est

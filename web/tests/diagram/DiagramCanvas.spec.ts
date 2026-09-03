@@ -148,4 +148,39 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
       expect(doc2.elements[0]).toMatchObject({ x: 20, y: 20 })
     })
   })
+
+  describe('rendu visuel : contour de sélection et guides (diagrammes-placement-selection, Task 5)', () => {
+    it('le contour de sélection ne rend que si un élément est sélectionné', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      expect(wrapper.findAll('[data-test="selection-outline"]')).toHaveLength(0)
+
+      const el = wrapper.find('[data-test="diagram-element"]')
+      await el.trigger('mousedown', { clientX: 400, clientY: 300 })
+      await el.trigger('mouseup', { clientX: 400, clientY: 300 })
+      expect(wrapper.findAll('[data-test="selection-outline"]')).toHaveLength(1)
+    })
+
+    it("les guides d'alignement ne rendent que pendant un glisser actif avec un alignement détecté", async () => {
+      // b est déjà aligné en x=100 avec la position où a va être amené par le glisser
+      // (écart en Y assez grand pour ne pas aussi matcher sur cet axe).
+      const doc: DiagramDocumentV1 = {
+        ...createEmptyDocument(),
+        elements: [shape('a', 0, 0), shape('b', 100, 200)],
+      }
+      const wrapper = mountCanvas(doc)
+      const els = wrapper.findAll('[data-test="diagram-element"]')
+      const a = els.find((w) => w.attributes('data-id') === 'a')!
+
+      expect(wrapper.findAll('[data-test="alignment-guide"]').length).toBe(0)
+
+      // Glisse 'a' de x=0 vers x proche de 100 (dans le seuil d'alignement).
+      await a.trigger('mousedown', { clientX: 400, clientY: 300 })
+      await a.trigger('mousemove', { clientX: 502, clientY: 300 })
+      expect(wrapper.findAll('[data-test="alignment-guide"]').length).toBeGreaterThan(0)
+
+      await a.trigger('mouseup', { clientX: 502, clientY: 300 })
+      expect(wrapper.findAll('[data-test="alignment-guide"]').length).toBe(0)
+    })
+  })
 })
