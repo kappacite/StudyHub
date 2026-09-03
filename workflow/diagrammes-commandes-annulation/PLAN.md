@@ -24,7 +24,7 @@ Une case = une tâche atomique. TDD sans exception (§8.7). Arbitrages : `CONTEX
   (retourne `current` inchangé) ; un `execute` après un `undo` vide bien la pile de
   rétablissement (rejouer un `redo` après une nouvelle commande ne doit pas restaurer une
   branche annulée) ; `redo` après `undo` restitue exactement le document d'après capturé.
-- [ ] Task 5 — Vérification finale : suite frontend complète verte (property test inclus,
+- [x] Task 5 — Vérification finale : suite frontend complète verte (property test inclus,
   configurer un nombre de runs `fast-check` raisonnable pour ne pas ralentir la CI), `npm run
   build` propre, `Diagrams.vue` toujours non modifié (`git diff` de contrôle). Clôture du
   chantier ; passation dans `JOURNAL.md` pour le cycle 3 (canevas/pan/zoom) : `applyCommand`

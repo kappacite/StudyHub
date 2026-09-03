@@ -27,3 +27,11 @@ capturé à chaque `execute`, `redo` vidé par tout nouvel `execute`). Le test d
 Task 2, rouge jusqu'ici, passe maintenant (25/25 tests diagrammes verts, y compris 100 runs
 `fast-check` par défaut sur l'invariant d'annulation). Prochaine action : Task 5 (vérification
 finale, clôture).
+
+## 2026-09-03 (Task 5 — vérification finale, clôture du cycle 2)
+
+Suite frontend complète : 597/597 (11 nouveaux pour ce chantier). `npm run build` propre.
+`Diagrams.vue` toujours non modifié. Passation pour le cycle 3 (canevas, panoramique, zoom) :
+`applyCommand`/`DiagramHistory` sont le socle -- chaque geste utilisateur sur le futur canevas
+s'exécutera via `DiagramHistory.execute(doc, command)`. Chantier clos (code). Prochaine
+action : pousser `feature/diagrammes-commandes-annulation`, ouvrir la PR.
