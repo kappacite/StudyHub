@@ -445,6 +445,49 @@ describe('Binders — ligne de note enrichie (Task 5, bibliotheque-notes-listes)
   })
 })
 
+describe('Binders — extrait de note : commentaires HTML retirés (notes-ia-planning-corrections, Task 3)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('ne laisse fuir aucun commentaire HTML (ex. <!--- sectionbody) dans l\'extrait de la bibliothèque', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const authStore = useAuthStore()
+    authStore.user = { id: 1, email: 'test@test.dev', username: 'test', created_at: '' }
+
+    const noteWithComment = {
+      id: 'n-comment',
+      binder_id: 'b1',
+      title: 'Note collée',
+      content: '<!--- sectionbody -->\nVrai contenu visible.',
+      created_at: NOW,
+      updated_at: NOW,
+      tags: [],
+    }
+    api.get.mockImplementation((url: string) => {
+      if (/^\/binders\?/.test(url)) return Promise.resolve({ data: { data: [BINDER, SUBBINDER] } })
+      if (/^\/binders\/[^/?]+$/.test(url)) return Promise.resolve({ data: BINDER })
+      if (/^\/decks\?/.test(url)) return Promise.resolve({ data: { data: [] } })
+      if (/^\/notes\?/.test(url)) return Promise.resolve({ data: { data: [noteWithComment] } })
+      if (/^\/revision\/sets\?/.test(url)) return Promise.resolve({ data: { data: [] } })
+      if (url === '/tags') return Promise.resolve({ data: { data: [] } })
+      if (/^\/diagrams\?/.test(url)) return Promise.resolve({ data: { data: [] } })
+      if (/^\/pdfs\?/.test(url)) return Promise.resolve({ data: { data: [] } })
+      return Promise.reject(new Error(`URL GET non mockée dans le test: ${url}`))
+    })
+
+    const router = createTestRouter()
+    await router.push('/bibliotheque/b1')
+    await router.isReady()
+    const wrapper = mount(Binders, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Vrai contenu visible.')
+    expect(wrapper.text()).not.toContain('<!--')
+    expect(wrapper.text()).not.toContain('-->')
+    expect(wrapper.text()).not.toContain('sectionbody')
+  })
+})
+
 describe('Binders — largeur (Task 7, bibliotheque-notes-listes)', () => {
   beforeEach(() => vi.clearAllMocks())
 

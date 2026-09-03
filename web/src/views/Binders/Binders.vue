@@ -1269,8 +1269,13 @@ const currentNotes = computed(() =>
 // caractères de balisage les plus visibles (#, *, _, `, >) et on aplatit les retours à la
 // ligne ; la troncature visuelle (ellipsis) est gérée par la classe `truncate` du template,
 // pas ici -- pas de découpage arbitraire en caractères.
+// notes-ia-planning-corrections, Task 3 : un commentaire HTML (<!-- ... -->, ex. collé
+// depuis un export externe) n'est jamais rendu par `marked` (invisible en lecture normale)
+// mais fuyait tel quel ici, ce nettoyage ne passant par aucun rendu HTML -- retiré avant
+// le nettoyage Markdown existant.
 function noteExcerpt(note: Note): string {
   return note.content
+    .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/[#*_`>]/g, '')
     .replace(/\s+/g, ' ')
     .trim()

@@ -63,3 +63,11 @@ avant implémentation) : service, store (dont non-régression deck), `WeekCalend
 `document.body` — `BaseModal`/headlessui teleporte, même idiome que
 `RevisionSetModal.spec.ts`). Suite complète : 547/547 tests frontend verts, `npm run build`
 propre. Prochaine action : Task 3 (fix ciblé, fuite `<!--- sectionbody`).
+
+## 2026-09-03 (Task 3 — fix ciblé, fuite HTML dans l'extrait)
+
+`noteExcerpt()` (`Binders.vue`) retire désormais les commentaires HTML (`<!--[\s\S]*?-->`)
+avant le nettoyage Markdown existant. Test dédié avec un contenu `<!--- sectionbody -->`
+suivi de texte réel, vérifie qu'aucune trace de `<!--`/`-->`/`sectionbody` ne fuit dans
+l'extrait rendu. Suite complète : 548/548 tests frontend verts. Prochaine action : Task 4
+(backend, Notation IA).

@@ -17,7 +17,7 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   `/revision/sets/:id/study` pour un ensemble — vérifier si un paramètre d'anticipation existe
   déjà côté route ensemble, sinon révision normale suffit, le SM-2 s'appliquera avec la date du
   jour comme pour les decks). Tests composant sur le routage selon le type.
-- [ ] Task 3 — Fix ciblé : `<!--- sectionbody` (ou tout commentaire HTML) qui fuit dans l'aperçu
+- [x] Task 3 — Fix ciblé : `<!--- sectionbody` (ou tout commentaire HTML) qui fuit dans l'aperçu
   bibliothèque. `noteExcerpt()` (`Binders.vue`) retire aussi les commentaires HTML
   (`<!--[\s\S]*?-->`) avant le nettoyage Markdown existant. Test : contenu avec un commentaire
   HTML au milieu, extrait ne doit contenir aucune trace de `<!--`/`-->`, non-régression sur les
