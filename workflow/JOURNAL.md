@@ -11,6 +11,9 @@ Chantier actif : notes-ia-planning-corrections
 
 ## Historique
 
+- 2026-09-03 — [notes-ia-planning-corrections] Task 13 (écran Notation dédié, remplace la
+  modale) terminée. Suite frontend 566/566, build propre. Prochain : Task 14 (upload PDF
+  Bibliothèque).
 - 2026-09-03 — [notes-ia-planning-corrections] **Chantier ouvert.** 6 points groupés demandés
   par l'utilisateur (Notation IA, Blurting, Feynman, planning toujours vide, fuite
   `<!--- sectionbody` dans l'aperçu bibliothèque, refonte densité éditeur), tous les arbitrages

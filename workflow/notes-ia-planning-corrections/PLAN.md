@@ -71,6 +71,17 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   « Notation », si aucune notation existante → lance l'évaluation comme avant ; si une
   notation existe déjà → propose un choix (« Voir la notation existante » / « Réévaluer »)
   dans `NoteGradeModal.vue` avant de rappeler l'IA.
+- [x] Task 13 — Refonte de l'écran Notation (demande explicite de l'utilisateur) : le canevas
+  `Note — Notation (IA)` montre un **écran dédié** (comme `NoteFeynman.vue`/`Blurting.vue`),
+  pas une modale — écart trouvé en re-consultant le canevas. Conversion de `NoteGradeModal.vue`
+  en route `/notes/:id/notation` (nouveau `NoteNotation.vue`), même patron de header que
+  Feynman (breadcrumb, retour, titre), conserve le mode `choice` (voir/réévaluer) et la
+  persistance (Task 12) sans changement côté backend.
+- [ ] Task 14 — Upload de PDF dans la Bibliothèque (demande explicite de l'utilisateur) : le
+  backend accepte déjà `binder_id` à l'upload (`POST /api/v1/pdfs`, inchangé) mais aucune UI
+  ne permet d'uploader un PDF depuis `Binders.vue` (seul « Élément existant » attache un PDF
+  déjà présent). Ajout d'une entrée « PDF » dans le menu « Ajouter », `pdfStore.uploadPdf`
+  étendu d'un `binderId` optionnel.
 - [x] Task 9 — Vérification finale : suite complète (backend + frontend) verte, `npm run build`
   propre, non-régression rapide sur les écrans touchés (Planning avec des decks existants,
   aperçu bibliothèque avec des notes sans commentaire HTML, Feynman/Blurting sur un vrai appel

@@ -225,3 +225,19 @@ tests frontend, `npm run build` propre.
 Toutes les tâches du plan sont cochées et vérifiées (tests + parcours réel). Chantier clos
 (code). Prochaine action : demander à l'utilisateur de pousser
 `feature/notes-ia-planning-corrections`, puis ouvrir la PR.
+
+## 2026-09-03 (réouverture — Task 13, écran Notation dédié)
+
+Demande explicite de l'utilisateur, après re-consultation du canevas `Note — Notation (IA)` :
+c'est un écran dédié (comme `NoteFeynman.vue`/`Blurting.vue`), pas une modale — écart avec la
+Task 5/12 (`NoteGradeModal.vue`) découvert a posteriori. `NoteGradeModal.vue` (composant +
+tests) supprimé, remplacé par `NoteNotation.vue` (nouvelle vue, route `/notes/:id/notation`,
+même patron de header que Feynman : breadcrumb titre note, retour, H1). Conserve le mode
+`choice` (voir/réévaluer) et la persistance (Task 12, `notationService.getExisting`/`grade`/
+`pollTask`) sans changement côté backend. `NoteEdit.vue` : bouton « Notation » navigue
+désormais vers l'écran dédié au lieu d'ouvrir une modale ; tout l'état `gradeModal`/
+`openGradeModal`/`runGrading` retiré (déplacé dans `NoteNotation.vue`). Tests : nouveau
+`NoteNotation.spec.ts` (5 scénarios : lancement direct, choix voir/réévaluer, clic sur chaque
+option, retour), `NoteEdit.spec.ts` simplifié (un seul test de navigation remplace les 6 tests
+de flux modale déplacés). Suite complète : 566/566 tests frontend verts, `npm run build`
+propre. Prochaine action : Task 14 (upload de PDF dans la Bibliothèque).
