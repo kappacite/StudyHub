@@ -45,3 +45,21 @@ isolation `user_id` sur les `RevisionItem`, jour mixte deck+ensemble, `advance_r
 export du barrel). Suite complète backend (hors `test_pdfs.py`/`test_import.py`, échecs
 Windows préexistants sans rapport, cf. journal `revision-qcm-heterogene`) : 100% verte.
 Prochaine action : Task 2 (frontend, routage planning selon le type d'item).
+
+## 2026-09-03 (Task 2 — frontend, routage planning)
+
+`planningService.ts`/`stores/planning.ts` : `DeckBreakdown` généralisé en `BreakdownItem`
+(`kind`/`id`/`name`), `advanceReview(kind, id, ...)` poste `deck_id`/`set_id` selon le cas.
+`WeekCalendar.vue`/`MonthCalendar.vue`/`PlanningPage.vue` : `item.deck_id`/`item.deck_name` →
+`item.id`/`item.name`. Décision (simplification assumée, documentée) : un clic « Réviser » sur
+un ensemble de révision route directement vers `/revision/sets/:id/study?include_not_due=true`
+(révision libre) sans passer par `prepareAdvanceReview`/`advance_review_set` — `RevisionStudy.vue`
+n'a pas d'équivalent de « cartes dues ce jour précis », contrairement à `StudyDeck.vue` ; le
+backend `advance_review_set` (Task 1) reste complet et testé mais n'est pour l'instant appelé
+que par ce futur usage plus précis si besoin. `advanceReviewCards` du store reste `Flashcard[]`
+(seul `StudyDeck.vue` le consomme, jamais alimenté pour un ensemble). Tests (TDD, rouge vérifié
+avant implémentation) : service, store (dont non-régression deck), `WeekCalendar`/
+`MonthCalendar` (rendu des deux `kind`), `PlanningPage` (routage deck vs revision_set via
+`document.body` — `BaseModal`/headlessui teleporte, même idiome que
+`RevisionSetModal.spec.ts`). Suite complète : 547/547 tests frontend verts, `npm run build`
+propre. Prochaine action : Task 3 (fix ciblé, fuite `<!--- sectionbody`).

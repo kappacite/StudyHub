@@ -11,7 +11,7 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   (actuellement retournerait 0, doit retourner le bon total), jour mixte deck+ensemble, retard
   (item avant `date_from`) rattaché au premier jour comme les flashcards, non-régression sur les
   cas 100% deck existants.
-- [ ] Task 2 — Frontend : `PlanningPage.vue`/`WeekCalendar.vue`/`MonthCalendar.vue` distinguent
+- [x] Task 2 — Frontend : `PlanningPage.vue`/`WeekCalendar.vue`/`MonthCalendar.vue` distinguent
   le type d'item dans la modale de révision anticipée (`selectedDayForModal.breakdown`) et
   routent correctement au clic « Réviser » (`/decks/:id/study?advance=true` pour un deck,
   `/revision/sets/:id/study` pour un ensemble — vérifier si un paramètre d'anticipation existe
