@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : revision-qcm-heterogene
+Chantier actif : aucun
 
 ## Chantiers ouverts
 
@@ -11,6 +11,16 @@ Chantier actif : revision-qcm-heterogene
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
+
+- 2026-09-03 — [revision-qcm-heterogene] **PR #142 ouverte**
+  (`feature/revision-qcm-heterogene` → `main`,
+  https://github.com/kappacite/StudyHub/pull/142). Chantier `pr-ouverte`. 3 tâches complètes
+  (backend `GRADABLE_TYPES`/`check_answer`, frontend bloc de template QCM dans
+  `RevisionStudy.vue`, vérification visuelle réelle). Backend ciblé 54/54, frontend complet
+  538/538, build clean. Suite backend complète tentée séparément : 2 échecs préexistants sans
+  rapport, environnement Windows (`test_pdfs.py` crash natif `python-magic`, `test_import.py`
+  `PermissionError` de verrou de fichier) — non bloquants pour ce chantier. Prochaine action :
+  attendre la revue/CI, puis merger.
 
 - 2026-09-03 — [revision-qcm-heterogene] Chantier ouvert. Root cause identifié en
   investigation avant tout code (garde `rset.type` au lieu de `item.type`, exclusion
