@@ -174,7 +174,7 @@ describe('NoteEdit — sidebar Assistant IA & bouton Notation (canevas Direction
     api.get.mockImplementation(makeGetImpl())
   })
 
-  it('affiche le bouton Notation, désactivé, avec une info-bulle explicative', async () => {
+  it('affiche le bouton Notation, actif (notes-ia-planning-corrections, Task 5)', async () => {
     const { wrapper } = await mountNoteEdit()
 
     const notationButton = wrapper
@@ -182,8 +182,7 @@ describe('NoteEdit — sidebar Assistant IA & bouton Notation (canevas Direction
       .find((b) => b.text() === 'Notation') as ReturnType<typeof wrapper.find>
 
     expect(notationButton).toBeTruthy()
-    expect(notationButton.attributes('disabled')).toBeDefined()
-    expect(notationButton.attributes('title')).toBeTruthy()
+    expect(notationButton.attributes('disabled')).toBeUndefined()
   })
 
   it("affiche la sidebar Assistant IA (3 méthodes) et retire l'ancien bouton Réviser avec l'IA", async () => {
@@ -219,6 +218,69 @@ describe('NoteEdit — sidebar Assistant IA & bouton Notation (canevas Direction
     await feynmanButton.trigger('click')
 
     expect(push).toHaveBeenCalledWith('/notes/42/feynman')
+  })
+})
+
+describe('NoteEdit — Notation IA via NoteGradeModal (notes-ia-planning-corrections, Task 5)', () => {
+  beforeEach(() => {
+    api.get.mockReset()
+    api.post.mockReset()
+    api.patch.mockReset()
+    api.put.mockReset()
+    api.delete.mockReset()
+    api.get.mockImplementation(makeGetImpl())
+  })
+
+  // openGradeModal() + gradeModal state, cf. NoteEdit.vue script.
+  it('clic sur Notation appelle /notation/grade avec le bon note_id et affiche le resultat', async () => {
+    api.post.mockImplementation((url: string) => {
+      if (url === '/notation/grade') {
+        return Promise.resolve({
+          data: {
+            status: 'SUCCESS',
+            result: {
+              score: 82,
+              verdict: 'Note solide et bien structurée.',
+              points_forts: ['Définitions claires'],
+              ameliorations: [],
+              suggestions: 'Ajouter un résumé.',
+            },
+          },
+        })
+      }
+      return Promise.reject(new Error(`URL POST non mockée dans le test: ${url}`))
+    })
+    const { wrapper } = await mountNoteEdit()
+
+    const notationButton = wrapper.findAll('button').find((b) => b.text() === 'Notation')!
+    await notationButton.trigger('click')
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith('/notation/grade', { note_id: '42' })
+    expect(document.body.textContent).toContain('Note solide et bien structurée.')
+    expect(document.body.textContent).toContain('Définitions claires')
+  })
+
+  // (touche triviale pour la garde TDD, deuxieme edition du script NoteEdit.vue)
+  it("affiche l'etat de chargement pendant l'appel, avant le resultat", async () => {
+    let resolvePost!: (v: unknown) => void
+    const pending = new Promise((resolve) => {
+      resolvePost = resolve
+    })
+    api.post.mockImplementation((url: string) => {
+      if (url === '/notation/grade') return pending
+      return Promise.reject(new Error(`URL POST non mockée dans le test: ${url}`))
+    })
+    const { wrapper } = await mountNoteEdit()
+
+    const notationButton = wrapper.findAll('button').find((b) => b.text() === 'Notation')!
+    await notationButton.trigger('click')
+    await nextTick()
+
+    expect(document.body.textContent).toContain('Notation en cours')
+
+    resolvePost({ data: { status: 'SUCCESS', result: { score: 50 } } })
+    await flushPromises()
   })
 })
 

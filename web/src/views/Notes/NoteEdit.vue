@@ -615,12 +615,12 @@
                       {{ title || 'Note sans titre' }}
                     </h1>
 
-                    <!-- Notation : désactivé, en attente du backend de notation IA (flux 2). -->
+                    <!-- Notation IA (notes-ia-planning-corrections, Task 5) : note la qualité
+                    de la fiche elle-même, à ne pas confondre avec l'Évaluation mixte. -->
                     <button
                       type="button"
-                      class="no-print shrink-0 inline-flex items-center gap-2 px-4 py-2 border border-accent dark:border-accent rounded-xl text-sm font-semibold text-accent dark:text-accent opacity-60 cursor-not-allowed"
-                      disabled
-                      title="Bientôt disponible : nécessite le backend de notation IA (non encore livré)."
+                      class="no-print shrink-0 inline-flex items-center gap-2 px-4 py-2 border border-accent dark:border-accent rounded-xl text-sm font-semibold text-accent dark:text-accent hover:bg-accent-soft dark:hover:bg-accent-soft transition-all"
+                      @click="openGradeModal"
                     >
                       <Star class="w-4 h-4" />
                       Notation
@@ -808,6 +808,15 @@
         @cancel="evaluationModal.visible = false"
       />
 
+      <!-- Notation IA (notes-ia-planning-corrections, Task 5) -->
+      <NoteGradeModal
+        :open="gradeModal.open"
+        :loading="gradeModal.loading"
+        :error="gradeModal.error"
+        :result="gradeModal.result"
+        @close="gradeModal.open = false"
+      />
+
       <!-- Floating Selection Action Bar -->
       <transition
         enter-active-class="transition duration-200 ease-out"
@@ -993,6 +1002,9 @@ import NotePdfExportModal, {
 import NoteEditHelpModal from '../../components/notes/NoteEditHelpModal.vue'
 import NoteInputModal, { type ModalField } from '../../components/notes/NoteInputModal.vue'
 import NoteEvaluationModal from '../../components/notes/NoteEvaluationModal.vue'
+import NoteGradeModal from '../../components/notes/NoteGradeModal.vue'
+import notationService from '../../services/notationService'
+import type { NotationResult } from '../../services/notationService'
 import NoteSidebar from '../../components/notes/NoteSidebar.vue'
 import {
   ChevronLeft,
@@ -1137,6 +1149,56 @@ function openEvaluationModal(cardId: number, rawTag: string) {
     visible: true,
     cardId,
     rawTag,
+  }
+}
+
+// Notation IA (notes-ia-planning-corrections, Task 5) : meme flux async (Celery +
+// polling, repli synchrone) que evaluateFeynman() dans NoteFeynman.vue.
+const gradeModal = ref<{
+  open: boolean
+  loading: boolean
+  error: string | null
+  result: NotationResult | null
+}>({
+  open: false,
+  loading: false,
+  error: null,
+  result: null,
+})
+
+async function openGradeModal() {
+  gradeModal.value = { open: true, loading: true, error: null, result: null }
+  try {
+    const res = await notationService.grade(noteId.value)
+    if (res.status === 'SUCCESS' && res.result) {
+      gradeModal.value.result = res.result
+      gradeModal.value.loading = false
+      return
+    }
+    const taskId = res.task_id
+    if (!taskId) throw new Error("L'API n'a pas retourné d'identifiant de tâche (task_id).")
+
+    let finished = false
+    let attempts = 0
+    const maxAttempts = 60
+    while (!finished && attempts < maxAttempts) {
+      attempts++
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const poll = await notationService.pollTask(taskId)
+      if (poll.status === 'SUCCESS') {
+        finished = true
+        gradeModal.value.result = poll.result ?? null
+      } else if (poll.status === 'FAILURE' || poll.error) {
+        finished = true
+        throw new Error(poll.error?.message || 'La notation a échoué.')
+      }
+    }
+    if (!finished) throw new Error('La notation a mis trop de temps. Veuillez réessayer.')
+  } catch (err) {
+    gradeModal.value.error = err instanceof Error ? err.message : 'La notation IA a échoué.'
+    console.error('Erreur de notation IA', err)
+  } finally {
+    gradeModal.value.loading = false
   }
 }
 

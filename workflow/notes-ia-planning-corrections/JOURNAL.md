@@ -88,3 +88,19 @@ route (`test_notation.py`, nouveau fichier — validation, 404, 403 isolation `u
 complet check→poll). Suite complète backend (hors `test_pdfs.py`/`test_import.py`, échecs
 Windows préexistants sans rapport) : 100% verte. Prochaine action : Task 5 (frontend, brancher
 le bouton Notation).
+
+## 2026-09-03 (Task 5 — frontend, bouton Notation)
+
+`notationService.ts` (patron `feynmanService.ts`) + `NoteGradeModal.vue` (nouveau, présentationnel
+pur — reçoit `open`/`loading`/`error`/`result`, `NoteEdit.vue` gère l'appel/le polling, même
+convention que `NoteEvaluationModal.vue`) : score en cercle `/10` à une décimale (backend
+renvoie 0-100, converti à l'affichage), verdict, colonnes Points forts/Améliorations,
+Suggestions. Bouton « Notation » (`NoteEdit.vue`) retiré de son état `disabled`, câblé sur
+`openGradeModal()` (même flux Celery+polling que `evaluateFeynman()`). Détail piégeux trouvé en
+testant : `BaseModal` (headlessui `TransitionRoot`/Dialog) rend son contenu téléporté vers
+`document.body` de façon asynchrone — un `nextTick()` est nécessaire après `mount()` avant
+d'interroger `document.body.textContent`, sans quoi le contenu est vide (pas d'erreur, juste un
+faux négatif silencieux) ; noté pour la prochaine fois qu'un composant s'appuie sur `BaseModal`
+en test. Tests : `notationService`, `NoteGradeModal` (4 états), `NoteEdit.vue` (bouton actif,
+appel + résultat, état de chargement). Suite complète : 556/556 tests frontend verts, `npm run
+build` propre. Prochaine action : Task 6 (Blurting).

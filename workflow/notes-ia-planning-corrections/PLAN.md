@@ -29,7 +29,7 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   (`POST /api/v1/notes/<id>/grade`, flux Celery + repli synchrone comme
   `evaluation_service.py`/feynman). Tests service (mock Gemini) + route (mock + isolation
   `user_id`).
-- [ ] Task 5 — Frontend : brancher le bouton « Notation » (`NoteEdit.vue:618-627`, actuellement
+- [x] Task 5 — Frontend : brancher le bouton « Notation » (`NoteEdit.vue:618-627`, actuellement
   `disabled`) sur la route de la Task 4. Résultat affiché en modale (cohérent avec le flux
   d'édition existant, ne casse pas la mise en page) conforme au canevas `Note — Notation (IA)` :
   score en cercle `/10` à une décimale (diviser le score 0-100 par 10, formatage décimal
