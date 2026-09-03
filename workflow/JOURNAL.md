@@ -12,6 +12,10 @@ Chantier actif : aucun
 
 ## Historique
 
+- 2026-09-03 — [revision-qcm-heterogene] **PR #142 mergée dans `main`** (squash, `ff897f5`),
+  CI verte (6/6 checks). Chantier `clos`. Prochaine action : choisir le prochain chantier à
+  ouvrir (`ecrans-peripheriques-visuels` ou `classes-examens-planning`).
+
 - 2026-09-03 — [revision-qcm-heterogene] **PR #142 ouverte**
   (`feature/revision-qcm-heterogene` → `main`,
   https://github.com/kappacite/StudyHub/pull/142). Chantier `pr-ouverte`. 3 tâches complètes

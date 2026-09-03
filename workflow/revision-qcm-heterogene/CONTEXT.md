@@ -1,8 +1,8 @@
 # Révision individuelle des QCM dans un ensemble hétérogène
 
-Statut : pr-ouverte
+Statut : clos
 Branche : feature/revision-qcm-heterogene
-PR : #142
+PR : #142 (mergée, squash, ff897f5)
 
 ## Pourquoi
 
