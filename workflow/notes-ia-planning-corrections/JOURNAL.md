@@ -104,3 +104,19 @@ faux négatif silencieux) ; noté pour la prochaine fois qu'un composant s'appui
 en test. Tests : `notationService`, `NoteGradeModal` (4 états), `NoteEdit.vue` (bouton actif,
 appel + résultat, état de chargement). Suite complète : 556/556 tests frontend verts, `npm run
 build` propre. Prochaine action : Task 6 (Blurting).
+
+## 2026-09-03 (Task 6 — Blurting)
+
+`Blurting.vue` : la jauge circulaire animée + bloc « Bilan de votre tuteur » séparés
+remplacés par une carte « Analyse » unique (score `/10` à une décimale, badge circulaire
+`accent-soft`, paragraphe de bilan) — même convention visuelle que Notation/Feynman,
+structure du canevas `Blurting.dc.html`. Couleurs Tailwind brutes retirées
+(`getStatusBadgeClass` : `emerald-50`/`amber-50`/`rose-50` → `success-soft`/`warning-soft`/
+`danger-soft`). Conforme à l'arbitrage du `CONTEXT.md` : « Concepts clés » et « Flashcards
+suggérées + import » **conservés** en section secondaire — aucun changement de schéma côté
+`AIService.analyze_blurting` (le `retention_score` 0-100 existant est juste réaffiché divisé
+par 10). Tests (TDD, rouge vérifié avant implémentation, nouveau fichier `Blurting.spec.ts` —
+aucun test n'existait avant) : non-régression étape rédaction, format `/10` du score,
+conservation concepts/flashcards, absence de couleurs brutes dans le HTML rendu. Suite
+complète : 561/561 tests frontend verts, `npm run build` propre. Prochaine action : Task 7
+(harmonisation mineure Feynman).

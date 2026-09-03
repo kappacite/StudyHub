@@ -35,7 +35,7 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   score en cercle `/10` à une décimale (diviser le score 0-100 par 10, formatage décimal
   français), verdict, deux colonnes Points forts (vert) / Améliorations (orange), Suggestions.
   Tests composant (état loading/résultat/erreur).
-- [ ] Task 6 — Frontend + backend (si besoin) : refonte de `Blurting.vue` pour suivre la
+- [x] Task 6 — Frontend + backend (si besoin) : refonte de `Blurting.vue` pour suivre la
   structure du canevas sans supprimer de fonctionnalité (cf. arbitrage `CONTEXT.md`) — carte
   d'analyse primaire unifiée (score `/10` à une décimale au lieu du % actuel, remplace la jauge
   circulaire + bloc « Bilan de votre tuteur » séparés), toutes les couleurs brutes remplacées
