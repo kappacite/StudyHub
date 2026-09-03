@@ -48,3 +48,13 @@ plutôt qu'exception). `serializeDiagramDocument()` : `JSON.stringify` direct. C
 des corps de fonction. Tests : les 4 branches + un rondtrip `parse(serialize(doc)) === doc`
 sur un document v1 non trivial. Suite complète + `npm run build` (`vue-tsc -b`) propres.
 Prochaine action : Task 4 (corpus de non-régression de format).
+
+## 2026-09-03 (Task 4 — corpus de non-régression)
+
+3 fixtures v0 réalistes dans `web/tests/diagram/fixtures/` : organigramme simple
+(nœuds+liens), occlusion anatomie (masques + image de fond), croquis main levée
+(nœud + trait libre) — couvrent les 4 catégories du vocabulaire v1. Test
+`web/tests/diagram/corpus.spec.ts` (`it.each`) : chaque fixture parse en `DiagramDocumentV1`
+valide sans exception. Règle documentée en tête du fichier : ne jamais retirer une fixture,
+seulement en ajouter à mesure des futures versions de schéma. Prochaine action : Task 5
+(vérification finale, clôture).

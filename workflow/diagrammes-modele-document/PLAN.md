@@ -34,7 +34,7 @@ au cycle 3 (canevas) quand il y aura quelque chose à rendre avec.
   casserait l'ouverture de l'écran. Tests couvrant les 4 branches, plus un test de rondtrip
   (`parseDiagramDocument(serializeDiagramDocument(doc))` égale `doc` structurellement pour un
   document v1 non trivial).
-- [ ] Task 4 — Corpus de non-régression de format (§8.8/§8.7 : « un corpus de documents
+- [x] Task 4 — Corpus de non-régression de format (§8.8/§8.7 : « un corpus de documents
   sérialisés de chaque version doit continuer à s'ouvrir, un test par version de schéma »).
   Fixtures JSON dans `web/tests/diagram/fixtures/` : au moins 3 documents v0 réalistes
   (extraits/inspirés de vrais usages — un schéma nœuds+liens simple, un schéma avec occlusion

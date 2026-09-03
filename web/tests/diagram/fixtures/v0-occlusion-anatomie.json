@@ -1,0 +1,10 @@
+{
+  "nodes": [],
+  "connections": [],
+  "masks": [
+    { "id": "mask-1693500000000", "x": 120, "y": 60, "width": 80, "height": 40, "label": "Ventricule gauche" },
+    { "id": "mask-1693500000001", "x": 220, "y": 60, "width": 80, "height": 40, "label": "Ventricule droit" }
+  ],
+  "backgroundImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "drawings": []
+}
