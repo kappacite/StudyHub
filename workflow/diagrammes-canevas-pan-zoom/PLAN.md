@@ -18,7 +18,7 @@ relève de l'exception écran-capture — ses interactions (pan/zoom) restent te
   visuellement fixe après le zoom — propriété clé, pas juste `zoom *= factor`). Tests :
   `panBy` déplace la caméra sans changer `zoom` ; `zoomAt` change `zoom` sans déplacer le point
   écran ciblé en coordonnées monde (`screenToWorld` du point avant/après reste identique).
-- [ ] Task 3 — Rendu borné à la fenêtre de vue dans `web/src/diagram/viewport.ts` :
+- [x] Task 3 — Rendu borné à la fenêtre de vue dans `web/src/diagram/viewport.ts` :
   `getVisibleWorldBounds(camera, viewportSize): Bounds`, `elementBounds(element): Bounds`
   (boîte englobante x/y/width/height, déjà présente sur `BaseElement`),
   `cullElements(elements, camera, viewportSize): DiagramElement[]` (intersection avec les

@@ -21,3 +21,10 @@ au centre de la fenêtre de vue, `zoom` = pixels-écran par unité-monde), `scre
 zoom courant), `zoomAt` (zoom centré sur un point écran, le point ciblé reste fixe en
 coordonnées monde -- vérifié par test). 5/5 tests verts. Prochaine action : Task 3 (rendu
 borné à la fenêtre de vue).
+
+## 2026-09-04 (Task 3 — rendu borné à la fenêtre de vue)
+
+`web/src/diagram/viewport.ts` : `getVisibleWorldBounds` (rectangle monde visible depuis la
+caméra), `elementBounds` (boîte englobante x/y/width/height), `cullElements` (intersection,
+pas inclusion stricte -- un élément partiellement visible reste affiché). 8/8 tests verts.
+Prochaine action : Task 4 (recadrage sur tout le contenu).
