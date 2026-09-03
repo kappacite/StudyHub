@@ -15,7 +15,7 @@ au cycle 3 (canevas) quand il y aura quelque chose à rendre avec.
   pas de test runtime pour de purs types, le test porte sur la fabrique et sur un exemple de
   chaque variante de `DiagramElement` construit à la main (vérifie que le discriminant `kind`
   distingue bien les variantes à la compilation ET runtime, ex. `switch` exhaustif).
-- [ ] Task 2 — `migrateLegacyV0ToV1(raw: unknown): DiagramDocumentV1` dans
+- [x] Task 2 — `migrateLegacyV0ToV1(raw: unknown): DiagramDocumentV1` dans
   `web/src/diagram/migrations.ts`. Convertit le JSON ad hoc actuel (`nodes`/`connections`/
   `masks`/`backgroundImage`/`drawings`, cf. `CONTEXT.md`) vers `DiagramDocumentV1`, sans perte.
   Tests : un document v0 avec au moins un élément de chaque type (node, connection, mask,

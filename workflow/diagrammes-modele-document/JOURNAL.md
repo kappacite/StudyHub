@@ -23,3 +23,15 @@ variantes confirme que le discriminant `kind` narrowe correctement chaque type (
 champs propres à chaque variante sans cast). `npm run build` (`vue-tsc -b`) propre — le
 nouveau module type-check sans erreur bien que non encore importé nulle part (attendu, il
 sera branché au cycle 3). Prochaine action : Task 2 (`migrateLegacyV0ToV1`).
+
+## 2026-09-03 (Task 2 — migration v0 → v1)
+
+`web/src/diagram/migrations.ts` : `migrateLegacyV0ToV1()` convertit `nodes`→`ShapeElement[]`,
+`connections`→`LinkElement[]`, `masks`→`OcclusionMaskElement[]`, `drawings`→`StrokeElement[]`,
+`backgroundImage` inchangé. Ids migrés préfixés par catégorie (`shape-<id>`, `link-<index>`,
+`mask-<id>`, `stroke-<id>`) pour garantir l'absence de collision entre catégories (id
+numérique v0 vs index de connexion, notamment). Valeurs par défaut sûres pour tout champ
+optionnel manquant (`arrow: 'end'`, `dashed: false`, `label: ''`, dimensions à 0). Tests :
+migration complète sans perte (un élément de chaque type) ; document vide/partiel sans
+erreur ; unicité des ids entre catégories ; valeurs par défaut d'une connexion minimale.
+Prochaine action : Task 3 (`parseDiagramDocument`/`serializeDiagramDocument`).
