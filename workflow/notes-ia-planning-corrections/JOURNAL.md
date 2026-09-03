@@ -192,6 +192,11 @@ Timeout global `web/src/services/api.ts` porté de 10s à 60s — trop court pou
 direct à la Task 9 sur `/notation/grade`). Test dédié (`api.spec.ts`, nouveau fichier).
 Suite complète : 564/564 tests frontend verts.
 
+## 2026-09-03 (Task 11 — timeout Axios 2 minutes, demande utilisateur)
+
+60s encore trop court en pratique — porté à 120s (2 minutes). Même fichier, même test mis à
+jour. Suite complète : 564/564 tests frontend verts.
+
 ## 2026-09-03 (clôture)
 
 Toutes les tâches du plan sont cochées et vérifiées (tests + parcours réel). Chantier clos

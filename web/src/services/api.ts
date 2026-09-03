@@ -11,10 +11,10 @@ const api = axios.create({
     : import.meta.env.DEV
       ? 'http://localhost:5000/api/v1'
       : '/api/v1',
-  // 60s (au lieu de 10s) : un appel IA (Notation/Feynman/Blurting) en repli synchrone sans
-  // worker Celery local peut dépasser 10s (round-trip Gemini réel), cf. Task 9 du chantier
-  // notes-ia-planning-corrections.
-  timeout: 60000,
+  // 120s (2 minutes) : un appel IA (Notation/Feynman/Blurting) en repli synchrone sans
+  // worker Celery local peut dépasser 10s, puis 60s en pratique (round-trip Gemini réel),
+  // cf. Tasks 9-11 du chantier notes-ia-planning-corrections.
+  timeout: 120000,
 })
 
 // Request Interceptor: inject JWT token

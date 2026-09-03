@@ -60,6 +60,8 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   court pour un appel IA synchrone sans worker Celery local (repli inline observé en Task 9,
   timeout constaté sur `/notation/grade`) — porté à 60s (1 minute), demande explicite de
   l'utilisateur.
+- [x] Task 11 — Frontend : 60s encore insuffisant en pratique (demande explicite de
+  l'utilisateur) — timeout Axios porté à 120s (2 minutes).
 - [x] Task 9 — Vérification finale : suite complète (backend + frontend) verte, `npm run build`
   propre, non-régression rapide sur les écrans touchés (Planning avec des decks existants,
   aperçu bibliothèque avec des notes sans commentaire HTML, Feynman/Blurting sur un vrai appel
