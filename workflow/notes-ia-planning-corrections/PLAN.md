@@ -56,6 +56,10 @@ Détail de l'approche retenue et des arbitrages : `CONTEXT.md`.
   visibles. Aucune fonctionnalité supprimée. Tests composant sur la présence de toutes les
   actions (déplacées, pas perdues) + vérification visuelle réelle (375px/1440px, clair/sombre)
   dans l'app locale avant de clore la tâche.
+- [x] Task 10 — Frontend : le timeout Axios global (10s, `web/src/services/api.ts`) est trop
+  court pour un appel IA synchrone sans worker Celery local (repli inline observé en Task 9,
+  timeout constaté sur `/notation/grade`) — porté à 60s (1 minute), demande explicite de
+  l'utilisateur.
 - [x] Task 9 — Vérification finale : suite complète (backend + frontend) verte, `npm run build`
   propre, non-régression rapide sur les écrans touchés (Planning avec des decks existants,
   aperçu bibliothèque avec des notes sans commentaire HTML, Feynman/Blurting sur un vrai appel

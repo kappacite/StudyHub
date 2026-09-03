@@ -11,7 +11,10 @@ const api = axios.create({
     : import.meta.env.DEV
       ? 'http://localhost:5000/api/v1'
       : '/api/v1',
-  timeout: 10000,
+  // 60s (au lieu de 10s) : un appel IA (Notation/Feynman/Blurting) en repli synchrone sans
+  // worker Celery local peut dépasser 10s (round-trip Gemini réel), cf. Task 9 du chantier
+  // notes-ia-planning-corrections.
+  timeout: 60000,
 })
 
 // Request Interceptor: inject JWT token
@@ -28,10 +31,10 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
-    
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
-      
+
       // If the refresh token itself failed, log out and redirect to login immediately
       if (originalRequest.url?.includes('/auth/refresh')) {
         const auth = useAuthStore()
@@ -39,9 +42,9 @@ api.interceptors.response.use(
         router.push('/login')
         return Promise.reject(error)
       }
-      
+
       const auth = useAuthStore()
-      
+
       try {
         await auth.refresh()
         // Retry original request with new token
@@ -54,7 +57,7 @@ api.interceptors.response.use(
       }
     }
     return Promise.reject(error)
-  }
+  },
 )
 
 export default api

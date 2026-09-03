@@ -185,6 +185,13 @@ Vérification visuelle réelle (app locale, compte dev) :
 Les 6 demandes de l'utilisateur sont traitées (Notation IA, Blurting, Feynman, planning,
 fuite HTML, éditeur), 9 tâches complètes. Chantier prêt à clôturer.
 
+## 2026-09-03 (Task 10 — timeout Axios, demande utilisateur)
+
+Timeout global `web/src/services/api.ts` porté de 10s à 60s — trop court pour un appel IA
+(Notation/Feynman/Blurting) en repli synchrone sans worker Celery local (timeout constaté en
+direct à la Task 9 sur `/notation/grade`). Test dédié (`api.spec.ts`, nouveau fichier).
+Suite complète : 564/564 tests frontend verts.
+
 ## 2026-09-03 (clôture)
 
 Toutes les tâches du plan sont cochées et vérifiées (tests + parcours réel). Chantier clos
