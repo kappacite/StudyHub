@@ -1,6 +1,6 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : revision-qcm-heterogene
 
 ## Chantiers ouverts
 
@@ -11,6 +11,12 @@ Chantier actif : aucun
 - `classes-examens-planning` — pas commencé, indépendant
 
 ## Historique
+
+- 2026-09-03 — [revision-qcm-heterogene] Chantier ouvert. Root cause identifié en
+  investigation avant tout code (garde `rset.type` au lieu de `item.type`, exclusion
+  systématique des QCM dans `RevisionStudy.vue`) ; approche A retenue en brainstorming
+  (étendre le flux générique GRADABLE_TYPES plutôt que les endpoints QCM dédiés). 3 tâches.
+  Prochain : Task 1 (backend).
 
 - 2026-09-03 — [bibliotheque-notes-listes] **PR #140 mergée dans `main`** (squash, `4d361a4`),
   CI verte (6/6 checks). Chantier `clos`. Prochaine action : ouvrir le chantier révision QCM
