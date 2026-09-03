@@ -44,7 +44,7 @@ au cycle 3 (canevas) quand il y aura quelque chose à rendre avec.
   pour supprimer une fixture existante — seulement en ajouter à mesure que de nouvelles
   versions de schéma apparaissent dans les cycles suivants (règle documentée en tête du fichier
   de test).
-- [ ] Task 5 — Vérification finale : suite frontend complète verte, `npm run build` propre,
+- [x] Task 5 — Vérification finale : suite frontend complète verte, `npm run build` propre,
   aucune régression sur `Diagrams.vue` (le fichier n'est pas modifié par ce cycle — un `git
   diff` de contrôle confirme qu'aucune ligne n'y a changé). Clôture du chantier ; note de
   passation dans `JOURNAL.md` pour le prochain cycle (« commandes et annulation ») : le modèle

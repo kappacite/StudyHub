@@ -58,3 +58,25 @@ Prochaine action : Task 4 (corpus de non-régression de format).
 valide sans exception. Règle documentée en tête du fichier : ne jamais retirer une fixture,
 seulement en ajouter à mesure des futures versions de schéma. Prochaine action : Task 5
 (vérification finale, clôture).
+
+## 2026-09-03 (Task 5 — vérification finale, clôture du cycle 1)
+
+Suite frontend complète : 586/586 tests verts (18 nouveaux pour ce chantier). `npm run build`
+(`vue-tsc -b` + `vite build`) propre. `git diff main -- web/src/views/Diagrams/Diagrams.vue`
+vide : confirmé, ce cycle n'a touché aucune ligne de l'éditeur existant — le modèle vit en
+isolation complète dans `web/src/diagram/` (`document.ts`, `migrations.ts`), non encore
+importé nulle part.
+
+**Passation pour le cycle 2 (commandes et annulation)** : `DiagramDocumentV1` et ses 4
+fonctions (`createEmptyDocument`, `parseDiagramDocument`, `serializeDiagramDocument`,
+`migrateLegacyV0ToV1`) sont le socle. Contrainte à respecter dès le cycle 2 : chaque commande
+d'édition doit transformer un `DiagramDocumentV1` en un **nouveau** `DiagramDocumentV1` (jamais
+de mutation en place) — condition posée par l'invariant d'annulation testé par propriété
+(§8.7), à écrire en premier dans ce futur chantier. Le corpus de fixtures
+(`web/tests/diagram/fixtures/`) et sa règle de non-suppression survivent à ce chantier et
+devront être étendus (pas remplacés) si le cycle 2 introduit une `schema_version: 2`.
+
+Chantier clos (code). Prochaine action : demander à l'utilisateur de pousser
+`feature/diagrammes-modele-document`, puis ouvrir la PR. Le cycle 2 (« commandes et
+annulation ») ouvrira son propre chantier `workflow/diagrammes-commandes-annulation/` une fois
+celui-ci mergé.
