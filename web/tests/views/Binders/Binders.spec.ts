@@ -342,6 +342,59 @@ describe('Binders — pseudo-classeur "Non classé"', () => {
   })
 })
 
+// Task 14 (notes-ia-planning-corrections) : le backend accepte déjà binder_id à l'upload
+// (POST /api/v1/pdfs, inchangé) mais aucune UI ne permettait d'uploader un PDF depuis la
+// Bibliothèque -- seul "Élément existant" attachait un PDF déjà présent. Nouvelle entrée
+// "PDF" dans le menu "Ajouter" (comme Note/Diagramme : proposée aussi depuis 'Non classé').
+describe('Binders — upload de PDF depuis le menu "Ajouter" (Task 14)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  async function openAddMenuAndUpload(wrapper: ReturnType<typeof mount>, file: File) {
+    const buttonLabel = (label: string) =>
+      wrapper.findAll('button').find((b) => b.text().trim() === label)
+    await buttonLabel('Ajouter')!.trigger('click')
+    await flushPromises()
+    const pdfMenuItem = buttonLabel('PDF')
+    expect(pdfMenuItem).toBeTruthy()
+    await pdfMenuItem!.trigger('click')
+
+    const input = wrapper.find('input[type="file"]')
+    expect(input.exists()).toBe(true)
+    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+    await input.trigger('change')
+    await flushPromises()
+  }
+
+  it('upload un PDF depuis un vrai classeur : POST /pdfs avec le binder_id courant', async () => {
+    api.post.mockResolvedValue({
+      data: { id: 'pdf-1', name: 'Cours.pdf', binder_id: 'b1', read_only: false },
+    })
+    const { wrapper } = await mountBinders('b1')
+    const file = new File([new Uint8Array([1])], 'Cours.pdf', { type: 'application/pdf' })
+
+    await openAddMenuAndUpload(wrapper, file)
+
+    expect(api.post).toHaveBeenCalledWith('/pdfs', expect.any(FormData), {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    const form = api.post.mock.calls.find((c) => c[0] === '/pdfs')![1] as FormData
+    expect(form.get('binder_id')).toBe('b1')
+  })
+
+  it('upload un PDF depuis "Non classé" : aucun binder_id envoyé', async () => {
+    api.post.mockResolvedValue({
+      data: { id: 'pdf-1', name: 'Cours.pdf', binder_id: null, read_only: false },
+    })
+    const { wrapper } = await mountBinders('non-classe')
+    const file = new File([new Uint8Array([1])], 'Cours.pdf', { type: 'application/pdf' })
+
+    await openAddMenuAndUpload(wrapper, file)
+
+    const form = api.post.mock.calls.find((c) => c[0] === '/pdfs')![1] as FormData
+    expect(form.get('binder_id')).toBeNull()
+  })
+})
+
 describe('Binders — en-tête (Task 2, bibliotheque-notes-listes)', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -442,6 +495,49 @@ describe('Binders — ligne de note enrichie (Task 5, bibliotheque-notes-listes)
     expect(container.exists()).toBe(true)
     expect(container.classes()).toContain('divide-dashed')
     expect(container.classes()).not.toContain('space-y-1')
+  })
+})
+
+describe('Binders — extrait de note : commentaires HTML retirés (notes-ia-planning-corrections, Task 3)', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('ne laisse fuir aucun commentaire HTML (ex. <!--- sectionbody) dans l\'extrait de la bibliothèque', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const authStore = useAuthStore()
+    authStore.user = { id: 1, email: 'test@test.dev', username: 'test', created_at: '' }
+
+    const noteWithComment = {
+      id: 'n-comment',
+      binder_id: 'b1',
+      title: 'Note collée',
+      content: '<!--- sectionbody -->\nVrai contenu visible.',
+      created_at: NOW,
+      updated_at: NOW,
+      tags: [],
+    }
+    api.get.mockImplementation((url: string) => {
+      if (/^\/binders\?/.test(url)) return Promise.resolve({ data: { data: [BINDER, SUBBINDER] } })
+      if (/^\/binders\/[^/?]+$/.test(url)) return Promise.resolve({ data: BINDER })
+      if (/^\/decks\?/.test(url)) return Promise.resolve({ data: { data: [] } })
+      if (/^\/notes\?/.test(url)) return Promise.resolve({ data: { data: [noteWithComment] } })
+      if (/^\/revision\/sets\?/.test(url)) return Promise.resolve({ data: { data: [] } })
+      if (url === '/tags') return Promise.resolve({ data: { data: [] } })
+      if (/^\/diagrams\?/.test(url)) return Promise.resolve({ data: { data: [] } })
+      if (/^\/pdfs\?/.test(url)) return Promise.resolve({ data: { data: [] } })
+      return Promise.reject(new Error(`URL GET non mockée dans le test: ${url}`))
+    })
+
+    const router = createTestRouter()
+    await router.push('/bibliotheque/b1')
+    await router.isReady()
+    const wrapper = mount(Binders, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Vrai contenu visible.')
+    expect(wrapper.text()).not.toContain('<!--')
+    expect(wrapper.text()).not.toContain('-->')
+    expect(wrapper.text()).not.toContain('sectionbody')
   })
 })
 

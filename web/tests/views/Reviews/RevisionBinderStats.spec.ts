@@ -55,6 +55,7 @@ async function mountBinderStats(opts: {
   totalDurationSeconds?: number
   binderIds?: string[]
   statsError?: boolean
+  avgRetrievability?: number
 }) {
   const sets = opts.sets ?? []
   const byType = opts.byType ?? []
@@ -62,6 +63,7 @@ async function mountBinderStats(opts: {
   const deckStatsById = opts.deckStatsById ?? {}
   const totalDurationSeconds = opts.totalDurationSeconds ?? 0
   const binderIds = opts.binderIds ?? ['b1']
+  const avgRetrievability = opts.avgRetrievability ?? 0
 
   const pinia = createPinia()
   setActivePinia(pinia)
@@ -81,6 +83,7 @@ async function mountBinderStats(opts: {
           mastery_rate: 0,
           avg_success_rate: 0,
           true_retention: 0,
+          avg_retrievability: avgRetrievability,
           leeches_count: 0,
           due_count: 0,
           avg_difficulty: 1,
@@ -133,6 +136,20 @@ describe('RevisionBinderStats', () => {
     expect(names[1]).toContain('Set fort')
     expect(names[2]).toContain('Deck faible')
     expect(names[3]).toContain('Set faible')
+  })
+
+  // notes-ia-planning-corrections : demande explicite utilisateur -- true_retention
+  // (mature_successes/mature_reviews) restait bloqué à 0.0 tant qu'aucun élément
+  // n'atteint l'intervalle "mûr" (>= 21 jours), ce qui se lisait comme un échec de
+  // révision alors qu'il n'y avait simplement pas encore de donnée. Remplacé par
+  // avg_retrievability (moyenne Ebbinghaus par élément, décroît en continu depuis
+  // la dernière révision) : toujours défini, jamais bloqué à 0 par construction.
+  it('affiche le pourcentage de rétention actuelle (avg_retrievability), pas la rétention "réelle" mature-only', async () => {
+    const wrapper = await mountBinderStats({
+      sets: [setSummary(1, 'qcm', { reviewed_items: 5 })],
+      avgRetrievability: 62.3,
+    })
+    expect(wrapper.text()).toContain('Rétention actuelle : 62.3%')
   })
 
   it("affiche Mixte pour un ensemble heterogene dans la liste des ensembles", async () => {

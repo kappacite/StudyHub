@@ -3,16 +3,20 @@ from datetime import datetime, timedelta, date
 from app.extensions import db
 from app.models.deck import Deck
 from app.models.flashcard import Flashcard
+from app.models.revision import RevisionSet, RevisionItem
 from app.services.planning_service import PlanningService
 from app.dao.flashcard_dao import FlashcardDAO
 from app.dao.deck_dao import DeckDAO
+from app.dao.revision_dao import RevisionItemDAO, RevisionSetDAO
 from app.middlewares.error_handler import ForbiddenError, ResourceNotFoundError
 
 @pytest.fixture
 def planning_service():
     flashcard_dao = FlashcardDAO(db.session)
     deck_dao = DeckDAO(db.session)
-    return PlanningService(flashcard_dao, deck_dao)
+    revision_item_dao = RevisionItemDAO(db.session)
+    revision_set_dao = RevisionSetDAO(db.session)
+    return PlanningService(flashcard_dao, deck_dao, revision_item_dao, revision_set_dao)
 
 def test_calendar_returns_correct_counts(app, planning_service, test_user):
     with app.app_context():
@@ -59,7 +63,8 @@ def test_calendar_returns_correct_counts(app, planning_service, test_user):
         # Today: card1 (late) + card2 (due today) = 2
         assert days[0]["date"] == today.isoformat()
         assert days[0]["total_due"] == 2
-        assert days[0]["breakdown"][0]["deck_id"] == deck.id
+        assert days[0]["breakdown"][0]["kind"] == "deck"
+        assert days[0]["breakdown"][0]["id"] == deck.id
         assert days[0]["breakdown"][0]["count"] == 2
 
         # Tomorrow: card3 (due tomorrow) = 1
@@ -82,6 +87,83 @@ def test_calendar_empty_range_returns_empty_days(app, planning_service, test_use
         for day in result["days"]:
             assert day["total_due"] == 0
             assert len(day["breakdown"]) == 0
+
+def test_calendar_includes_revision_set_items(app, planning_service, test_user):
+    """notes-ia-planning-corrections, Task 1 : le planning n'agregeait jamais les
+    RevisionItem (ensembles de revision), seulement les Flashcard -- un compte qui
+    etudie uniquement via des ensembles voyait un planning vide en permanence."""
+    with app.app_context():
+        rset = RevisionSet(name="Spectroscopie", user_id=test_user["id"])
+        db.session.add(rset)
+        db.session.commit()
+
+        today = datetime.utcnow().date()
+        item = RevisionItem(
+            set_id=rset.id,
+            type="qcm",
+            payload={"question": "Q", "options": []},
+            next_review=datetime.utcnow(),
+        )
+        db.session.add(item)
+        db.session.commit()
+
+        result = planning_service.get_calendar(test_user["id"], today, today)
+
+        days = result["days"]
+        assert len(days) == 1
+        assert days[0]["total_due"] == 1
+        assert days[0]["breakdown"][0]["kind"] == "revision_set"
+        assert days[0]["breakdown"][0]["id"] == rset.id
+        assert days[0]["breakdown"][0]["name"] == "Spectroscopie"
+        assert days[0]["breakdown"][0]["count"] == 1
+
+def test_calendar_mixes_deck_and_revision_set_on_same_day(app, planning_service, test_user):
+    with app.app_context():
+        deck = Deck(name="Anatomie", description="", user_id=test_user["id"])
+        rset = RevisionSet(name="Chimie", user_id=test_user["id"])
+        db.session.add_all([deck, rset])
+        db.session.commit()
+
+        today = datetime.utcnow().date()
+        card = Flashcard(deck_id=deck.id, front="Q", back="A", next_review=datetime.utcnow())
+        item = RevisionItem(
+            set_id=rset.id, type="vf", payload={"assertion": "A", "correct": True},
+            next_review=datetime.utcnow(),
+        )
+        db.session.add_all([card, item])
+        db.session.commit()
+
+        result = planning_service.get_calendar(test_user["id"], today, today)
+
+        days = result["days"]
+        assert days[0]["total_due"] == 2
+        kinds = {b["kind"] for b in days[0]["breakdown"]}
+        assert kinds == {"deck", "revision_set"}
+
+def test_calendar_revision_item_isolated_by_user(app, planning_service, test_user):
+    """Un RevisionItem d'un ensemble appartenant a un autre utilisateur ne doit
+    jamais apparaitre dans le planning de test_user."""
+    with app.app_context():
+        from app.models.user import User
+        other = User(email="other-planning@example.com", username="other_planning")
+        other.set_password("password123")
+        db.session.add(other)
+        db.session.commit()
+
+        rset = RevisionSet(name="PasAMoi", user_id=other.id)
+        db.session.add(rset)
+        db.session.commit()
+
+        today = datetime.utcnow().date()
+        item = RevisionItem(
+            set_id=rset.id, type="vf", payload={"assertion": "A", "correct": True},
+            next_review=datetime.utcnow(),
+        )
+        db.session.add(item)
+        db.session.commit()
+
+        result = planning_service.get_calendar(test_user["id"], today, today)
+        assert result["days"][0]["total_due"] == 0
 
 def test_advance_review_forbidden_for_other_user_card(app, planning_service, test_user):
     with app.app_context():
@@ -195,3 +277,30 @@ def test_post_planning_advance_endpoint(client, auth_headers, app, test_user):
     assert len(data) == 1
     assert data[0]["id"] == card_id
     assert data[0]["front"] == "Cellule"
+
+def test_post_planning_advance_endpoint_accepts_set_id(client, auth_headers, app, test_user):
+    # notes-ia-planning-corrections, Task 1 : /planning/advance accepte desormais
+    # set_id en plus de deck_id (ensembles de revision, jusque-la absents du planning).
+    with app.app_context():
+        rset = RevisionSet(name="Bio", user_id=test_user["id"])
+        db.session.add(rset)
+        db.session.commit()
+
+        item = RevisionItem(
+            set_id=rset.id, type="vf", payload={"assertion": "A", "correct": True},
+            next_review=datetime.utcnow() + timedelta(days=2),
+        )
+        db.session.add(item)
+        db.session.commit()
+        item_id = item.id
+        set_id = rset.id
+
+    response = client.post(
+        "/api/v1/planning/advance",
+        json={"set_id": set_id, "card_ids": [item_id]},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert len(data) == 1
+    assert data[0]["id"] == item_id

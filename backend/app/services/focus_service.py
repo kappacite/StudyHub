@@ -242,6 +242,24 @@ class FocusService:
                 if date_str in forecast_dict:
                     forecast_dict[date_str] += 1
 
+        # Ensembles de révision (même bug que le planning, Task 1 de
+        # notes-ia-planning-corrections) : un RevisionItem dû compte tel quel dans
+        # le forecast du jour, pas de filtrage de type nécessaire (contrairement aux
+        # Flashcard) -- un RevisionItem est déjà un type de révision valide.
+        from app.models.revision import RevisionItem, RevisionSet
+
+        revision_items = (
+            db.session.query(RevisionItem)
+            .join(RevisionSet)
+            .filter(RevisionSet.user_id == user_id)
+            .all()
+        )
+        for it in revision_items:
+            if it.next_review:
+                date_str = it.next_review.date().isoformat()
+                if date_str in forecast_dict:
+                    forecast_dict[date_str] += 1
+
         forecast_list = []
         for date_str in sorted(forecast_dict.keys()):
             count = forecast_dict[date_str]

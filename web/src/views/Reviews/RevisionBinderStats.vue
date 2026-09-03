@@ -75,7 +75,9 @@
           <p class="font-display font-mono text-3xl font-bold text-ink">
             {{ stats.avg_success_rate }}%
           </p>
-          <p class="text-xs text-ink-muted mt-2">Rétention réelle : {{ stats.true_retention }}%</p>
+          <p class="text-xs text-ink-muted mt-2">
+            Rétention actuelle : {{ stats.avg_retrievability }}%
+          </p>
         </BaseCard>
         <BaseCard padding="lg">
           <p class="text-xs font-bold uppercase tracking-wide text-ink-subtle mb-2.5">À réviser</p>

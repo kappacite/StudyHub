@@ -1,7 +1,9 @@
 <template>
   <div class="bg-surface border border-line rounded-3xl p-6 shadow-elev-1 space-y-6">
     <!-- Grid Header -->
-    <div class="grid grid-cols-7 gap-2 text-center text-xs font-black text-ink-subtle uppercase tracking-widest pb-2 border-b border-line-soft">
+    <div
+      class="grid grid-cols-7 gap-2 text-center text-xs font-black text-ink-subtle uppercase tracking-widest pb-2 border-b border-line-soft"
+    >
       <span>Lun</span>
       <span>Mar</span>
       <span>Mer</span>
@@ -26,10 +28,8 @@
         :key="day.date"
         class="aspect-square relative flex flex-col justify-between p-2 rounded-2xl border transition-all duration-200 group cursor-pointer"
         :class="[
-          isToday(day.date)
-            ? 'border-primary bg-primary-soft/40'
-            : 'border-line bg-surface',
-          day.total_due > 0 ? 'hover:shadow-elev-2' : 'hover:bg-surface-soft'
+          isToday(day.date) ? 'border-primary bg-primary-soft/40' : 'border-line bg-surface',
+          day.total_due > 0 ? 'hover:shadow-elev-2' : 'hover:bg-surface-soft',
         ]"
       >
         <!-- Day number -->
@@ -42,7 +42,7 @@
 
         <!-- Heatmap Circle Indicator -->
         <div class="flex justify-center items-center flex-1">
-          <div 
+          <div
             v-if="day.total_due > 0"
             class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm transform group-hover:scale-110 transition-all duration-200"
             :class="getLoadClasses(day.total_due)"
@@ -52,17 +52,21 @@
         </div>
 
         <!-- Tooltip/Popover on hover -->
-        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-slate-950/90 dark:bg-surface-soft backdrop-blur-md text-white rounded-2xl p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-30 scale-95 group-hover:scale-100 origin-bottom">
+        <div
+          class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-slate-950/90 dark:bg-surface-soft backdrop-blur-md text-white rounded-2xl p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-30 scale-95 group-hover:scale-100 origin-bottom"
+        >
           <p class="text-[10px] font-black text-ink-subtle uppercase tracking-widest mb-1.5">
             {{ formatFullDate(day.date) }}
           </p>
           <div class="space-y-1">
-            <div 
-              v-for="item in day.breakdown" 
-              :key="item.deck_id"
+            <div
+              v-for="item in day.breakdown"
+              :key="`${item.kind}-${item.id}`"
               class="flex items-center justify-between text-[11px]"
             >
-              <span class="truncate max-w-[120px] font-semibold text-ink-subtle">{{ item.deck_name }}</span>
+              <span class="truncate max-w-[120px] font-semibold text-ink-subtle">{{
+                item.name
+              }}</span>
               <span class="font-bold text-primary">{{ item.count }} cartes</span>
             </div>
             <div v-if="day.breakdown.length === 0" class="text-[10px] italic text-ink-muted">
@@ -70,8 +74,8 @@
             </div>
           </div>
           <!-- Tiny footer text inside popover if applicable -->
-          <div 
-            v-if="day.total_due > 0 && isFutureDay(day.date)" 
+          <div
+            v-if="day.total_due > 0 && isFutureDay(day.date)"
             class="mt-2 pt-1.5 border-t border-white/15 text-[9px] text-primary font-bold text-center uppercase tracking-wider"
           >
             Cliquer pour réviser tôt
@@ -79,7 +83,7 @@
         </div>
 
         <!-- Hidden trigger for click events (selects day if it has cards and is future) -->
-        <button 
+        <button
           v-if="day.total_due > 0 && isFutureDay(day.date)"
           class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
           @click="$emit('select-day', day)"

@@ -62,6 +62,44 @@ def test_dashboard_stats(client, auth_headers, app):
     # Vérifier la prévision
     assert len(json_data["forecast_7_days"]) == 7
 
+def test_dashboard_maturity_distribution_includes_revision_items(client, auth_headers, app):
+    """Maturité des révisions (Accueil) : un RevisionItem doit compter dans la
+    distribution de maturité, pas seulement les Flashcard -- même bug que le
+    planning (Task 1) et le forecast (Task 15) de notes-ia-planning-corrections."""
+    from flask_jwt_extended import decode_token
+    from app.models.revision import RevisionItem, RevisionSet
+
+    token = auth_headers["Authorization"].split(" ")[1]
+    user_id = int(decode_token(token)["sub"])
+
+    # Le cache de /stats/dashboard (route_cache, 300s) n'est pas isolé par la
+    # transaction de test -- un user_id ré-attribué (rollback SQLite) peut
+    # retomber sur une entrée mise en cache par un test précédent.
+    from app.extensions import redis_client
+    redis_client.delete(f"route_cache:/api/v1/stats/dashboard::{user_id}")
+
+    with app.app_context():
+        rset = RevisionSet(name="Droit constit", type="vf", user_id=user_id)
+        db.session.add(rset)
+        db.session.commit()
+        # interval=5 -> palier "young" (1 <= interval <= 21).
+        item = RevisionItem(
+            set_id=rset.id,
+            type="vf",
+            payload={"assertion": "Vrai ?", "correct": True},
+            interval=5,
+            ease_factor=2.5,
+            repetitions=1,
+            next_review=datetime.utcnow(),
+        )
+        db.session.add(item)
+        db.session.commit()
+
+    resp = client.get("/api/v1/stats/dashboard", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json["maturity_distribution"]["young"] >= 1
+
+
 def test_stats_cache_and_invalidation(client, auth_headers, app):
     # Clear cache key from previous tests to ensure isolation
     from app.extensions import redis_client

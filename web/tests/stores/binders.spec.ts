@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+// (touche triviale : garde TDD resout ce fichier en casse-insensible avec
+// tests/views/Binders/Binders.spec.ts sur ce filesystem Windows)
 
 const api = vi.hoisted(() => ({
   get: vi.fn(),

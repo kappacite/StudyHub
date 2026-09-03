@@ -141,51 +141,98 @@
                     {{ saveStatus }}
                   </span>
 
-                  <!-- Binder select -->
-                  <select
-                    v-model="binderId"
-                    class="px-2.5 py-1.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold transition-all"
-                    @change="triggerAutoSave"
-                  >
-                    <option :value="null">Général (Aucun)</option>
-                    <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">
-                      {{ b.name }}
-                    </option>
-                  </select>
+                  <!-- Menu Réglages (notes-ia-planning-corrections, Task 8) : regroupe
+                  Classeur/Tags/Contexte-Liens/Aperçu/Guide (usage occasionnel), même patron
+                  de popover que le bouton Partage ci-dessous -- pas de fermeture automatique
+                  sur une bascule interne, seul le bouton "Réglages" ouvre/ferme. -->
+                  <div class="relative">
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
+                      :class="[
+                        settingsMenuOpen
+                          ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
+                          : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink-muted dark:text-ink-subtle',
+                      ]"
+                      @click="settingsMenuOpen = !settingsMenuOpen"
+                    >
+                      <Settings class="w-3.5 h-3.5" />
+                      Réglages
+                    </button>
 
-                  <div class="w-48 sm:w-56">
-                    <TagSelector v-model="noteTags" compact @change="saveNoteTags" />
+                    <Transition name="popup">
+                      <div
+                        v-if="settingsMenuOpen"
+                        class="absolute right-0 top-full mt-2 w-72 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl shadow-xl p-4 z-50 space-y-3"
+                      >
+                        <div class="space-y-1.5">
+                          <label
+                            class="text-tiny font-bold text-ink-subtle uppercase tracking-wider"
+                            >Classeur</label
+                          >
+                          <select
+                            v-model="binderId"
+                            class="w-full px-2.5 py-1.5 bg-surface-soft border border-line dark:bg-surface-soft dark:border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold transition-all"
+                            @change="triggerAutoSave"
+                          >
+                            <option :value="null">Général (Aucun)</option>
+                            <option v-for="b in bindersStore.binders" :key="b.id" :value="b.id">
+                              {{ b.name }}
+                            </option>
+                          </select>
+                        </div>
+
+                        <div class="space-y-1.5">
+                          <label
+                            class="text-tiny font-bold text-ink-subtle uppercase tracking-wider"
+                            >Tags</label
+                          >
+                          <TagSelector v-model="noteTags" compact @change="saveNoteTags" />
+                        </div>
+
+                        <div
+                          class="border-t border-line dark:border-line pt-3 flex flex-col gap-1.5"
+                        >
+                          <button
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
+                            :class="[
+                              showSettings
+                                ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
+                                : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft',
+                            ]"
+                            @click="showSettings = !showSettings"
+                          >
+                            <Compass class="w-3.5 h-3.5" />
+                            Contexte / Liens
+                          </button>
+
+                          <button
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
+                            :class="[
+                              isLivePreviewActive
+                                ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
+                                : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink-muted dark:text-ink-subtle',
+                            ]"
+                            type="button"
+                            title="Afficher l'aperçu en temps réel côte à côte"
+                            @click="isLivePreviewActive = !isLivePreviewActive"
+                          >
+                            <Columns class="w-3.5 h-3.5" />
+                            Aperçu
+                          </button>
+
+                          <button
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-line dark:border-line rounded-xl text-xs font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
+                            type="button"
+                            @click="showHelpModal = true"
+                          >
+                            <HelpCircle class="w-3.5 h-3.5 text-primary" />
+                            Guide
+                          </button>
+                        </div>
+                      </div>
+                    </Transition>
                   </div>
-
-                  <!-- Collapsible Settings Toggle (Context & Links) -->
-                  <button
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
-                    :class="[
-                      showSettings
-                        ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
-                        : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft',
-                    ]"
-                    @click="showSettings = !showSettings"
-                  >
-                    <Compass class="w-3.5 h-3.5" />
-                    Contexte / Liens
-                  </button>
-
-                  <!-- Live Preview Toggle -->
-                  <button
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all"
-                    :class="[
-                      isLivePreviewActive
-                        ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
-                        : 'border-line dark:border-line hover:bg-surface-soft dark:hover:bg-surface-soft text-ink-muted dark:text-ink-subtle',
-                    ]"
-                    type="button"
-                    title="Afficher l'aperçu en temps réel côte à côte"
-                    @click="isLivePreviewActive = !isLivePreviewActive"
-                  >
-                    <Columns class="w-3.5 h-3.5" />
-                    Aperçu
-                  </button>
 
                   <!-- View Toggler -->
                   <button
@@ -263,16 +310,6 @@
                       </div>
                     </Transition>
                   </div>
-
-                  <!-- Guide Button (Edit Mode) -->
-                  <button
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-line dark:border-line rounded-xl text-xs font-semibold hover:bg-surface-soft dark:hover:bg-surface-soft transition-all text-ink-muted dark:text-ink-subtle"
-                    type="button"
-                    @click="showHelpModal = true"
-                  >
-                    <HelpCircle class="w-3.5 h-3.5 text-primary" />
-                    Guide
-                  </button>
                 </div>
               </div>
 
@@ -328,31 +365,55 @@
 
                 <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
 
-                <!-- Smart Space: Definition Tooltip insertion -->
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-success dark:text-success bg-success-soft dark:bg-success-soft border border-success dark:border-success rounded-xl hover:bg-success-soft dark:hover:bg-success-soft active:scale-95 transition-all"
-                  title="Associer une définition en info-bulle au texte sélectionné"
-                  @click="insertDefinitionTooltip"
-                >
-                  <BookOpen class="w-3.5 h-3.5" />
-                  Définition (Info-bulle)
-                </button>
-
-                <div class="h-4 w-[1px] bg-line dark:bg-surface-soft mx-2"></div>
-
-                <!-- Insertion de diagramme -->
+                <!-- Menu Insérer (notes-ia-planning-corrections, Task 8) : regroupe
+                Définition/Diagramme (usage occasionnel), même patron de popover que
+                Réglages ci-dessus. -->
                 <div class="relative inline-block">
-                  <select
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft border border-primary dark:border-primary rounded-xl hover:bg-primary-soft dark:hover:bg-primary-soft transition-all focus:outline-none cursor-pointer"
-                    @change="insertDiagramTag($event)"
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all"
+                    :class="[
+                      insertMenuOpen
+                        ? 'border-primary bg-primary-soft text-primary dark:border-primary dark:bg-primary-soft dark:text-primary'
+                        : 'border-line dark:border-line hover:bg-surface dark:hover:bg-surface-soft text-ink-muted dark:text-ink-subtle',
+                    ]"
+                    @click="insertMenuOpen = !insertMenuOpen"
                   >
-                    <option value="" disabled selected>Insérer un diagramme...</option>
-                    <option v-for="diag in allUserDiagrams" :key="diag.id" :value="diag.id">
-                      {{ diag.title }}
-                    </option>
-                    <option v-if="allUserDiagrams.length === 0" disabled>Aucun diagramme</option>
-                  </select>
+                    <Plus class="w-3.5 h-3.5" />
+                    Insérer
+                  </button>
+
+                  <Transition name="popup">
+                    <div
+                      v-if="insertMenuOpen"
+                      class="absolute left-0 top-full mt-2 w-64 bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-2xl shadow-xl p-3 z-50 space-y-2"
+                    >
+                      <!-- Smart Space: Definition Tooltip insertion -->
+                      <button
+                        type="button"
+                        class="w-full inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-success dark:text-success bg-success-soft dark:bg-success-soft border border-success dark:border-success rounded-xl hover:bg-success-soft dark:hover:bg-success-soft active:scale-95 transition-all"
+                        title="Associer une définition en info-bulle au texte sélectionné"
+                        @click="insertDefinitionTooltip"
+                      >
+                        <BookOpen class="w-3.5 h-3.5" />
+                        Définition (Info-bulle)
+                      </button>
+
+                      <!-- Insertion de diagramme -->
+                      <select
+                        class="w-full inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft border border-primary dark:border-primary rounded-xl hover:bg-primary-soft dark:hover:bg-primary-soft transition-all focus:outline-none cursor-pointer"
+                        @change="insertDiagramTag($event)"
+                      >
+                        <option value="" disabled selected>Insérer un diagramme...</option>
+                        <option v-for="diag in allUserDiagrams" :key="diag.id" :value="diag.id">
+                          {{ diag.title }}
+                        </option>
+                        <option v-if="allUserDiagrams.length === 0" disabled>
+                          Aucun diagramme
+                        </option>
+                      </select>
+                    </div>
+                  </Transition>
                 </div>
               </div>
 
@@ -615,12 +676,13 @@
                       {{ title || 'Note sans titre' }}
                     </h1>
 
-                    <!-- Notation : désactivé, en attente du backend de notation IA (flux 2). -->
+                    <!-- Notation IA (notes-ia-planning-corrections, Task 5/13) : note la
+                    qualité de la fiche elle-même, à ne pas confondre avec l'Évaluation mixte.
+                    Écran dédié (canevas), pas une modale. -->
                     <button
                       type="button"
-                      class="no-print shrink-0 inline-flex items-center gap-2 px-4 py-2 border border-accent dark:border-accent rounded-xl text-sm font-semibold text-accent dark:text-accent opacity-60 cursor-not-allowed"
-                      disabled
-                      title="Bientôt disponible : nécessite le backend de notation IA (non encore livré)."
+                      class="no-print shrink-0 inline-flex items-center gap-2 px-4 py-2 border border-accent dark:border-accent rounded-xl text-sm font-semibold text-accent dark:text-accent hover:bg-accent-soft dark:hover:bg-accent-soft transition-all"
+                      @click="router.push(`/notes/${noteId}/notation`)"
                     >
                       <Star class="w-4 h-4" />
                       Notation
@@ -1018,6 +1080,8 @@ import {
   Image,
   Star,
   AlertCircle,
+  Settings,
+  Plus,
 } from '@lucide/vue'
 import { marked } from 'marked'
 import katex from 'katex'
@@ -1068,6 +1132,9 @@ const isEditMode = computed({
 })
 const showSettings = ref(false)
 const showHelpModal = ref(false)
+// notes-ia-planning-corrections, Task 8 : menus "Réglages"/"Insérer" (Row 1/Row 2).
+const settingsMenuOpen = ref(false)
+const insertMenuOpen = ref(false)
 const showPdfModal = ref(false)
 
 const pdfExportOptions = ref<PdfExportOptions>({

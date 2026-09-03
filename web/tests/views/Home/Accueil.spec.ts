@@ -451,8 +451,10 @@ describe('Accueil', () => {
     })
   })
 
-  // ── Widget "Maturité des cartes" ──────────────────────────────────────
-  describe('widget "Maturité des cartes"', () => {
+  // ── Widget "Maturité des révisions" ────────────────────────────────────
+  // Renommé (notes-ia-planning-corrections) : agrège désormais aussi les
+  // RevisionItem des ensembles de révision, pas seulement les Flashcard.
+  describe('widget "Maturité des révisions"', () => {
     it('affiche la barre empilée et les pourcentages Nouvelles/En cours/Maîtrisées calculés depuis /stats/dashboard', async () => {
       api.get.mockImplementation(
         makeApiGetMock({
@@ -463,7 +465,7 @@ describe('Accueil', () => {
         }),
       )
       const { wrapper } = await mountAccueil()
-      expect(wrapper.text()).toContain('Maturité des cartes')
+      expect(wrapper.text()).toContain('Maturité des révisions')
       expect(wrapper.text()).toContain('Nouvelles')
       expect(wrapper.text()).toContain('10%')
       expect(wrapper.text()).toContain('En cours')

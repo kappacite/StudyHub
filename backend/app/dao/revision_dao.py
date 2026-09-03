@@ -122,3 +122,22 @@ class RevisionItemDAO(BaseDAO[RevisionItem]):
         if not include_not_due:
             query = query.filter(self.model.next_review <= datetime.utcnow())
         return query.order_by(self.model.position, self.model.id).all()
+
+    def get_items_due_between(
+        self, user_id: int, date_from: datetime, date_to: datetime
+    ) -> list[RevisionItem]:
+        """Tous les items dus dans l'intervalle, tous ensembles de l'utilisateur confondus
+        (planning) -- symetrique de FlashcardDAO.get_cards_due_between."""
+        from app.models.revision import RevisionSet
+        from sqlalchemy.orm import joinedload
+        return (
+            self.db.query(self.model)
+            .join(RevisionSet)
+            .options(joinedload(self.model.revision_set))
+            .filter(
+                RevisionSet.user_id == user_id,
+                self.model.next_review >= date_from,
+                self.model.next_review <= date_to,
+            )
+            .all()
+        )

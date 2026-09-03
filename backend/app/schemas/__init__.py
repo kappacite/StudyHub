@@ -11,7 +11,7 @@ from app.schemas.stats_schema import (
     HeatmapItem, DeckStatsResponse
 )
 from app.schemas.planning_schema import (
-    DeckBreakdownSchema, PlanningDaySchema, PlanningCalendarResponse, PlanningAdvanceRequest
+    BreakdownItemSchema, PlanningDaySchema, PlanningCalendarResponse, PlanningAdvanceRequest
 )
 from app.schemas.group_schema import (
     GroupCreateSchema, GroupJoinSchema, GroupMemberResponseSchema,
@@ -31,7 +31,7 @@ __all__ = [
     "PDFBase", "PDFCreate", "PDFResponse",
     "StudySessionCreate", "StudySessionResponse", "StatsOverviewResponse",
     "HeatmapItem", "DeckStatsResponse",
-    "DeckBreakdownSchema", "PlanningDaySchema", "PlanningCalendarResponse", "PlanningAdvanceRequest",
+    "BreakdownItemSchema", "PlanningDaySchema", "PlanningCalendarResponse", "PlanningAdvanceRequest",
     "GroupCreateSchema", "GroupJoinSchema", "GroupMemberResponseSchema",
     "GroupBinderResponseSchema", "GroupBinderShareSchema", "GroupActivityResponseSchema",
     "GroupResponseSchema", "GroupDetailResponseSchema", "GroupMemberRoleUpdateSchema",

@@ -35,10 +35,11 @@ export const usePdfStore = defineStore('pdf', () => {
     }
   }
 
-  async function uploadPdf(file: File, name?: string) {
+  async function uploadPdf(file: File, name?: string, binderId?: string | null) {
     const form = new FormData()
     form.append('file', file)
     if (name) form.append('name', name)
+    if (binderId) form.append('binder_id', binderId)
     const res = await api.post<PdfDocument>('/pdfs', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
@@ -48,7 +49,7 @@ export const usePdfStore = defineStore('pdf', () => {
 
   async function renamePdf(id: string, name: string) {
     const res = await api.put<PdfDocument>(`/pdfs/${id}`, { name })
-    const idx = pdfs.value.findIndex(p => p.id === id)
+    const idx = pdfs.value.findIndex((p) => p.id === id)
     if (idx !== -1) pdfs.value[idx] = res.data
     if (activePdf.value?.id === id) activePdf.value = res.data
     return res.data
@@ -56,12 +57,12 @@ export const usePdfStore = defineStore('pdf', () => {
 
   async function removePdf(id: string) {
     await api.delete(`/pdfs/${id}`)
-    pdfs.value = pdfs.value.filter(p => p.id !== id)
+    pdfs.value = pdfs.value.filter((p) => p.id !== id)
     if (activePdf.value?.id === id) closePdf()
   }
 
   async function openPdf(id: string) {
-    const pdf = pdfs.value.find(p => p.id === id)
+    const pdf = pdfs.value.find((p) => p.id === id)
     if (!pdf) return
     opening.value = true
     try {
@@ -83,7 +84,7 @@ export const usePdfStore = defineStore('pdf', () => {
   }
 
   function setPdfTags(id: string, tags: Tag[]) {
-    const idx = pdfs.value.findIndex(p => p.id === id)
+    const idx = pdfs.value.findIndex((p) => p.id === id)
     if (idx !== -1) pdfs.value[idx] = { ...pdfs.value[idx], tags }
     if (activePdf.value?.id === id) activePdf.value = { ...activePdf.value, tags }
   }

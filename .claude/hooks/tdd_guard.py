@@ -65,20 +65,43 @@ def find_test_file(rel_path: str) -> pathlib.Path | None:
         search_root = RACINE / "backend" / "tests"
         if not search_root.exists():
             return None
-        for p in search_root.rglob(f"test_{stem}.py"):
-            return p
-        for p in search_root.rglob(f"*{stem}*.py"):
-            if p.name.startswith("test_"):
+        # Convention reelle du depot : certains services testes sous un nom sans
+        # le suffixe "_service" (focus_service.py -> test_focus.py), ou sous un
+        # nom de fichier plus specifique (stats_service.py -> test_stats_dashboard.py,
+        # test_stats_binder.py). Tente le nom exact d'abord ; si plusieurs fichiers
+        # matchent le fallback substring (large, sur stem et sa variante raccourcie),
+        # retient le plus recemment modifie -- le plus susceptible d'etre celui
+        # que le cycle rouge-vert en cours vient de toucher.
+        candidates = [stem]
+        for suffix in ("_service", "_schema", "_dao"):
+            if stem.endswith(suffix):
+                candidates.append(stem[: -len(suffix)])
+        for cand in candidates:
+            for p in search_root.rglob(f"test_{cand}.py"):
                 return p
-        return None
+        matches: list[pathlib.Path] = []
+        for cand in candidates:
+            for p in search_root.rglob(f"*{cand}*.py"):
+                if p.name.startswith("test_") and p not in matches:
+                    matches.append(p)
+        if not matches:
+            return None
+        return max(matches, key=lambda p: p.stat().st_mtime)
     if norm.startswith("web/"):
         candidates_roots = [RACINE / "web" / "tests", RACINE / "web" / "tests-e2e"]
+        targets = {f"{stem}{ext}" for ext in (".spec.ts", ".test.ts", ".spec.js", ".test.js")}
         for root in candidates_roots:
             if not root.exists():
                 continue
-            for ext in (".spec.ts", ".test.ts", ".spec.js", ".test.js"):
-                for p in root.rglob(f"{stem}{ext}"):
-                    return p
+            # os.walk (pas Path.rglob) : rglob matche via fnmatch, insensible a la
+            # casse sous Windows/NTFS -- "Binders.vue" matchait a tort le mauvais
+            # fichier ("binders.spec.ts", store, au lieu de "Binders.spec.ts", vue)
+            # des que les deux coexistent. os.walk renvoie les noms tels quels sur
+            # le disque, comparables en casse exacte.
+            for dirpath, _dirnames, filenames in os.walk(root):
+                for name in filenames:
+                    if name in targets:
+                        return pathlib.Path(dirpath) / name
         return None
     return None
 

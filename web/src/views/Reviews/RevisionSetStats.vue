@@ -64,6 +64,7 @@
             Sur {{ stats.reviewed_items }}/{{ stats.items_count }} élément(s) révisé(s). Difficulté
             moyenne : <span class="font-mono">{{ stats.avg_difficulty }}/10</span>.
           </p>
+          <p class="text-xs text-ink-muted">Rétention actuelle : {{ stats.avg_retrievability }}%</p>
 
           <div class="border-t border-dashed border-line pt-4">
             <p class="text-[11px] font-bold uppercase tracking-wide text-ink-subtle mb-2.5">

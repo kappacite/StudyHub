@@ -39,6 +39,7 @@
 
           <button
             v-if="step === 'writing'"
+            data-test="submit-analysis"
             :disabled="!blurtingText.trim() || analyzing"
             class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-strong text-white rounded-xl text-sm font-bold shadow-lg shadow-elev-primary disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all"
             @click="submitForAnalysis"
@@ -126,53 +127,22 @@
       <div v-else-if="step === 'results'" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Colonne Gauche : Score & Feedback & Concepts -->
         <div class="lg:col-span-2 space-y-6">
-          <!-- Bilan de rétention -->
+          <!-- Analyse (notes-ia-planning-corrections, Task 6) : carte unique score/10 +
+          bilan, suivant le canevas Blurting.dc.html et la convention déjà en place pour
+          Notation/Feynman (score /10 à une décimale, pas de jauge circulaire animée ni de
+          bloc "Bilan de votre tuteur" séparé). -->
           <div
-            class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-8 shadow-sm flex flex-col md:flex-row items-center gap-8"
+            class="bg-surface dark:bg-surface-soft border border-line dark:border-line rounded-3xl p-6 shadow-sm space-y-2"
           >
-            <!-- Jauge Circulaire Animée -->
-            <div class="relative w-36 h-36 flex items-center justify-center">
-              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  stroke="currentColor"
-                  stroke-width="8"
-                  class="text-ink-subtle dark:text-ink"
-                  fill="transparent"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  stroke="currentColor"
-                  stroke-width="8"
-                  :class="scoreColorClass"
-                  fill="transparent"
-                  :stroke-dasharray="2 * Math.PI * 40"
-                  :stroke-dashoffset="2 * Math.PI * 40 * (1 - resultData.retention_score / 100)"
-                  class="transition-all duration-1000 ease-out"
-                />
-              </svg>
-              <div class="absolute flex flex-col items-center">
-                <span class="text-3xl font-extrabold text-ink dark:text-white"
-                  >{{ resultData.retention_score }}%</span
-                >
-                <span class="text-[10px] text-ink-subtle font-bold uppercase tracking-wider"
-                  >Rétention</span
-                >
+            <h2 class="text-xs font-bold text-ink-subtle uppercase tracking-wider">Analyse</h2>
+            <div class="flex items-center gap-4">
+              <div
+                class="w-16 h-16 rounded-full flex items-center justify-center bg-accent-soft dark:bg-accent-soft text-accent dark:text-accent font-extrabold text-lg border border-accent shrink-0"
+              >
+                {{ formattedScore }}
               </div>
-            </div>
-
-            <!-- Feedback de l'IA -->
-            <div class="flex-1 space-y-2">
-              <h2 class="text-lg font-extrabold text-ink dark:text-white flex items-center gap-2">
-                <Brain class="w-5 h-5 text-primary" />
-                Bilan de votre tuteur
-              </h2>
-              <p class="text-sm text-ink-muted dark:text-ink-subtle leading-relaxed italic">
-                " {{ resultData.general_feedback }} "
+              <p class="flex-1 text-sm text-ink dark:text-ink-subtle leading-relaxed">
+                {{ resultData.general_feedback }}
               </p>
             </div>
           </div>
@@ -359,7 +329,6 @@ import {
   ChevronLeft,
   Clock,
   Sparkles,
-  Brain,
   BookOpen,
   CheckCircle2,
   AlertTriangle,
@@ -453,12 +422,15 @@ const selectedCardsCount = computed(() => {
   return Object.values(selectedCards.value).filter(Boolean).length
 })
 
-const scoreColorClass = computed(() => {
-  const score = resultData.value.retention_score
-  if (score >= 80) return 'text-emerald-500'
-  if (score >= 50) return 'text-amber-500'
-  return 'text-rose-500'
-})
+// Score /10 a une decimale (notes-ia-planning-corrections, Task 6) : harmonise avec
+// Notation/Feynman -- retention_score reste 0-100 cote backend/etat interne, juste
+// reaffiche divise par 10.
+const formattedScore = computed(() =>
+  (resultData.value.retention_score / 10).toLocaleString('fr-FR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }),
+)
 
 // Formatage chronomètre mm:ss
 function formatTime(totalSeconds: number): string {
@@ -655,10 +627,10 @@ function resetSession() {
 // Couleurs des badges
 function getStatusBadgeClass(status: string) {
   if (status === 'mastered')
-    return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-450'
+    return 'bg-success-soft text-success dark:bg-success-soft dark:text-success'
   if (status === 'incorrect')
-    return 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-450'
-  return 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-450'
+    return 'bg-warning-soft text-warning dark:bg-warning-soft dark:text-warning'
+  return 'bg-danger-soft text-danger dark:bg-danger-soft dark:text-danger'
 }
 
 function getStatusText(status: string) {

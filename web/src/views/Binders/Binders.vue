@@ -19,6 +19,17 @@
             {{ primaryActionLabel }}
           </BaseButton>
 
+          <!-- Task 14 (notes-ia-planning-corrections) : input caché, déclenché par
+               l'entrée "PDF" du menu "Ajouter" (triggerPdfUpload) -- même patron que
+               PDFs.vue (triggerFileInput/handleFileUpload). -->
+          <input
+            ref="pdfFileInputRef"
+            type="file"
+            class="hidden"
+            accept="application/pdf,.pdf"
+            @change="handlePdfUpload"
+          />
+
           <div class="relative">
             <BaseButton
               data-test="add-menu-button"
@@ -781,6 +792,7 @@ import { useNotesStore } from '../../stores/notes'
 import type { Note } from '../../stores/notes'
 import { useDecksStore } from '../../stores/decks'
 import { useTagsStore, type Tag } from '../../stores/tags'
+import { usePdfStore } from '../../stores/pdf'
 import TagSelector from '../../components/ui/TagSelector.vue'
 import BinderCard, { type BinderCardBinder } from '../../components/binders/BinderCard.vue'
 import {
@@ -828,6 +840,7 @@ import {
   BookOpen,
   ListOrdered,
   Shuffle,
+  FileUp,
 } from 'lucide-vue-next'
 import groupService, { type BinderClassRef } from '../../services/groupService'
 import classService, { type ClassInfo } from '../../services/classService'
@@ -1042,6 +1055,7 @@ const addMenu = computed(() => {
   const items = [
     { label: 'Note', icon: FileText, action: () => closeMenuThen(addNote) },
     { label: 'Diagramme', icon: Activity, action: () => closeMenuThen(addDiagram) },
+    { label: 'PDF', icon: FileUp, action: () => closeMenuThen(triggerPdfUpload) },
   ]
   if (isRealBinderId.value) {
     items.unshift(
@@ -1166,6 +1180,31 @@ interface BinderPdf {
 const allDiagrams = ref<BinderDiagram[]>([])
 const allPdfs = ref<BinderPdf[]>([])
 
+// Task 14 (notes-ia-planning-corrections) : upload de PDF depuis le menu "Ajouter",
+// même patron que PDFs.vue (triggerFileInput/handleFileUpload) mais rattaché au
+// classeur courant (filterBinderId) via pdfStore.uploadPdf.
+const pdfStore = usePdfStore()
+const pdfFileInputRef = ref<HTMLInputElement | null>(null)
+
+function triggerPdfUpload() {
+  pdfFileInputRef.value?.click()
+}
+
+async function handlePdfUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (!target.files || target.files.length === 0) return
+  const file = target.files[0]
+  try {
+    await pdfStore.uploadPdf(file, file.name, filterBinderId.value)
+    await fetchBinderMedia()
+  } catch (error) {
+    console.error("Erreur lors de l'import du PDF", error)
+    alert("L'import du PDF a échoué. Vérifiez que le fichier est un PDF valide.")
+  } finally {
+    target.value = ''
+  }
+}
+
 async function fetchBinderMedia() {
   try {
     const [diag, pdf] = await Promise.all([
@@ -1269,8 +1308,13 @@ const currentNotes = computed(() =>
 // caractères de balisage les plus visibles (#, *, _, `, >) et on aplatit les retours à la
 // ligne ; la troncature visuelle (ellipsis) est gérée par la classe `truncate` du template,
 // pas ici -- pas de découpage arbitraire en caractères.
+// notes-ia-planning-corrections, Task 3 : un commentaire HTML (<!-- ... -->, ex. collé
+// depuis un export externe) n'est jamais rendu par `marked` (invisible en lecture normale)
+// mais fuyait tel quel ici, ce nettoyage ne passant par aucun rendu HTML -- retiré avant
+// le nettoyage Markdown existant.
 function noteExcerpt(note: Note): string {
   return note.content
+    .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/[#*_`>]/g, '')
     .replace(/\s+/g, ' ')
     .trim()

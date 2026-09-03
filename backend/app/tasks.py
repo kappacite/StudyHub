@@ -3,6 +3,7 @@ from app.dao.note_dao import NoteDAO
 from app.dao.deck_dao import DeckDAO
 from app.dao.flashcard_dao import FlashcardDAO
 from app.dao.study_session_dao import StudySessionDAO
+from app.dao.note_grade_dao import NoteGradeDAO
 from app.services.ai_service import AIService
 from app.services.stats_service import StatsService
 from app.schemas.stats_schema import StudySessionCreate
@@ -110,6 +111,43 @@ def run_feynman_analysis(self, user_id: int, note_id: int, user_explanation: str
     except Exception as e:
         db.session.rollback()
         logger.exception(f"Error executing feynman analysis task: {e}")
+        raise
+
+
+@celery_app.task(bind=True)
+def run_note_grading(self, user_id: int, note_id: int) -> dict:
+    """Notation IA de la qualité de la fiche (pas une session d'étude, pas de
+    StudySession -- notes-ia-planning-corrections, Task 4)."""
+    logger.info(f"Starting async note grading for user_id={user_id}, note_id={note_id}")
+    try:
+        note_dao = NoteDAO(db.session)
+        note = note_dao.get_by_id(note_id)
+        if not note:
+            logger.error(f"Note {note_id} not found")
+            raise ValueError("Note introuvable")
+        if note.user_id != user_id:
+            from app.utils.security import check_note_access
+            from app.middlewares.error_handler import ForbiddenError
+            try:
+                check_note_access(db.session, note, user_id)
+            except ForbiddenError:
+                logger.error(f"User {user_id} has no access to note {note_id}")
+                raise ValueError("Accès interdit à cette note")
+
+        ai_service = AIService()
+        result = ai_service.grade_note(note.title, note.content)
+
+        # notes-ia-planning-corrections, Task 12 : persistance (ecrase la precedente,
+        # pas d'historique) -- rattachee au proprietaire de la note, pas au requerant,
+        # pour qu'un lecteur d'une note partagee voie/ecrase le meme resultat partage.
+        note_grade_dao = NoteGradeDAO(db.session)
+        note_grade_dao.upsert(note._id, note.user_id, result)
+
+        logger.info(f"Finished async note grading for user_id={user_id}, note_id={note_id}")
+        return result
+    except Exception as e:
+        db.session.rollback()
+        logger.exception(f"Error executing note grading task: {e}")
         raise
 
 

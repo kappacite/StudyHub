@@ -216,11 +216,40 @@ class StatsService:
             .filter(Deck.user_id == user_id, Flashcard.interval >= 1, Flashcard.interval <= 21)
             .scalar()
         ) or 0
-        
+
+        # Ensembles de révision (même bug que le planning/forecast, Tasks 1 et 15
+        # de notes-ia-planning-corrections) : un RevisionItem compte dans le même
+        # palier de maturité qu'un Flashcard, pas seulement dans le KPI dédié aux
+        # decks (mature_cards ci-dessus reste flashcard-only, inchangé).
+        from app.models.revision import RevisionItem, RevisionSet
+
+        learning_items = (
+            self._flashcard_dao.db.query(func.count(RevisionItem.id))
+            .join(RevisionSet)
+            .filter(RevisionSet.user_id == user_id, RevisionItem.interval < 1)
+            .scalar()
+        ) or 0
+        young_items = (
+            self._flashcard_dao.db.query(func.count(RevisionItem.id))
+            .join(RevisionSet)
+            .filter(
+                RevisionSet.user_id == user_id,
+                RevisionItem.interval >= 1,
+                RevisionItem.interval <= 21,
+            )
+            .scalar()
+        ) or 0
+        mature_items = (
+            self._flashcard_dao.db.query(func.count(RevisionItem.id))
+            .join(RevisionSet)
+            .filter(RevisionSet.user_id == user_id, RevisionItem.interval > 21)
+            .scalar()
+        ) or 0
+
         maturity_dist = {
-            "learning": learning_cards,
-            "young": young_cards,
-            "mature": mature_cards
+            "learning": learning_cards + learning_items,
+            "young": young_cards + young_items,
+            "mature": mature_cards + mature_items
         }
         
         # 4. Forecast 7 jours

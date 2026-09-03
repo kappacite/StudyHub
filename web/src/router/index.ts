@@ -198,6 +198,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'notes/:id/notation',
+        name: 'NoteNotation',
+        component: () => import('../views/Notes/NoteNotation.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'exam/setup',
         name: 'ExamSetup',
         component: () => import('../views/Exam/ExamSetup.vue'),

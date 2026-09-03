@@ -135,7 +135,7 @@
             <div
               class="relative w-16 h-16 rounded-full flex items-center justify-center bg-accent-soft dark:bg-accent-soft text-accent dark:text-accent font-extrabold text-lg border border-accent"
             >
-              {{ feynmanResult.score }}%
+              {{ formattedScore }}
             </div>
             <div>
               <p class="text-xs font-bold text-ink-subtle uppercase tracking-wider">
@@ -300,6 +300,15 @@ const feynmanResult = ref({
 })
 const feynmanAnalyzing = ref(false)
 const feynmanError = ref('')
+
+// Score /10 a une decimale (notes-ia-planning-corrections, Task 7) : harmonise avec
+// Notation/Blurting -- score reste 0-100 en interne, juste reaffiche divise par 10.
+const formattedScore = computed(() =>
+  (feynmanResult.value.score / 10).toLocaleString('fr-FR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }),
+)
 
 // Formatage chronomètre mm:ss
 function formatTimer(sec: number): string {

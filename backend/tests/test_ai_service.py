@@ -206,6 +206,44 @@ def test_feynman_analyze_requires_fields(client, auth_headers):
     assert resp.status_code == 400
 
 
+def test_grade_note_missing_api_key(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    service = AIService()
+    with pytest.raises(RuntimeError) as excinfo:
+        service.grade_note("Titre", "Contenu")
+    assert "La clé d'API Gemini n'est pas configurée" in str(excinfo.value)
+
+
+@patch("urllib.request.urlopen")
+def test_grade_note_success(mock_urlopen, monkeypatch):
+    """notes-ia-planning-corrections, Task 4 : volet backend explicitement differe par
+    editeur-notes-notation-ia (#138) -- bouton "Notation" cote frontend deja construit,
+    reste disabled en attendant ce service."""
+    monkeypatch.setenv("GEMINI_API_KEY", "test_key")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash")
+
+    mock_response = MagicMock()
+    mock_response.read.return_value = json.dumps({
+        "candidates": [{"content": {"parts": [{"text": json.dumps({
+            "score": 82,
+            "verdict": "Note solide et bien structurée.",
+            "points_forts": ["Définitions claires", "Exemples pertinents"],
+            "ameliorations": ["Manque un schéma récapitulatif"],
+            "suggestions": "Ajouter un résumé en tête de note.",
+        })}]}}]
+    }).encode("utf-8")
+    mock_urlopen.return_value.__enter__.return_value = mock_response
+
+    service = AIService()
+    result = service.grade_note("Réactions SN2", "Contenu du cours")
+
+    assert result["score"] == 82
+    assert result["verdict"]
+    assert result["points_forts"] == ["Définitions claires", "Exemples pertinents"]
+    assert result["ameliorations"] == ["Manque un schéma récapitulatif"]
+    assert result["suggestions"]
+
+
 @patch("app.services.ai_service.AIService.analyze_blurting")
 def test_blurting_analyze_endpoint(mock_analyze_blurting, client, auth_headers, test_user, app):
     # Mocking du service IA

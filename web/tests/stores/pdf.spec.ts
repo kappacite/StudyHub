@@ -44,6 +44,26 @@ describe('pdf store — upload PDF réel', () => {
     expect(store.pdfs[0].id).toBe('uuid-1')
   })
 
+  // Task 14 (notes-ia-planning-corrections) : upload depuis la Bibliothèque, rattaché
+  // au classeur courant -- backend accepte déjà binder_id en form-data (POST /pdfs).
+  it('uploadPdf ajoute binder_id au form quand fourni', async () => {
+    api.post.mockResolvedValue({ data: PDF })
+    const store = usePdfStore()
+    const file = new File([new Uint8Array([1])], 'Cours.pdf', { type: 'application/pdf' })
+    await store.uploadPdf(file, 'Cours.pdf', 'binder-42')
+    const form = api.post.mock.calls[0][1] as FormData
+    expect(form.get('binder_id')).toBe('binder-42')
+  })
+
+  it("uploadPdf n'ajoute pas binder_id quand absent", async () => {
+    api.post.mockResolvedValue({ data: PDF })
+    const store = usePdfStore()
+    const file = new File([new Uint8Array([1])], 'Cours.pdf', { type: 'application/pdf' })
+    await store.uploadPdf(file, 'Cours.pdf')
+    const form = api.post.mock.calls[0][1] as FormData
+    expect(form.get('binder_id')).toBeNull()
+  })
+
   it('renamePdf appelle PUT et met à jour la liste', async () => {
     api.post.mockResolvedValue({ data: PDF })
     api.put.mockResolvedValue({ data: { ...PDF, name: 'Renommé' } })
