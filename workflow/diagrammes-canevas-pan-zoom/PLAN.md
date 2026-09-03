@@ -33,7 +33,7 @@ relève de l'exception écran-capture — ses interactions (pan/zoom) restent te
   se retrouve centré ; plusieurs éléments dispersés sont tous inclus dans les bornes visibles
   résultantes ; un document vide retourne la caméra par défaut (pas de division par zéro sur
   une boîte englobante nulle).
-- [ ] Task 5 — `DiagramCanvas.vue` (nouveau composant isolé, non routé) dans
+- [x] Task 5 — `DiagramCanvas.vue` (nouveau composant isolé, non routé) dans
   `web/src/diagram/DiagramCanvas.vue` : reçoit un `DiagramDocumentV1` en prop, rend un `<svg>`
   avec `viewBox` piloté par la caméra (Task 1-2), applique `cullElements` (Task 3) avant de
   rendre, molette = zoom centré sur le curseur, glisser sur le fond (pas sur un élément) =

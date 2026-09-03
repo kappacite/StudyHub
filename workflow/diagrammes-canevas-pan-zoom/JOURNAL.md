@@ -35,3 +35,17 @@ Prochaine action : Task 4 (recadrage sur tout le contenu).
 fixe, caméra centrée dessus, zoom = le plus contraignant des deux axes. Document vide -> 
 caméra par défaut (garde `MIN_CONTENT_SIZE` évite une division par zéro sur une boîte
 englobante nulle). 11/11 tests verts. Prochaine action : Task 5 (`DiagramCanvas.vue`).
+
+## 2026-09-04 (Task 5 — DiagramCanvas.vue)
+
+`web/src/diagram/DiagramCanvas.vue` (nouveau, isolé, non routé) : `<svg>` avec `viewBox`
+piloté par une caméra locale (`ref`), rend uniquement `cullElements(...)` (pas le document
+entier), molette = `zoomAt` centré sur le curseur, glisser sur le fond = `panBy` (listeners
+`mousemove`/`mouseup` sur `window`, technique standard pour un glisser qui peut sortir du
+canevas). Formes affichées en lecture seule (rect/ellipse/label), aucune interaction avec
+`DiagramHistory` (hors périmètre -- rien ne modifie le document ce cycle). Détail piégeux de
+test : le panoramique écoute `window`, donc le montage du composant doit être `attachTo:
+document.body` pour que les événements déclenchés sur le `<svg>` y remontent (sinon un arbre
+détaché n'atteint jamais `window`) -- `afterEach` nettoie `document.body` pour ne pas laisser
+de nœuds entre les tests. 44/44 tests diagrammes verts. Prochaine action : Task 6
+(vérification finale, clôture).
