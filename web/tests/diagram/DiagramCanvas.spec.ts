@@ -2,10 +2,18 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DiagramCanvas from '../../src/diagram/DiagramCanvas.vue'
 import { createEmptyDocument } from '../../src/diagram/document'
-import type { ShapeElement, DiagramDocumentV1 } from '../../src/diagram/document'
+import type { ShapeElement, LinkElement, DiagramDocumentV1 } from '../../src/diagram/document'
 
 function shape(id: string, x: number, y: number): ShapeElement {
   return { kind: 'shape', id, x, y, width: 50, height: 50, rotation: 0, locked: false, shape: 'rect', label: id, color: '#fff' }
+}
+
+function link(id: string, fromId: string, toId: string, overrides: Partial<LinkElement> = {}): LinkElement {
+  return {
+    kind: 'link', id, x: 0, y: 0, width: 0, height: 0, rotation: 0, locked: false,
+    fromId, toId, label: '', arrow: 'end', dashed: false, routingPoints: [],
+    ...overrides,
+  }
 }
 
 function mountCanvas(doc: DiagramDocumentV1) {
@@ -181,6 +189,91 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
 
       await a.trigger('mouseup', { clientX: 502, clientY: 300 })
       expect(wrapper.findAll('[data-test="alignment-guide"]').length).toBe(0)
+    })
+  })
+
+  describe('rendu des liens (diagrammes-liens-ancrage, Task 2)', () => {
+    it('un lien valide produit un tracé visible', () => {
+      const doc: DiagramDocumentV1 = {
+        ...createEmptyDocument(),
+        elements: [shape('a', 0, 0), shape('b', 200, 0), link('l1', 'a', 'b')],
+      }
+      const wrapper = mountCanvas(doc)
+      expect(wrapper.findAll('[data-test="diagram-link"]')).toHaveLength(1)
+    })
+
+    it("un lien orphelin (id absent) ne casse pas le rendu et ne produit aucun tracé", () => {
+      const doc: DiagramDocumentV1 = {
+        ...createEmptyDocument(),
+        elements: [shape('a', 0, 0), link('l1', 'a', 'inexistant')],
+      }
+      expect(() => mountCanvas(doc)).not.toThrow()
+      const wrapper = mountCanvas(doc)
+      expect(wrapper.findAll('[data-test="diagram-link"]')).toHaveLength(0)
+    })
+
+    it('un lien avec des routingPoints passe par ces points (pas une ligne droite directe)', () => {
+      const doc: DiagramDocumentV1 = {
+        ...createEmptyDocument(),
+        elements: [
+          shape('a', 0, 0),
+          shape('b', 200, 0),
+          link('l1', 'a', 'b', { routingPoints: [{ x: 100, y: 150 }] }),
+        ],
+      }
+      const wrapper = mountCanvas(doc)
+      const points = wrapper.find('[data-test="diagram-link"]').attributes('points')!
+      expect(points).toContain('100,150')
+    })
+  })
+
+  describe('création de lien par geste (diagrammes-liens-ancrage, Task 3)', () => {
+    // Caméra par défaut (zoom 1, origine monde au centre écran 400,300) : 'a' [0,50]x[0,50]
+    // occupe l'écran [400,450]x[300,350], 'b' [200,250]x[0,50] occupe [600,650]x[300,350].
+    function docWithTwoShapes(): DiagramDocumentV1 {
+      return { ...createEmptyDocument(), elements: [shape('a', 0, 0), shape('b', 200, 0)] }
+    }
+
+    it("glisser avec Maj d'une forme vers une autre ajoute un lien avec le bon fromId/toId", async () => {
+      const wrapper = mountCanvas(docWithTwoShapes())
+      const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+      await a.trigger('mousedown', { clientX: 410, clientY: 310, shiftKey: true })
+      await a.trigger('mouseup', { clientX: 620, clientY: 320, shiftKey: true })
+
+      const emitted = wrapper.emitted('update:document')!
+      expect(emitted).toHaveLength(1)
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      const newLink = doc2.elements.find((e) => e.kind === 'link') as LinkElement | undefined
+      expect(newLink).toMatchObject({ fromId: 'a', toId: 'b' })
+    })
+
+    it("relâcher hors de toute forme ne crée rien", async () => {
+      const wrapper = mountCanvas(docWithTwoShapes())
+      const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+      await a.trigger('mousedown', { clientX: 410, clientY: 310, shiftKey: true })
+      await a.trigger('mouseup', { clientX: 10, clientY: 10, shiftKey: true })
+      expect(wrapper.emitted('update:document')).toBeUndefined()
+    })
+
+    it('relâcher sur la forme de départ ne crée rien', async () => {
+      const wrapper = mountCanvas(docWithTwoShapes())
+      const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+      await a.trigger('mousedown', { clientX: 410, clientY: 310, shiftKey: true })
+      await a.trigger('mouseup', { clientX: 420, clientY: 320, shiftKey: true })
+      expect(wrapper.emitted('update:document')).toBeUndefined()
+    })
+
+    it('sans Maj, un glisser reste un déplacement (non-régression du cycle 4)', async () => {
+      const wrapper = mountCanvas(docWithTwoShapes())
+      const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+      await a.trigger('mousedown', { clientX: 410, clientY: 310 })
+      await a.trigger('mousemove', { clientX: 440, clientY: 310 })
+      await a.trigger('mouseup', { clientX: 440, clientY: 310 })
+
+      const emitted = wrapper.emitted('update:document')!
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      expect(doc2.elements.some((e) => e.kind === 'link')).toBe(false)
+      expect(doc2.elements.find((e) => e.id === 'a')).toMatchObject({ x: 30 })
     })
   })
 })

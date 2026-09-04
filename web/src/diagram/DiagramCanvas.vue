@@ -5,6 +5,17 @@
     @wheel.prevent="onWheel"
     @mousedown="onBackgroundMouseDown"
   >
+    <polyline
+      v-for="rl in renderedLinks"
+      :key="rl.id"
+      data-test="diagram-link"
+      :points="rl.points"
+      fill="none"
+      class="stroke-ink"
+      stroke-width="2"
+      :stroke-dasharray="rl.dashed ? '6 4' : undefined"
+    />
+
     <g
       v-for="el in displayElements"
       :key="el.id"
@@ -86,11 +97,12 @@
 // composant, aucune commande n'est déclenchée ici (DiagramHistory n'entre en jeu qu'à partir
 // du cycle où un geste modifie réellement le document).
 import { ref, computed } from 'vue'
-import { createDefaultCamera, panBy, zoomAt, type Camera } from './camera'
-import { cullElements, elementBounds, getVisibleWorldBounds } from './viewport'
+import { createDefaultCamera, panBy, screenToWorld, zoomAt, type Camera } from './camera'
+import { cullElements, elementBounds, getVisibleWorldBounds, type Bounds } from './viewport'
 import { snapToGrid, computeAlignmentSnap, type AlignmentGuide } from './snapping'
 import { DiagramHistory } from './history'
-import type { DiagramDocumentV1, DiagramElement } from './document'
+import { computeAnchorPoint } from './anchoring'
+import type { DiagramDocumentV1, DiagramElement, LinkElement } from './document'
 
 const props = defineProps<{
   document: DiagramDocumentV1
@@ -132,6 +144,57 @@ const selectedElementBounds = computed(() => {
   if (!selectedElementId.value) return null
   const el = displayElements.value.find((e) => e.id === selectedElementId.value)
   return el ? elementBounds(el) : null
+})
+
+// Résout un id d'ancrage dans le document COMPLET (pas `visibleElements`) : un lien reste
+// affiché même si l'une de ses formes est hors-champ (culling, cycle 3). Applique l'override
+// de glisser en cours (Task 4, cycle 4) pour qu'un lien suive sa forme pendant le geste.
+function resolveElement(id: string): DiagramElement | undefined {
+  const el = props.document.elements.find((e) => e.id === id)
+  if (!el) return undefined
+  if (dragPreview.value && dragPreview.value.id === id) {
+    return { ...el, x: dragPreview.value.x, y: dragPreview.value.y }
+  }
+  return el
+}
+
+interface RenderedLink {
+  id: string
+  points: string
+  dashed: boolean
+}
+
+// Un lien dont fromId/toId ne résout à aucune forme (orpheline, cf. CONTEXT.md) est
+// silencieusement ignoré -- pas d'exception, pas de tracé cassé.
+const renderedLinks = computed<RenderedLink[]>(() => {
+  const links: RenderedLink[] = []
+  for (const el of props.document.elements) {
+    if (el.kind !== 'link') continue
+    const fromEl = resolveElement(el.fromId)
+    const toEl = resolveElement(el.toId)
+    if (!fromEl || !toEl) continue
+
+    const fromBounds = elementBounds(fromEl)
+    const toBounds = elementBounds(toEl)
+    const fromCenter = {
+      x: (fromBounds.minX + fromBounds.maxX) / 2,
+      y: (fromBounds.minY + fromBounds.maxY) / 2,
+    }
+    const toCenter = {
+      x: (toBounds.minX + toBounds.maxX) / 2,
+      y: (toBounds.minY + toBounds.maxY) / 2,
+    }
+    const fromAnchor = computeAnchorPoint(fromBounds, toCenter)
+    const toAnchor = computeAnchorPoint(toBounds, fromCenter)
+    const points = [fromAnchor, ...el.routingPoints, toAnchor]
+
+    links.push({
+      id: el.id,
+      points: points.map((p) => `${p.x},${p.y}`).join(' '),
+      dashed: el.dashed,
+    })
+  }
+  return links
 })
 
 const visibleWorldBounds = computed(() => getVisibleWorldBounds(camera.value, viewportSize.value))
@@ -180,7 +243,59 @@ function onBackgroundMouseDown(event: MouseEvent) {
   window.addEventListener('mouseup', onUp)
 }
 
+function pointInBounds(point: { x: number; y: number }, bounds: Bounds): boolean {
+  return (
+    point.x >= bounds.minX &&
+    point.x <= bounds.maxX &&
+    point.y >= bounds.minY &&
+    point.y <= bounds.maxY
+  )
+}
+
+// Maj + glisser d'une forme vers une autre crée un lien (Task 3) -- réutilise la commande
+// générique `add-element` du cycle 2, aucun nouveau type de commande nécessaire.
+function startLinking(source: DiagramElement) {
+  function onUp(e: MouseEvent) {
+    window.removeEventListener('mouseup', onUp)
+    const worldPoint = screenToWorld(
+      { x: e.clientX, y: e.clientY },
+      camera.value,
+      viewportSize.value,
+    )
+    const target = props.document.elements.find(
+      (el) => el.id !== source.id && pointInBounds(worldPoint, elementBounds(el)),
+    )
+    if (!target) return
+
+    const newLink: LinkElement = {
+      kind: 'link',
+      id: `link-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      rotation: 0,
+      locked: false,
+      fromId: source.id,
+      toId: target.id,
+      label: '',
+      arrow: 'end',
+      dashed: false,
+      routingPoints: [],
+    }
+    const newDoc = history.execute(props.document, { type: 'add-element', element: newLink })
+    emit('update:document', newDoc)
+  }
+
+  window.addEventListener('mouseup', onUp)
+}
+
 function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
+  if (event.shiftKey) {
+    startLinking(element)
+    return
+  }
+
   const start = { x: event.clientX, y: event.clientY }
   const originalX = element.x
   const originalY = element.y
