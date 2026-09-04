@@ -3,7 +3,7 @@
 Une case = une tâche atomique. TDD sans exception pour la géométrie (§8.7). Arbitrages :
 `CONTEXT.md`.
 
-- [ ] Task 1 — Ancrage, pur, dans `web/src/diagram/anchoring.ts` :
+- [x] Task 1 — Ancrage, pur, dans `web/src/diagram/anchoring.ts` :
   `computeAnchorPoint(bounds, towardPoint): Point` (point où le rayon centre→`towardPoint`
   croise le rectangle englobant). Tests : cible directement à droite -> ancrage au milieu du
   bord droit ; cible directement au-dessus -> ancrage au milieu du bord haut ; cible = centre
