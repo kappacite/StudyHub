@@ -14,7 +14,7 @@ Arbitrages, raccourcis retenus : `CONTEXT.md`.
   (cycle dans l'ordre du tableau, uniquement les éléments `kind: 'shape'`). Tests : suivant/
   précédent sur une liste de 3 -> l'ordre attendu ; suivant depuis le dernier élément revient
   au premier (cyclique) ; `currentId` absent ou liste vide -> `null`, pas d'exception.
-- [ ] Task 3 — Créer un frère / un enfant / supprimer / naviguer, câblés sur `keydown` (fenêtre
+- [x] Task 3 — Créer un frère / un enfant / supprimer / naviguer, câblés sur `keydown` (fenêtre
   entière, comme le panoramique) dans `DiagramCanvas.vue` : Entrée = nouvelle forme via
   `computeSiblingPosition` + `add-element` ; Tab = même chose + un `LinkElement` depuis la
   sélection (deux `execute()` séquentiels, cf. arbitrage) ; flèche droite/gauche =

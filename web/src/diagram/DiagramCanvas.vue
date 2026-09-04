@@ -96,13 +96,14 @@
 // seulement. Ne mute jamais `props.document` ; la caméra est un état purement local à ce
 // composant, aucune commande n'est déclenchée ici (DiagramHistory n'entre en jeu qu'à partir
 // du cycle où un geste modifie réellement le document).
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { createDefaultCamera, panBy, screenToWorld, zoomAt, type Camera } from './camera'
 import { cullElements, elementBounds, getVisibleWorldBounds, type Bounds } from './viewport'
 import { snapToGrid, computeAlignmentSnap, type AlignmentGuide } from './snapping'
 import { DiagramHistory } from './history'
 import { computeAnchorPoint } from './anchoring'
-import type { DiagramDocumentV1, DiagramElement, LinkElement } from './document'
+import { computeSiblingPosition, getAdjacentElementId } from './layout'
+import type { DiagramDocumentV1, DiagramElement, LinkElement, ShapeElement } from './document'
 
 const props = defineProps<{
   document: DiagramDocumentV1
@@ -363,6 +364,92 @@ function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
   window.addEventListener('mousemove', onMove)
   window.addEventListener('mouseup', onUp)
 }
+
+// Interactions clavier (Phase 5, cycle 6 -- §8.4). Raccourcis retenus dans CONTEXT.md :
+// Entrée = créer un frère, Tab = créer un enfant, flèches = naviguer, Suppr = supprimer.
+// Aucun n'agit sans sélection, sauf les flèches (sélectionnent le premier élément).
+const SIBLING_GAP = 20
+
+function createShapeNear(origin: ShapeElement): ShapeElement {
+  const originBounds = elementBounds(origin)
+  const otherBounds = props.document.elements.filter((el) => el.id !== origin.id).map(elementBounds)
+  const size = { width: origin.width, height: origin.height }
+  const pos = computeSiblingPosition(originBounds, otherBounds, SIBLING_GAP, size)
+  return {
+    kind: 'shape',
+    id: `shape-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    x: pos.x,
+    y: pos.y,
+    width: origin.width,
+    height: origin.height,
+    rotation: 0,
+    locked: false,
+    shape: origin.shape,
+    label: '',
+    color: origin.color,
+  }
+}
+
+function onKeyDown(event: KeyboardEvent) {
+  const selectedId = selectedElementId.value
+
+  if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+    event.preventDefault()
+    const direction = event.key === 'ArrowRight' ? 'next' : 'previous'
+    const nextId = getAdjacentElementId(props.document.elements, selectedId, direction)
+    if (nextId) selectedElementId.value = nextId
+    return
+  }
+
+  if (!selectedId) return
+  const selected = props.document.elements.find((el) => el.id === selectedId)
+  if (!selected || selected.kind !== 'shape') return
+
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    const sibling = createShapeNear(selected)
+    const newDoc = history.execute(props.document, { type: 'add-element', element: sibling })
+    selectedElementId.value = sibling.id
+    emit('update:document', newDoc)
+    return
+  }
+
+  if (event.key === 'Tab') {
+    event.preventDefault()
+    const child = createShapeNear(selected)
+    const docWithChild = history.execute(props.document, { type: 'add-element', element: child })
+    const newLink: LinkElement = {
+      kind: 'link',
+      id: `link-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      rotation: 0,
+      locked: false,
+      fromId: selected.id,
+      toId: child.id,
+      label: '',
+      arrow: 'end',
+      dashed: false,
+      routingPoints: [],
+    }
+    const docWithLink = history.execute(docWithChild, { type: 'add-element', element: newLink })
+    selectedElementId.value = child.id
+    emit('update:document', docWithLink)
+    return
+  }
+
+  if (event.key === 'Delete' || event.key === 'Backspace') {
+    event.preventDefault()
+    const newDoc = history.execute(props.document, { type: 'remove-element', id: selected.id })
+    selectedElementId.value = null
+    emit('update:document', newDoc)
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeyDown))
+onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 
 defineExpose({ camera, selectedElementId, history })
 </script>

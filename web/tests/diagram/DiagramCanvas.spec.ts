@@ -16,20 +16,30 @@ function link(id: string, fromId: string, toId: string, overrides: Partial<LinkE
   }
 }
 
+let mountedWrappers: ReturnType<typeof mount>[] = []
+
 function mountCanvas(doc: DiagramDocumentV1) {
-  return mount(DiagramCanvas, {
+  const wrapper = mount(DiagramCanvas, {
     props: { document: doc, viewportWidth: 800, viewportHeight: 600 },
     // Le panoramique écoute mousemove/mouseup sur `window` (glisser qui peut sortir du
     // canevas) : nécessite un montage attaché au vrai document pour que les événements
     // déclenchés sur le <svg> remontent jusqu'à `window`.
     attachTo: document.body,
   })
+  mountedWrappers.push(wrapper)
+  return wrapper
 }
 
 describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
-  // `attachTo: document.body` (nécessaire pour les listeners de panoramique sur `window`)
-  // laisserait sinon des nœuds détachés s'accumuler dans le document entre les tests.
+  // `attachTo: document.body` (nécessaire pour les listeners de panoramique/clavier sur
+  // `window`) laisserait sinon des nœuds détachés s'accumuler entre les tests -- et, depuis
+  // le cycle 6 (keydown monté une fois, écouté tant que le composant existe, pas seulement le
+  // temps d'un geste comme le panoramique/glisser), des listeners `window` orphelins de
+  // composants jamais démontés continueraient à réagir aux événements des tests suivants.
+  // `unmount()` déclenche `onUnmounted` (retrait du listener) avant de vider le DOM.
   afterEach(() => {
+    for (const wrapper of mountedWrappers) wrapper.unmount()
+    mountedWrappers = []
     document.body.innerHTML = ''
   })
 
@@ -274,6 +284,84 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
       const doc2 = emitted[0][0] as DiagramDocumentV1
       expect(doc2.elements.some((e) => e.kind === 'link')).toBe(false)
       expect(doc2.elements.find((e) => e.id === 'a')).toMatchObject({ x: 30 })
+    })
+  })
+
+  describe('interactions clavier (diagrammes-interactions-clavier, Task 3)', () => {
+    async function selectElement(wrapper: ReturnType<typeof mount>, id: string) {
+      const el = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === id)!
+      await el.trigger('mousedown', { clientX: 410, clientY: 310 })
+      await el.trigger('mouseup', { clientX: 410, clientY: 310 })
+    }
+
+    it('Entrée ajoute une forme non chevauchante et la sélectionne', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      await selectElement(wrapper, 'a')
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+      await wrapper.vm.$nextTick()
+
+      const emitted = wrapper.emitted('update:document')!
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      expect(doc2.elements).toHaveLength(2)
+      const created = doc2.elements.find((e) => e.id !== 'a') as ShapeElement
+      expect(created.x).toBeGreaterThan(50) // à droite de 'a' (largeur 50)
+      const vm = wrapper.vm as unknown as { selectedElementId: string | null }
+      expect(vm.selectedElementId).toBe(created.id)
+    })
+
+    it('Tab ajoute une forme ET un lien depuis la sélection', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      await selectElement(wrapper, 'a')
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+      await wrapper.vm.$nextTick()
+
+      const emitted = wrapper.emitted('update:document')!
+      const lastDoc = emitted[emitted.length - 1][0] as DiagramDocumentV1
+      const newShape = lastDoc.elements.find((e) => e.kind === 'shape' && e.id !== 'a') as ShapeElement
+      const newLink = lastDoc.elements.find((e) => e.kind === 'link') as LinkElement
+      expect(newShape).toBeDefined()
+      expect(newLink).toMatchObject({ fromId: 'a', toId: newShape.id })
+    })
+
+    it('Suppr retire la forme sélectionnée du document émis', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0), shape('b', 200, 0)] }
+      const wrapper = mountCanvas(doc)
+      await selectElement(wrapper, 'a')
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete' }))
+      await wrapper.vm.$nextTick()
+
+      const emitted = wrapper.emitted('update:document')!
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      expect(doc2.elements.map((e) => e.id)).toEqual(['b'])
+    })
+
+    it('flèche droite cycle vers l\'élément suivant', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0), shape('b', 200, 0)] }
+      const wrapper = mountCanvas(doc)
+      await selectElement(wrapper, 'a')
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+      await wrapper.vm.$nextTick()
+
+      const vm = wrapper.vm as unknown as { selectedElementId: string | null }
+      expect(vm.selectedElementId).toBe('b')
+    })
+
+    it("aucun raccourci n'agit si rien n'est sélectionné (sauf flèche)", async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete' }))
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.emitted('update:document')).toBeUndefined()
     })
   })
 })
