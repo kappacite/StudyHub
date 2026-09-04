@@ -34,3 +34,14 @@ même) ; si trouvée, crée un `LinkElement` via `history.execute({type:'add-ele
 (commande générique du cycle 2, réutilisée telle quelle). Sans cible valide : aucune commande,
 aucun événement émis. 19/19 tests composant verts, 71/71 tests diagrammes. Prochaine action :
 Task 4 (vérification finale, clôture).
+
+## 2026-09-04 (Task 4 — vérification finale, clôture du cycle 5)
+
+Suite frontend complète : 643/643 (11 nouveaux pour ce chantier). `npm run build` propre.
+`Diagrams.vue` toujours non modifié. Rappel de passation (exclusions déjà notées dans
+`CONTEXT.md`) : édition interactive des points de routage et nettoyage des liens orphelins
+restent à traiter dans un futur cycle. Passation pour le cycle 6 (interactions clavier) :
+sélection/déplacement/création de lien existent désormais tous à la souris -- le cycle 6 doit
+leur donner un équivalent clavier (créer/naviguer/renommer/supprimer sans souris, §8.4 :
+« construire une carte conceptuelle de trente nœuds sans toucher la souris »). Chantier clos
+(code). Prochaine action : pousser `feature/diagrammes-liens-ancrage`, ouvrir la PR.

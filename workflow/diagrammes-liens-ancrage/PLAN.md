@@ -26,7 +26,7 @@ Une case = une tâche atomique. TDD sans exception pour la géométrie (§8.7). 
   au document émis, avec le bon `fromId`/`toId` ; relâcher hors de toute forme (ou sur la
   forme de départ) ne crée rien ; sans `Maj`, un glisser reste un déplacement (non-régression
   du cycle 4).
-- [ ] Task 4 — Vérification finale : suite frontend complète verte, `npm run build` propre,
+- [x] Task 4 — Vérification finale : suite frontend complète verte, `npm run build` propre,
   `Diagrams.vue` toujours non modifié. Clôture ; passation `JOURNAL.md` pour le cycle 6
   (interactions clavier) : rappel des exclusions de ce cycle (édition de points de routage,
   nettoyage des liens orphelins) à ne pas oublier pour de futurs cycles.
