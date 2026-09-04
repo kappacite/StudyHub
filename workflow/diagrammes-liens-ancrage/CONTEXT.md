@@ -1,8 +1,8 @@
 # Diagrammes — liens, ancrage, routage (Phase 5, cycle 5)
 
-Statut : ouvert
+Statut : clos
 Branche : feature/diagrammes-liens-ancrage
-PR : (aucune)
+PR : #149
 
 ## Pourquoi
 
