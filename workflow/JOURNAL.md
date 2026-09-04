@@ -1,9 +1,11 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : diagrammes-liens-ancrage
 
 ## Chantiers ouverts
 
+- `diagrammes-liens-ancrage` — Phase 5, cycle 5/14 (liens, ancrage, routage), suite de
+  `diagrammes-placement-selection` (cycle 4, PR #148 mergée). Détail : son `CONTEXT.md`.
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
   2026-09-03, traité par `notes-ia-planning-corrections`)
