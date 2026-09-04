@@ -18,7 +18,7 @@ Une case = une tâche atomique. TDD sans exception pour la géométrie (§8.7). 
   (pas d'exception). Tests composant : un lien valide produit un élément de tracé visible ;
   un lien orphelin (id absent) ne casse pas le rendu et ne produit aucun tracé ; un lien avec
   des `routingPoints` passe par ces points (pas une ligne droite directe).
-- [ ] Task 3 — Création d'un lien par geste : `Maj` maintenu + glisser depuis une forme vers
+- [x] Task 3 — Création d'un lien par geste : `Maj` maintenu + glisser depuis une forme vers
   une autre crée un `LinkElement` via `DiagramHistory.execute({type:'add-element', ...})` à la
   relâche, uniquement si le point de relâche est au-dessus d'une forme différente de la forme
   de départ. Sans `Maj`, le comportement reste le déplacement du cycle 4 (inchangé). Tests

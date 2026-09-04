@@ -226,4 +226,54 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
       expect(points).toContain('100,150')
     })
   })
+
+  describe('création de lien par geste (diagrammes-liens-ancrage, Task 3)', () => {
+    // Caméra par défaut (zoom 1, origine monde au centre écran 400,300) : 'a' [0,50]x[0,50]
+    // occupe l'écran [400,450]x[300,350], 'b' [200,250]x[0,50] occupe [600,650]x[300,350].
+    function docWithTwoShapes(): DiagramDocumentV1 {
+      return { ...createEmptyDocument(), elements: [shape('a', 0, 0), shape('b', 200, 0)] }
+    }
+
+    it("glisser avec Maj d'une forme vers une autre ajoute un lien avec le bon fromId/toId", async () => {
+      const wrapper = mountCanvas(docWithTwoShapes())
+      const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+      await a.trigger('mousedown', { clientX: 410, clientY: 310, shiftKey: true })
+      await a.trigger('mouseup', { clientX: 620, clientY: 320, shiftKey: true })
+
+      const emitted = wrapper.emitted('update:document')!
+      expect(emitted).toHaveLength(1)
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      const newLink = doc2.elements.find((e) => e.kind === 'link') as LinkElement | undefined
+      expect(newLink).toMatchObject({ fromId: 'a', toId: 'b' })
+    })
+
+    it("relâcher hors de toute forme ne crée rien", async () => {
+      const wrapper = mountCanvas(docWithTwoShapes())
+      const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+      await a.trigger('mousedown', { clientX: 410, clientY: 310, shiftKey: true })
+      await a.trigger('mouseup', { clientX: 10, clientY: 10, shiftKey: true })
+      expect(wrapper.emitted('update:document')).toBeUndefined()
+    })
+
+    it('relâcher sur la forme de départ ne crée rien', async () => {
+      const wrapper = mountCanvas(docWithTwoShapes())
+      const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+      await a.trigger('mousedown', { clientX: 410, clientY: 310, shiftKey: true })
+      await a.trigger('mouseup', { clientX: 420, clientY: 320, shiftKey: true })
+      expect(wrapper.emitted('update:document')).toBeUndefined()
+    })
+
+    it('sans Maj, un glisser reste un déplacement (non-régression du cycle 4)', async () => {
+      const wrapper = mountCanvas(docWithTwoShapes())
+      const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+      await a.trigger('mousedown', { clientX: 410, clientY: 310 })
+      await a.trigger('mousemove', { clientX: 440, clientY: 310 })
+      await a.trigger('mouseup', { clientX: 440, clientY: 310 })
+
+      const emitted = wrapper.emitted('update:document')!
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      expect(doc2.elements.some((e) => e.kind === 'link')).toBe(false)
+      expect(doc2.elements.find((e) => e.id === 'a')).toMatchObject({ x: 30 })
+    })
+  })
 })

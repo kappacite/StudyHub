@@ -97,12 +97,12 @@
 // composant, aucune commande n'est déclenchée ici (DiagramHistory n'entre en jeu qu'à partir
 // du cycle où un geste modifie réellement le document).
 import { ref, computed } from 'vue'
-import { createDefaultCamera, panBy, zoomAt, type Camera } from './camera'
-import { cullElements, elementBounds, getVisibleWorldBounds } from './viewport'
+import { createDefaultCamera, panBy, screenToWorld, zoomAt, type Camera } from './camera'
+import { cullElements, elementBounds, getVisibleWorldBounds, type Bounds } from './viewport'
 import { snapToGrid, computeAlignmentSnap, type AlignmentGuide } from './snapping'
 import { DiagramHistory } from './history'
 import { computeAnchorPoint } from './anchoring'
-import type { DiagramDocumentV1, DiagramElement } from './document'
+import type { DiagramDocumentV1, DiagramElement, LinkElement } from './document'
 
 const props = defineProps<{
   document: DiagramDocumentV1
@@ -243,7 +243,59 @@ function onBackgroundMouseDown(event: MouseEvent) {
   window.addEventListener('mouseup', onUp)
 }
 
+function pointInBounds(point: { x: number; y: number }, bounds: Bounds): boolean {
+  return (
+    point.x >= bounds.minX &&
+    point.x <= bounds.maxX &&
+    point.y >= bounds.minY &&
+    point.y <= bounds.maxY
+  )
+}
+
+// Maj + glisser d'une forme vers une autre crée un lien (Task 3) -- réutilise la commande
+// générique `add-element` du cycle 2, aucun nouveau type de commande nécessaire.
+function startLinking(source: DiagramElement) {
+  function onUp(e: MouseEvent) {
+    window.removeEventListener('mouseup', onUp)
+    const worldPoint = screenToWorld(
+      { x: e.clientX, y: e.clientY },
+      camera.value,
+      viewportSize.value,
+    )
+    const target = props.document.elements.find(
+      (el) => el.id !== source.id && pointInBounds(worldPoint, elementBounds(el)),
+    )
+    if (!target) return
+
+    const newLink: LinkElement = {
+      kind: 'link',
+      id: `link-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      rotation: 0,
+      locked: false,
+      fromId: source.id,
+      toId: target.id,
+      label: '',
+      arrow: 'end',
+      dashed: false,
+      routingPoints: [],
+    }
+    const newDoc = history.execute(props.document, { type: 'add-element', element: newLink })
+    emit('update:document', newDoc)
+  }
+
+  window.addEventListener('mouseup', onUp)
+}
+
 function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
+  if (event.shiftKey) {
+    startLinking(element)
+    return
+  }
+
   const start = { x: event.clientX, y: event.clientY }
   const originalX = element.x
   const originalY = element.y

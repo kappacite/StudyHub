@@ -24,3 +24,13 @@ hors-champ), applique l'override de glisser en cours (`dragPreview`) pour qu'un 
 forme pendant un déplacement (cycle 4), ignore silencieusement un lien orphelin. Tracé
 `<polyline>` (ancres + `routingPoints` s'il y en a), pointillé selon `dashed`. 15/15 tests
 composant verts. Prochaine action : Task 3 (création d'un lien par geste).
+
+## 2026-09-04 (Task 3 — création d'un lien par geste)
+
+`DiagramCanvas.vue` : `onElementMouseDown` bifurque sur `event.shiftKey` -- `startLinking()`
+au lieu du déplacement du cycle 4. À la relâche, résout la forme sous le curseur
+(`screenToWorld` + `pointInBounds`, aucune forme candidate exclut la forme de départ elle-
+même) ; si trouvée, crée un `LinkElement` via `history.execute({type:'add-element', ...})`
+(commande générique du cycle 2, réutilisée telle quelle). Sans cible valide : aucune commande,
+aucun événement émis. 19/19 tests composant verts, 71/71 tests diagrammes. Prochaine action :
+Task 4 (vérification finale, clôture).
