@@ -15,3 +15,12 @@ Prochaine action : Task 1 (ancrage).
 centre→cible croisant le rectangle englobant, dégénère proprement vers le centre si la cible
 coïncide avec lui (évite `0 * Infinity = NaN`). 4/4 tests verts. Prochaine action : Task 2
 (rendu des liens).
+
+## 2026-09-04 (Task 2 — rendu des liens)
+
+`DiagramCanvas.vue` : `renderedLinks` résout `fromId`/`toId` dans `props.document.elements`
+complet (pas `visibleElements` culled -- un lien reste affiché même si une de ses formes est
+hors-champ), applique l'override de glisser en cours (`dragPreview`) pour qu'un lien suive sa
+forme pendant un déplacement (cycle 4), ignore silencieusement un lien orphelin. Tracé
+`<polyline>` (ancres + `routingPoints` s'il y en a), pointillé selon `dashed`. 15/15 tests
+composant verts. Prochaine action : Task 3 (création d'un lien par geste).

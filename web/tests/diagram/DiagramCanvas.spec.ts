@@ -2,10 +2,18 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DiagramCanvas from '../../src/diagram/DiagramCanvas.vue'
 import { createEmptyDocument } from '../../src/diagram/document'
-import type { ShapeElement, DiagramDocumentV1 } from '../../src/diagram/document'
+import type { ShapeElement, LinkElement, DiagramDocumentV1 } from '../../src/diagram/document'
 
 function shape(id: string, x: number, y: number): ShapeElement {
   return { kind: 'shape', id, x, y, width: 50, height: 50, rotation: 0, locked: false, shape: 'rect', label: id, color: '#fff' }
+}
+
+function link(id: string, fromId: string, toId: string, overrides: Partial<LinkElement> = {}): LinkElement {
+  return {
+    kind: 'link', id, x: 0, y: 0, width: 0, height: 0, rotation: 0, locked: false,
+    fromId, toId, label: '', arrow: 'end', dashed: false, routingPoints: [],
+    ...overrides,
+  }
 }
 
 function mountCanvas(doc: DiagramDocumentV1) {
@@ -181,6 +189,41 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
 
       await a.trigger('mouseup', { clientX: 502, clientY: 300 })
       expect(wrapper.findAll('[data-test="alignment-guide"]').length).toBe(0)
+    })
+  })
+
+  describe('rendu des liens (diagrammes-liens-ancrage, Task 2)', () => {
+    it('un lien valide produit un tracé visible', () => {
+      const doc: DiagramDocumentV1 = {
+        ...createEmptyDocument(),
+        elements: [shape('a', 0, 0), shape('b', 200, 0), link('l1', 'a', 'b')],
+      }
+      const wrapper = mountCanvas(doc)
+      expect(wrapper.findAll('[data-test="diagram-link"]')).toHaveLength(1)
+    })
+
+    it("un lien orphelin (id absent) ne casse pas le rendu et ne produit aucun tracé", () => {
+      const doc: DiagramDocumentV1 = {
+        ...createEmptyDocument(),
+        elements: [shape('a', 0, 0), link('l1', 'a', 'inexistant')],
+      }
+      expect(() => mountCanvas(doc)).not.toThrow()
+      const wrapper = mountCanvas(doc)
+      expect(wrapper.findAll('[data-test="diagram-link"]')).toHaveLength(0)
+    })
+
+    it('un lien avec des routingPoints passe par ces points (pas une ligne droite directe)', () => {
+      const doc: DiagramDocumentV1 = {
+        ...createEmptyDocument(),
+        elements: [
+          shape('a', 0, 0),
+          shape('b', 200, 0),
+          link('l1', 'a', 'b', { routingPoints: [{ x: 100, y: 150 }] }),
+        ],
+      }
+      const wrapper = mountCanvas(doc)
+      const points = wrapper.find('[data-test="diagram-link"]').attributes('points')!
+      expect(points).toContain('100,150')
     })
   })
 })

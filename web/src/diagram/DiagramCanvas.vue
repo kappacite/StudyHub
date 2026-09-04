@@ -5,6 +5,17 @@
     @wheel.prevent="onWheel"
     @mousedown="onBackgroundMouseDown"
   >
+    <polyline
+      v-for="rl in renderedLinks"
+      :key="rl.id"
+      data-test="diagram-link"
+      :points="rl.points"
+      fill="none"
+      class="stroke-ink"
+      stroke-width="2"
+      :stroke-dasharray="rl.dashed ? '6 4' : undefined"
+    />
+
     <g
       v-for="el in displayElements"
       :key="el.id"
@@ -90,6 +101,7 @@ import { createDefaultCamera, panBy, zoomAt, type Camera } from './camera'
 import { cullElements, elementBounds, getVisibleWorldBounds } from './viewport'
 import { snapToGrid, computeAlignmentSnap, type AlignmentGuide } from './snapping'
 import { DiagramHistory } from './history'
+import { computeAnchorPoint } from './anchoring'
 import type { DiagramDocumentV1, DiagramElement } from './document'
 
 const props = defineProps<{
@@ -132,6 +144,57 @@ const selectedElementBounds = computed(() => {
   if (!selectedElementId.value) return null
   const el = displayElements.value.find((e) => e.id === selectedElementId.value)
   return el ? elementBounds(el) : null
+})
+
+// Résout un id d'ancrage dans le document COMPLET (pas `visibleElements`) : un lien reste
+// affiché même si l'une de ses formes est hors-champ (culling, cycle 3). Applique l'override
+// de glisser en cours (Task 4, cycle 4) pour qu'un lien suive sa forme pendant le geste.
+function resolveElement(id: string): DiagramElement | undefined {
+  const el = props.document.elements.find((e) => e.id === id)
+  if (!el) return undefined
+  if (dragPreview.value && dragPreview.value.id === id) {
+    return { ...el, x: dragPreview.value.x, y: dragPreview.value.y }
+  }
+  return el
+}
+
+interface RenderedLink {
+  id: string
+  points: string
+  dashed: boolean
+}
+
+// Un lien dont fromId/toId ne résout à aucune forme (orpheline, cf. CONTEXT.md) est
+// silencieusement ignoré -- pas d'exception, pas de tracé cassé.
+const renderedLinks = computed<RenderedLink[]>(() => {
+  const links: RenderedLink[] = []
+  for (const el of props.document.elements) {
+    if (el.kind !== 'link') continue
+    const fromEl = resolveElement(el.fromId)
+    const toEl = resolveElement(el.toId)
+    if (!fromEl || !toEl) continue
+
+    const fromBounds = elementBounds(fromEl)
+    const toBounds = elementBounds(toEl)
+    const fromCenter = {
+      x: (fromBounds.minX + fromBounds.maxX) / 2,
+      y: (fromBounds.minY + fromBounds.maxY) / 2,
+    }
+    const toCenter = {
+      x: (toBounds.minX + toBounds.maxX) / 2,
+      y: (toBounds.minY + toBounds.maxY) / 2,
+    }
+    const fromAnchor = computeAnchorPoint(fromBounds, toCenter)
+    const toAnchor = computeAnchorPoint(toBounds, fromCenter)
+    const points = [fromAnchor, ...el.routingPoints, toAnchor]
+
+    links.push({
+      id: el.id,
+      points: points.map((p) => `${p.x},${p.y}`).join(' '),
+      dashed: el.dashed,
+    })
+  }
+  return links
 })
 
 const visibleWorldBounds = computed(() => getVisibleWorldBounds(camera.value, viewportSize.value))

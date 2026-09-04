@@ -9,7 +9,7 @@ Une case = une tâche atomique. TDD sans exception pour la géométrie (§8.7). 
   bord droit ; cible directement au-dessus -> ancrage au milieu du bord haut ; cible = centre
   exact -> retourne le centre (dégénère sans `NaN`, pas de division par zéro qui se propage) ;
   pour un carré, une cible en diagonale à 45° -> ancrage exactement au coin.
-- [ ] Task 2 — Rendu des liens dans `DiagramCanvas.vue` : pour chaque élément `kind: 'link'`
+- [x] Task 2 — Rendu des liens dans `DiagramCanvas.vue` : pour chaque élément `kind: 'link'`
   du document (pas seulement `visibleElements` -- un lien peut relier deux formes dont une
   hors-champ), résout `fromId`/`toId` dans `props.document.elements`, calcule les deux points
   d'ancrage (Task 1) l'un vers l'autre, trace une `<line>` (ou `<polyline>` si
