@@ -7,7 +7,7 @@ Une case = une tâche atomique. TDD sans exception pour la géométrie et les in
   `computeDistance(p1, p2): number`, `computeMidpoint(p1, p2): Point`. Tests : distance sur
   un cas simple (3-4-5) ; distance nulle pour deux points identiques ; point médian de deux
   points connus.
-- [ ] Task 2 — Glisser à un doigt (panoramique du fond / déplacement d'élément) dans
+- [x] Task 2 — Glisser à un doigt (panoramique du fond / déplacement d'élément) dans
   `DiagramCanvas.vue` : `touchstart`/`touchmove`/`touchend` sur le fond et sur chaque élément,
   même seuil clic/glisser et même logique de magnétisme que la souris (réutilisée telle
   quelle, pas dupliquée). Tests composant : un glisser à un doigt sur le fond modifie le

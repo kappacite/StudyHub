@@ -4,6 +4,7 @@
     :viewBox="viewBoxString"
     @wheel.prevent="onWheel"
     @mousedown="onBackgroundMouseDown"
+    @touchstart.prevent="onBackgroundTouchStart"
   >
     <polyline
       v-for="rl in renderedLinks"
@@ -22,6 +23,7 @@
       data-test="diagram-element"
       :data-id="el.id"
       @mousedown.stop="onElementMouseDown($event, el)"
+      @touchstart.stop.prevent="onElementTouchStart($event, el)"
     >
       <ellipse
         v-if="el.kind === 'shape' && (el.shape === 'circle' || el.shape === 'ellipse')"
@@ -288,6 +290,53 @@ function onBackgroundMouseDown(event: MouseEvent) {
   window.addEventListener('mouseup', onUp)
 }
 
+// Glisser à un doigt = panoramique du fond (Task 2, cycle 7) -- même seuil clic/glisser que
+// la souris. Répartiteur `onBackgroundTouchStart` : une nouvelle touche (donc un nouveau
+// `touchstart`) annule le geste précédent avant d'en démarrer un autre, pour permettre la
+// transition 1 doigt (panoramique) -> 2 doigts (pincement, Task 3) sans état incohérent.
+let activeTouchCleanup: (() => void) | null = null
+
+function startBackgroundPanTouch(touch: Touch): () => void {
+  const start = { x: touch.clientX, y: touch.clientY }
+  let last = { ...start }
+  let moved = false
+
+  function onMove(e: TouchEvent) {
+    if (e.touches.length !== 1) return
+    const t = e.touches[0]
+    if (!moved && Math.hypot(t.clientX - start.x, t.clientY - start.y) > CLICK_THRESHOLD_PX) {
+      moved = true
+    }
+    if (moved) {
+      camera.value = panBy(camera.value, t.clientX - last.x, t.clientY - last.y)
+    }
+    last = { x: t.clientX, y: t.clientY }
+  }
+
+  function onEnd() {
+    if (!moved) selectedElementId.value = null
+    cleanup()
+  }
+
+  function cleanup() {
+    window.removeEventListener('touchmove', onMove)
+    window.removeEventListener('touchend', onEnd)
+  }
+
+  window.addEventListener('touchmove', onMove)
+  window.addEventListener('touchend', onEnd)
+  return cleanup
+}
+
+function onBackgroundTouchStart(event: TouchEvent) {
+  activeTouchCleanup?.()
+  activeTouchCleanup = null
+
+  if (event.touches.length === 1) {
+    activeTouchCleanup = startBackgroundPanTouch(event.touches[0])
+  }
+}
+
 function pointInBounds(point: { x: number; y: number }, bounds: Bounds): boolean {
   return (
     point.x >= bounds.minX &&
@@ -335,6 +384,37 @@ function startLinking(source: DiagramElement) {
   window.addEventListener('mouseup', onUp)
 }
 
+// Position d'un élément déplacé, magnétisée sauf demande explicite de l'appelant (souris :
+// Alt maintenu ; réutilisé tel quel par le glisser tactile, Task 2 du cycle 7 -- pas de
+// duplication de la décision alignement/grille entre souris et tactile).
+function computeSnappedElementPosition(
+  element: DiagramElement,
+  originalX: number,
+  originalY: number,
+  dxScreen: number,
+  dyScreen: number,
+  disableSnap: boolean,
+): { x: number; y: number; guides: AlignmentGuide[] } {
+  const zoom = camera.value.zoom
+  const rawX = originalX + dxScreen / zoom
+  const rawY = originalY + dyScreen / zoom
+
+  if (disableSnap) return { x: rawX, y: rawY, guides: [] }
+
+  const draggedBounds = {
+    minX: rawX,
+    minY: rawY,
+    maxX: rawX + element.width,
+    maxY: rawY + element.height,
+  }
+  const others = props.document.elements.filter((el) => el.id !== element.id).map(elementBounds)
+  const { snapped, guides } = computeAlignmentSnap(draggedBounds, others, ALIGN_THRESHOLD_PX / zoom)
+  if (guides.length > 0) return { x: snapped.x, y: snapped.y, guides }
+
+  const gridSnapped = snapToGrid({ x: rawX, y: rawY }, GRID_SIZE)
+  return { x: gridSnapped.x, y: gridSnapped.y, guides: [] }
+}
+
 function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
   if (event.shiftKey) {
     startLinking(element)
@@ -354,38 +434,17 @@ function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
     }
     if (!moved) return
 
-    const zoom = camera.value.zoom
-    const rawX = originalX + (e.clientX - start.x) / zoom
-    const rawY = originalY + (e.clientY - start.y) / zoom
-
-    if (e.altKey) {
-      finalX = rawX
-      finalY = rawY
-      activeGuides.value = []
-    } else {
-      const draggedBounds = {
-        minX: rawX,
-        minY: rawY,
-        maxX: rawX + element.width,
-        maxY: rawY + element.height,
-      }
-      const others = props.document.elements.filter((el) => el.id !== element.id).map(elementBounds)
-      const { snapped, guides } = computeAlignmentSnap(
-        draggedBounds,
-        others,
-        ALIGN_THRESHOLD_PX / zoom,
-      )
-      if (guides.length > 0) {
-        finalX = snapped.x
-        finalY = snapped.y
-        activeGuides.value = guides
-      } else {
-        const gridSnapped = snapToGrid({ x: rawX, y: rawY }, GRID_SIZE)
-        finalX = gridSnapped.x
-        finalY = gridSnapped.y
-        activeGuides.value = []
-      }
-    }
+    const result = computeSnappedElementPosition(
+      element,
+      originalX,
+      originalY,
+      e.clientX - start.x,
+      e.clientY - start.y,
+      e.altKey,
+    )
+    finalX = result.x
+    finalY = result.y
+    activeGuides.value = result.guides
     dragPreview.value = { id: element.id, x: finalX, y: finalY }
   }
 
@@ -407,6 +466,62 @@ function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
 
   window.addEventListener('mousemove', onMove)
   window.addEventListener('mouseup', onUp)
+}
+
+// Glisser à un doigt sur un élément = déplacement (Task 2, cycle 7) -- réutilise
+// `computeSnappedElementPosition` (aucune duplication de la décision de magnétisme avec la
+// souris). Une seule commande à la levée du doigt, comme la souris (cycle 4).
+function onElementTouchStart(event: TouchEvent, element: DiagramElement) {
+  if (event.touches.length !== 1) return
+
+  const touch = event.touches[0]
+  const start = { x: touch.clientX, y: touch.clientY }
+  const originalX = element.x
+  const originalY = element.y
+  let moved = false
+  let finalX = originalX
+  let finalY = originalY
+
+  function onMove(e: TouchEvent) {
+    if (e.touches.length !== 1) return
+    const t = e.touches[0]
+    if (!moved && Math.hypot(t.clientX - start.x, t.clientY - start.y) > CLICK_THRESHOLD_PX) {
+      moved = true
+    }
+    if (!moved) return
+
+    const result = computeSnappedElementPosition(
+      element,
+      originalX,
+      originalY,
+      t.clientX - start.x,
+      t.clientY - start.y,
+      false,
+    )
+    finalX = result.x
+    finalY = result.y
+    activeGuides.value = result.guides
+    dragPreview.value = { id: element.id, x: finalX, y: finalY }
+  }
+
+  function onEnd() {
+    window.removeEventListener('touchmove', onMove)
+    window.removeEventListener('touchend', onEnd)
+    selectedElementId.value = element.id
+    dragPreview.value = null
+    activeGuides.value = []
+    if (!moved) return
+
+    const newDoc = history.execute(props.document, {
+      type: 'update-element',
+      id: element.id,
+      changes: { x: finalX, y: finalY },
+    })
+    emit('update:document', newDoc)
+  }
+
+  window.addEventListener('touchmove', onMove)
+  window.addEventListener('touchend', onEnd)
 }
 
 // Interactions clavier (Phase 5, cycle 6 -- §8.4). Raccourcis retenus dans CONTEXT.md :

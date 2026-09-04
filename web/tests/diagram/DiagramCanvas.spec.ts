@@ -419,4 +419,62 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
       expect(wrapper.emitted('update:document')).toBeUndefined()
     })
   })
+
+  describe('glisser à un doigt (diagrammes-interactions-tactiles, Task 2)', () => {
+    it('un glisser à un doigt sur le fond modifie le viewBox (panoramique tactile)', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const svg = wrapper.find('svg')
+      const before = svg.attributes('viewBox')
+
+      await svg.trigger('touchstart', { touches: [{ clientX: 10, clientY: 10 }] })
+      await svg.trigger('touchmove', { touches: [{ clientX: 80, clientY: 80 }] })
+      await svg.trigger('touchend', { touches: [], changedTouches: [{ clientX: 80, clientY: 80 }] })
+
+      expect(svg.attributes('viewBox')).not.toBe(before)
+    })
+
+    it('un glisser à un doigt sur un élément le déplace et émet une seule commande', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+
+      await el.trigger('touchstart', { touches: [{ clientX: 400, clientY: 300 }] })
+      await el.trigger('touchmove', { touches: [{ clientX: 430, clientY: 300 }] })
+      await el.trigger('touchmove', { touches: [{ clientX: 440, clientY: 300 }] })
+      await el.trigger('touchend', { touches: [], changedTouches: [{ clientX: 440, clientY: 300 }] })
+
+      const emitted = wrapper.emitted('update:document')!
+      expect(emitted).toHaveLength(1)
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      expect(doc2.elements.find((e) => e.id === 'a')!.x).not.toBe(0)
+    })
+
+    it('un tap (sans déplacement) sélectionne comme un clic', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+
+      await el.trigger('touchstart', { touches: [{ clientX: 410, clientY: 310 }] })
+      await el.trigger('touchend', { touches: [], changedTouches: [{ clientX: 410, clientY: 310 }] })
+
+      const vm = wrapper.vm as unknown as { selectedElementId: string | null }
+      expect(vm.selectedElementId).toBe('a')
+    })
+
+    it('un tap sur le fond désélectionne comme un clic', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+      await el.trigger('touchstart', { touches: [{ clientX: 410, clientY: 310 }] })
+      await el.trigger('touchend', { touches: [], changedTouches: [{ clientX: 410, clientY: 310 }] })
+
+      const svg = wrapper.find('svg')
+      await svg.trigger('touchstart', { touches: [{ clientX: 10, clientY: 10 }] })
+      await svg.trigger('touchend', { touches: [], changedTouches: [{ clientX: 10, clientY: 10 }] })
+
+      const vm = wrapper.vm as unknown as { selectedElementId: string | null }
+      expect(vm.selectedElementId).toBeNull()
+    })
+  })
 })
