@@ -1,9 +1,11 @@
 # Journal global — workflow
 
-Chantier actif : aucun
+Chantier actif : diagrammes-interactions-tactiles
 
 ## Chantiers ouverts
 
+- `diagrammes-interactions-tactiles` — Phase 5, cycle 7/14 (interactions tactiles), suite de
+  `diagrammes-interactions-clavier` (cycle 6, PR #150 mergée). Détail : son `CONTEXT.md`.
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
   2026-09-03, traité par `notes-ia-planning-corrections`)
