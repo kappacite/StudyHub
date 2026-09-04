@@ -1,11 +1,11 @@
 # Journal global — workflow
 
-Chantier actif : diagrammes-liens-ancrage
+Chantier actif : diagrammes-interactions-clavier
 
 ## Chantiers ouverts
 
-- `diagrammes-liens-ancrage` — Phase 5, cycle 5/14 (liens, ancrage, routage), suite de
-  `diagrammes-placement-selection` (cycle 4, PR #148 mergée). Détail : son `CONTEXT.md`.
+- `diagrammes-interactions-clavier` — Phase 5, cycle 6/14 (interactions clavier), suite de
+  `diagrammes-liens-ancrage` (cycle 5, PR #149 mergée). Détail : son `CONTEXT.md`.
 - `ecrans-peripheriques-visuels` — pas commencé, indépendant (voir ses notes du 2026-08-30 :
   `PDFs.vue`/`Diagrams.vue` divergent de leurs maquettes ; Blurting retiré de son périmètre le
   2026-09-03, traité par `notes-ia-planning-corrections`)
@@ -13,6 +13,8 @@ Chantier actif : diagrammes-liens-ancrage
 
 ## Historique
 
+- 2026-09-04 — [diagrammes-liens-ancrage] **PR #149 mergée**, chantier clos. Cycle 6
+  (interactions clavier) ouvre juste après (« Fais tout »).
 - 2026-09-04 — [diagrammes-placement-selection] **PR #148 mergée**, chantier clos. Cycle 5
   (liens, ancrage, routage) ouvre juste après (« Fais tout »).
 - 2026-09-04 — [diagrammes-canevas-pan-zoom] **PR #147 mergée**, chantier clos. Cycle 4
