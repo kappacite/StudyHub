@@ -31,3 +31,13 @@ tests laisse son listener `window` actif et réagit aux événements clavier du 
 `afterEach` du fichier de test étendu pour appeler `wrapper.unmount()` sur chaque wrapper
 monté (déclenche `onUnmounted`), pas seulement vider `document.body`. 24/24 tests composant
 verts, 83/83 tests diagrammes. Prochaine action : Task 4 (renommage F2).
+
+## 2026-09-04 (Task 4 — renommage F2)
+
+`DiagramCanvas.vue` : `<foreignObject>` superposé aux coordonnées de l'élément en cours de
+renommage (`renamingBounds`), `<input>` lié à `renameBuffer`. F2 ouvre (pré-rempli avec le
+libellé actuel), Entrée commet via `update-element`, Échap annule. `@keydown.stop` sur
+l'input empêche le `onKeyDown` global (`window`) de réagir aux mêmes touches (garde
+supplémentaire : `onKeyDown` retourne tôt si `renamingElementId` est défini). 27/27 tests
+composant verts, 86/86 tests diagrammes. Prochaine action : Task 5 (vérification finale,
+clôture).

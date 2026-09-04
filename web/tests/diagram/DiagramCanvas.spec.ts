@@ -364,4 +364,59 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
       expect(wrapper.emitted('update:document')).toBeUndefined()
     })
   })
+
+  describe('renommage F2 (diagrammes-interactions-clavier, Task 4)', () => {
+    async function selectElement(wrapper: ReturnType<typeof mount>, id: string) {
+      const el = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === id)!
+      await el.trigger('mousedown', { clientX: 410, clientY: 310 })
+      await el.trigger('mouseup', { clientX: 410, clientY: 310 })
+    }
+
+    it('F2 sur une sélection affiche une entrée pré-remplie avec le libellé actuel', async () => {
+      const doc: DiagramDocumentV1 = {
+        ...createEmptyDocument(),
+        elements: [{ ...shape('a', 0, 0), label: 'Ancien nom' }],
+      }
+      const wrapper = mountCanvas(doc)
+      await selectElement(wrapper, 'a')
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2' }))
+      await wrapper.vm.$nextTick()
+
+      const input = wrapper.find('[data-test="rename-input"]')
+      expect(input.exists()).toBe(true)
+      expect((input.element as HTMLInputElement).value).toBe('Ancien nom')
+    })
+
+    it('valider avec une nouvelle valeur puis Entrée émet le document avec le libellé mis à jour', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      await selectElement(wrapper, 'a')
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2' }))
+      await wrapper.vm.$nextTick()
+
+      const input = wrapper.find('[data-test="rename-input"]')
+      await input.setValue('Nouveau nom')
+      await input.trigger('keydown.enter')
+
+      const emitted = wrapper.emitted('update:document')!
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      expect(doc2.elements.find((e) => e.id === 'a')).toMatchObject({ label: 'Nouveau nom' })
+    })
+
+    it("Échap ferme l'entrée sans émettre de commande", async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      await selectElement(wrapper, 'a')
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2' }))
+      await wrapper.vm.$nextTick()
+
+      const input = wrapper.find('[data-test="rename-input"]')
+      await input.setValue('Ignoré')
+      await input.trigger('keydown.esc')
+
+      expect(wrapper.find('[data-test="rename-input"]').exists()).toBe(false)
+      expect(wrapper.emitted('update:document')).toBeUndefined()
+    })
+  })
 })

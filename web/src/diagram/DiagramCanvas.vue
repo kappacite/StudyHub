@@ -87,6 +87,23 @@
         pointer-events="none"
       />
     </template>
+
+    <foreignObject
+      v-if="renamingBounds"
+      :x="renamingBounds.minX"
+      :y="renamingBounds.minY"
+      :width="renamingBounds.maxX - renamingBounds.minX"
+      :height="renamingBounds.maxY - renamingBounds.minY"
+    >
+      <input
+        v-model="renameBuffer"
+        data-test="rename-input"
+        class="w-full h-full"
+        @keydown.enter.stop="commitRename"
+        @keydown.esc.stop="cancelRename"
+        @keydown.stop
+      />
+    </foreignObject>
   </svg>
 </template>
 
@@ -146,6 +163,33 @@ const selectedElementBounds = computed(() => {
   const el = displayElements.value.find((e) => e.id === selectedElementId.value)
   return el ? elementBounds(el) : null
 })
+
+// Renommage (F2, cycle 6) : aucune édition de texte en place n'existe encore pour le
+// libellé d'une forme -- entrée de texte HTML superposée via <foreignObject>, cf. CONTEXT.md.
+const renamingElementId = ref<string | null>(null)
+const renameBuffer = ref('')
+
+const renamingBounds = computed(() => {
+  if (!renamingElementId.value) return null
+  const el = props.document.elements.find((e) => e.id === renamingElementId.value)
+  return el ? elementBounds(el) : null
+})
+
+function commitRename() {
+  if (!renamingElementId.value) return
+  const id = renamingElementId.value
+  const newDoc = history.execute(props.document, {
+    type: 'update-element',
+    id,
+    changes: { label: renameBuffer.value },
+  })
+  renamingElementId.value = null
+  emit('update:document', newDoc)
+}
+
+function cancelRename() {
+  renamingElementId.value = null
+}
 
 // Résout un id d'ancrage dans le document COMPLET (pas `visibleElements`) : un lien reste
 // affiché même si l'une de ses formes est hors-champ (culling, cycle 3). Applique l'override
@@ -391,6 +435,8 @@ function createShapeNear(origin: ShapeElement): ShapeElement {
 }
 
 function onKeyDown(event: KeyboardEvent) {
+  if (renamingElementId.value) return // l'entrée de renommage gère ses propres touches (@keydown.stop)
+
   const selectedId = selectedElementId.value
 
   if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
@@ -411,6 +457,13 @@ function onKeyDown(event: KeyboardEvent) {
     const newDoc = history.execute(props.document, { type: 'add-element', element: sibling })
     selectedElementId.value = sibling.id
     emit('update:document', newDoc)
+    return
+  }
+
+  if (event.key === 'F2') {
+    event.preventDefault()
+    renamingElementId.value = selected.id
+    renameBuffer.value = selected.label
     return
   }
 

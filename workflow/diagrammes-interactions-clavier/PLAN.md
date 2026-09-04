@@ -25,7 +25,7 @@ Arbitrages, raccourcis retenus : `CONTEXT.md`.
   l'origine ; Suppr retire la forme sélectionnée du document émis ; flèche droite cycle vers
   l'élément suivant ; aucun raccourci ne fait rien si `selectedElementId` est `null` (sauf
   flèche).
-- [ ] Task 4 — Renommage (F2) : entrée de texte HTML superposée (positionnée via
+- [x] Task 4 — Renommage (F2) : entrée de texte HTML superposée (positionnée via
   `worldToScreen` sur les coordonnées écran de la sélection), Entrée commet via
   `update-element`, Échap annule sans commande. Tests composant : F2 sur une sélection affiche
   une entrée de texte pré-remplie avec le libellé actuel ; valider avec une nouvelle valeur
