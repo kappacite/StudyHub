@@ -3,7 +3,7 @@
 Une case = une tâche atomique. TDD sans exception pour la géométrie et les interactions
 (§8.7). Arbitrages, limite de vérification sur appareil réel : `CONTEXT.md`.
 
-- [ ] Task 1 — Géométrie de pincement, pure, dans `web/src/diagram/touch.ts` :
+- [x] Task 1 — Géométrie de pincement, pure, dans `web/src/diagram/touch.ts` :
   `computeDistance(p1, p2): number`, `computeMidpoint(p1, p2): Point`. Tests : distance sur
   un cas simple (3-4-5) ; distance nulle pour deux points identiques ; point médian de deux
   points connus.
