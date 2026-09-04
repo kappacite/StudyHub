@@ -3,13 +3,13 @@
 Une case = une tâche atomique. TDD sans exception pour la géométrie et la navigation (§8.7).
 Arbitrages, raccourcis retenus : `CONTEXT.md`.
 
-- [ ] Task 1 — Placement sans chevauchement, pur, dans `web/src/diagram/layout.ts` :
+- [x] Task 1 — Placement sans chevauchement, pur, dans `web/src/diagram/layout.ts` :
   `computeSiblingPosition(originBounds, existingBounds[], gap): Point`. Tests : aucune forme
   existante -> position immédiatement à droite de l'origine (`origin.maxX + gap`) ; une forme
   déjà présente à cette position -> décalée encore plus à droite, sans chevauchement avec
   aucune des formes existantes ; plusieurs formes en chaîne -> la nouvelle position ne
   chevauche aucune d'entre elles (pas seulement la première rencontrée).
-- [ ] Task 2 — Navigation entre éléments, pure, dans `layout.ts` :
+- [x] Task 2 — Navigation entre éléments, pure, dans `layout.ts` :
   `getAdjacentElementId(elements, currentId, direction: 'next' | 'previous'): string | null`
   (cycle dans l'ordre du tableau, uniquement les éléments `kind: 'shape'`). Tests : suivant/
   précédent sur une liste de 3 -> l'ordre attendu ; suivant depuis le dernier élément revient
