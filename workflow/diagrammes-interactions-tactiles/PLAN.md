@@ -14,7 +14,7 @@ Une case = une tâche atomique. TDD sans exception pour la géométrie et les in
   `viewBox` ; un glisser à un doigt sur un élément le déplace et émet **une** commande à la
   levée du doigt (pas une par `touchmove`, même invariant que le cycle 4) ; un tap (sans
   déplacement dépassant le seuil) sélectionne/désélectionne comme un clic.
-- [ ] Task 3 — Pincer pour zoomer : détecte exactement deux points de contact actifs,
+- [x] Task 3 — Pincer pour zoomer : détecte exactement deux points de contact actifs,
   recalcule le zoom à chaque `touchmove` à partir du ratio de distance courante/initiale,
   centré sur le point médian (réutilise `zoomAt`, Task 1). Tests composant : un pincement qui
   rapproche les deux doigts diminue le zoom, qui les éloigne l'augmente ; le point médian reste

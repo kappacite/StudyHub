@@ -477,4 +477,60 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
       expect(vm.selectedElementId).toBeNull()
     })
   })
+
+  describe('pincer pour zoomer (diagrammes-interactions-tactiles, Task 3)', () => {
+    it('rapprocher les deux doigts diminue le zoom', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const svg = wrapper.find('svg')
+      const vm = wrapper.vm as unknown as { camera: { zoom: number } }
+      const zoomBefore = vm.camera.zoom
+
+      await svg.trigger('touchstart', {
+        touches: [{ clientX: 350, clientY: 300 }, { clientX: 450, clientY: 300 }], // distance 100
+      })
+      await svg.trigger('touchmove', {
+        touches: [{ clientX: 380, clientY: 300 }, { clientX: 420, clientY: 300 }], // distance 40, rapproché
+      })
+
+      expect(vm.camera.zoom).toBeLessThan(zoomBefore)
+    })
+
+    it('éloigner les deux doigts augmente le zoom', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const svg = wrapper.find('svg')
+      const vm = wrapper.vm as unknown as { camera: { zoom: number } }
+      const zoomBefore = vm.camera.zoom
+
+      await svg.trigger('touchstart', {
+        touches: [{ clientX: 350, clientY: 300 }, { clientX: 450, clientY: 300 }], // distance 100
+      })
+      await svg.trigger('touchmove', {
+        touches: [{ clientX: 300, clientY: 300 }, { clientX: 500, clientY: 300 }], // distance 200, éloigné
+      })
+
+      expect(vm.camera.zoom).toBeGreaterThan(zoomBefore)
+    })
+
+    it('passer de deux à un doigt en cours de geste ne casse rien', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const svg = wrapper.find('svg')
+
+      await svg.trigger('touchstart', {
+        touches: [{ clientX: 350, clientY: 300 }, { clientX: 450, clientY: 300 }],
+      })
+      await svg.trigger('touchmove', {
+        touches: [{ clientX: 380, clientY: 300 }, { clientX: 420, clientY: 300 }],
+      })
+      // Un doigt levé : touchend avec un seul doigt restant dans `touches`.
+      await expect(
+        svg.trigger('touchend', {
+          touches: [{ clientX: 420, clientY: 300 }],
+          changedTouches: [{ clientX: 380, clientY: 300 }],
+        }),
+      ).resolves.not.toThrow()
+    })
+  })
 })

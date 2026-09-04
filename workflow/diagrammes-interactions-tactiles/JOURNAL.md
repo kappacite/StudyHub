@@ -28,3 +28,14 @@ la transition 1 doigt (panoramique, cette tâche) -> 2 doigts (pincement, Task 3
 incohérent. `onElementTouchStart` : même seuil clic/glisser et même commande unique à la levée
 du doigt que la souris (cycle 4). 31/31 tests composant verts, 93/93 tests diagrammes.
 Prochaine action : Task 3 (pincer pour zoomer).
+
+## 2026-09-04 (Task 3 — pincer pour zoomer)
+
+`startPinchZoomTouch` : zoom incrémental (ratio de distance depuis le dernier `touchmove`,
+pas depuis le début du geste) recentré sur le point médian courant à chaque mouvement --
+réutilise `zoomAt` (cycle 3) tel quel. `onBackgroundTouchStart` étendu pour brancher sur le
+pincement quand `touches.length === 2`. Limite documentée (pas testée, hors périmètre) : lever
+un seul doigt pendant un pincement à deux doigts nettoie le geste sans reprendre
+automatiquement un panoramique à un doigt pour le doigt restant -- il faut lever puis
+retoucher. 34/34 tests composant verts, 96/96 tests diagrammes. Prochaine action : Task 4
+(appui long -> création de lien).

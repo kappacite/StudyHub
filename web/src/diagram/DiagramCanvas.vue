@@ -122,6 +122,7 @@ import { snapToGrid, computeAlignmentSnap, type AlignmentGuide } from './snappin
 import { DiagramHistory } from './history'
 import { computeAnchorPoint } from './anchoring'
 import { computeSiblingPosition, getAdjacentElementId } from './layout'
+import { computeDistance, computeMidpoint } from './touch'
 import type { DiagramDocumentV1, DiagramElement, LinkElement, ShapeElement } from './document'
 
 const props = defineProps<{
@@ -328,12 +329,50 @@ function startBackgroundPanTouch(touch: Touch): () => void {
   return cleanup
 }
 
+// Pincer pour zoomer (Task 3, cycle 7) : recalcule le zoom de façon incrémentale (ratio de
+// distance depuis le dernier `touchmove`, pas depuis le début du geste) et recentre sur le
+// point médian courant à chaque mouvement -- supporte naturellement un panoramique simultané
+// au pincement (le médian peut se déplacer pendant que la distance change).
+function touchPoint(touch: Touch): { x: number; y: number } {
+  return { x: touch.clientX, y: touch.clientY }
+}
+
+function startPinchZoomTouch(touchA: Touch, touchB: Touch): () => void {
+  let lastDistance = computeDistance(touchPoint(touchA), touchPoint(touchB))
+
+  function onMove(e: TouchEvent) {
+    if (e.touches.length !== 2) return
+    const a = touchPoint(e.touches[0])
+    const b = touchPoint(e.touches[1])
+    const distance = computeDistance(a, b)
+    const midpoint = computeMidpoint(a, b)
+    const factor = distance / lastDistance
+    camera.value = zoomAt(camera.value, midpoint, factor, viewportSize.value)
+    lastDistance = distance
+  }
+
+  function onEnd() {
+    cleanup()
+  }
+
+  function cleanup() {
+    window.removeEventListener('touchmove', onMove)
+    window.removeEventListener('touchend', onEnd)
+  }
+
+  window.addEventListener('touchmove', onMove)
+  window.addEventListener('touchend', onEnd)
+  return cleanup
+}
+
 function onBackgroundTouchStart(event: TouchEvent) {
   activeTouchCleanup?.()
   activeTouchCleanup = null
 
   if (event.touches.length === 1) {
     activeTouchCleanup = startBackgroundPanTouch(event.touches[0])
+  } else if (event.touches.length === 2) {
+    activeTouchCleanup = startPinchZoomTouch(event.touches[0], event.touches[1])
   }
 }
 
