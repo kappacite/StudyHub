@@ -31,7 +31,7 @@ Arbitrages, raccourcis retenus : `CONTEXT.md`.
   une entrée de texte pré-remplie avec le libellé actuel ; valider avec une nouvelle valeur
   puis Entrée émet le document avec le libellé mis à jour ; Échap ferme l'entrée sans émettre
   de commande.
-- [ ] Task 5 — Vérification finale : suite frontend complète verte, `npm run build` propre,
+- [x] Task 5 — Vérification finale : suite frontend complète verte, `npm run build` propre,
   `Diagrams.vue` toujours non modifié. Clôture ; passation `JOURNAL.md` pour le cycle 7
   (interactions tactiles) : rappel de la rugosité assumée du cycle 6 (créer un enfant = deux
   annulations, pas une) à garder en tête si un futur cycle étend le vocabulaire de commandes.

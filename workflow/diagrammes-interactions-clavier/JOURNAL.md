@@ -41,3 +41,15 @@ l'input empêche le `onKeyDown` global (`window`) de réagir aux mêmes touches 
 supplémentaire : `onKeyDown` retourne tôt si `renamingElementId` est défini). 27/27 tests
 composant verts, 86/86 tests diagrammes. Prochaine action : Task 5 (vérification finale,
 clôture).
+
+## 2026-09-04 (Task 5 — vérification finale, clôture du cycle 6)
+
+Suite frontend complète : 658/658 (20 nouveaux pour ce chantier). `npm run build` propre.
+`Diagrams.vue` toujours non modifié. Rappel de passation (déjà noté dans `CONTEXT.md`) :
+« créer un enfant » reste deux commandes non atomiques (deux annulations pour une action
+logique) -- à revisiter si ça s'avère gênant en usage réel, pas de commande composite ajoutée
+par anticipation. Passation pour le cycle 7 (interactions tactiles) : tous les gestes
+souris/clavier (sélection, glisser, création de lien, raccourcis clavier, renommage) existent
+désormais -- le cycle 7 doit leur donner un équivalent tactile (pincer pour zoomer, appui
+long, cibles ≥ 44px, distinction déplacement d'élément vs panoramique au doigt). Chantier clos
+(code). Prochaine action : pousser `feature/diagrammes-interactions-clavier`, ouvrir la PR.
