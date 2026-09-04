@@ -1,8 +1,8 @@
 # Diagrammes — interactions clavier (Phase 5, cycle 6)
 
-Statut : ouvert
+Statut : clos
 Branche : feature/diagrammes-interactions-clavier
-PR : (aucune)
+PR : #150
 
 ## Pourquoi
 
