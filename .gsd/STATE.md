@@ -1,15 +1,22 @@
 # Project State — StudyHub (GSD)
 
-## Current Status
-- **Active Workflow**: `/map` (complete)
-- **Next Workflow**: `/plan`
+## Current Position
+- **Phase**: 5 (Refonte Éditeur de Diagrammes en Canevas Libre)
+- **Task**: Planning complete
+- **Status**: Ready for execution
 
 ## Last Session Summary
-Codebase mapping complete.
-- **123 components identified** (28 API Blueprints, 30 Services, 18 DAOs, 22 Models, 25 Vue Views & modules)
-- **68 dependencies analyzed** (35 production dependencies, 33 dev dependencies across Backend, Web and Desktop)
-- **28 technical debt & audit items recorded** (13 direct ORM query bypasses, 4 route DAO bypasses, Design System raw tokens debt, and Phase 2 audit findings)
+Phase 5 planning complete.
+- Plan 5.1: Cycle 7 - Interactions tactiles (Appui long et Création de liens)
+- 2 tâches atomiques prêtes en TDD (détection appui long + tracé/émission de lien)
+
+## Next Steps
+1. `/execute 5` — exécuter le plan 5.1
 
 ## Documentation Generated
-- `.gsd/ARCHITECTURE.md`: Complete system design, data flows, cross-platform wrappers, and component inventory.
-- `.gsd/STACK.md`: Detailed breakdown of Python/Flask, Vue 3/Capacitor/Electron, Docker/PostgreSQL/Redis/Celery runtimes and configurations.
+- `.gsd/SPEC.md`: Spécification du projet StudyHub (statut FINALIZED).
+- `.gsd/ROADMAP.md`: Feuille de route globale (Phases 1 à 6).
+- `.gsd/phases/5/RESEARCH.md`: Synthèse technique et contexte de la Phase 5 (Diagrammes).
+- `.gsd/phases/5/1-PLAN.md`: Plan d'exécution TDD pour le Cycle 7 tactile.
+- `.gsd/ARCHITECTURE.md`: Architecture globale du système.
+- `.gsd/STACK.md`: Inventaire technique et dépendances.
