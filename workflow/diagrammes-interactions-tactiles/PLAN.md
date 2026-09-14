@@ -20,14 +20,14 @@ Une case = une tâche atomique. TDD sans exception pour la géométrie et les in
   rapproche les deux doigts diminue le zoom, qui les éloigne l'augmente ; le point médian reste
   visuellement stable (même propriété que `zoomAt` déjà testée au cycle 3) ; passer de deux à
   un doigt en cours de geste ne casse rien (retombe sur le glisser à un doigt, pas d'exception).
-- [ ] Task 4 — Appui long sur un élément entre en mode création de lien (équivalent tactile de
+- [x] Task 4 — Appui long sur un élément entre en mode création de lien (équivalent tactile de
   `Maj` + glisser, cycle 5) : un contact maintenu sans déplacement au-delà du seuil pendant une
   durée seuil (ex. 500 ms) sur un élément déclenche le même flux que `startLinking` ; un
   déplacement avant l'expiration du délai annule l'appui long et retombe sur le déplacement de
   Task 2. Tests composant (horloge simulée `vi.useFakeTimers`) : un appui long suivi d'un
   glissé vers un autre élément crée un lien ; relâcher avant l'expiration du délai ne crée
   rien ; un déplacement précoce annule l'appui long et déplace l'élément à la place.
-- [ ] Task 5 — Vérification finale : suite frontend complète verte, `npm run build` propre,
+- [x] Task 5 — Vérification finale : suite frontend complète verte, `npm run build` propre,
   `Diagrams.vue` toujours non modifié. Clôture ; passation `JOURNAL.md` pour le cycle 8
   (conteneurs, texte libre, images, LaTeX) -- **rappel explicite à l'utilisateur** : la
   sensation tactile réelle (pincement, confort des cibles ≥ 44 px, absence de conflit avec le

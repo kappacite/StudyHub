@@ -76,8 +76,7 @@ updated: 2026-09-08
 - [x] Cycle 3 : Canevas infini, panoramique et zoom géométrique centré (`diagrammes-canevas-pan-zoom`)
 - [x] Cycle 4 : Placement, sélection multiple et magnétisme (`diagrammes-placement-selection`)
 - [x] Cycle 5 : Liens d'ancrage magnétiques et routage (`diagrammes-liens-ancrage`)
-- [x] Cycle 6 : Interactions clavier, raccourcis et suppression (`diagrammes-interactions-clavier`)
-- [ ] Cycle 7 : Interactions tactiles (pincer, glisser, appui long) (`diagrammes-interactions-tactiles`)
+- [x] Cycle 7 : Interactions tactiles (pincer, glisser, appui long) (`diagrammes-interactions-tactiles`)
 - [ ] Cycle 8 : Conteneurs, texte libre, images, LaTeX
 - [ ] Cycles 9 à 14 : Alignement automatique, export/import SVG/PNG/Mermaid, intégration vue de révision
 

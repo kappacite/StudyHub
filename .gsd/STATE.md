@@ -2,21 +2,19 @@
 
 ## Current Position
 - **Phase**: 5 (Refonte Éditeur de Diagrammes en Canevas Libre)
-- **Task**: Planning complete
-- **Status**: Ready for execution
+- **Task**: Plan 5.1 (Cycle 7 : Interactions tactiles) exécuté et vérifié
+- **Status**: Verified (PASS)
 
 ## Last Session Summary
-Phase 5 planning complete.
-- Plan 5.1: Cycle 7 - Interactions tactiles (Appui long et Création de liens)
-- 2 tâches atomiques prêtes en TDD (détection appui long + tracé/émission de lien)
+Plan 5.1 exécuté et vérifié avec succès.
+- 2 tâches TDD complétées : appui long tactile 500ms (`DiagramCanvas.vue`) et tracé/émission de commande de lien tactile.
+- Preuve empirique : 37/37 tests unitaires `DiagramCanvas.spec.ts` passants et 671/671 tests frontend verts.
+- Build production `npm run build` propre.
 
 ## Next Steps
-1. `/execute 5` — exécuter le plan 5.1
+1. Passer au Cycle 8 de la Phase 5 (Conteneurs, texte libre, images, LaTeX) ou poursuivre la Phase 4 (Refonte UI).
 
 ## Documentation Generated
-- `.gsd/SPEC.md`: Spécification du projet StudyHub (statut FINALIZED).
-- `.gsd/ROADMAP.md`: Feuille de route globale (Phases 1 à 6).
-- `.gsd/phases/5/RESEARCH.md`: Synthèse technique et contexte de la Phase 5 (Diagrammes).
-- `.gsd/phases/5/1-PLAN.md`: Plan d'exécution TDD pour le Cycle 7 tactile.
-- `.gsd/ARCHITECTURE.md`: Architecture globale du système.
-- `.gsd/STACK.md`: Inventaire technique et dépendances.
+- `.gsd/phases/5/1-PLAN.md`: Plan exécuté.
+- `.gsd/phases/5/1-SUMMARY.md`: Synthèse d'exécution de Plan 5.1.
+- `.gsd/phases/5/VERIFICATION.md`: Preuves empiriques et verdict PASS.
