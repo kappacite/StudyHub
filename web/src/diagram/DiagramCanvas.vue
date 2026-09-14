@@ -4,6 +4,7 @@
     :viewBox="viewBoxString"
     @wheel.prevent="onWheel"
     @mousedown="onBackgroundMouseDown"
+    @touchstart.prevent="onBackgroundTouchStart"
   >
     <polyline
       v-for="rl in renderedLinks"
@@ -22,6 +23,7 @@
       data-test="diagram-element"
       :data-id="el.id"
       @mousedown.stop="onElementMouseDown($event, el)"
+      @touchstart.stop.prevent="onElementTouchStart($event, el)"
     >
       <ellipse
         v-if="el.kind === 'shape' && (el.shape === 'circle' || el.shape === 'ellipse')"
@@ -88,6 +90,18 @@
       />
     </template>
 
+    <line
+      v-if="isCreatingLink && phantomLinkStart && linkTargetPoint"
+      data-test="phantom-link"
+      :x1="phantomLinkStart.x"
+      :y1="phantomLinkStart.y"
+      :x2="linkTargetPoint.x"
+      :y2="linkTargetPoint.y"
+      class="stroke-ink"
+      stroke-width="2"
+      stroke-dasharray="4"
+    />
+
     <foreignObject
       v-if="renamingBounds"
       :x="renamingBounds.minX"
@@ -120,6 +134,7 @@ import { snapToGrid, computeAlignmentSnap, type AlignmentGuide } from './snappin
 import { DiagramHistory } from './history'
 import { computeAnchorPoint } from './anchoring'
 import { computeSiblingPosition, getAdjacentElementId } from './layout'
+import { computeDistance, computeMidpoint } from './touch'
 import type { DiagramDocumentV1, DiagramElement, LinkElement, ShapeElement } from './document'
 
 const props = defineProps<{
@@ -140,6 +155,19 @@ const ALIGN_THRESHOLD_PX = 6
 const camera = ref<Camera>(createDefaultCamera())
 const viewportSize = computed(() => ({ width: props.viewportWidth, height: props.viewportHeight }))
 const selectedElementId = ref<string | null>(null)
+
+const isCreatingLink = ref(false)
+const linkStartElement = ref<DiagramElement | null>(null)
+const linkTargetPoint = ref<{ x: number, y: number } | null>(null)
+
+const phantomLinkStart = computed(() => {
+  if (!linkStartElement.value) return null
+  const b = elementBounds(linkStartElement.value)
+  return {
+    x: (b.minX + b.maxX) / 2,
+    y: (b.minY + b.maxY) / 2,
+  }
+})
 
 const visibleElements = computed(() =>
   cullElements(props.document.elements, camera.value, viewportSize.value),
@@ -288,6 +316,91 @@ function onBackgroundMouseDown(event: MouseEvent) {
   window.addEventListener('mouseup', onUp)
 }
 
+// Glisser à un doigt = panoramique du fond (Task 2, cycle 7) -- même seuil clic/glisser que
+// la souris. Répartiteur `onBackgroundTouchStart` : une nouvelle touche (donc un nouveau
+// `touchstart`) annule le geste précédent avant d'en démarrer un autre, pour permettre la
+// transition 1 doigt (panoramique) -> 2 doigts (pincement, Task 3) sans état incohérent.
+let activeTouchCleanup: (() => void) | null = null
+
+function startBackgroundPanTouch(touch: Touch): () => void {
+  const start = { x: touch.clientX, y: touch.clientY }
+  let last = { ...start }
+  let moved = false
+
+  function onMove(e: TouchEvent) {
+    if (e.touches.length !== 1) return
+    const t = e.touches[0]
+    if (!moved && Math.hypot(t.clientX - start.x, t.clientY - start.y) > CLICK_THRESHOLD_PX) {
+      moved = true
+    }
+    if (moved) {
+      camera.value = panBy(camera.value, t.clientX - last.x, t.clientY - last.y)
+    }
+    last = { x: t.clientX, y: t.clientY }
+  }
+
+  function onEnd() {
+    if (!moved) selectedElementId.value = null
+    cleanup()
+  }
+
+  function cleanup() {
+    window.removeEventListener('touchmove', onMove)
+    window.removeEventListener('touchend', onEnd)
+  }
+
+  window.addEventListener('touchmove', onMove)
+  window.addEventListener('touchend', onEnd)
+  return cleanup
+}
+
+// Pincer pour zoomer (Task 3, cycle 7) : recalcule le zoom de façon incrémentale (ratio de
+// distance depuis le dernier `touchmove`, pas depuis le début du geste) et recentre sur le
+// point médian courant à chaque mouvement -- supporte naturellement un panoramique simultané
+// au pincement (le médian peut se déplacer pendant que la distance change).
+function touchPoint(touch: Touch): { x: number; y: number } {
+  return { x: touch.clientX, y: touch.clientY }
+}
+
+function startPinchZoomTouch(touchA: Touch, touchB: Touch): () => void {
+  let lastDistance = computeDistance(touchPoint(touchA), touchPoint(touchB))
+
+  function onMove(e: TouchEvent) {
+    if (e.touches.length !== 2) return
+    const a = touchPoint(e.touches[0])
+    const b = touchPoint(e.touches[1])
+    const distance = computeDistance(a, b)
+    const midpoint = computeMidpoint(a, b)
+    const factor = distance / lastDistance
+    camera.value = zoomAt(camera.value, midpoint, factor, viewportSize.value)
+    lastDistance = distance
+  }
+
+  function onEnd() {
+    cleanup()
+  }
+
+  function cleanup() {
+    window.removeEventListener('touchmove', onMove)
+    window.removeEventListener('touchend', onEnd)
+  }
+
+  window.addEventListener('touchmove', onMove)
+  window.addEventListener('touchend', onEnd)
+  return cleanup
+}
+
+function onBackgroundTouchStart(event: TouchEvent) {
+  activeTouchCleanup?.()
+  activeTouchCleanup = null
+
+  if (event.touches.length === 1) {
+    activeTouchCleanup = startBackgroundPanTouch(event.touches[0])
+  } else if (event.touches.length === 2) {
+    activeTouchCleanup = startPinchZoomTouch(event.touches[0], event.touches[1])
+  }
+}
+
 function pointInBounds(point: { x: number; y: number }, bounds: Bounds): boolean {
   return (
     point.x >= bounds.minX &&
@@ -299,40 +412,78 @@ function pointInBounds(point: { x: number; y: number }, bounds: Bounds): boolean
 
 // Maj + glisser d'une forme vers une autre crée un lien (Task 3) -- réutilise la commande
 // générique `add-element` du cycle 2, aucun nouveau type de commande nécessaire.
+// Complète une création de lien vers l'élément sous `screenPoint`, s'il y en a un -- partagé
+// entre `startLinking` (souris, Maj+glisser) et `startLinkingTouch` (tactile, appui long,
+// Task 4 du cycle 7), pas de duplication de cette logique entre les deux entrées.
+function completeLinkAt(source: DiagramElement, screenPoint: { x: number; y: number }) {
+  const worldPoint = screenToWorld(screenPoint, camera.value, viewportSize.value)
+  const target = props.document.elements.find(
+    (el) => el.id !== source.id && pointInBounds(worldPoint, elementBounds(el)),
+  )
+  if (!target) return
+
+  const newLink: LinkElement = {
+    kind: 'link',
+    id: `link-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    rotation: 0,
+    locked: false,
+    fromId: source.id,
+    toId: target.id,
+    label: '',
+    arrow: 'end',
+    dashed: false,
+    routingPoints: [],
+  }
+  const newDoc = history.execute(props.document, { type: 'add-element', element: newLink })
+  emit('update:document', newDoc)
+}
+
 function startLinking(source: DiagramElement) {
   function onUp(e: MouseEvent) {
     window.removeEventListener('mouseup', onUp)
-    const worldPoint = screenToWorld(
-      { x: e.clientX, y: e.clientY },
-      camera.value,
-      viewportSize.value,
-    )
-    const target = props.document.elements.find(
-      (el) => el.id !== source.id && pointInBounds(worldPoint, elementBounds(el)),
-    )
-    if (!target) return
-
-    const newLink: LinkElement = {
-      kind: 'link',
-      id: `link-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      rotation: 0,
-      locked: false,
-      fromId: source.id,
-      toId: target.id,
-      label: '',
-      arrow: 'end',
-      dashed: false,
-      routingPoints: [],
-    }
-    const newDoc = history.execute(props.document, { type: 'add-element', element: newLink })
-    emit('update:document', newDoc)
+    completeLinkAt(source, { x: e.clientX, y: e.clientY })
   }
 
   window.addEventListener('mouseup', onUp)
+}
+
+// Appui long sur un élément = équivalent tactile de Maj + glisser (Task 4, cycle 7) -- aucune
+// touche modificatrice possible au doigt.
+const LONG_PRESS_MS = 500
+
+// Position d'un élément déplacé, magnétisée sauf demande explicite de l'appelant (souris :
+// Alt maintenu ; réutilisé tel quel par le glisser tactile, Task 2 du cycle 7 -- pas de
+// duplication de la décision alignement/grille entre souris et tactile).
+function computeSnappedElementPosition(
+  element: DiagramElement,
+  originalX: number,
+  originalY: number,
+  dxScreen: number,
+  dyScreen: number,
+  disableSnap: boolean,
+): { x: number; y: number; guides: AlignmentGuide[] } {
+  const zoom = camera.value.zoom
+  const rawX = originalX + dxScreen / zoom
+  const rawY = originalY + dyScreen / zoom
+
+  if (disableSnap) return { x: rawX, y: rawY, guides: [] }
+
+  const draggedBounds = {
+    minX: rawX,
+    minY: rawY,
+    maxX: rawX + element.width,
+    maxY: rawY + element.height,
+  }
+  const others = props.document.elements.filter((el) => el.id !== element.id).map(elementBounds)
+  const { snapped, guides } = computeAlignmentSnap(draggedBounds, others, ALIGN_THRESHOLD_PX / zoom)
+  if (guides.length > 0) return { x: snapped.x, y: snapped.y, guides }
+
+  const gridSnapped = snapToGrid({ x: rawX, y: rawY }, GRID_SIZE)
+  return { x: gridSnapped.x, y: gridSnapped.y, guides: [] }
 }
 
 function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
@@ -354,38 +505,17 @@ function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
     }
     if (!moved) return
 
-    const zoom = camera.value.zoom
-    const rawX = originalX + (e.clientX - start.x) / zoom
-    const rawY = originalY + (e.clientY - start.y) / zoom
-
-    if (e.altKey) {
-      finalX = rawX
-      finalY = rawY
-      activeGuides.value = []
-    } else {
-      const draggedBounds = {
-        minX: rawX,
-        minY: rawY,
-        maxX: rawX + element.width,
-        maxY: rawY + element.height,
-      }
-      const others = props.document.elements.filter((el) => el.id !== element.id).map(elementBounds)
-      const { snapped, guides } = computeAlignmentSnap(
-        draggedBounds,
-        others,
-        ALIGN_THRESHOLD_PX / zoom,
-      )
-      if (guides.length > 0) {
-        finalX = snapped.x
-        finalY = snapped.y
-        activeGuides.value = guides
-      } else {
-        const gridSnapped = snapToGrid({ x: rawX, y: rawY }, GRID_SIZE)
-        finalX = gridSnapped.x
-        finalY = gridSnapped.y
-        activeGuides.value = []
-      }
-    }
+    const result = computeSnappedElementPosition(
+      element,
+      originalX,
+      originalY,
+      e.clientX - start.x,
+      e.clientY - start.y,
+      e.altKey,
+    )
+    finalX = result.x
+    finalY = result.y
+    activeGuides.value = result.guides
     dragPreview.value = { id: element.id, x: finalX, y: finalY }
   }
 
@@ -407,6 +537,94 @@ function onElementMouseDown(event: MouseEvent, element: DiagramElement) {
 
   window.addEventListener('mousemove', onMove)
   window.addEventListener('mouseup', onUp)
+}
+
+// Glisser à un doigt sur un élément = déplacement (Task 2, cycle 7) -- réutilise
+// `computeSnappedElementPosition` (aucune duplication de la décision de magnétisme avec la
+// souris). Une seule commande à la levée du doigt, comme la souris (cycle 4).
+function onElementTouchStart(event: TouchEvent, element: DiagramElement) {
+  if (event.touches.length !== 1) return
+
+  const touch = event.touches[0]
+  const start = { x: touch.clientX, y: touch.clientY }
+  const originalX = element.x
+  const originalY = element.y
+  let moved = false
+  let finalX = originalX
+  let finalY = originalY
+
+  let longPressTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+    isCreatingLink.value = true
+    linkStartElement.value = element
+    linkTargetPoint.value = screenToWorld({ x: start.x, y: start.y }, camera.value, viewportSize.value)
+    longPressTimer = null
+  }, LONG_PRESS_MS)
+
+  function clearTimer() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      longPressTimer = null
+    }
+  }
+
+  function onMove(e: TouchEvent) {
+    if (e.touches.length !== 1) return
+    const t = e.touches[0]
+    
+    if (isCreatingLink.value) {
+      linkTargetPoint.value = screenToWorld({ x: t.clientX, y: t.clientY }, camera.value, viewportSize.value)
+      return
+    }
+
+    if (!moved && Math.hypot(t.clientX - start.x, t.clientY - start.y) > CLICK_THRESHOLD_PX) {
+      moved = true
+      clearTimer()
+    }
+    if (!moved) return
+
+    const result = computeSnappedElementPosition(
+      element,
+      originalX,
+      originalY,
+      t.clientX - start.x,
+      t.clientY - start.y,
+      false,
+    )
+    finalX = result.x
+    finalY = result.y
+    activeGuides.value = result.guides
+    dragPreview.value = { id: element.id, x: finalX, y: finalY }
+  }
+
+  function onEnd(e: TouchEvent) {
+    window.removeEventListener('touchmove', onMove)
+    window.removeEventListener('touchend', onEnd)
+    clearTimer()
+
+    if (isCreatingLink.value) {
+      const t = e.changedTouches[0]
+      completeLinkAt(element, { x: t.clientX, y: t.clientY })
+      isCreatingLink.value = false
+      linkStartElement.value = null
+      linkTargetPoint.value = null
+      return
+    }
+
+    selectedElementId.value = element.id
+    dragPreview.value = null
+    activeGuides.value = []
+    if (!moved) return
+
+    const newDoc = history.execute(props.document, {
+      type: 'update-element',
+      id: element.id,
+      changes: { x: finalX, y: finalY },
+    })
+    emit('update:document', newDoc)
+  }
+
+  window.addEventListener('touchmove', onMove)
+  window.addEventListener('touchend', onEnd)
 }
 
 // Interactions clavier (Phase 5, cycle 6 -- §8.4). Raccourcis retenus dans CONTEXT.md :

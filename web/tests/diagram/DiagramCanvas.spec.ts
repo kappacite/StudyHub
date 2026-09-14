@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DiagramCanvas from '../../src/diagram/DiagramCanvas.vue'
 import { createEmptyDocument } from '../../src/diagram/document'
@@ -417,6 +417,187 @@ describe('DiagramCanvas (diagrammes-canevas-pan-zoom, Task 5)', () => {
 
       expect(wrapper.find('[data-test="rename-input"]').exists()).toBe(false)
       expect(wrapper.emitted('update:document')).toBeUndefined()
+    })
+  })
+
+  describe('glisser à un doigt (diagrammes-interactions-tactiles, Task 2)', () => {
+    it('un glisser à un doigt sur le fond modifie le viewBox (panoramique tactile)', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const svg = wrapper.find('svg')
+      const before = svg.attributes('viewBox')
+
+      await svg.trigger('touchstart', { touches: [{ clientX: 10, clientY: 10 }] })
+      await svg.trigger('touchmove', { touches: [{ clientX: 80, clientY: 80 }] })
+      await svg.trigger('touchend', { touches: [], changedTouches: [{ clientX: 80, clientY: 80 }] })
+
+      expect(svg.attributes('viewBox')).not.toBe(before)
+    })
+
+    it('un glisser à un doigt sur un élément le déplace et émet une seule commande', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+
+      await el.trigger('touchstart', { touches: [{ clientX: 400, clientY: 300 }] })
+      await el.trigger('touchmove', { touches: [{ clientX: 430, clientY: 300 }] })
+      await el.trigger('touchmove', { touches: [{ clientX: 440, clientY: 300 }] })
+      await el.trigger('touchend', { touches: [], changedTouches: [{ clientX: 440, clientY: 300 }] })
+
+      const emitted = wrapper.emitted('update:document')!
+      expect(emitted).toHaveLength(1)
+      const doc2 = emitted[0][0] as DiagramDocumentV1
+      expect(doc2.elements.find((e) => e.id === 'a')!.x).not.toBe(0)
+    })
+
+    it('un tap (sans déplacement) sélectionne comme un clic', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+
+      await el.trigger('touchstart', { touches: [{ clientX: 410, clientY: 310 }] })
+      await el.trigger('touchend', { touches: [], changedTouches: [{ clientX: 410, clientY: 310 }] })
+
+      const vm = wrapper.vm as unknown as { selectedElementId: string | null }
+      expect(vm.selectedElementId).toBe('a')
+    })
+
+    it('un tap sur le fond désélectionne comme un clic', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const el = wrapper.find('[data-test="diagram-element"]')
+      await el.trigger('touchstart', { touches: [{ clientX: 410, clientY: 310 }] })
+      await el.trigger('touchend', { touches: [], changedTouches: [{ clientX: 410, clientY: 310 }] })
+
+      const svg = wrapper.find('svg')
+      await svg.trigger('touchstart', { touches: [{ clientX: 10, clientY: 10 }] })
+      await svg.trigger('touchend', { touches: [], changedTouches: [{ clientX: 10, clientY: 10 }] })
+
+      const vm = wrapper.vm as unknown as { selectedElementId: string | null }
+      expect(vm.selectedElementId).toBeNull()
+    })
+  })
+
+  describe('pincer pour zoomer (diagrammes-interactions-tactiles, Task 3)', () => {
+    it('rapprocher les deux doigts diminue le zoom', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const svg = wrapper.find('svg')
+      const vm = wrapper.vm as unknown as { camera: { zoom: number } }
+      const zoomBefore = vm.camera.zoom
+
+      await svg.trigger('touchstart', {
+        touches: [{ clientX: 350, clientY: 300 }, { clientX: 450, clientY: 300 }], // distance 100
+      })
+      await svg.trigger('touchmove', {
+        touches: [{ clientX: 380, clientY: 300 }, { clientX: 420, clientY: 300 }], // distance 40, rapproché
+      })
+
+      expect(vm.camera.zoom).toBeLessThan(zoomBefore)
+    })
+
+    it('éloigner les deux doigts augmente le zoom', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const svg = wrapper.find('svg')
+      const vm = wrapper.vm as unknown as { camera: { zoom: number } }
+      const zoomBefore = vm.camera.zoom
+
+      await svg.trigger('touchstart', {
+        touches: [{ clientX: 350, clientY: 300 }, { clientX: 450, clientY: 300 }], // distance 100
+      })
+      await svg.trigger('touchmove', {
+        touches: [{ clientX: 300, clientY: 300 }, { clientX: 500, clientY: 300 }], // distance 200, éloigné
+      })
+
+      expect(vm.camera.zoom).toBeGreaterThan(zoomBefore)
+    })
+
+    it('passer de deux à un doigt en cours de geste ne casse rien', async () => {
+      const doc: DiagramDocumentV1 = { ...createEmptyDocument(), elements: [shape('a', 0, 0)] }
+      const wrapper = mountCanvas(doc)
+      const svg = wrapper.find('svg')
+
+      await svg.trigger('touchstart', {
+        touches: [{ clientX: 350, clientY: 300 }, { clientX: 450, clientY: 300 }],
+      })
+      await svg.trigger('touchmove', {
+        touches: [{ clientX: 380, clientY: 300 }, { clientX: 420, clientY: 300 }],
+      })
+      // Un doigt levé : touchend avec un seul doigt restant dans `touches`.
+      await expect(
+        svg.trigger('touchend', {
+          touches: [{ clientX: 420, clientY: 300 }],
+          changedTouches: [{ clientX: 380, clientY: 300 }],
+        }),
+      ).resolves.not.toThrow()
+    })
+  })
+
+  describe('appui long -> création de lien (diagrammes-interactions-tactiles, Task 4)', () => {
+    // 'a' [0,50]x[0,50] -> écran [400,450]x[300,350] ; 'b' [200,250]x[0,50] -> écran
+    // [600,650]x[300,350] (même mapping que les tests de création de lien à la souris).
+    function docWithTwoShapes(): DiagramDocumentV1 {
+      return { ...createEmptyDocument(), elements: [shape('a', 0, 0), shape('b', 200, 0)] }
+    }
+
+    it("un appui long suivi d'un glissé vers un autre élément crée un lien", async () => {
+      vi.useFakeTimers()
+      try {
+        const wrapper = mountCanvas(docWithTwoShapes())
+        const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+
+        await a.trigger('touchstart', { touches: [{ clientX: 410, clientY: 310 }] })
+        await vi.advanceTimersByTimeAsync(600)
+        await a.trigger('touchend', { touches: [], changedTouches: [{ clientX: 620, clientY: 320 }] })
+
+        const emitted = wrapper.emitted('update:document')!
+        expect(emitted).toHaveLength(1)
+        const doc2 = emitted[0][0] as DiagramDocumentV1
+        const newLink = doc2.elements.find((e) => e.kind === 'link') as LinkElement | undefined
+        expect(newLink).toMatchObject({ fromId: 'a', toId: 'b' })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it("relâcher avant l'expiration du délai ne crée rien (reste un tap)", async () => {
+      vi.useFakeTimers()
+      try {
+        const wrapper = mountCanvas(docWithTwoShapes())
+        const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+
+        await a.trigger('touchstart', { touches: [{ clientX: 410, clientY: 310 }] })
+        await vi.advanceTimersByTimeAsync(200)
+        await a.trigger('touchend', { touches: [], changedTouches: [{ clientX: 410, clientY: 310 }] })
+
+        expect(wrapper.emitted('update:document')).toBeUndefined()
+        const vm = wrapper.vm as unknown as { selectedElementId: string | null }
+        expect(vm.selectedElementId).toBe('a')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it("un déplacement précoce annule l'appui long et déplace l'élément à la place", async () => {
+      vi.useFakeTimers()
+      try {
+        const wrapper = mountCanvas(docWithTwoShapes())
+        const a = wrapper.findAll('[data-test="diagram-element"]').find((w) => w.attributes('data-id') === 'a')!
+
+        await a.trigger('touchstart', { touches: [{ clientX: 410, clientY: 310 }] })
+        await a.trigger('touchmove', { touches: [{ clientX: 440, clientY: 310 }] })
+        await vi.advanceTimersByTimeAsync(600) // ne doit plus déclencher l'appui long
+        await a.trigger('touchend', { touches: [], changedTouches: [{ clientX: 440, clientY: 310 }] })
+
+        const emitted = wrapper.emitted('update:document')!
+        expect(emitted).toHaveLength(1)
+        const doc2 = emitted[0][0] as DiagramDocumentV1
+        expect(doc2.elements.some((e) => e.kind === 'link')).toBe(false)
+        expect(doc2.elements.find((e) => e.id === 'a')).toMatchObject({ x: 30 })
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 })
