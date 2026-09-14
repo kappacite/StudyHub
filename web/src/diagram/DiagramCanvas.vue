@@ -144,6 +144,19 @@ const camera = ref<Camera>(createDefaultCamera())
 const viewportSize = computed(() => ({ width: props.viewportWidth, height: props.viewportHeight }))
 const selectedElementId = ref<string | null>(null)
 
+const isCreatingLink = ref(false)
+const linkStartElement = ref<DiagramElement | null>(null)
+const linkTargetPoint = ref<{ x: number, y: number } | null>(null)
+
+const phantomLinkStart = computed(() => {
+  if (!linkStartElement.value) return null
+  const b = elementBounds(linkStartElement.value)
+  return {
+    x: (b.minX + b.maxX) / 2,
+    y: (b.minY + b.maxY) / 2,
+  }
+})
+
 const visibleElements = computed(() =>
   cullElements(props.document.elements, camera.value, viewportSize.value),
 )
@@ -387,41 +400,48 @@ function pointInBounds(point: { x: number; y: number }, bounds: Bounds): boolean
 
 // Maj + glisser d'une forme vers une autre crée un lien (Task 3) -- réutilise la commande
 // générique `add-element` du cycle 2, aucun nouveau type de commande nécessaire.
+// Complète une création de lien vers l'élément sous `screenPoint`, s'il y en a un -- partagé
+// entre `startLinking` (souris, Maj+glisser) et `startLinkingTouch` (tactile, appui long,
+// Task 4 du cycle 7), pas de duplication de cette logique entre les deux entrées.
+function completeLinkAt(source: DiagramElement, screenPoint: { x: number; y: number }) {
+  const worldPoint = screenToWorld(screenPoint, camera.value, viewportSize.value)
+  const target = props.document.elements.find(
+    (el) => el.id !== source.id && pointInBounds(worldPoint, elementBounds(el)),
+  )
+  if (!target) return
+
+  const newLink: LinkElement = {
+    kind: 'link',
+    id: `link-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    rotation: 0,
+    locked: false,
+    fromId: source.id,
+    toId: target.id,
+    label: '',
+    arrow: 'end',
+    dashed: false,
+    routingPoints: [],
+  }
+  const newDoc = history.execute(props.document, { type: 'add-element', element: newLink })
+  emit('update:document', newDoc)
+}
+
 function startLinking(source: DiagramElement) {
   function onUp(e: MouseEvent) {
     window.removeEventListener('mouseup', onUp)
-    const worldPoint = screenToWorld(
-      { x: e.clientX, y: e.clientY },
-      camera.value,
-      viewportSize.value,
-    )
-    const target = props.document.elements.find(
-      (el) => el.id !== source.id && pointInBounds(worldPoint, elementBounds(el)),
-    )
-    if (!target) return
-
-    const newLink: LinkElement = {
-      kind: 'link',
-      id: `link-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      rotation: 0,
-      locked: false,
-      fromId: source.id,
-      toId: target.id,
-      label: '',
-      arrow: 'end',
-      dashed: false,
-      routingPoints: [],
-    }
-    const newDoc = history.execute(props.document, { type: 'add-element', element: newLink })
-    emit('update:document', newDoc)
+    completeLinkAt(source, { x: e.clientX, y: e.clientY })
   }
 
   window.addEventListener('mouseup', onUp)
 }
+
+// Appui long sur un élément = équivalent tactile de Maj + glisser (Task 4, cycle 7) -- aucune
+// touche modificatrice possible au doigt.
+const LONG_PRESS_MS = 500
 
 // Position d'un élément déplacé, magnétisée sauf demande explicite de l'appelant (souris :
 // Alt maintenu ; réutilisé tel quel par le glisser tactile, Task 2 du cycle 7 -- pas de
@@ -521,11 +541,31 @@ function onElementTouchStart(event: TouchEvent, element: DiagramElement) {
   let finalX = originalX
   let finalY = originalY
 
+  let longPressTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+    isCreatingLink.value = true
+    linkStartElement.value = element
+    linkTargetPoint.value = screenToWorld({ x: start.x, y: start.y }, camera.value, viewportSize.value)
+    longPressTimer = null
+  }, LONG_PRESS_MS)
+
+  function clearTimer() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      longPressTimer = null
+    }
+  }
+
   function onMove(e: TouchEvent) {
     if (e.touches.length !== 1) return
     const t = e.touches[0]
+    
+    if (isCreatingLink.value) {
+      return
+    }
+
     if (!moved && Math.hypot(t.clientX - start.x, t.clientY - start.y) > CLICK_THRESHOLD_PX) {
       moved = true
+      clearTimer()
     }
     if (!moved) return
 
@@ -543,9 +583,20 @@ function onElementTouchStart(event: TouchEvent, element: DiagramElement) {
     dragPreview.value = { id: element.id, x: finalX, y: finalY }
   }
 
-  function onEnd() {
+  function onEnd(e: TouchEvent) {
     window.removeEventListener('touchmove', onMove)
     window.removeEventListener('touchend', onEnd)
+    clearTimer()
+
+    if (isCreatingLink.value) {
+      const t = e.changedTouches[0]
+      completeLinkAt(element, { x: t.clientX, y: t.clientY })
+      isCreatingLink.value = false
+      linkStartElement.value = null
+      linkTargetPoint.value = null
+      return
+    }
+
     selectedElementId.value = element.id
     dragPreview.value = null
     activeGuides.value = []
