@@ -90,6 +90,18 @@
       />
     </template>
 
+    <line
+      v-if="isCreatingLink && phantomLinkStart && linkTargetPoint"
+      data-test="phantom-link"
+      :x1="phantomLinkStart.x"
+      :y1="phantomLinkStart.y"
+      :x2="linkTargetPoint.x"
+      :y2="linkTargetPoint.y"
+      class="stroke-ink"
+      stroke-width="2"
+      stroke-dasharray="4"
+    />
+
     <foreignObject
       v-if="renamingBounds"
       :x="renamingBounds.minX"
@@ -560,6 +572,7 @@ function onElementTouchStart(event: TouchEvent, element: DiagramElement) {
     const t = e.touches[0]
     
     if (isCreatingLink.value) {
+      linkTargetPoint.value = screenToWorld({ x: t.clientX, y: t.clientY }, camera.value, viewportSize.value)
       return
     }
 
