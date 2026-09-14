@@ -39,3 +39,18 @@ un seul doigt pendant un pincement à deux doigts nettoie le geste sans reprendr
 automatiquement un panoramique à un doigt pour le doigt restant -- il faut lever puis
 retoucher. 34/34 tests composant verts, 96/96 tests diagrammes. Prochaine action : Task 4
 (appui long -> création de lien).
+
+## 2026-09-14 (Task 4 — appui long -> création de lien)
+
+Appui long tactile (500 ms) implémenté sur les éléments SVG (`startLinkingTouch` et gestionnaire
+de délai avec annulation sur mouvement précoce). Tracé fantôme et émission de commande `add-element`
+au relâchement sur une cible. 37/37 tests unitaires `DiagramCanvas.spec.ts` passants (simulés avec
+`vi.useFakeTimers`). Prochaine action : Task 5 (vérification finale).
+
+## 2026-09-14 (Task 5 — vérification finale & clôture)
+
+Suite frontend 671/671 tests verts, build de production propre (`npm run build` en 2.01s).
+Rappel explicite : la sensation tactile réelle (pincement, confort des cibles ≥ 44 px, absence
+de conflit avec le geste de retour natif du système) n'a pas pu être testée sur un appareil
+physique dans cet environnement, à tester dès qu'un écran tactile est disponible.
+Cycle 7 terminé, prêt pour fusion ou enchaînement sur le Cycle 8.
